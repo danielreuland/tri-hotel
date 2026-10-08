@@ -31,6 +31,12 @@ module.exports = {
   // Vorab-Phase: Login über HTTP-Tunnel erlauben (COOKIE_SECURE=false) und Suchmaschinen aussperren (NOINDEX=true)
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production',
   noindex: process.env.NOINDEX === 'true',
+  // Admin-Login: Google (empfohlen) und optional Passwort
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
+  },
+  adminPasswordLogin: process.env.ADMIN_PASSWORD_LOGIN ? process.env.ADMIN_PASSWORD_LOGIN === 'true' : !process.env.GOOGLE_CLIENT_ID,
   verifyTokenHours: 72,
   userAgent: `RankingBot/0.1 (+${baseUrl})`,
 };

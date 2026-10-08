@@ -47,20 +47,102 @@ for (const p of ['id', 'entityId', 'answerId', 'inquiryId', 'consentId']) {
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false });
 
-router.get('/login', (req, res) => res.render('admin/login', { title: 'Admin-Login', error: null, next: req.query.next || '/admin' }));
+const safeNext = (next) => (/^\/admin(\/|$|\?)/.test(String(next || '')) ? String(next) : '/admin');
+
+function renderLogin(res, { error = null, next = '/admin', status = 200 } = {}) {
+  res.status(status).render('admin/login', {
+    title: 'Admin-Login', error, next,
+    googleEnabled: Boolean(config.google.clientId && config.google.clientSecret),
+    passwordEnabled: config.adminPasswordLogin,
+  });
+}
+
+// Anmeldung abschließen: neue Session (Schutz vor Session-Fixation), Login protokollieren
+function finishLogin(req, res, user, next, method) {
+  req.session.regenerate(async (err) => {
+    if (err) return renderLogin(res, { error: 'Anmeldung fehlgeschlagen.', next, status: 500 });
+    req.session.admin = { id: user.id, email: user.email };
+    await db.query('UPDATE admin_users SET last_login_at = now() WHERE id = $1', [user.id]);
+    await logAction(user.id, 'admin_user', user.id, 'login', { method });
+    req.session.save(() => res.redirect(safeNext(next)));
+  });
+}
+
+router.get('/login', (req, res) => renderLogin(res, { next: safeNext(req.query.next), error: req.query.fehler || null }));
 
 router.post('/login', loginLimiter, wrap(async (req, res) => {
+  const next = safeNext(req.body.next);
+  if (!config.adminPasswordLogin) return renderLogin(res, { error: 'Bitte mit Google anmelden.', next, status: 403 });
   const email = String(req.body.email || '').trim().toLowerCase();
   const user = await db.one('SELECT * FROM admin_users WHERE email = $1', [email]);
-  const ok = user && (await bcrypt.compare(String(req.body.password || ''), user.password_hash));
-  const next = String(req.body.next || '/admin');
-  if (!ok) return res.status(401).render('admin/login', { title: 'Admin-Login', error: 'E-Mail oder Passwort falsch.', next });
-  req.session.regenerate((err) => {
-    if (err) return res.status(500).render('admin/login', { title: 'Admin-Login', error: 'Anmeldung fehlgeschlagen.', next });
-    req.session.admin = { id: user.id, email: user.email };
-    // nur interne Admin-Pfade als Ziel zulassen (kein offener Redirect)
-    res.redirect(/^\/admin(\/|$|\?)/.test(next) ? next : '/admin');
+  const ok = user && user.password_hash && (await bcrypt.compare(String(req.body.password || ''), user.password_hash));
+  if (!ok) return renderLogin(res, { error: 'E-Mail oder Passwort falsch.', next, status: 401 });
+  finishLogin(req, res, user, next, 'password');
+}));
+
+// ---------- Login mit Google (OpenID Connect, Authorization Code + PKCE) ----------
+// Zugang nur, wenn die bestätigte Google-E-Mail in admin_users steht.
+const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
+const googleRedirectUri = () => `${config.baseUrl}/admin/auth/google/callback`;
+
+router.get('/auth/google', loginLimiter, (req, res) => {
+  if (!config.google.clientId) return renderLogin(res, { error: 'Google-Login ist noch nicht eingerichtet.', status: 503 });
+  const state = crypto.randomBytes(24).toString('base64url');
+  const verifier = crypto.randomBytes(48).toString('base64url');
+  req.session.oauth = { state, verifier, next: safeNext(req.query.next), at: Date.now() };
+  const params = new URLSearchParams({
+    client_id: config.google.clientId,
+    redirect_uri: googleRedirectUri(),
+    response_type: 'code',
+    scope: 'openid email',
+    state,
+    code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'),
+    code_challenge_method: 'S256',
+    prompt: 'select_account',
   });
+  req.session.save(() => res.redirect(`${GOOGLE_AUTH}?${params}`));
+});
+
+router.get('/auth/google/callback', loginLimiter, wrap(async (req, res) => {
+  const o = req.session.oauth;
+  delete req.session.oauth;
+  const fail = (msg) => renderLogin(res, { error: msg, status: 401, next: (o && o.next) || '/admin' });
+  if (!o || !req.query.state || req.query.state !== o.state || Date.now() - o.at > 10 * 60 * 1000) {
+    return fail('Die Anmeldung ist abgelaufen. Bitte erneut versuchen.');
+  }
+  if (req.query.error || !req.query.code) return fail('Anmeldung bei Google abgebrochen.');
+
+  const tokenRes = await fetch(GOOGLE_TOKEN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code: String(req.query.code), client_id: config.google.clientId, client_secret: config.google.clientSecret,
+      redirect_uri: googleRedirectUri(), grant_type: 'authorization_code', code_verifier: o.verifier,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!tokenRes.ok) return fail('Google hat die Anmeldung nicht bestätigt.');
+  const { id_token: idToken } = await tokenRes.json();
+  // Das ID-Token kommt direkt per HTTPS vom Token-Endpunkt; geprüft werden Aussteller, Empfänger, Ablauf, E-Mail.
+  let claims;
+  try {
+    claims = JSON.parse(Buffer.from(String(idToken).split('.')[1], 'base64url').toString('utf8'));
+  } catch {
+    return fail('Antwort von Google ungültig.');
+  }
+  const issuerOk = ['https://accounts.google.com', 'accounts.google.com'].includes(claims.iss);
+  if (!issuerOk || claims.aud !== config.google.clientId || claims.exp * 1000 < Date.now() || !claims.email_verified) {
+    return fail('Antwort von Google ungültig.');
+  }
+  const email = String(claims.email || '').toLowerCase();
+  const user = await db.one(
+    `SELECT * FROM admin_users WHERE google_sub = $1 OR (google_sub IS NULL AND lower(email) = $2) ORDER BY google_sub NULLS LAST LIMIT 1`,
+    [claims.sub, email]
+  );
+  if (!user) return fail(`Das Google-Konto ${email} ist für den Admin nicht freigeschaltet.`);
+  if (!user.google_sub) await db.query('UPDATE admin_users SET google_sub = $2 WHERE id = $1', [user.id, claims.sub]);
+  finishLogin(req, res, user, o.next, 'google');
 }));
 
 router.post('/logout', (req, res) => req.session.destroy(() => res.redirect('/admin/login')));
@@ -534,6 +616,28 @@ router.get('/aufgaben', wrap(async (req, res) => {
     `SELECT * FROM submissions WHERE status IN ('verified','auto_check') AND updated_at < now() - interval '1 hour' ORDER BY updated_at`
   );
   res.render('admin/tasks', { title: 'Aufgaben', disputed, recheck, images, stuck, answers, failedInquiries, describeValue: scoring.describeValue });
+}));
+
+// ---------- Team: Admins freischalten (Login mit Google über die E-Mail-Adresse) ----------
+
+router.get('/team', wrap(async (req, res) => {
+  const rows = await db.many(`SELECT id, email, google_sub IS NOT NULL AS linked, password_hash IS NOT NULL AS has_password, last_login_at, created_at FROM admin_users ORDER BY email`);
+  res.render('admin/team', { title: 'Team', rows, me: req.session.admin.id, flash: req.query.ok || null, error: req.query.fehler || null });
+}));
+
+router.post('/team', wrap(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.redirect('/admin/team?fehler=Ung%C3%BCltige+E-Mail-Adresse');
+  const row = await db.one(`INSERT INTO admin_users (email) VALUES ($1) ON CONFLICT (email) DO NOTHING RETURNING id`, [email]);
+  if (row) await logAction(req.session.admin.id, 'admin_user', row.id, 'add_admin', { email });
+  res.redirect(`/admin/team?ok=${encodeURIComponent(`${email} freigeschaltet`)}`);
+}));
+
+router.post('/team/:id/entfernen', wrap(async (req, res) => {
+  if (req.params.id === req.session.admin.id) return res.redirect('/admin/team?fehler=Du+kannst+dich+nicht+selbst+entfernen');
+  const row = await db.one(`DELETE FROM admin_users WHERE id = $1 RETURNING email`, [req.params.id]);
+  if (row) await logAction(req.session.admin.id, 'admin_user', req.params.id, 'remove_admin', { email: row.email });
+  res.redirect('/admin/team?ok=Zugang+entfernt');
 }));
 
 // ---------- Audit-Log ----------

@@ -1,0 +1,22 @@
+<%- include('../partials/admin-head') %>
+<h1>Team</h1>
+<p class="muted">Freigeschaltete E-Mail-Adressen melden sich mit „Mit Google anmelden“ an. Beim ersten Login wird das Google-Konto fest verknüpft.</p>
+<div class="table-scroll">
+<table>
+  <tr><th>E-Mail</th><th>Google</th><th>Letzter Login</th><th></th></tr>
+  <% rows.forEach(function (u) { %>
+    <tr>
+      <td><%= u.email %><%= u.id === me ? ' (du)' : '' %></td>
+      <td><%= u.linked ? 'verknüpft' : 'noch nicht angemeldet' %><%= u.has_password ? ' · Passwort gesetzt' : '' %></td>
+      <td><%= u.last_login_at ? new Date(u.last_login_at).toLocaleString('de-DE') : '–' %></td>
+      <td><% if (u.id !== me) { %><form method="post" action="/admin/team/<%= u.id %>/entfernen"><button class="btn small danger" type="submit">Entfernen</button></form><% } %></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<form method="post" action="/admin/team" class="card filters" style="margin-top:16px">
+  <label for="email" style="margin:0">Google-E-Mail freischalten</label>
+  <input id="email" name="email" type="email" required placeholder="name@gmail.com" style="flex:1;min-width:14em">
+  <button class="btn small" type="submit">Freischalten</button>
+</form>
+<%- include('../partials/admin-foot') %>
