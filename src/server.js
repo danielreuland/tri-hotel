@@ -26,6 +26,8 @@ app.use(
         connectSrc: ["'self'"],
       },
     },
+    // Standard der Browser; mit "no-referrer" senden Formulare die Herkunft als "null"
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   })
 );
 app.use(express.urlencoded({ extended: true, limit: '200kb' }));

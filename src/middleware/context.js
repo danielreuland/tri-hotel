@@ -26,14 +26,23 @@ async function rankingContext(req, res, next) {
 }
 
 // Einfacher CSRF-Schutz: schreibende Anfragen nur von der eigenen Seite.
+// 1. Sec-Fetch-Site (moderne Browser): same-origin oder none (direkt eingegeben) erlaubt
+// 2. sonst Origin/Referer mit dem Host vergleichen; fehlt beides (ältere Browser), hilft SameSite=Lax am Cookie
 function sameOrigin(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  const origin = req.get('origin') || req.get('referer');
-  if (!origin) return next(); // ältere Browser; Session-Cookie ist zusätzlich SameSite=Lax
+  const site = req.get('sec-fetch-site');
+  if (site) return ['same-origin', 'none'].includes(site) ? next() : deny(res);
+  const origin = req.get('origin');
+  const source = origin && origin !== 'null' ? origin : req.get('referer');
+  if (!source) return next();
   try {
-    if (new URL(origin).host === req.get('host')) return next();
+    if (new URL(source).host === req.get('host')) return next();
   } catch { /* ungültig */ }
-  res.status(403).send('Ungültige Herkunft der Anfrage.');
+  deny(res);
+}
+
+function deny(res) {
+  res.status(403).send('Ungültige Herkunft der Anfrage. Bitte die Seite neu laden und noch einmal versuchen.');
 }
 
 function requireAdmin(req, res, next) {
