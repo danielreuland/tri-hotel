@@ -1,5 +1,5 @@
 </div>
 </main>
-<% if (typeof scripts !== 'undefined') { scripts.forEach(function (s) { %><script src="<%= s %>" defer></script><% }) } %>
+<% if (typeof scripts !== 'undefined') { scripts.forEach(function (s) { %><script src="<%= s %>?v=<%= assetVersion %>" defer></script><% }) } %>
 </body>
 </html>

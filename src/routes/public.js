@@ -312,7 +312,7 @@ async function renderArea(req, res, ranking, area) {
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   res.render('public/area', {
-    title: `${heading}${d.ranked.length ? ` – die ${d.ranked.length} besten nach ${ranking.score_name}` : ''}`,
+    title: `${heading} – Ranking nach ${ranking.score_name}`,
     description: (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)

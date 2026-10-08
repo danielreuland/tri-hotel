@@ -54,6 +54,8 @@ app.locals.COUNTRIES = require('./lib/countries');
 app.locals.baseUrl = config.baseUrl;
 app.locals.noindexAll = config.noindex;
 app.locals.plausibleSrc = config.plausibleSrc;
+// Cache-Busting: neue Kennung je Start (Deploy), damit Browser geänderte CSS/JS sofort laden
+app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
 
 // Vorab-Phase: nichts indexieren

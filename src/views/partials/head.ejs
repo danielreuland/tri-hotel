@@ -21,8 +21,8 @@
   <% (locals.jsonLd || []).forEach(function (ld) { %><script type="application/ld+json"><%- ldJson(ld) %></script>
   <% }) %>
   <% if (locals.plausibleSrc && locals.site) { %><script defer data-domain="<%= site.primary_domain %>" src="<%= plausibleSrc %>"></script><% } %>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <script src="/static/js/theme.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css?v=<%= assetVersion %>">
+  <script src="/static/js/theme.js?v=<%= assetVersion %>"></script>
   <% if (locals.siteCss) { %><style><%- siteCss %></style><% } %>
 </head>
 <body class="<%= locals.fullWidth ? 'landing' : '' %>">
