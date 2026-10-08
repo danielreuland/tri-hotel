@@ -19,6 +19,18 @@
   <% if (entity && er && er.status === 'live') { %> · <a href="<%= ranking.is_default ? '/' + ranking.entity_type + '/' + entity.slug : '/rankings/' + ranking.slug + '/' + entity.slug %>" target="_blank">Öffentliche Seite ↗</a><% } %>
 </p>
 
+<% if (duplicateOf) { %>
+  <div class="flash" style="border-color:var(--ok);background:var(--surface)">
+    <strong><%= sub.status === 'duplicate' ? 'Als Dublette abgeschlossen:' : 'Mögliche Dublette von' %> <%= duplicateOf.name %></strong>
+    <small class="muted">(<%= duplicateOf.city || '' %><%= duplicateOf.country ? ', ' + duplicateOf.country : '' %> · <%= duplicateOf.website || 'ohne Website' %>)</small><br>
+    <small>Gleiche Website-Domain oder gleicher Name. Ketten und Reiseveranstalter betreiben oft mehrere Häuser unter einer Domain.</small>
+    <form method="post" action="/admin/meldungen/<%= sub.id %>/dublette" class="filters" style="margin:10px 0 0">
+      <% if (sub.status !== 'duplicate') { %><button class="btn small secondary" type="submit" name="decision" value="same">Dasselbe <%= ranking.entity_label_sg %> – zusammenführen</button><% } %>
+      <button class="btn small" type="submit" name="decision" value="different">Eigenes <%= ranking.entity_label_sg %> – Prüfung fortsetzen</button>
+    </form>
+  </div>
+<% } %>
+
 <div class="admin-detail">
   <div>
     <section class="card">
@@ -356,7 +368,7 @@
     <% if (['admin_review', 'auto_check', 'verified'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
         <form method="post" action="/admin/meldungen/<%= sub.id %>/freigeben">
-          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko ? '' : 'disabled' %>><%= sub.submitter_email ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
+          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko && !sub.possible_duplicate_of ? '' : 'disabled' %>><%= sub.submitter_email ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
         </form>
         <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Ohne Kontakt-E-Mail keine Anfragen an das <%= ranking.entity_label_sg %> möglich (Stammdaten).</small></p><% } %>
         <details style="margin-top:10px">

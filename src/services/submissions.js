@@ -186,6 +186,41 @@ async function reject(submissionId, adminId, reason) {
   }
 }
 
+// Mögliche Dublette: Admin bestätigt „dasselbe Objekt“ (zusammenführen) …
+async function confirmDuplicate(submissionId, adminId) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  const dupId = sub && (sub.possible_duplicate_of || sub.entity_id);
+  if (!dupId) throw new Error('Keine mögliche Dublette hinterlegt.');
+  const dup = await db.one(
+    `SELECT e.*, er.status AS ranking_status FROM entities e
+       LEFT JOIN entity_rankings er ON er.entity_id = e.id AND er.ranking_id = $2 WHERE e.id = $1`,
+    [dupId, sub.ranking_id]
+  );
+  await setStatus(sub.id, 'duplicate', { entity_id: dup.id, possible_duplicate_of: null });
+  await logAction(adminId, 'submission', sub.id, 'confirm_duplicate', { entity: dup.name });
+  if (sub.submitter_email) {
+    const ranking = await rankings.getRanking(sub.ranking_id);
+    const site = await sites.forRanking(ranking);
+    await mailer.send({
+      to: sub.submitter_email, template: 'duplicate', site, submissionId: sub.id,
+      data: { ranking, entityName: dup.name, link: dup.ranking_status === 'live' ? entityUrl(ranking, dup, site) : null },
+    });
+  }
+}
+
+// … oder „eigenes Objekt“: Dublettenprüfung überspringen und Auto-Prüfung fortsetzen
+async function rejectDuplicate(submissionId, adminId) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  if (!sub) throw new Error('Meldung nicht gefunden.');
+  await db.query(
+    `UPDATE submissions SET status = 'verified', entity_id = NULL, possible_duplicate_of = NULL, duplicate_check_done = true, updated_at = now() WHERE id = $1`,
+    [sub.id]
+  );
+  await appendLog(sub.id, 'Dublettenprüfung', true, 'Admin: eigenes Objekt – Prüfung wird fortgesetzt.');
+  await logAction(adminId, 'submission', sub.id, 'not_a_duplicate');
+  await enqueue('auto-check', { submissionId: sub.id });
+}
+
 async function hold(submissionId, adminId, note) {
   await db.query(`UPDATE submissions SET admin_note = $2, updated_at = now() WHERE id = $1`, [submissionId, note]);
   await logAction(adminId, 'submission', submissionId, 'hold', { note });
@@ -206,4 +241,6 @@ module.exports = {
   approve,
   reject,
   hold,
+  confirmDuplicate,
+  rejectDuplicate,
 };

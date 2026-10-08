@@ -45,23 +45,14 @@ async function run(submissionId) {
   const ranking = await rankings.getRanking(sub.ranking_id);
   const criteria = await rankings.getCriteria(ranking.id);
 
-  // 1. Dublettenprüfung
+  // 1. Dublettenprüfung: nur markieren, der Admin entscheidet (gleiche Domain ≠ gleiches Hotel, z. B. bei Ketten)
   let entity = sub.entity_id ? await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]) : null;
   if (!entity) {
-    const dup = await submissions.findDuplicate(ranking, sub);
+    const dup = sub.duplicate_check_done ? null : await submissions.findDuplicate(ranking, sub);
     if (dup && dup.ranking_status) {
-      await submissions.appendLog(sub.id, 'Dublettenprüfung', true, `Bereits vorhanden: ${dup.name} (${dup.ranking_status})`);
-      await submissions.setStatus(sub.id, 'duplicate', { entity_id: dup.id });
-      if (sub.submitter_email) {
-        const site = await sites.forRanking(ranking);
-        await mailer.send({
-          to: sub.submitter_email,
-          template: 'duplicate',
-          site,
-          submissionId: sub.id,
-          data: { ranking, entityName: dup.name, link: dup.ranking_status === 'live' ? submissions.entityUrl(ranking, dup, site) : null },
-        });
-      }
+      await submissions.appendLog(sub.id, 'Dublettenprüfung', false,
+        `Mögliche Dublette: ${dup.name} (${dup.city || ''}) – gleiche Website-Domain oder gleicher Name. Bitte im Admin entscheiden.`);
+      await submissions.setStatus(sub.id, 'admin_review', { possible_duplicate_of: dup.id });
       return;
     }
     if (dup) {

@@ -28,7 +28,7 @@
       <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>
       <td class="num"><% if (r.score === null || r.score === undefined) { %>–<% } else if (incomplete) { %><span class="muted" title="Nur wenige Werte bekannt – der Score ist noch nicht aussagekräftig"><%= r.score %></span><br><small class="muted">unvollständig</small><% } else { %><%= r.score %><% } %></td>
       <td class="num"><%= r.completeness === null || r.completeness === undefined ? '–' : Math.round(r.completeness) + ' %' %></td>
-      <td><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
+      <td><% if (r.possible_duplicate_name) { %><span class="badge warn">mögliche Dublette</span> <small><%= r.possible_duplicate_name %></small><% } %><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
   <% }) %>
   <% if (!rows.length) { %><tr><td colspan="7" class="muted">Keine Meldungen in diesem Status.</td></tr><% } %>

@@ -156,6 +156,7 @@ router.get('/', wrap(async (req, res) => {
   const rankingId = UUID_RE.test(req.query.ranking || '') ? req.query.ranking : null;
   const rows = await db.many(
     `SELECT s.*, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
+            (SELECT name FROM entities d WHERE d.id = s.possible_duplicate_of) AS possible_duplicate_name,
             COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
        FROM submissions s JOIN rankings r ON r.id = s.ranking_id
        LEFT JOIN entity_rankings er ON er.entity_id = s.entity_id AND er.ranking_id = s.ranking_id
@@ -190,6 +191,9 @@ async function loadDetail(id) {
   }
   const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, { formula: ranking.formula, labels: ranking.labels });
   const emails = await db.many('SELECT * FROM email_log WHERE submission_id = $1 ORDER BY created_at', [sub.id]);
+  // Mögliche Dublette (oder bereits als Dublette abgeschlossen): Vergleichsobjekt laden
+  const dupId = sub.possible_duplicate_of || (sub.status === 'duplicate' ? sub.entity_id : null);
+  const duplicateOf = dupId ? await db.one('SELECT id, name, city, country, website, slug FROM entities WHERE id = $1', [dupId]) : null;
   // Anfragen an den Betreiber mit Antworten
   let inquiryList = [];
   let unclear = [];
@@ -213,7 +217,7 @@ async function loadDetail(id) {
   const manualFeatures = entity ? await db.many('SELECT * FROM entity_features WHERE entity_id = $1', [entity.id]) : [];
   return {
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
-    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures,
+    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf,
   };
 }
 
@@ -383,6 +387,19 @@ router.post('/meldungen/:id/ablehnen', wrap(async (req, res) => {
   if (!reason) return res.redirect(`/admin/meldungen/${req.params.id}?fehler=Bitte+eine+Begr%C3%BCndung+angeben`);
   await submissions.reject(req.params.id, req.session.admin.id, reason);
   res.redirect(`/admin/meldungen/${req.params.id}?ok=Abgelehnt`);
+}));
+
+router.post('/meldungen/:id/dublette', wrap(async (req, res) => {
+  try {
+    if (req.body.decision === 'same') {
+      await submissions.confirmDuplicate(req.params.id, req.session.admin.id);
+      return res.redirect(`/admin/meldungen/${req.params.id}?ok=Als+Dublette+zusammengef%C3%BChrt`);
+    }
+    await submissions.rejectDuplicate(req.params.id, req.session.admin.id);
+    res.redirect(`/admin/meldungen/${req.params.id}?ok=${encodeURIComponent('Eigenes Objekt – Auto-Prüfung läuft')}`);
+  } catch (err) {
+    res.redirect(`/admin/meldungen/${req.params.id}?fehler=${encodeURIComponent(err.message)}`);
+  }
 }));
 
 router.post('/meldungen/:id/zurueckstellen', wrap(async (req, res) => {
