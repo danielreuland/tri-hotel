@@ -15,7 +15,7 @@
 <h1><%= sub.entity_name %></h1>
 <p>
   <span class="badge accent"><%= STATUS_LABELS[sub.status] %></span>
-  <span class="muted"><%= ranking.name %> · eingegangen <%= formatDate(sub.created_at) %><%= sub.created_by_admin ? ' · vom Admin angelegt' : '' %></span>
+  <span class="muted"><%= ranking.name %> · eingegangen <%= formatDate(sub.created_at) %><%= sub.created_by_admin ? ' · angelegt von ' + (sub.created_by_email || 'Admin') : '' %></span>
   <% if (entity && er && er.status === 'live') { %> · <a href="<%= ranking.is_default ? '/' + ranking.entity_type + '/' + entity.slug : '/rankings/' + ranking.slug + '/' + entity.slug %>" target="_blank">Öffentliche Seite ↗</a><% } %>
 </p>
 
@@ -38,7 +38,7 @@
       <div class="form-row">
         <div><strong>Ort:</strong> <%= sub.city %>, <%= sub.country %></div>
         <div><strong>Website:</strong> <a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a></div>
-        <div><strong>Melder:</strong> <%= sub.submitter_email || '–' %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
+        <div><strong><%= sub.created_by_admin ? 'Angelegt von:' : 'Eingereicht von:' %></strong> <%= sub.created_by_admin ? (sub.created_by_email || 'Admin') + ' (Admin)' : (sub.submitter_email || '–') %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
         <div><strong>Bestätigt:</strong> <%= sub.verified_at ? formatDate(sub.verified_at) : 'nein' %></div>
       </div>
       <% var hintKeys = Object.keys(sub.hints || {}); if (hintKeys.length) { %>

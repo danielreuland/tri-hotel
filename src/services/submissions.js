@@ -42,16 +42,16 @@ async function create(ranking, fields, { ip, adminId } = {}) {
   const row = await db.one(
     `INSERT INTO submissions (ranking_id, entity_name, city, country, website, hints, notes,
         submitter_email, submitter_role, created_by_admin, verify_token_hash, token_expires_at,
-        verified_at, status, ip_hash)
+        verified_at, status, ip_hash, created_by)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
         CASE WHEN $11::text IS NULL THEN NULL ELSE now() + make_interval(hours => $12) END,
-        CASE WHEN $10 THEN now() END, $13, $14)
+        CASE WHEN $10 THEN now() END, $13, $14, $15)
      RETURNING *`,
     [
       ranking.id, fields.name, fields.city, fields.country, fields.website,
       JSON.stringify(fields.hints || {}), fields.notes || null,
       fields.email || null, fields.role || null, byAdmin, tok ? tok.hash : null, config.verifyTokenHours,
-      byAdmin ? 'verified' : 'received', ip ? ipHash(ip) : null,
+      byAdmin ? 'verified' : 'received', ip ? ipHash(ip) : null, adminId || null,
     ]
   );
   if (byAdmin) {

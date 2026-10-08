@@ -22,7 +22,7 @@
   <% rows.forEach(function (r) { %>
     <tr>
       <td><%= formatDate(r.created_at) %></td>
-      <td><a href="/admin/meldungen/<%= r.id %>"><%= r.entity_name %></a><br><small><%= r.city %>, <%= r.country %><%= r.created_by_admin ? ' · Admin' : '' %></small></td>
+      <td><a href="/admin/meldungen/<%= r.id %>"><%= r.entity_name %></a><br><small><%= r.city %>, <%= r.country %> · <%= r.created_by_admin ? 'angelegt von ' + (r.created_by_email || 'Admin') : (r.submitter_email ? 'eingereicht von ' + r.submitter_email : 'eingereicht') %></small></td>
       <td><small><%= r.ranking_name %></small></td>
       <td><span class="badge"><%= STATUS_LABELS[r.status] %></span></td>
       <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>

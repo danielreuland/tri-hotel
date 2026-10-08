@@ -157,6 +157,7 @@ router.get('/', wrap(async (req, res) => {
   const rows = await db.many(
     `SELECT s.*, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
             (SELECT name FROM entities d WHERE d.id = s.possible_duplicate_of) AS possible_duplicate_name,
+            (SELECT email FROM admin_users u WHERE u.id = s.created_by) AS created_by_email,
             COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
        FROM submissions s JOIN rankings r ON r.id = s.ranking_id
        LEFT JOIN entity_rankings er ON er.entity_id = s.entity_id AND er.ranking_id = s.ranking_id
@@ -173,7 +174,9 @@ router.get('/', wrap(async (req, res) => {
 // ---------- Detailansicht ----------
 
 async function loadDetail(id) {
-  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [id]);
+  const sub = await db.one(
+    `SELECT s.*, u.email AS created_by_email FROM submissions s LEFT JOIN admin_users u ON u.id = s.created_by WHERE s.id = $1`, [id]
+  );
   if (!sub) return null;
   const ranking = await rankings.getRanking(sub.ranking_id);
   const [categories, criteria] = await Promise.all([rankings.getCategories(ranking.id), rankings.getCriteria(ranking.id)]);
