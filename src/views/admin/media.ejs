@@ -1,0 +1,69 @@
+<%- include('../partials/admin-head') %>
+<h1>Medien</h1>
+<p class="muted">Stimmungsbilder für allgemeine Bereiche: Startseite, Regionen, Abschluss-Band. Nur generische Motive (Pool, Radstraße, Küste, Laufstrecke) – nie als Foto eines bestimmten <%= 'Hotels' %> verwenden. Bilder werden lokal gespeichert und verkleinert; der Urhebervermerk erscheint immer auf der Seite.</p>
+<% if (flash) { %><p class="flash"><%= flash %></p><% } %>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+
+<% if (sites.length > 1) { %>
+  <form method="get" class="filters"><label for="site">Site</label>
+    <select id="site" name="site" data-autosubmit><% sites.forEach(function (s) { %><option value="<%= s.id %>" <%= s.id === siteId ? 'selected' : '' %>><%= s.name %></option><% }) %></select>
+  </form>
+<% } %>
+
+<%
+  var FOCAL_LABELS = { center: 'Mitte', top: 'oben', bottom: 'unten', left: 'links', right: 'rechts' };
+  var FOCAL_VALUES = { center: '50% 50%', top: '50% 25%', bottom: '50% 75%', left: '25% 50%', right: '75% 50%' };
+  var placementOptions = function (current) {
+    var out = '<option value="">– nur Bibliothek –</option>';
+    Object.keys(SLOTS).forEach(function (k) { out += '<option value="slot:' + k + '"' + (current === 'slot:' + k ? ' selected' : '') + '>' + SLOTS[k] + '</option>'; });
+    regions.forEach(function (r) { out += '<option value="region:' + r.id + '"' + (current === 'region:' + r.id ? ' selected' : '') + '>Region: ' + r.name.replace(/</g, '&lt;') + '</option>'; });
+    return out;
+  };
+%>
+
+<% if (!rows.length) { %>
+  <p class="card">Noch keine Bilder. Lade unten das erste hoch.</p>
+<% } else { %>
+  <div class="media-grid">
+    <% rows.forEach(function (m) { var cur = m.slot ? 'slot:' + m.slot : (m.region_id ? 'region:' + m.region_id : ''); var fid = 'm-' + m.id; %>
+      <div class="card media-card">
+        <img <%- imgAttrs(m) %> alt="<%= m.alt %>" loading="lazy" sizes="320px">
+        <p style="margin:8px 0 4px"><strong><%= m.slot ? SLOTS[m.slot] : (m.region_name ? 'Region: ' + m.region_name : 'nur Bibliothek') %></strong></p>
+        <small class="muted"><%= m.credit %> · <%= m.license %><% if (m.source_url) { %> · <a href="<%= m.source_url %>" rel="noopener" target="_blank">Quelle</a><% } %><br><%= m.width %>×<%= m.height %> px</small>
+        <form id="<%= fid %>" method="post" action="/admin/medien/<%= m.id %>">
+          <label>Platz</label><select name="placement"><%- placementOptions(cur) %></select>
+          <label>Bildausschnitt</label>
+          <select name="focal"><% Object.keys(FOCAL_LABELS).forEach(function (k) { %><option value="<%= k %>" <%= FOCAL_VALUES[k] === m.focal ? 'selected' : '' %>><%= FOCAL_LABELS[k] %></option><% }) %></select>
+          <label>Bildbeschreibung</label><input name="alt" type="text" value="<%= m.alt %>">
+        </form>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn small" type="submit" form="<%= fid %>">Speichern</button>
+          <form method="post" action="/admin/medien/<%= m.id %>/loeschen" onsubmit="return confirm('Bild endgültig löschen?')"><button class="btn small secondary" type="submit">Löschen</button></form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<h2>Bild hochladen</h2>
+<form method="post" action="/admin/medien" enctype="multipart/form-data" class="card">
+  <input type="hidden" name="site_id" value="<%= siteId %>">
+  <div class="form-row">
+    <div><label>Bild * <small class="muted">JPG/PNG/WebP, querformatig, mind. 1920 px breit</small></label><input name="file" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+    <div><label>Platz</label><select name="placement"><%- placementOptions(form.placement || '') %></select></div>
+    <div><label>Bildausschnitt</label><select name="focal"><% Object.keys(FOCAL_LABELS).forEach(function (k) { %><option value="<%= k %>" <%= form.focal === k ? 'selected' : '' %>><%= FOCAL_LABELS[k] %></option><% }) %></select></div>
+  </div>
+  <label>Bildbeschreibung * <small class="muted">was ist zu sehen (für Screenreader und Google)</small></label>
+  <input name="alt" type="text" required value="<%= form.alt || '' %>" placeholder="z. B. Rennradfahrer auf einer Küstenstraße im Morgenlicht">
+  <div class="form-row">
+    <div><label>Anbieter *</label><input name="provider" type="text" required value="<%= form.provider || '' %>" placeholder="Unsplash, Pexels, eigenes Foto"></div>
+    <div><label>Lizenz *</label><input name="license" type="text" required value="<%= form.license || '' %>" placeholder="Unsplash License"></div>
+    <div><label>Urhebervermerk *</label><input name="credit" type="text" required value="<%= form.credit || '' %>" placeholder="Foto: Vorname Nachname / Unsplash"></div>
+    <div><label>Link zum Foto (Nachweis)</label><input name="source_url" type="url" value="<%= form.source_url || '' %>" placeholder="https://unsplash.com/photos/…"></div>
+  </div>
+  <label class="inline"><input type="checkbox" name="generic" <%= form.generic === 'on' ? 'checked' : '' %>> Generisches Motiv, kommerzielle Nutzung laut Lizenz erlaubt, kein bestimmtes Hotel und keine Marke erkennbar.</label>
+  <p style="margin-bottom:0"><button class="btn" type="submit">Hochladen</button></p>
+</form>
+
+<% locals.scripts = ['/static/js/admin.js'] %>
+<%- include('../partials/admin-foot') %>

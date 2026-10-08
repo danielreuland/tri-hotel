@@ -57,6 +57,7 @@ app.locals.plausibleSrc = config.plausibleSrc;
 // Cache-Busting: neue Kennung je Start (Deploy), damit Browser geänderte CSS/JS sofort laden
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
+app.locals.imgAttrs = require('./services/media').imgAttrs;
 
 // Vorab-Phase: nichts indexieren
 if (config.noindex) {
@@ -75,6 +76,7 @@ app.use('/admin/rankings', require('./routes/admin-rankings'));
 app.use('/admin/sites', require('./routes/admin-sites'));
 app.use('/admin/leistungen', require('./routes/admin-features'));
 app.use('/admin/regionen', require('./routes/admin-regions'));
+app.use('/admin/medien', require('./routes/admin-media'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/inquiry'));
 app.use('/', require('./routes/seo'));

@@ -8,7 +8,12 @@
   var checkedCount = ranked.length + incomplete.length;
 %>
 
-<section class="hero-band">
+<% var heroImg = siteMedia.slots.home_hero, ctaImg = siteMedia.slots.cta_band; %>
+<section class="hero-band<%= heroImg ? ' has-photo' : '' %>">
+  <% if (heroImg) { %>
+    <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
+    <small class="photo-credit"><%= heroImg.credit %></small>
+  <% } %>
   <div class="wrap hero-grid<%= topCard ? '' : ' single' %>">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
@@ -151,8 +156,20 @@
 <section class="section">
   <div class="wrap">
     <div class="section-head"><div><h2>Beliebte Regionen</h2><p>Die besten <%= ranking.entity_label_pl %> je Ziel, mit Klima und Ausstattung im Überblick.</p></div></div>
+    <% var withPhoto = areaList.filter(function (r) { return siteMedia.regions[r.region.id] }); %>
+    <% if (withPhoto.length) { %>
+      <div class="region-cards">
+        <% withPhoto.forEach(function (r) { var m = siteMedia.regions[r.region.id]; %>
+          <a class="region-card" href="<%= base %>/region/<%= r.slug %>">
+            <img <%- imgAttrs(m) %> sizes="(max-width: 700px) 100vw, 33vw" alt="" loading="lazy">
+            <span class="label"><strong><%= r.name %></strong><% if (r.count) { %><small><%= r.count %> <%= r.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl %></small><% } %></span>
+            <small class="photo-credit"><%= m.credit %></small>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
     <div class="chips">
-      <% areaList.forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
+      <% areaList.filter(function (r) { return !siteMedia.regions[r.region.id] }).forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
       <% areaOverview.countries.forEach(function (c) { %><a class="chip" href="<%= base %>/land/<%= c.slug %>"><%= c.name %> <span class="muted">(<%= c.count %>)</span></a><% }) %>
     </div>
   </div>
@@ -180,7 +197,11 @@
 </section>
 
 <% if (isHostRanking) { %>
-  <section class="cta-band">
+  <section class="cta-band<%= ctaImg ? ' has-photo' : '' %>">
+    <% if (ctaImg) { %>
+      <img class="band-photo" <%- imgAttrs(ctaImg) %> sizes="100vw" alt="" loading="lazy">
+      <small class="photo-credit"><%= ctaImg.credit %></small>
+    <% } %>
     <div class="wrap">
       <div>
         <h2><%= content.cta_title || (ranking.entity_label_sg + ' hinzufügen') %></h2>

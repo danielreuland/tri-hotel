@@ -1,5 +1,12 @@
 <%- include('../partials/head') %>
 
+<% var pageImg = siteMedia.slots.submit; %>
+<% if (pageImg) { %>
+  <figure class="page-photo">
+    <img <%- imgAttrs(pageImg) %> sizes="(max-width: 1200px) 100vw, 1200px" alt="<%= pageImg.alt %>" fetchpriority="high">
+    <figcaption class="photo-credit"><%= pageImg.credit %></figcaption>
+  </figure>
+<% } %>
 <h1><%= ranking.entity_label_sg %> hinzufügen</h1>
 <p class="lead">Du kennst ein <%= ranking.entity_label_sg %>, das ins Ranking gehört? Wir prüfen jeden Vorschlag, bevor er online geht. Du bekommst eine Mail mit Bestätigungslink.</p>
 

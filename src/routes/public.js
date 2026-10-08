@@ -9,6 +9,7 @@ const features = require('../services/features');
 const featureLib = require('../lib/features');
 const areas = require('../services/areas');
 const seo = require('../lib/seo');
+const media = require('../services/media');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -276,6 +277,19 @@ router.get('/media/:id', wrap(async (req, res, next) => {
   const file = path.join(config.uploadDir, path.basename(img.storage_path));
   if (!fs.existsSync(file)) return next();
   res.sendFile(file);
+}));
+
+// Stimmungsbilder der Medienbibliothek (WebP-Varianten), z. B. /bild/<uuid>-1280.webp
+router.get('/bild/:file', wrap(async (req, res, next) => {
+  const parts = /^([0-9a-f-]{36})-(\d{2,4})\.webp$/.exec(req.params.file);
+  if (!parts) return next();
+  const m = await db.one('SELECT id, variants FROM site_media WHERE id = $1', [parts[1]]);
+  const w = Number(parts[2]);
+  if (!m || !m.variants.includes(w)) return next();
+  const file = media.fileFor(m.id, w);
+  if (!fs.existsSync(file)) return next();
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.type('webp').sendFile(file);
 }));
 
 router.get('/rankings/:rslug', wrap(async (req, res, next) => {

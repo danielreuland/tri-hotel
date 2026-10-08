@@ -1,5 +1,12 @@
 <%- include('../partials/head') %>
 
+<% var pageImg = siteMedia.slots.method; %>
+<% if (pageImg) { %>
+  <figure class="page-photo">
+    <img <%- imgAttrs(pageImg) %> sizes="(max-width: 1200px) 100vw, 1200px" alt="<%= pageImg.alt %>" fetchpriority="high">
+    <figcaption class="photo-credit"><%= pageImg.credit %></figcaption>
+  </figure>
+<% } %>
 <h1>So funktioniert der <%= ranking.score_name %></h1>
 <p class="lead">Der <%= ranking.score_name %> (0–100) setzt sich aus einem Fakten-Score und – sobald Bewertungen vorliegen – einem Athleten-Score zusammen. Formel und Kriterien sind vollständig öffentlich.</p>
 

@@ -8,6 +8,13 @@
   <% crumbs.forEach(function (c, i) { %><% if (i < crumbs.length - 1) { %><a href="<%= c.url.replace(siteUrl, '') || '/' %>"><%= c.name %></a> › <% } else { %><span><%= c.name %></span><% } %><% }) %>
 </nav>
 
+<% var pageImg = area.region && siteMedia.regions[area.region.id]; %>
+<% if (pageImg) { %>
+  <figure class="page-photo">
+    <img <%- imgAttrs(pageImg) %> sizes="(max-width: 1200px) 100vw, 1200px" alt="<%= pageImg.alt %>" fetchpriority="high">
+    <figcaption class="photo-credit"><%= pageImg.credit %></figcaption>
+  </figure>
+<% } %>
 <section class="area-hero">
   <p class="eyebrow"><%= area.type === 'region' ? 'Region' : 'Land' %> · <%= ranking.score_name %>-Ranking</p>
   <h1><%= heading %></h1>
