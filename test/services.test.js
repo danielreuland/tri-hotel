@@ -73,6 +73,14 @@ test('util: slugify, websiteKey, normalizeUrl', () => {
   assert.equal(normalizeUrl('javascript:alert(1)'), null);
 });
 
+test('util.normalizeUrl entfernt Anzeigen- und Kampagnenparameter, behält echte', () => {
+  const ad = 'https://www.zafirohotels.com/de/zafiro-tropic/?utm_source=google&utm_medium=cpc&tc_alt=1&n_okw=x&gad_source=1&gad_campaignid=2&gbraid=a&gclid=b';
+  assert.equal(normalizeUrl(ad), 'https://www.zafirohotels.com/de/zafiro-tropic/');
+  assert.equal(normalizeUrl('https://hotel.example/?lang=de&utm_source=x&fbclid=y#pool'), 'https://hotel.example/?lang=de#pool');
+  assert.equal(normalizeUrl('https://hotel.example/zimmer?id=4'), 'https://hotel.example/zimmer?id=4');
+  assert.equal(normalizeUrl('https://partner.example/h/1?aid=99&utm_source=th', { keepTracking: true }), 'https://partner.example/h/1?aid=99&utm_source=th');
+});
+
 test('extractor.scoreLink: Hotel-Unterseiten und Ausstattung vor Kette, Rechtliches nie', () => {
   const hints = extractor.hintsFrom(['Radgarage', 'Sauna / Spa']);
   const s = (path, text) => extractor.scoreLink(new URL(`https://kette.example${path}`), text, '/de/zafiro-tropic/', hints);

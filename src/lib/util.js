@@ -35,13 +35,25 @@ function websiteKey(url) {
   }
 }
 
-function normalizeUrl(url) {
+// Kampagnen- und Klick-Kennungen (Google/Meta/Microsoft-Anzeigen, Newsletter) – gehören nicht in unsere Links
+const TRACKING_PARAM = /^(utm_.*|gad_.*|gclid|gclsrc|gbraid|wbraid|dclid|fbclid|msclkid|yclid|ttclid|igshid|twclid|li_fat_id|_ga|_gl|mc_cid|mc_eid|n_okw|tc_alt)$/i;
+
+function stripTracking(search) {
+  const kept = String(search || '').replace(/^\?/, '').split('&')
+    .filter((p) => p && !TRACKING_PARAM.test(decodeURIComponent(p.split('=')[0])));
+  return kept.length ? `?${kept.join('&')}` : '';
+}
+
+// Website-Adresse prüfen und vereinheitlichen. Trackingparameter werden entfernt –
+// außer bei Buchungslinks (keepTracking), deren Parameter zur Partner-Zuordnung gehören können.
+function normalizeUrl(url, { keepTracking = false } = {}) {
   const raw = String(url || '').trim();
   if (!raw) return null;
   try {
     const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
     if (!['http:', 'https:'].includes(u.protocol)) return null;
-    return u.toString();
+    if (keepTracking || !u.search) return u.toString();
+    return `${u.origin}${u.pathname}${stripTracking(u.search)}${u.hash}`;
   } catch {
     return null;
   }

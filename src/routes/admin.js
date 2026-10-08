@@ -359,7 +359,7 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
     website: normalizeUrl(b.website),
     lat: num(b.lat),
     lng: num(b.lng),
-    booking_url: normalizeUrl(b.booking_url),
+    booking_url: normalizeUrl(b.booking_url, { keepTracking: true }),
     booking_provider: String(b.booking_provider || '').trim() || null,
     contact_email: String(b.contact_email || '').trim().toLowerCase() || null,
   };
