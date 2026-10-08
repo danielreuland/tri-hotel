@@ -140,6 +140,7 @@ async function run(submissionId) {
   // 5. OSM-Vorschläge nur für Kriterien ohne Wert aus der Website
   if (entity.lat !== null) {
     await step(sub.id, 'Umgebung (OpenStreetMap)', async () => {
+      // Hinweis: geo.nearest versucht bei Überlastung automatisch weitere Overpass-Server
       const existing = new Set((await rankings.getFacts(entity.id, ranking.id)).map((f) => f.criterion_id));
       const facts = await geo.suggestFacts({ lat: Number(entity.lat), lng: Number(entity.lng) }, criteria.filter((c) => !existing.has(c.id)));
       const n = await insertAutoFacts(entity.id, facts);

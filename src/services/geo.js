@@ -4,7 +4,35 @@
 const config = require('../config');
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-const OVERPASS = 'https://overpass-api.de/api/interpreter';
+// Öffentliche Overpass-Server; bei Überlastung (429/504/Timeout) wird der nächste versucht
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function overpass(query) {
+  let lastError = null;
+  for (let attempt = 0; attempt < OVERPASS.length * 2; attempt++) {
+    const url = OVERPASS[attempt % OVERPASS.length];
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'User-Agent': config.userAgent, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(45000),
+      });
+      if (res.ok) return res.json();
+      lastError = new Error(`Overpass ${res.status} (${new URL(url).hostname})`);
+      if (![429, 502, 503, 504].includes(res.status)) break;
+    } catch (err) {
+      lastError = new Error(`Overpass nicht erreichbar (${new URL(url).hostname}): ${err.message}`);
+    }
+    await sleep(2000 * (attempt + 1));
+  }
+  throw lastError;
+}
 // Erlaubt nur Tag-Filter wie ["key"="value"], ["key"!~"a|b"], ["key"]
 const SELECTOR_RE = /^(\["[\w:]+"((=|!=|~|!~)"[^"\]]*")?\])+$/;
 
@@ -36,14 +64,7 @@ async function nearest(point, selectors, radiusKm) {
   if (!valid.length) return null;
   const m = Math.round(radiusKm * 1000);
   const body = `[out:json][timeout:25];(${valid.map((s) => `nwr${s}(around:${m},${point.lat},${point.lng});`).join('')});out center 100;`;
-  const res = await fetch(OVERPASS, {
-    method: 'POST',
-    headers: { 'User-Agent': config.userAgent, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(body)}`,
-    signal: AbortSignal.timeout(40000),
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const { elements = [] } = await res.json();
+  const { elements = [] } = await overpass(body);
   let best = null;
   for (const el of elements) {
     const lat = el.lat ?? el.center?.lat;
