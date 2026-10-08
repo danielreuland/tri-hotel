@@ -155,7 +155,8 @@ router.get('/', wrap(async (req, res) => {
   const status = STATUS_LABELS[req.query.status] ? req.query.status : req.query.status === 'alle' ? null : 'admin_review';
   const rankingId = UUID_RE.test(req.query.ranking || '') ? req.query.ranking : null;
   const rows = await db.many(
-    `SELECT s.*, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug
+    `SELECT s.*, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
+            COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
        FROM submissions s JOIN rankings r ON r.id = s.ranking_id
        LEFT JOIN entity_rankings er ON er.entity_id = s.entity_id AND er.ranking_id = s.ranking_id
        LEFT JOIN entities e ON e.id = s.entity_id

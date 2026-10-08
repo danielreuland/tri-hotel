@@ -1,12 +1,13 @@
 <%- include('../partials/admin-head') %>
 <h1>Warteschlange</h1>
+<% var countOf = function (s) { var c = counts.find(function (x) { return x.status === s }); return c ? c.n : 0 };
+   var total = counts.reduce(function (sum, x) { return sum + x.n }, 0);
+   var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' })); %>
 <div class="pill-row">
-  <a class="badge <%= status === 'admin_review' ? 'accent' : '' %>" href="/admin?status=admin_review">in Admin-Prüfung</a>
-  <% Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' }).forEach(function (s) { %>
-    <a class="badge <%= status === s ? 'accent' : '' %>" href="/admin?status=<%= s %><%= rankingId ? '&ranking=' + rankingId : '' %>"><%= STATUS_LABELS[s] %>
-      <% var c = counts.find(function (x) { return x.status === s }) %>(<%= c ? c.n : 0 %>)</a>
+  <% order.forEach(function (s) { %>
+    <a class="badge <%= status === s ? 'accent' : '' %>" href="/admin?status=<%= s %><%= rankingId ? '&ranking=' + rankingId : '' %>"><%= STATUS_LABELS[s] %> (<%= countOf(s) %>)</a>
   <% }) %>
-  <a class="badge <%= status === null ? 'accent' : '' %>" href="/admin?status=alle">alle</a>
+  <a class="badge <%= status === null ? 'accent' : '' %>" href="/admin?status=alle<%= rankingId ? '&ranking=' + rankingId : '' %>">alle (<%= total %>)</a>
 </div>
 <form class="filters" method="get">
   <input type="hidden" name="status" value="<%= status || 'alle' %>">
@@ -24,7 +25,8 @@
       <td><a href="/admin/meldungen/<%= r.id %>"><%= r.entity_name %></a><br><small><%= r.city %>, <%= r.country %><%= r.created_by_admin ? ' · Admin' : '' %></small></td>
       <td><small><%= r.ranking_name %></small></td>
       <td><span class="badge"><%= STATUS_LABELS[r.status] %></span></td>
-      <td class="num"><%= r.score === null || r.score === undefined ? '–' : r.score %></td>
+      <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>
+      <td class="num"><% if (r.score === null || r.score === undefined) { %>–<% } else if (incomplete) { %><span class="muted" title="Nur wenige Werte bekannt – der Score ist noch nicht aussagekräftig"><%= r.score %></span><br><small class="muted">unvollständig</small><% } else { %><%= r.score %><% } %></td>
       <td class="num"><%= r.completeness === null || r.completeness === undefined ? '–' : Math.round(r.completeness) + ' %' %></td>
       <td><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
