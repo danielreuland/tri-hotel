@@ -196,7 +196,7 @@
       <form method="post" action="/admin/meldungen/<%= sub.id %>/text/erzeugen" style="margin-bottom:12px"
             <% if (text) { %>onsubmit="return confirm('Den bisherigen Text durch einen neuen Entwurf ersetzen?')"<% } %>>
         <button class="btn small secondary" type="submit"><%= text ? 'Neu erzeugen' : 'Entwurf erzeugen' %></button>
-        <small class="muted">ca. 1 Cent</small>
+        <small class="muted">ca. 3 Cent</small>
       </form>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/text">
         <label for="t-summary">Kurzbeschreibung <small class="muted">ein Satz, max. <%= SUMMARY_MAX %> Zeichen</small></label>

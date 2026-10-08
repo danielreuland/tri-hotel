@@ -126,7 +126,9 @@ Regeln:
 - Sachlich und neutral, Du-Form. Keine Werbesprache und keine Superlative („Paradies“, „perfekt“, „traumhaft“), keine Preise, keine Personen, keine Buchungsaufforderung, keine Links.
 - Nenne keine ${r.score_name}-Zahl und keine Punktzahlen (die stehen daneben); die Stufe („${input.score.label || ''}“) darfst du sinngemäß einordnen.
 - Stärken klar benennen, Schwächen und wichtige unbekannte Punkte ehrlich nennen („noch nicht bestätigt“).
-- Insgesamt 150–250 Wörter.
+- Keine Aussagen über unsere Prüfung oder Datenqualität („alle Angaben geprüft“, „vollständig“) – das zeigt die Seite selbst.
+- Nicht jede Ausstattung aufzählen: die 2–4 wichtigsten je Abschnitt, Details stehen in den Tabellen darunter.
+- Insgesamt 150–220 Wörter.
 
 Ausgabe:
 - summary: genau ein Satz, höchstens 155 Zeichen, mit Name, Ort und der wichtigsten Stärke für die Zielgruppe.
