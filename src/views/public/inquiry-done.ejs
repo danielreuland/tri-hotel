@@ -1,0 +1,10 @@
+<%- include('../partials/head') %>
+<% var de = lang === 'de'; %>
+<h1><%= de ? 'Vielen Dank!' : 'Thank you!' %></h1>
+<div class="card">
+  <p style="margin-top:0"><%= de
+    ? 'Ihre Angaben sind bei uns eingegangen' + (result.photos ? ', ebenso ' + result.photos + ' Foto(s)' : '') + '. Wir prüfen sie kurz und aktualisieren dann Ihr Profil.'
+    : 'We have received your answers' + (result.photos ? ' and ' + result.photos + ' photo(s)' : '') + '. We will review them briefly and then update your profile.' %></p>
+  <p class="muted" style="margin-bottom:0"><%= de ? 'Rückfragen? Antworten Sie einfach auf unsere Mail.' : 'Questions? Simply reply to our email.' %></p>
+</div>
+<%- include('../partials/foot') %>

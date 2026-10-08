@@ -1,0 +1,144 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mock-ups tri-hotel.de</title>
+<style>/* tri-hotel.de – Design angelehnt an triprep.de (dunkel, Türkis).
+   Systemschriften statt Google Fonts: keine Datenübertragung an Dritte. */
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1f2630;
+  --border: #2d3540;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #0dcfbd;
+  --accent-ink: #04211e;
+  --good: #3fb950;
+  --ok: #d29922;
+  --bad: #f85149;
+  --radius: 10px;
+  --head: "Bebas Neue", "Oswald", "Arial Narrow", Impact, system-ui, sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--body); }
+a { color: var(--accent); }
+img { max-width: 100%; height: auto; }
+h1, h2, h3 { font-family: var(--head); letter-spacing: .02em; line-height: 1.1; font-weight: 700; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); margin: .2em 0 .4em; }
+h2 { font-size: 1.6rem; margin: 1.6em 0 .6em; }
+h3 { font-size: 1.2rem; margin: 1.2em 0 .4em; }
+small, .muted { color: var(--muted); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+.site-header { border-bottom: 1px solid var(--border); background: var(--surface); }
+.site-header .wrap { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; min-height: 60px; }
+.logo { font-family: var(--head); font-size: 1.7rem; color: var(--text); text-decoration: none; letter-spacing: .04em; }
+.logo span { color: var(--accent); }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.site-header nav a { color: var(--text); text-decoration: none; font-weight: 600; }
+.site-header nav a:hover { color: var(--accent); }
+main { padding: 24px 0 56px; }
+.site-footer { border-top: 1px solid var(--border); padding: 24px 0; color: var(--muted); font-size: .9rem; }
+.site-footer a { color: var(--muted); margin-right: 16px; }
+
+.btn { display: inline-block; border: 0; border-radius: 999px; padding: 10px 20px; font: 700 1rem var(--body);
+  background: var(--accent); color: var(--accent-ink); text-decoration: none; cursor: pointer; }
+.btn:hover { filter: brightness(1.1); }
+.btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--bad); color: #fff; }
+.btn.small { padding: 6px 12px; font-size: .85rem; }
+.btn:disabled { opacity: .35; cursor: not-allowed; filter: none; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+.hero { padding: 24px 0 8px; }
+.hero p.lead { font-size: 1.15rem; max-width: 720px; }
+.steps { counter-reset: s; list-style: none; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.steps li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.steps li::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 800; margin-right: 8px; }
+
+.score { display: inline-grid; place-items: center; min-width: 64px; height: 64px; padding: 0 8px; border-radius: 14px;
+  font: 700 2rem var(--head); background: var(--surface-2); border: 2px solid var(--accent); color: var(--accent); }
+.score.big { min-width: 110px; height: 110px; font-size: 3.6rem; }
+.score.none { border-color: var(--border); color: var(--muted); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+.badge.accent { color: var(--accent); border-color: var(--accent); }
+.badge.warn { color: var(--ok); border-color: var(--ok); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
+.badge.good { color: var(--good); border-color: var(--good); }
+
+.rank-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.rank-item { display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px; text-decoration: none; color: var(--text); }
+.rank-item:hover { border-color: var(--accent); }
+.rank-item .pos { font: 700 1.4rem var(--head); color: var(--muted); width: 28px; text-align: right; }
+.rank-item .info { flex: 1; min-width: 0; }
+.rank-item .name { font-weight: 700; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 18px; }
+select, input[type=text], input[type=email], input[type=url], input[type=number], input[type=password], input[type=date], input[type=file], textarea {
+  width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 11px; font: inherit; }
+.filters select { width: auto; }
+textarea { min-height: 90px; }
+textarea.code { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 180px; }
+label { display: block; font-weight: 600; margin: 12px 0 4px; }
+label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+label.inline input { width: auto; margin-top: 4px; }
+.form-row { display: grid; gap: 0 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.errors { background: rgba(248, 81, 73, .1); border: 1px solid var(--bad); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
+.flash { background: rgba(13, 207, 189, .1); border: 1px solid var(--accent); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+.table-scroll { overflow-x: auto; }
+.num { text-align: right; white-space: nowrap; }
+
+.facts-cat { margin-bottom: 18px; }
+.facts-cat h3 { display: flex; justify-content: space-between; gap: 8px; }
+.fact { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.fact .src { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
+.fact .val.unknown { color: var(--muted); font-style: italic; }
+
+.ad { border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px; }
+.ad .ad-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.map-box { height: 280px; border-radius: var(--radius); background: var(--surface-2); display: grid; place-items: center; text-align: center; padding: 16px; }
+.map-box.loaded { display: block; padding: 0; }
+.climate td, .climate th { text-align: center; padding: 6px 4px; font-size: .85rem; }
+.climate .sel { background: rgba(13, 207, 189, .15); }
+figure { margin: 0; }
+figcaption { font-size: .78rem; color: var(--muted); }
+
+/* Admin */
+.admin-nav { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.admin-detail { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+.admin-detail aside { position: sticky; top: 12px; }
+.crit-row td { font-size: .9rem; }
+.crit-row td select, .crit-row td input { padding: 5px 7px; font-size: .9rem; }
+.crit-row .pts { font-weight: 700; white-space: nowrap; }
+.crit-row.ko { background: rgba(248, 81, 73, .08); }
+.crit-row.changed { background: rgba(13, 207, 189, .07); }
+.log-list { list-style: none; padding: 0; margin: 0; font-size: .85rem; }
+.log-list li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 16px; }
+.pill-row a { text-decoration: none; }
+details summary { cursor: pointer; font-weight: 600; }
+pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin: 0; }
+
+@media (max-width: 860px) {
+  .admin-detail { grid-template-columns: 1fr; }
+  .admin-detail aside { position: static; }
+}
+</style></head><body><main><div class="wrap"><h1>tri-hotel.de – Mock-ups</h1>
+<p class="muted">Gerendert aus den echten Vorlagen des Entwurfs (src/views) mit Beispieldaten. Hotels und Zahlen sind erfunden; das Kriterienset entspricht dem Seed (30 Kriterien, 106 Punkte).</p>
+<div class="grid grid-2"><div class="card"><h3>Öffentlich</h3><ul><li><a href="startseite.html">Startseite</a></li><li><a href="hotelseite.html">Hotelseite</a></li><li><a href="triscore-methodik.html">TriScore-Methodik</a></li><li><a href="hotel-melden.html">Hotel melden</a></li><li><a href="danke.html">Danke-Seite</a></li></ul></div>
+<div class="card"><h3>Admin</h3><ul><li><a href="admin-warteschlange.html">Admin: Warteschlange</a></li><li><a href="admin-pruefung.html">Admin: Prüfansicht</a></li><li><a href="admin-rankings.html">Admin: Rankings</a></li><li><a href="admin-ranking-bearbeiten.html">Admin: Ranking bearbeiten</a></li></ul></div>
+<div class="card"><h3>Mails</h3><ul><li><a href="mail-bestaetigung.html">Mail: Bestätigungslink</a></li><li><a href="mail-online.html">Mail: Seite ist online</a></li></ul></div></div>
+</div></main></body></html>

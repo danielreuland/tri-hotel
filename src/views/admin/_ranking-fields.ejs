@@ -1,0 +1,32 @@
+<div class="form-row">
+  <div><label>Site *</label><select name="site_id" required><% sites.forEach(function (st) { %><option value="<%= st.id %>" <%= r.site_id === st.id ? 'selected' : '' %>><%= st.name %></option><% }) %></select></div>
+  <div><label>Name *</label><input name="name" type="text" required value="<%= r.name || '' %>"></div>
+  <div><label>Scorename *</label><input name="score_name" type="text" required placeholder="TriScore, BikeScore …" value="<%= r.score_name || '' %>"></div>
+  <div><label>Status</label><select name="status"><% Object.keys(STATUSES).forEach(function (s) { %><option value="<%= s %>" <%= r.status === s ? 'selected' : '' %>><%= STATUSES[s] %></option><% }) %></select></div>
+</div>
+<div class="form-row">
+  <div><label>Code * <small class="muted">intern</small></label><input name="code" type="text" required value="<%= r.code || '' %>"></div>
+  <div><label>URL-Teil (Slug) *</label><input name="slug" type="text" required value="<%= r.slug || '' %>"></div>
+  <div><label>Subdomain <small class="muted">optional</small></label><input name="subdomain" type="text" placeholder="z. B. rad" value="<%= r.subdomain || '' %>"></div>
+</div>
+<div class="form-row">
+  <div><label>Objekttyp * <small class="muted">z. B. hotel, gym</small></label><input name="entity_type" type="text" required value="<%= r.entity_type || '' %>"></div>
+  <div><label>Beschriftung Einzahl *</label><input name="entity_label_sg" type="text" required value="<%= r.entity_label_sg || '' %>"></div>
+  <div><label>Beschriftung Mehrzahl *</label><input name="entity_label_pl" type="text" required value="<%= r.entity_label_pl || '' %>"></div>
+</div>
+<label>Beschreibung</label><textarea name="description"><%= r.description || '' %></textarea>
+<div class="form-row">
+  <div>
+    <label>Formel (JSON)</label>
+    <textarea class="code" name="formula"><%= r.formulaText %></textarea>
+    <small class="muted">fact_weight + athlete_weight = 1 · bayes_c, bayes_m · min_completeness (%) · min_reviews · recheck_months</small>
+  </div>
+  <div>
+    <label>Score-Stufen (JSON)</label>
+    <textarea class="code" name="labels"><%= r.labelsText %></textarea>
+    <small class="muted">Liste aus {"min": Zahl, "label": "Text"} – Startwerte, nach den ersten bewerteten Objekten anpassen.</small>
+  </div>
+</div>
+<label>Landingpage-Texte (JSON)</label>
+<textarea class="code" name="content" style="min-height:150px"><%= r.contentText %></textarea>
+<small class="muted">hero_eyebrow · hero_title · hero_highlight (Wort im Titel, das farbig wird) · hero_text · cta_title · cta_text – leere Felder fallen auf Name und Beschreibung zurück.</small>

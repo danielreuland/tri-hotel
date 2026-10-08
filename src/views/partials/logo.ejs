@@ -1,0 +1,1 @@
+<% var lt = (locals.site && site.logo_text) || 'RANKING'; var di = lt.indexOf('-'); %><% if (di > 0) { %><%= lt.slice(0, di) %><span>-</span><%= lt.slice(di + 1) %><% } else { %><%= lt %><% } %>

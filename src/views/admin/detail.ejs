@@ -1,0 +1,385 @@
+<%- include('../partials/admin-head') %>
+<%
+  function valueString(c, fact) {
+    if (!fact) return '';
+    var v = fact.value || {};
+    if (v.option !== undefined) return v.option;
+    if (v.bool !== undefined) return String(v.bool);
+    if (v.number !== undefined) return String(v.number);
+    return '';
+  }
+  var climateRow = climate.find(function (c) { return c.month === result.month }) || null;
+%>
+
+<p><a href="/admin">← Warteschlange</a></p>
+<h1><%= sub.entity_name %></h1>
+<p>
+  <span class="badge accent"><%= STATUS_LABELS[sub.status] %></span>
+  <span class="muted"><%= ranking.name %> · eingegangen <%= formatDate(sub.created_at) %><%= sub.created_by_admin ? ' · vom Admin angelegt' : '' %></span>
+  <% if (entity && er && er.status === 'live') { %> · <a href="<%= ranking.is_default ? '/' + ranking.entity_type + '/' + entity.slug : '/rankings/' + ranking.slug + '/' + entity.slug %>" target="_blank">Öffentliche Seite ↗</a><% } %>
+</p>
+
+<div class="admin-detail">
+  <div>
+    <section class="card">
+      <h2 style="margin-top:0">Meldung</h2>
+      <div class="form-row">
+        <div><strong>Ort:</strong> <%= sub.city %>, <%= sub.country %></div>
+        <div><strong>Website:</strong> <a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a></div>
+        <div><strong>Melder:</strong> <%= sub.submitter_email || '–' %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
+        <div><strong>Bestätigt:</strong> <%= sub.verified_at ? formatDate(sub.verified_at) : 'nein' %></div>
+      </div>
+      <% var hintKeys = Object.keys(sub.hints || {}); if (hintKeys.length) { %>
+        <h3>Angaben des Melders <small class="muted">(nur Hinweis, kein Faktenwert)</small></h3>
+        <ul>
+          <% hintKeys.forEach(function (k) { var c = criteriaByCode[k]; var v = sub.hints[k]; %>
+            <li><%= c ? c.label : k %>: <strong><%= c ? (describeValue(c, c.scoring.type === 'bool' ? { bool: v === 'true' } : { option: v }) || v) : v %></strong></li>
+          <% }) %>
+        </ul>
+      <% } %>
+      <% if (sub.notes) { %><p><strong>Hinweise:</strong> <%= sub.notes %></p><% } %>
+      <% if (sub.admin_note) { %><p><strong>📝 Notiz:</strong> <%= sub.admin_note %></p><% } %>
+      <% if (sub.rejection_reason) { %><p><strong>Ablehnungsgrund:</strong> <%= sub.rejection_reason %></p><% } %>
+      <details <%= sub.status === 'auto_check' ? 'open' : '' %>>
+        <summary>Auto-Prüfung (<%= sub.pipeline_log.length %> Schritte)</summary>
+        <ul class="log-list">
+          <% sub.pipeline_log.forEach(function (l) { %>
+            <li><span class="badge <%= l.ok ? 'good' : 'bad' %>"><%= l.ok ? 'ok' : 'Fehler' %></span> <strong><%= l.step %></strong> <small class="muted"><%= new Date(l.at).toLocaleString('de-DE') %></small><br><%= l.info || '' %></li>
+          <% }) %>
+        </ul>
+      </details>
+    </section>
+
+    <% if (!entity) { %>
+      <div class="card" style="margin-top:16px"><p>Noch kein Objekt angelegt – die Auto-Prüfung ist noch nicht gelaufen.</p></div>
+    <% } else { %>
+
+    <section class="card" style="margin-top:16px">
+      <h2 style="margin-top:0">Stammdaten</h2>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/objekt">
+        <div class="form-row">
+          <div><label>Name</label><input name="name" type="text" value="<%= entity.name %>"></div>
+          <div><label>Ort</label><input name="city" type="text" value="<%= entity.city || '' %>"></div>
+          <div><label>Land</label><input name="country" type="text" maxlength="2" value="<%= entity.country || '' %>"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Website</label><input name="website" type="url" value="<%= entity.website || '' %>"></div>
+          <div><label>Breitengrad</label><input name="lat" type="text" value="<%= entity.lat || '' %>"></div>
+          <div><label>Längengrad</label><input name="lng" type="text" value="<%= entity.lng || '' %>"></div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Kontakt-E-Mail des Betreibers *</label>
+            <input name="contact_email" type="email" value="<%= entity.contact_email || '' %>" placeholder="für Anfragen und Freigaben">
+            <small class="muted"><% if (!entity.contact_email) { %><span style="color:var(--bad)">fehlt – nötig für Freigabe und Anfragen</span><% } else if (entity.contact_email_source === 'website') { %>automatisch gefunden<% if (entity.contact_email_evidence) { %> · <a href="<%= entity.contact_email_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %> – bitte prüfen<% } else { %>vom Admin eingetragen<% } %></small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div><label>Buchungslink (Affiliate)</label><input name="booking_url" type="url" value="<%= entity.booking_url || '' %>"></div>
+          <div><label>Anbieter</label><input name="booking_provider" type="text" placeholder="z. B. Booking.com, Stay22" value="<%= entity.booking_provider || '' %>"></div>
+        </div>
+        <p><button class="btn small" type="submit">Stammdaten speichern</button> <small class="muted">Slug: <%= entity.slug %></small></p>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="fakten">
+      <h2 style="margin-top:0">Fakten</h2>
+      <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Beim Ändern eines Werts springt die Vertrauensstufe auf 2 (Admin geprüft).</p>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/fakten" id="facts-form" data-submission="<%= sub.id %>">
+        <div class="table-scroll">
+        <table>
+          <% categories.forEach(function (cat) { %>
+            <tr><th colspan="5"><h3 style="margin:.4em 0"><%= cat.label %></h3></th></tr>
+            <% criteria.filter(function (c) { return c.category_id === cat.id }).forEach(function (c) {
+                 var f = factByCrit[c.id]; var d = detailByCrit[c.id]; var s = c.scoring; var name = 'facts[' + c.id + ']'; var cur = valueString(c, f); %>
+              <tr class="crit-row <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
+                <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %><br><small class="muted"><%= c.code %> · max <%= c.max_points %></small></td>
+                <td style="min-width:190px">
+                  <% if (s.type === 'climate') { %>
+                    <%= describeValue(c, null, climateRow) || 'keine Klimadaten' %><br><small class="muted"><%= result.month ? 'bester Monat: ' + MONTHS[result.month - 1] : '' %></small>
+                  <% } else if (s.type === 'option') { %>
+                    <select name="<%= name %>[value]" data-value>
+                      <option value="">unbekannt</option>
+                      <% Object.keys(s.points).forEach(function (k) { %><option value="<%= k %>" <%= cur === k ? 'selected' : '' %>><%= (s.labels && s.labels[k]) || k %> (<%= s.points[k] %>)</option><% }) %>
+                    </select>
+                  <% } else if (s.type === 'bool') { %>
+                    <select name="<%= name %>[value]" data-value>
+                      <option value="">unbekannt</option>
+                      <option value="true" <%= cur === 'true' ? 'selected' : '' %>>ja (<%= s.points_true %>)</option>
+                      <option value="false" <%= cur === 'false' ? 'selected' : '' %>>nein (<%= s.points_false || 0 %>)</option>
+                    </select>
+                  <% } else { %>
+                    <input name="<%= name %>[value]" type="number" step="any" <%= s.type === 'rating' ? 'min=' + s.min + ' max=' + s.max : '' %> value="<%= cur %>" placeholder="unbekannt" data-value>
+                  <% } %>
+                </td>
+                <td class="pts num"><span data-pts><%= d && d.known ? d.points : '–' %></span></td>
+                <td style="min-width:240px">
+                  <% if (s.type !== 'climate') { %>
+                    <select name="<%= name %>[trust]" data-trust>
+                      <% Object.keys(TRUST_LABELS).forEach(function (t) { %><option value="<%= t %>" <%= (f ? f.trust_level : 2) == t ? 'selected' : '' %>><%= TRUST_LABELS[t] %></option><% }) %>
+                    </select>
+                    <input name="<%= name %>[evidence_url]" type="url" placeholder="Fundstelle (URL)" value="<%= f ? f.evidence_url || '' : '' %>" style="margin-top:4px">
+                    <details style="margin-top:4px"><summary><small>Textausschnitt<%= f && f.evidence_text ? ' ✓' : '' %></small></summary>
+                      <textarea name="<%= name %>[evidence_text]" style="min-height:60px"><%= f ? f.evidence_text || '' : '' %></textarea>
+                    </details>
+                  <% } else { %><small class="muted">Open-Meteo</small><% } %>
+                </td>
+                <td>
+                  <% if (s.type !== 'climate') { %>
+                    <label class="inline" style="margin:0"><input type="checkbox" name="<%= name %>[disputed]" <%= f && f.disputed ? 'checked' : '' %>><small>strittig</small></label>
+                    <% if (f) { %><small class="muted"><%= formatDate(f.checked_at) %></small><% } %>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% }) %>
+        </table>
+        </div>
+        <p><button class="btn" type="submit">Fakten speichern</button></p>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="leistungen">
+      <h2 style="margin-top:0">Leistungen</h2>
+      <p class="muted" style="margin-top:0">Einheitliche Namen aus dem <a href="/admin/leistungen">Leistungskatalog</a>. Abgeleitete Leistungen ergeben sich aus den Fakten oben; die übrigen hier anhaken.</p>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/leistungen">
+        <% var groupsSeen = []; featureCatalog.forEach(function (f) { if (groupsSeen.indexOf(f.group_label) < 0) groupsSeen.push(f.group_label) }); %>
+        <div class="grid grid-3" style="gap:10px 18px">
+          <% groupsSeen.forEach(function (gl) { %>
+            <div>
+              <strong><%= gl %></strong>
+              <% featureCatalog.filter(function (f) { return f.group_label === gl }).forEach(function (f) {
+                   var on = presentFeatureIds.indexOf(f.id) >= 0; var m = manualFeatures.find(function (x) { return x.feature_id === f.id }); %>
+                <% if (f.derive) { %>
+                  <div class="muted" style="font-size:.9rem;padding:3px 0"><%= on ? '✓' : '–' %> <%= f.label %> <small>(aus Fakten)</small></div>
+                <% } else { %>
+                  <div style="display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center;margin:2px 0;font-size:.9rem">
+                    <label class="inline" style="margin:0"><input type="checkbox" name="features" value="<%= f.id %>" <%= m ? 'checked' : '' %>> <span><%= f.label %></span></label>
+                    <% if (m && m.trust_level === 4) { %>
+                      <span class="badge warn">automatisch</span>
+                      <label class="inline" style="margin:0;font-weight:400"><input type="checkbox" name="confirm_<%= f.id %>"> <small>bestätigen</small></label>
+                      <% if (m.evidence_url) { %><a href="<%= m.evidence_url %>" target="_blank" rel="noopener"><small>Fundstelle</small></a><% } %>
+                    <% } %>
+                  </div>
+                <% } %>
+              <% }) %>
+            </div>
+          <% }) %>
+        </div>
+        <p style="margin-bottom:0"><button class="btn small" type="submit">Leistungen speichern</button></p>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="anfragen">
+      <h2 style="margin-top:0">Anfragen an den Betreiber</h2>
+      <% var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
+         var askable = criteria.filter(function (c) { return c.scoring.type === 'option' || c.scoring.type === 'bool' });
+         var unclearIds = unclear.map(function (c) { return c.id });
+         var hasApprovedImage = images.some(function (i) { return i.approved_at }); %>
+      <% if (!entity.contact_email) { %>
+        <p class="errors" style="margin:0">Für Anfragen fehlt die Kontakt-E-Mail des Betreibers (Stammdaten).</p>
+      <% } else if (openInq) { %>
+        <p class="muted">Es läuft eine offene Anfrage an <strong><%= openInq.recipient %></strong>. Eine neue ist erst nach Antwort oder Abschluss möglich.</p>
+      <% } else { %>
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/anfrage">
+          <p class="muted" style="margin-top:0">Der Agent schreibt eine sachliche Anfrage in der Sprache des Betreibers und schickt einen persönlichen Antwortlink an <strong><%= entity.contact_email %></strong>. Antworten werden erst nach deiner Bestätigung übernommen.</p>
+          <strong>Unklare Werte (<%= unclear.length %>)</strong> <small class="muted">unbekannt, strittig oder nur automatisch ermittelt</small>
+          <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
+            <% unclear.forEach(function (c) { %>
+              <label class="inline" style="margin:0"><input type="checkbox" name="criteria" value="<%= c.id %>" checked> <span><%= c.label %></span></label>
+            <% }) %>
+            <% if (!unclear.length) { %><span class="muted">Keine – alle Werte sind belegt.</span><% } %>
+          </div>
+          <details>
+            <summary><small>Weitere Werte nachfragen</small></summary>
+            <div class="grid grid-2" style="gap:2px 16px;margin:6px 0">
+              <% askable.filter(function (c) { return unclearIds.indexOf(c.id) < 0 }).forEach(function (c) { %>
+                <label class="inline" style="margin:0"><input type="checkbox" name="criteria" value="<%= c.id %>"> <span><%= c.label %></span></label>
+              <% }) %>
+            </div>
+          </details>
+          <label class="inline"><input type="checkbox" name="ask_photos" <%= hasApprovedImage ? '' : 'checked' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
+          <label for="inq-note">Hinweis an den Agenten <small class="muted">optional, z. B. „Bahnzeiten im Winter erfragen“</small></label>
+          <textarea id="inq-note" name="note" style="min-height:60px"></textarea>
+          <p style="margin-bottom:0"><button class="btn" type="submit">Anfrage ans <%= ranking.entity_label_sg %> senden</button></p>
+        </form>
+      <% } %>
+
+      <% inquiryList.forEach(function (inq) { var personaName = inq.persona_id && personas[inq.persona_id]; var statusText = { queued: 'wird formuliert', sent: 'versendet', answered: 'beantwortet', expired: 'abgelaufen', failed: 'fehlgeschlagen', closed: 'geschlossen' }[inq.status]; %>
+        <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:12px">
+          <p style="margin:0 0 6px">
+            <span class="badge <%= inq.status === 'answered' ? 'good' : inq.status === 'failed' ? 'bad' : inq.status === 'sent' ? 'accent' : '' %>"><%= statusText %></span>
+            <small class="muted">gestartet <%= formatDate(inq.created_at) %><%= inq.sent_at ? ' · versendet ' + formatDate(inq.sent_at) : '' %><%= inq.reminder_sent_at ? ' · erinnert ' + formatDate(inq.reminder_sent_at) : '' %><%= inq.answered_at ? ' · Antwort ' + formatDate(inq.answered_at) : '' %> · <%= inq.criteria_ids.length %> Fragen<%= inq.ask_photos ? ' + Fotos' : '' %> · <%= inq.language.toUpperCase() %><%= personaName ? ' · von ' + personaName + ' (KI)' : '' %></small>
+          </p>
+          <% if (inq.error) { %><p style="color:var(--bad);margin:0 0 6px"><small><%= inq.error %></small></p><% } %>
+          <% if (inq.body) { %>
+            <details><summary><small>Mail ansehen: <%= inq.subject %></small></summary><pre class="json" style="margin-top:6px"><%= inq.body.replace('{{LINK}}', '[persönlicher Antwortlink]') %></pre></details>
+          <% } %>
+          <% if (inq.reply_note || inq.reply_name) { %><p style="margin:8px 0"><strong>Nachricht<%= inq.reply_name ? ' von ' + inq.reply_name : '' %>:</strong> <%= inq.reply_note || '–' %></p><% } %>
+          <% if (inq.answers.length) { %>
+            <div class="table-scroll">
+            <table>
+              <tr><th>Kriterium</th><th>Antwort</th><th>Bisher</th><th></th></tr>
+              <% inq.answers.forEach(function (a) { var c = criteria.find(function (x) { return x.id === a.criterion_id }); var f = factByCrit[a.criterion_id]; %>
+                <tr>
+                  <td><%= c ? c.label : '–' %></td>
+                  <td><strong><%= a.value ? ((c && describeValue(c, a.value)) || JSON.stringify(a.value)) : 'weiß nicht' %></strong><% if (a.comment) { %><br><small class="muted">„<%= a.comment %>“</small><% } %></td>
+                  <td><small class="muted"><%= f && c ? (describeValue(c, f.value) || '') + ' (Stufe ' + f.trust_level + ')' : 'unbekannt' %></small></td>
+                  <td style="white-space:nowrap">
+                    <% if (a.status === 'pending') { %>
+                      <form method="post" action="/admin/antworten/<%= a.id %>/uebernehmen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small" type="submit" <%= a.value ? '' : 'disabled' %>>Übernehmen</button></form>
+                      <form method="post" action="/admin/antworten/<%= a.id %>/verwerfen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small secondary" type="submit">Verwerfen</button></form>
+                    <% } else { %><span class="badge <%= a.status === 'accepted' ? 'good' : '' %>"><%= a.status === 'accepted' ? 'übernommen' : 'verworfen' %></span><% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </table>
+            </div>
+          <% } %>
+          <% var inqImages = images.filter(function (i) { return i.inquiry_id === inq.id }); if (inqImages.length) { %>
+            <p style="margin:8px 0 0"><small><%= inqImages.length %> Foto(s) mit Nutzungserlaubnis eingegangen – <a href="#bilder">unten bei Bilder freigeben</a>.</small></p>
+          <% } %>
+          <% if (['queued', 'sent', 'failed'].indexOf(inq.status) >= 0) { %>
+            <form method="post" action="/admin/anfragen/<%= inq.id %>/schliessen" style="margin-top:8px"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small secondary" type="submit">Anfrage schließen</button></form>
+          <% } %>
+        </div>
+      <% }) %>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="einwilligungen">
+      <h2 style="margin-top:0">Einwilligungen des Betreibers</h2>
+      <p class="muted" style="margin-top:0">Grundlage für automatisierte Abläufe: Ohne gültige Einwilligung werden keine Fotos in Social Media gepostet und keine Kooperationsmails verschickt.</p>
+      <% Object.keys(CONSENT_TYPES).forEach(function (type) { var active = consents.find(function (c) { return c.type === type && !c.withdrawn_at }); %>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <strong style="flex:1 1 14em"><%= CONSENT_TYPES[type] %></strong>
+          <% if (active) { %>
+            <span class="badge good">erteilt <%= formatDate(active.granted_at) %></span>
+            <small class="muted"><%= active.source === 'inquiry' ? 'über Anfrage' : 'vom Admin erfasst' %><%= active.contact_name ? ' · ' + active.contact_name : '' %><%= active.contact_email ? ' · ' + active.contact_email : '' %> · Wortlaut <%= active.text_version %></small>
+            <details style="flex-basis:100%"><summary><small>Wortlaut und Widerruf</small></summary>
+              <p style="margin:6px 0"><small><%= active.text %></small></p>
+              <% if (active.note) { %><p style="margin:6px 0"><small class="muted">Notiz: <%= active.note %></small></p><% } %>
+              <form method="post" action="/admin/einwilligungen/<%= active.id %>/widerrufen" class="filters" style="margin:6px 0">
+                <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#einwilligungen">
+                <input type="text" name="note" placeholder="Anlass, z. B. Mail vom …" style="flex:1;min-width:12em">
+                <button class="btn small danger" type="submit">Widerruf erfassen</button>
+              </form>
+            </details>
+          <% } else { %>
+            <span class="badge">keine</span>
+          <% } %>
+        </div>
+      <% }) %>
+      <% var withdrawn = consents.filter(function (c) { return c.withdrawn_at }); if (withdrawn.length) { %>
+        <p style="margin:10px 0 0"><small class="muted">Widerrufen: <%= withdrawn.map(function (c) { return CONSENT_TYPES[c.type] + ' (' + formatDate(c.withdrawn_at) + ')' }).join(', ') %></small></p>
+      <% } %>
+      <details style="margin-top:12px">
+        <summary><small>Einwilligung manuell erfassen (z. B. schriftlich oder telefonisch bestätigt)</small></summary>
+        <form method="post" action="/admin/objekte/<%= entity.id %>/einwilligungen">
+          <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#einwilligungen">
+          <input type="hidden" name="site_id" value="<%= ranking.site_id %>">
+          <div class="form-row">
+            <div><label>Art</label><select name="type"><% Object.keys(CONSENT_TYPES).forEach(function (t) { %><option value="<%= t %>"><%= CONSENT_TYPES[t] %></option><% }) %></select></div>
+            <div><label>Name</label><input type="text" name="contact_name"></div>
+            <div><label>E-Mail</label><input type="email" name="contact_email" value="<%= entity.contact_email || '' %>"></div>
+          </div>
+          <label>Nachweis *</label><input type="text" name="note" required placeholder="z. B. Mail vom 12.10.2026, abgelegt unter …">
+          <p><button class="btn small" type="submit">Erfassen</button></p>
+        </form>
+      </details>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="bilder">
+      <h2 style="margin-top:0">Bilder</h2>
+      <p class="muted">Nur mit dokumentierter Berechtigung. Keine Fotos von fremden Websites übernehmen. Öffentlich erst nach Freigabe und solange die Rechte gültig sind.</p>
+      <% images.forEach(function (img) { %>
+        <div class="grid grid-2" style="border-bottom:1px solid var(--border);padding:10px 0">
+          <img src="/admin/bilder/<%= img.id %>/datei" alt="" style="max-height:160px;object-fit:cover">
+          <div>
+            <small><%= IMAGE_SOURCES[img.source] %> · <%= img.license %> · © <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><br>
+              Nachweis: <%= img.release_proof %><br>
+              <%= img.valid_until ? 'gültig bis ' + formatDate(img.valid_until) : 'unbefristet' %><%= img.is_primary ? ' · Hauptbild' : '' %></small><br>
+            <% if (img.approved_at) { %><span class="badge good">freigegeben <%= formatDate(img.approved_at) %></span>
+            <% } else { %>
+              <form method="post" action="/admin/bilder/<%= img.id %>/freigeben" style="display:inline"><input type="hidden" name="submission_id" value="<%= sub.id %>"><button class="btn small" type="submit">Freigeben</button></form>
+            <% } %>
+            <form method="post" action="/admin/bilder/<%= img.id %>/loeschen" style="display:inline">
+              <input type="hidden" name="submission_id" value="<%= sub.id %>">
+              <input type="hidden" name="reason" value="Admin">
+              <button class="btn small danger" type="submit">Entfernen</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+      <details style="margin-top:12px">
+        <summary>Bild hochladen</summary>
+        <form method="post" action="/admin/objekte/<%= entity.id %>/bilder" enctype="multipart/form-data">
+          <input type="hidden" name="submission_id" value="<%= sub.id %>">
+          <label>Datei (JPG, PNG, WebP, max. 8 MB) *</label><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+          <div class="form-row">
+            <div><label>Quelle *</label><select name="source" required><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
+            <div><label>Lizenz *</label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Urhebervermerk *</label><input name="credit" type="text" required></div>
+            <div><label>Fundstelle / Lizenzseite</label><input name="source_url" type="url"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Nachweis der Freigabe *</label><input name="release_proof" type="text" required placeholder="z. B. Mail vom 12.10.2026, Ablage …"></div>
+            <div><label>Rechte gültig bis</label><input name="valid_until" type="date"></div>
+          </div>
+          <label class="inline"><input type="checkbox" name="is_primary"> Hauptbild</label>
+          <p><button class="btn small" type="submit">Hochladen</button></p>
+        </form>
+      </details>
+    </section>
+    <% } %>
+
+    <% if (emails.length) { %>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin-top:0">Mails</h2>
+        <ul class="log-list"><% emails.forEach(function (m) { %><li><%= new Date(m.created_at).toLocaleString('de-DE') %> · <%= m.template %> an <%= m.recipient %> · <span class="badge <%= m.status === 'sent' ? 'good' : 'bad' %>"><%= m.status %></span></li><% }) %></ul>
+      </section>
+    <% } %>
+  </div>
+
+  <aside>
+    <div class="card">
+      <div class="muted"><%= ranking.score_name %> (Vorschau)</div>
+      <div style="display:flex;gap:12px;align-items:center;margin:8px 0">
+        <span class="score big <%= result.score === null ? 'none' : '' %>" id="pv-score"><%= result.score === null ? '–' : result.score %></span>
+        <div><strong id="pv-label"><%= result.label || '' %></strong><br><small class="muted" id="pv-eligible"><%= result.eligible ? 'im Ranking' : 'nicht im Ranking' %></small></div>
+      </div>
+      <p style="margin:0">F <strong id="pv-f"><%= result.factScore === null ? '–' : result.factScore %></strong> · Vollst. <strong id="pv-c"><%= result.completeness %></strong> %</p>
+      <p id="pv-ko" class="<%= result.ko ? '' : 'hidden' %>" style="color:var(--bad)<%= result.ko ? '' : ';display:none' %>">K.O.: <span><%= result.koReason || '' %></span></p>
+    </div>
+
+    <% if (['admin_review', 'auto_check', 'verified'].includes(sub.status)) { %>
+      <div class="card" style="margin-top:12px">
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/freigeben">
+          <button class="btn" type="submit" style="width:100%" <%= entity && entity.contact_email && !result.ko ? '' : 'disabled' %>>Freigeben &amp; Mail senden</button>
+        </form>
+        <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Freigabe erst mit Kontakt-E-Mail des Betreibers.</small></p><% } %>
+        <details style="margin-top:10px">
+          <summary>Ablehnen</summary>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/ablehnen">
+            <textarea name="reason" required placeholder="Begründung (geht per Mail an den Melder)"><%= result.ko ? 'K.O.-Kriterium nicht erfüllt – ' + result.koReason : '' %></textarea>
+            <button class="btn small danger" type="submit">Ablehnen &amp; Mail senden</button>
+          </form>
+        </details>
+        <details style="margin-top:10px">
+          <summary>Zurückstellen</summary>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/zurueckstellen">
+            <textarea name="note" placeholder="Notiz"><%= sub.admin_note || '' %></textarea>
+            <button class="btn small secondary" type="submit">Notiz speichern</button>
+          </form>
+        </details>
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/pruefen" style="margin-top:10px">
+          <button class="btn small secondary" type="submit">Auto-Prüfung erneut starten</button>
+        </form>
+      </div>
+    <% } %>
+  </aside>
+</div>
+
+<% locals.scripts = ['/static/js/admin.js'] %>
+<%- include('../partials/admin-foot') %>

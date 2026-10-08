@@ -1,0 +1,32 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/rankings/<%= ranking.id %>#kriterien">← <%= ranking.name %></a></p>
+<h1><%= title %></h1>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<% if (warnings.length) { %><div class="flash"><ul><% warnings.forEach(function (w) { %><li><%= w %></li><% }) %></ul></div><% } %>
+<form method="post" action="/admin/rankings/<%= ranking.id %>/kriterien<%= c.id ? '/' + c.id : '' %>" class="card">
+  <div class="form-row">
+    <div><label>Code *</label><input name="code" type="text" required value="<%= c.code || '' %>"></div>
+    <div><label>Bezeichnung *</label><input name="label" type="text" required value="<%= c.label || '' %>"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Kategorie *</label><select name="category_id" required><% categories.forEach(function (cat) { %><option value="<%= cat.id %>" <%= c.category_id === cat.id ? 'selected' : '' %>><%= cat.label %></option><% }) %></select></div>
+    <div><label>Werttyp *</label><select name="value_type"><% Object.keys(VALUE_TYPES).forEach(function (t) { %><option value="<%= t %>" <%= c.value_type === t ? 'selected' : '' %>><%= VALUE_TYPES[t] %></option><% }) %></select></div>
+    <div><label>Maximale Punkte *</label><input name="max_points" type="number" min="0" required value="<%= c.max_points %>"></div>
+    <div><label>Reihenfolge</label><input name="sort_order" type="number" value="<%= c.sort_order %>"></div>
+  </div>
+  <label>Punkteschema (JSON) *</label>
+  <textarea class="code" name="scoring" required><%= c.scoringText %></textarea>
+  <details>
+    <summary><small>Formate</small></summary>
+    <pre class="json">{"type":"option","points":{"a":5,"b":2,"none":0},"ko":["none"],"labels":{"a":"Text"},"ask_submitter":true}
+{"type":"bool","points_true":3}
+{"type":"rating","min":0,"max":6}
+{"type":"bands","unit":"m²","bands":[{"min":300,"points":8},{"min":150,"max":299.9,"points":4}]}
+{"type":"climate","metric":"avg_high_c|avg_low_c|rain_days","bands":[{"min":15,"max":30,"points":4}]}
+Optional "auto" (OpenStreetMap): {"source":"osm","selectors":["[\"leisure\"=\"track\"]"],"radius_km":5,"bool_within_km":5}</pre>
+  </details>
+  <label class="inline"><input type="checkbox" name="is_ko" <%= c.is_ko ? 'checked' : '' %>> K.O.-Kriterium</label>
+  <label class="inline"><input type="checkbox" name="active" <%= c.active !== false ? 'checked' : '' %>> aktiv</label>
+  <p><button class="btn" type="submit">Speichern &amp; Scores neu berechnen</button> <% if (c.id) { %><small class="muted">Version <%= c.version %> → wird erhöht</small><% } %></p>
+</form>
+<%- include('../partials/admin-foot') %>

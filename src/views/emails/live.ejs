@@ -1,0 +1,9 @@
+<%- include('_layout_top') %>
+<p>Hallo,</p>
+<p>gute Nachrichten: <strong><%= entityName %></strong> ist jetzt online.</p>
+<p><a href="<%= link %>" style="display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold">Seite ansehen</a></p>
+<% if (score !== null && score !== undefined) { %>
+  <p><%= ranking.score_name %>: <strong><%= score %></strong><%= provisional ? ' (vorläufig, solange noch keine Bewertungen vorliegen)' : '' %></p>
+<% } %>
+<p>Danke, dass du mithilfst, die Übersicht vollständiger zu machen.</p>
+<%- include('_layout_bottom') %>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de" data-theme-default="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= title %> · Admin</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/theme.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/admin">RANKING<span>-</span>ADMIN</a>
+    <% if (locals.admin) { %>
+      <nav class="admin-nav">
+        <a href="/admin">Warteschlange</a>
+        <a href="/admin/neu">Objekt anlegen</a>
+        <a href="/admin/aufgaben">Aufgaben</a>
+        <a href="/admin/rankings">Rankings</a>
+        <a href="/admin/leistungen">Leistungen</a>
+        <a href="/admin/sites">Sites</a>
+        <a href="/admin/log">Log</a>
+        <a href="/" target="_blank">Website ↗</a>
+        <form method="post" action="/admin/logout" style="display:inline"><button class="btn small secondary" type="submit">Abmelden</button></form>
+        <%- include('theme-toggle') %>
+      </nav>
+    <% } else { %>
+      <%- include('theme-toggle') %>
+    <% } %>
+  </div>
+</header>
+<main>
+<div class="wrap">
+<% if (locals.flash) { %><div class="flash"><%= flash %></div><% } %>
+<% if (locals.error) { %><div class="errors"><%= error %></div><% } %>

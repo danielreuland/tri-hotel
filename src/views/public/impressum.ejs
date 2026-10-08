@@ -1,0 +1,13 @@
+<%- include('../partials/head') %>
+<% var legal = (site && site.legal) || {}; %>
+<h1>Impressum</h1>
+<div class="card">
+  <!-- Angaben kommen aus sites.legal (Admin › Sites). Vor dem Livegang vervollständigen und rechtlich prüfen lassen. -->
+  <p><strong>Angaben gemäß § 5 DDG</strong></p>
+  <p><%= legal.owner || '[Name]' %><br><%- (legal.address || '[Straße Nr.], [PLZ Ort]').split('\n').map(function (l) { return l.replace(/&/g, '&amp;').replace(/</g, '&lt;') }).join('<br>') %></p>
+  <p>E-Mail: <%= legal.email || site.mail_from %></p>
+  <p><strong>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:</strong> <%= legal.responsible || legal.owner || '[Name, Anschrift]' %></p>
+  <p><strong>Hinweis zu Werbung:</strong> Buchungslinks sind Affiliate-Links und als „Anzeige“ gekennzeichnet. Sie haben keinen Einfluss auf Score oder Reihenfolge.</p>
+  <p><strong>KI-Assistenz:</strong> Einige Nachrichten an Betreiber werden von unserer KI-Assistenz verfasst und sind als solche gekennzeichnet. Antworten liest ein Mensch aus unserem Team.</p>
+</div>
+<%- include('../partials/foot') %>

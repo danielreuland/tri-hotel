@@ -1,0 +1,9 @@
+<%- include('_layout_top') %>
+<p>Hallo,</p>
+<p>danke für deinen Vorschlag! <strong><%= entityName %></strong> ist bereits bei uns erfasst.</p>
+<% if (link) { %>
+  <p>Hier ist die Seite: <a href="<%= link %>"><%= link %></a></p>
+<% } else { %>
+  <p>Der Eintrag ist gerade in Prüfung. Sobald er online ist, findest du ihn auf <a href="<%= baseUrl %>"><%= baseUrl %></a>.</p>
+<% } %>
+<%- include('_layout_bottom') %>

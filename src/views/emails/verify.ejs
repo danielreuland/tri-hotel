@@ -1,0 +1,8 @@
+<%- include('_layout_top') %>
+<p>Hallo,</p>
+<p>danke, dass du <strong><%= entityName %></strong> für das Ranking „<%= ranking.name %>“ vorgeschlagen hast.</p>
+<p>Bitte bestätige deinen Vorschlag mit einem Klick:</p>
+<p><a href="<%= link %>" style="display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold">Vorschlag bestätigen</a></p>
+<p>Der Link ist <%= hours %> Stunden gültig. Danach prüfen wir die Angaben automatisch und von Hand und melden uns, sobald die Seite online ist.</p>
+<p>Du hast nichts vorgeschlagen? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.</p>
+<%- include('_layout_bottom') %>

@@ -1,0 +1,72 @@
+<title>tri-hotel Mock-ups</title>
+<style>
+  /* Layout: eine Spalte, drei Gruppen (öffentlich, Admin, Mails) als Linklisten – im dunklen Look der App */
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #2d3540; --fg: #e6edf3; --muted: #8b949e;
+    --accent: #0dcfbd; --warn: #d29922;
+    --head: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); }
+  .wrap { max-width: 860px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 56px; }
+  .note { display: inline-block; background: var(--warn); color: #1b1f24; font-weight: 700; font-size: .8rem; padding: 3px 10px; border-radius: 999px; letter-spacing: .03em; }
+  h1 { font-family: var(--head); font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: .03em; margin: .3em 0 .2em; text-wrap: balance; }
+  h1 span { color: var(--accent); }
+  .lead { color: var(--muted); max-width: 62ch; margin: 0 0 28px; }
+  section { margin-top: 28px; }
+  h2 { font-family: var(--head); font-size: 1.5rem; letter-spacing: .04em; margin: 0 0 10px; }
+  ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  a.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: center; text-decoration: none; color: var(--fg);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+  a.item:hover, a.item:focus-visible { border-color: var(--accent); outline: none; }
+  a.item strong { font-weight: 700; }
+  a.item small { grid-column: 1; color: var(--muted); }
+  a.item .go { grid-row: 1 / span 2; grid-column: 2; color: var(--accent); font-weight: 700; }
+</style>
+
+<div class="wrap">
+  <span class="note">MOCK-UP · Beispieldaten</span>
+  <h1>TRI<span>-</span>HOTEL · Entwurf Version 1</h1>
+  <p class="lead">Alle Ansichten sind aus den echten Vorlagen des Entwurfs gerendert. Hotels, Personen und Zahlen sind erfunden; das Kriterienset entspricht dem Seed mit 30 Kriterien und 106 Punkten. Formulare und Buttons sind in den Mock-ups ohne Funktion. Farben: Palette „Pool &amp; Sonne“ (entschieden am 08.10.2026), öffentliche Seiten starten hell, Dunkel per Umschalter oben rechts.</p>
+
+  <section>
+    <h2>Öffentlich</h2>
+    <ul>
+      <li><a class="item" href="startseite.html"><strong>Startseite</strong><small>Suchfeld im Hero, Score-Karte, Rangliste mit Leistungen je Hotel</small><span class="go">→</span></a></li>
+      <li><a class="item" href="suche.html#ranking"><strong>Suche mit Filtern</strong><small>Hotel oder Ort, Land, Reisemonat, Mindest-Score, Leistungen</small><span class="go">→</span></a></li>
+      <li><a class="item" href="hotelseite.html"><strong>Hotelseite</strong><small>Leistungen auf einen Blick, Fakten mit Quelle je Wert, Klima, Karte, Buchungslink als Anzeige</small><span class="go">→</span></a></li>
+      <li><a class="item" href="triscore-methodik.html"><strong>So funktioniert der TriScore</strong><small>Formel, Score-Stufen, Kriterienkatalog</small><span class="go">→</span></a></li>
+      <li><a class="item" href="hotel-hinzufuegen.html"><strong>Hotel hinzufügen</strong><small>Pflichtfelder, optionale Angaben zu Becken und Radgarage</small><span class="go">→</span></a></li>
+      <li><a class="item" href="danke.html"><strong>Danke-Seite</strong><small>nach dem Absenden der Meldung</small><span class="go">→</span></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Admin</h2>
+    <ul>
+      <li><a class="item" href="admin-warteschlange.html"><strong>Warteschlange</strong><small>Status-Filter, Score, Vollständigkeit, K.O.-Hinweise</small><span class="go">→</span></a></li>
+      <li><a class="item" href="admin-pruefung.html"><strong>Prüfansicht</strong><small>K.O.-Verdacht gegen die Angabe des Melders; Anfrage durch Mia mit Antworten zum Übernehmen; Einwilligungen des Hotels</small><span class="go">→</span></a></li>
+      <li><a class="item" href="admin-rankings.html"><strong>Rankings</strong><small>Triathlon aktiv, Rad als Entwurf mit Subdomain</small><span class="go">→</span></a></li>
+      <li><a class="item" href="admin-ranking-bearbeiten.html"><strong>Ranking bearbeiten</strong><small>Site, Formel, Labels, Landingpage-Texte, Kategorien, Kriterien</small><span class="go">→</span></a></li>
+      <li><a class="item" href="admin-leistungen.html"><strong>Leistungskatalog</strong><small>einheitliche Namen, Ableitung aus Fakten, Filter für die Suche</small><span class="go">→</span></a></li>
+      <li><a class="item" href="admin-sites.html"><strong>Site und virtuelle Mitarbeiter</strong><small>Marke, Domains, Farben, Absender, Impressum; Mia, Lara und Ben als gekennzeichnete KI-Assistenz</small><span class="go">→</span></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Anfrage an Hotels</h2>
+    <ul>
+      <li><a class="item" href="mail-anfrage.html"><strong>Mail vom Agenten</strong><small>von Mia, offen als KI gekennzeichnet, in der Sprache des Hotels, mit persönlichem Antwortlink</small><span class="go">→</span></a></li>
+      <li><a class="item" href="betreiber-antwort.html"><strong>Antwortformular für das Hotel</strong><small>feste Antwortoptionen, Foto-Upload, getrennte Einwilligungen für Profil, Social Media und Kooperationen</small><span class="go">→</span></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Mails</h2>
+    <ul>
+      <li><a class="item" href="mail-bestaetigung.html"><strong>Bestätigungslink</strong><small>nach der Meldung, 72 Stunden gültig</small><span class="go">→</span></a></li>
+      <li><a class="item" href="mail-online.html"><strong>Seite ist online</strong><small>nach der Freigabe durch den Admin</small><span class="go">→</span></a></li>
+    </ul>
+  </section>
+</div>

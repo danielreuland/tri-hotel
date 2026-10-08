@@ -1,0 +1,27 @@
+<%- include('../partials/admin-head') %>
+<h1>Rankings</h1>
+<p><a class="btn small" href="/admin/rankings/neu">Neues Ranking</a></p>
+<div class="table-scroll">
+<table>
+  <tr><th>Name</th><th>Score</th><th>Objekttyp</th><th>Status</th><th class="num">Kriterien</th><th class="num">Punkte</th><th class="num">live</th><th></th></tr>
+  <% rows.forEach(function (r) { %>
+    <tr>
+      <td><a href="/admin/rankings/<%= r.id %>"><%= r.name %></a><% if (r.is_default) { %> <span class="badge accent">Standard</span><% } %><br>
+        <small class="muted"><%= r.site_name %> · <%= r.primary_domain %><%= r.is_default ? '/' : '/rankings/' + r.slug %><%= r.subdomain ? ' · ' + r.subdomain + '.' + r.primary_domain : '' %></small></td>
+      <td><%= r.score_name %></td>
+      <td><%= r.entity_label_pl %></td>
+      <td><span class="badge"><%= STATUSES[r.status] %></span></td>
+      <td class="num"><%= r.criteria_count %></td>
+      <td class="num"><%= r.points_sum %><% if (r.points_sum !== 100) { %> <span title="Summe weicht von 100 ab – der Score wird normiert, nur ein Hinweis">ⓘ</span><% } %></td>
+      <td class="num"><%= r.live_count %></td>
+      <td>
+        <form method="post" action="/admin/rankings/<%= r.id %>/duplizieren" style="display:inline"><button class="btn small secondary" type="submit">Duplizieren</button></form>
+        <% if (!r.is_default && r.status === 'active') { %>
+          <form method="post" action="/admin/rankings/<%= r.id %>/standard" style="display:inline"><button class="btn small secondary" type="submit">Als Standard</button></form>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<%- include('../partials/admin-foot') %>

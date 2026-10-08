@@ -1,0 +1,63 @@
+<%- include('../partials/head') %>
+<% var de = lang === 'de'; %>
+
+<p class="eyebrow"><%= de ? 'Anfrage an den Betreiber' : 'Request to the operator' %></p>
+<h1><%= entity.name %></h1>
+<p class="lead"><%= de
+  ? 'Vielen Dank, dass Sie sich kurz Zeit nehmen. Ihre Angaben werden nach einer kurzen Prüfung auf Ihrem Profil als vom Betreiber bestätigt gekennzeichnet.'
+  : 'Thank you for taking a moment. After a short review, your answers will be shown on your profile as confirmed by the operator.' %></p>
+
+<% if (errors.length) { %>
+  <div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
+<% } %>
+
+<form method="post" enctype="multipart/form-data" class="grid" style="gap:20px">
+  <% if (inquiry.questions.length) { %>
+    <section class="card">
+      <h2 style="margin-top:0"><%= de ? 'Ihre Angaben' : 'Your details' %></h2>
+      <% inquiry.questions.forEach(function (q, i) { var name = 'q_' + q.criterion_id; var cur = form[name]; %>
+        <fieldset style="border:0;border-top:1px solid var(--border);padding:14px 0 6px;margin:0">
+          <legend style="font-weight:800;padding:0;margin-bottom:6px"><%= i + 1 %>. <%= q.question %></legend>
+          <% q.options.forEach(function (o) { %>
+            <label class="inline"><input type="radio" name="<%= name %>" value="<%= o.value %>" <%= cur === o.value ? 'checked' : '' %>> <span><%= o.text %></span></label>
+          <% }) %>
+          <label class="inline"><input type="radio" name="<%= name %>" value="unknown" <%= cur === 'unknown' ? 'checked' : '' %>> <span class="muted"><%= de ? 'weiß ich nicht' : "I don't know" %></span></label>
+          <input type="text" name="c_<%= q.criterion_id %>" maxlength="500" placeholder="<%= de ? 'Ergänzung (optional)' : 'Comment (optional)' %>" value="<%= form['c_' + q.criterion_id] || '' %>" style="margin-top:6px">
+        </fieldset>
+      <% }) %>
+    </section>
+  <% } %>
+
+  <% if (inquiry.ask_photos) { %>
+    <section class="card">
+      <h2 style="margin-top:0"><%= de ? 'Fotos (optional)' : 'Photos (optional)' %></h2>
+      <p class="muted"><%= de
+        ? 'Zum Beispiel Pool, Radgarage, Kraftraum oder Außenansicht. Wir zeigen die Fotos mit Ihrem Urhebervermerk auf Ihrem Profil.'
+        : 'For example pool, bike storage, gym or exterior. We show the photos on your profile with your photo credit.' %></p>
+      <label for="photos"><%= de ? 'Fotos auswählen' : 'Choose photos' %> <small class="muted">(JPG, PNG, WebP · max. <%= maxPhotos %> · je 8 MB)</small></label>
+      <input id="photos" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
+      <label for="photo_credit"><%= de ? 'Urhebervermerk' : 'Photo credit' %></label>
+      <input id="photo_credit" type="text" name="photo_credit" maxlength="200" placeholder="<%= de ? 'z. B. © Hotel Muster / Fotograf Name' : 'e.g. © Hotel Example / photographer name' %>" value="<%= form.photo_credit || '' %>">
+      <label class="inline" style="margin-top:12px"><input type="checkbox" name="photo_consent" <%= form.photo_consent === 'on' ? 'checked' : '' %>> <span><%= consents.photos_profile %> <strong><%= de ? '(nötig für Fotos)' : '(required for photos)' %></strong></span></label>
+      <label class="inline"><input type="checkbox" name="consent_photos_social" <%= form.consent_photos_social === 'on' ? 'checked' : '' %>> <span><%= consents.photos_social %> <span class="muted"><%= de ? '(optional)' : '(optional)' %></span></span></label>
+    </section>
+  <% } %>
+
+  <section class="card">
+    <h2 style="margin-top:0"><%= de ? 'Kooperationen (optional)' : 'Cooperation (optional)' %></h2>
+    <label class="inline" style="margin-top:0"><input type="checkbox" name="consent_partner_contact" <%= form.consent_partner_contact === 'on' ? 'checked' : '' %>> <span><%= consents.partner_contact %></span></label>
+  </section>
+
+  <section class="card">
+    <label for="note" style="margin-top:0"><%= de ? 'Nachricht an uns (optional)' : 'Message to us (optional)' %></label>
+    <textarea id="note" name="note" maxlength="2000"><%= form.note || '' %></textarea>
+    <label for="reply_name"><%= de ? 'Ihr Name und Ihre Funktion (optional)' : 'Your name and role (optional)' %></label>
+    <input id="reply_name" type="text" name="reply_name" maxlength="200" value="<%= form.reply_name || '' %>">
+    <p><button class="btn large cta" type="submit"><%= de ? 'Angaben senden' : 'Send answers' %></button></p>
+    <p class="muted" style="margin:0"><small><%= de
+      ? 'Ihre Angaben verwenden wir nur für Ihr Profil. Der Eintrag ist kostenlos, die Platzierung lässt sich nicht kaufen.'
+      : 'We only use your answers for your profile. The listing is free of charge; rankings cannot be bought.' %> <a href="/datenschutz"><%= de ? 'Datenschutz' : 'Privacy' %></a></small></p>
+  </section>
+</form>
+
+<%- include('../partials/foot') %>

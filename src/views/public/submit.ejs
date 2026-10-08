@@ -1,0 +1,71 @@
+<%- include('../partials/head') %>
+
+<h1><%= ranking.entity_label_sg %> hinzufügen</h1>
+<p class="lead">Du kennst ein <%= ranking.entity_label_sg %>, das ins Ranking gehört? Wir prüfen jeden Vorschlag, bevor er online geht. Du bekommst eine Mail mit Bestätigungslink.</p>
+
+<% if (errors.length) { %>
+  <div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
+<% } %>
+
+<form method="post" class="card" novalidate>
+  <div class="form-row">
+    <div><label for="name">Name *</label><input id="name" name="name" type="text" required maxlength="200" value="<%= form.name || '' %>"></div>
+    <div><label for="website">Website *</label><input id="website" name="website" type="url" required placeholder="https://" value="<%= form.website || '' %>"></div>
+  </div>
+  <div class="form-row">
+    <div><label for="city">Ort *</label><input id="city" name="city" type="text" required maxlength="120" value="<%= form.city || '' %>"></div>
+    <div>
+      <label for="country">Land *</label>
+      <select id="country" name="country" required>
+        <option value="">bitte wählen</option>
+        <% COUNTRIES.forEach(function (c) { %><option value="<%= c[0] %>" <%= form.country === c[0] ? 'selected' : '' %>><%= c[1] %></option><% }) %>
+      </select>
+    </div>
+  </div>
+
+  <% if (askCriteria.length) { %>
+    <h3>Was weißt du schon? <small class="muted">optional</small></h3>
+    <div class="form-row">
+      <% askCriteria.forEach(function (c) { var cur = (form.hints || {})[c.code]; %>
+        <div>
+          <label for="hint_<%= c.code %>"><%= c.label %></label>
+          <select id="hint_<%= c.code %>" name="hint_<%= c.code %>">
+            <option value="">weiß nicht</option>
+            <% if (c.scoring.type === 'bool') { %>
+              <option value="true" <%= cur === 'true' ? 'selected' : '' %>>ja</option>
+              <option value="false" <%= cur === 'false' ? 'selected' : '' %>>nein</option>
+            <% } else { Object.keys(c.scoring.points).forEach(function (k) { %>
+              <option value="<%= k %>" <%= cur === k ? 'selected' : '' %>><%= (c.scoring.labels && c.scoring.labels[k]) || k %></option>
+            <% }) } %>
+          </select>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <label for="notes">Hinweise <small class="muted">optional</small></label>
+  <textarea id="notes" name="notes" maxlength="2000"><%= form.notes || '' %></textarea>
+
+  <div class="form-row">
+    <div><label for="email">Deine E-Mail *</label><input id="email" name="email" type="email" required value="<%= form.email || '' %>"></div>
+    <div>
+      <label for="role">Du bist … <small class="muted">optional</small></label>
+      <select id="role" name="role">
+        <option value="">keine Angabe</option>
+        <% Object.keys(roles).forEach(function (k) { %><option value="<%= k %>" <%= form.role === k ? 'selected' : '' %>><%= roles[k] %></option><% }) %>
+      </select>
+    </div>
+  </div>
+
+  <div class="hp" aria-hidden="true">
+    <label for="company_url">Bitte leer lassen</label>
+    <input id="company_url" name="company_url" type="text" tabindex="-1" autocomplete="off">
+  </div>
+
+  <label class="inline"><input type="checkbox" name="privacy" required>
+    <span>Ich habe die <a href="/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen. Meine E-Mail-Adresse wird nur für diesen Vorschlag verwendet. *</span></label>
+
+  <p><button class="btn cta" type="submit">Vorschlag absenden</button></p>
+</form>
+
+<%- include('../partials/foot') %>

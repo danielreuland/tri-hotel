@@ -1,0 +1,13 @@
+<% if (!locals.fullWidth) { %></div><% } %>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Neutral: Partner- und Werbebeziehungen beeinflussen weder Score noch Reihenfolge. Jeder Wert zeigt seine Quelle.</p>
+    <a href="/impressum">Impressum</a>
+    <a href="/datenschutz">Datenschutz</a>
+    <% if (locals.hostRanking) { %><a href="<%= locals.scorePath %>">Methodik</a><% } %>
+  </div>
+</footer>
+<% if (typeof scripts !== 'undefined') { scripts.forEach(function (s) { %><script src="<%= s %>" defer></script><% }) } %>
+</body>
+</html>

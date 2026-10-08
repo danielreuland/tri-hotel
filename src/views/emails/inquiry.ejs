@@ -1,0 +1,16 @@
+<%# Mailtext kommt vom Agenten (geprüft) als Klartext. Absätze werden zu <p>, eine Zeile nur mit URL wird zum Button. %>
+<%- include('_layout_top') %>
+<%
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  var button = 'display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold';
+%>
+<% text.split(/\n{2,}/).forEach(function (para) {
+     var lines = para.split('\n'); var buf = []; %>
+  <% lines.forEach(function (line) { var url = line.trim(); if (/^https?:\/\/\S+$/.test(url)) { %>
+    <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% buf = []; } %>
+    <p><a href="<%= url %>" style="<%= button %>"><%= language === 'de' ? 'Fragen beantworten' : 'Answer the questions' %></a><br>
+      <small style="color:#6a737d"><%= url %></small></p>
+  <% } else { buf.push(line); } }) %>
+  <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% } %>
+<% }) %>
+<%- include('_layout_bottom') %>

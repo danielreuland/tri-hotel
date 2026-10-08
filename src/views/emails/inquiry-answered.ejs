@@ -1,0 +1,5 @@
+<%- include('_layout_top') %>
+<p><strong><%= entityName %></strong> hat auf die Anfrage geantwortet: <%= answers %> Antwort(en)<%= photos ? ', ' + photos + ' Foto(s)' : '' %>.</p>
+<% if (consents && consents.length) { %><p>Neue Einwilligungen: <strong><%= consents.join(', ') %></strong></p><% } %>
+<p><a href="<%= link %>">In der Prüfansicht ansehen</a> – die Werte werden erst übernommen, wenn du sie bestätigst.</p>
+<%- include('_layout_bottom') %>

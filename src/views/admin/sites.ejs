@@ -1,0 +1,19 @@
+<%- include('../partials/admin-head') %>
+<h1>Sites</h1>
+<p class="muted">Jede Site ist eine eigene Marke mit Domain, Absender und Farben – z. B. tri-hotel.de, später hybrid-hotel.de. Rankings gehören zu einer Site.</p>
+<p><a class="btn small" href="/admin/sites/neu">Neue Site</a></p>
+<div class="table-scroll">
+<table>
+  <tr><th>Site</th><th>Domains</th><th>Status</th><th class="num">Rankings</th></tr>
+  <% rows.forEach(function (s) { %>
+    <tr>
+      <td><a href="/admin/sites/<%= s.id %>"><%= s.name %></a><% if (s.is_default) { %> <span class="badge accent">Standard</span><% } %>
+        <br><small class="muted"><%= s.logo_text %> · <%= s.mail_from %></small></td>
+      <td><small><%= [s.primary_domain].concat(s.domains || []).join(', ') %></small></td>
+      <td><span class="badge"><%= STATUSES[s.status] %></span></td>
+      <td class="num"><%= s.ranking_count %></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<%- include('../partials/admin-foot') %>

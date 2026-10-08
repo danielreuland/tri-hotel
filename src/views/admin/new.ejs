@@ -1,0 +1,27 @@
+<%- include('../partials/admin-head') %>
+<h1>Objekt selbst anlegen</h1>
+<p class="muted">Gleicher Prozess wie eine Meldung, aber ohne Bestätigungsmail. Die Auto-Prüfung startet sofort.</p>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<form method="post" class="card">
+  <label>Ranking</label>
+  <select name="ranking_id" required>
+    <% rankings.forEach(function (r) { %><option value="<%= r.id %>" <%= form.ranking_id === r.id ? 'selected' : '' %>><%= r.name %><%= r.status === 'draft' ? ' (Entwurf)' : '' %></option><% }) %>
+  </select>
+  <div class="form-row">
+    <div><label>Name *</label><input name="name" type="text" required value="<%= form.name || '' %>"></div>
+    <div><label>Website *</label><input name="website" type="url" required value="<%= form.website || '' %>"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Ort *</label><input name="city" type="text" required value="<%= form.city || '' %>"></div>
+    <div>
+      <label>Land *</label>
+      <select name="country" required>
+        <option value="">bitte wählen</option>
+        <% COUNTRIES.forEach(function (c) { %><option value="<%= c[0] %>" <%= form.country === c[0] ? 'selected' : '' %>><%= c[1] %> (<%= c[0] %>)</option><% }) %>
+      </select>
+    </div>
+  </div>
+  <label>Notiz</label><textarea name="notes"><%= form.notes || '' %></textarea>
+  <p><button class="btn" type="submit">Anlegen &amp; prüfen</button></p>
+</form>
+<%- include('../partials/admin-foot') %>

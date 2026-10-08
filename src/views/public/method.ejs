@@ -1,0 +1,47 @@
+<%- include('../partials/head') %>
+
+<h1>So funktioniert der <%= ranking.score_name %></h1>
+<p class="lead">Der <%= ranking.score_name %> (0–100) setzt sich aus einem Fakten-Score und – sobald Bewertungen vorliegen – einem Athleten-Score zusammen. Formel und Kriterien sind vollständig öffentlich.</p>
+
+<div class="card">
+  <p><strong><%= ranking.score_name %> = round(<%= String(formula.fact_weight).replace('.', ',') %> · F + <%= String(formula.athlete_weight).replace('.', ',') %> · A)</strong></p>
+  <ul>
+    <li><strong>F – Fakten-Score:</strong> Summe der Punkte aus dem Kriterienkatalog, normiert auf die erreichbaren Punkte der <em>bekannten</em> Kriterien.</li>
+    <li><strong>A – Athleten-Score:</strong> gewichteter Mittelwert der Bewertungen (Bayes-Mittel mit C = <%= formula.bayes_c %>, Startwert <%= formula.bayes_m %>). Neuere Bewertungen zählen mehr. Bis genug Bewertungen vorliegen, gilt der Score als <em>vorläufig</em> und entspricht F.</li>
+    <li><strong>Vollständigkeit:</strong> Ins Ranking kommt nur, wer mindestens <%= formula.min_completeness %> % der Punktegewichte belegt hat. Darunter ist die Seite sichtbar, aber als „Profil unvollständig“ markiert.</li>
+    <li><strong>Aktualität:</strong> Werte, die älter als <%= formula.recheck_months %> Monate sind, werden neu geprüft.</li>
+    <li><strong>Neutralität:</strong> Partner-, Affiliate- oder Werbestatus beeinflusst weder Score noch Reihenfolge.</li>
+  </ul>
+</div>
+
+<h2>Score-Stufen</h2>
+<table>
+  <% ranking.labels.slice().sort(function (a, b) { return b.min - a.min }).forEach(function (l, i, arr) { %>
+    <tr><td class="num"><%= l.min %><%= i === 0 ? '–100' : '–' + (arr[i - 1].min - 1) %></td><td><%= l.label %></td></tr>
+  <% }) %>
+</table>
+
+<h2>Kriterienkatalog</h2>
+<p class="muted"><%= totalPoints %> Punkte insgesamt; der Score wird auf die erreichbaren Punkte normiert.</p>
+<% categories.forEach(function (cat) { %>
+  <h3><%= cat.label %> <small class="muted"><%= cat.criteria.reduce(function (s, c) { return s + c.max_points }, 0) %> Punkte</small></h3>
+  <div class="table-scroll">
+    <table>
+      <tr><th>Kriterium</th><th>Ausprägung → Punkte</th></tr>
+      <% cat.criteria.forEach(function (c) { %>
+        <tr><td><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %></td><td><%= explainScoring(c) %></td></tr>
+      <% }) %>
+    </table>
+  </div>
+<% }) %>
+
+<h2>Woher die Werte kommen</h2>
+<table>
+  <tr><th>Stufe</th><th>Quelle</th></tr>
+  <tr><td>1</td><td>vom <%= ranking.entity_label_sg %> bestätigt</td></tr>
+  <tr><td>2</td><td>von uns geprüft, mit Quelle und Datum</td></tr>
+  <tr><td>3</td><td>von Nutzern bestätigt</td></tr>
+  <tr><td>4</td><td>automatisch ermittelt (Website, OpenStreetMap, Open-Meteo) – wird vor der Veröffentlichung geprüft</td></tr>
+</table>
+
+<%- include('../partials/foot') %>

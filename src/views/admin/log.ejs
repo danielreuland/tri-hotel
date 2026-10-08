@@ -1,0 +1,17 @@
+<%- include('../partials/admin-head') %>
+<h1>Log</h1>
+<div class="table-scroll">
+<table>
+  <tr><th>Zeit</th><th>Wer</th><th>Was</th><th>Objekt</th><th>Änderung</th></tr>
+  <% rows.forEach(function (a) { %>
+    <tr>
+      <td><small><%= new Date(a.created_at).toLocaleString('de-DE') %></small></td>
+      <td><small><%= a.email || (a.persona_name ? a.persona_name + ' (KI)' : 'System') %></small></td>
+      <td><%= a.action %></td>
+      <td><small><%= a.entity_type %><br><%= a.entity_id %></small></td>
+      <td><% if (a.diff) { %><details><summary><small>anzeigen</small></summary><pre class="json"><%= JSON.stringify(a.diff, null, 2) %></pre></details><% } %></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<%- include('../partials/admin-foot') %>

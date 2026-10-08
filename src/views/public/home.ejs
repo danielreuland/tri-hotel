@@ -1,0 +1,207 @@
+<%- include('../partials/head') %>
+<%
+  var title = content.hero_title || ranking.name;
+  var hl = content.hero_highlight && title.indexOf(content.hero_highlight) >= 0 ? content.hero_highlight : null;
+  var methodHref = base + (isHostRanking ? scorePath : '/methodik');
+  var formula = Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {});
+  var maxWeight = Math.max.apply(null, weights.map(function (w) { return w.max }).concat([1]));
+  var checkedCount = ranked.length + incomplete.length;
+%>
+
+<section class="hero-band">
+  <div class="wrap hero-grid">
+    <div>
+      <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
+      <h1 class="hero-title">
+        <% if (hl) { var i = title.indexOf(hl); %><%= title.slice(0, i) %><em><%= hl %></em><%= title.slice(i + hl.length) %><% } else { %><%= title %><% } %>
+      </h1>
+      <p class="hero-text"><%= content.hero_text || ranking.description || '' %></p>
+      <form class="hero-search" method="get" action="#ranking" role="search">
+        <label for="hero-q" class="sr-only"><%= ranking.entity_label_sg %> oder Ort suchen</label>
+        <input id="hero-q" type="search" name="q" value="<%= search.q %>" placeholder="<%= ranking.entity_label_sg %> oder Ort suchen, z. B. Mallorca">
+        <button class="btn" type="submit">Suchen</button>
+      </form>
+      <div class="hero-actions">
+        <a class="btn large secondary" href="#ranking">Zum Ranking</a>
+        <% if (isHostRanking) { %><a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a><% } %>
+      </div>
+    </div>
+
+    <% if (topCard) { %>
+      <a class="score-card" href="<%= entityPath(topCard.entity) %>" style="text-decoration:none;color:inherit">
+        <p class="caption">Platz 1 im Ranking</p>
+        <div class="head">
+          <div>
+            <div class="name"><%= topCard.entity.name %></div>
+            <small><%= topCard.entity.city %><%= topCard.entity.country ? ', ' + topCard.entity.country : '' %> · <%= topCard.label %></small>
+          </div>
+          <span class="score big"><%= topCard.score %></span>
+        </div>
+        <ul class="bars">
+          <% topCard.bars.forEach(function (b) { var pct = b.max ? Math.round(100 * b.points / b.max) : 0; %>
+            <li><span><%= b.label %></span><span class="track"><span class="fill" style="width:<%= pct %>%"></span></span><span class="val"><%= b.points %>/<%= b.max %></span></li>
+          <% }) %>
+        </ul>
+        <p class="muted" style="margin:14px 0 0;font-size:.85rem"><%= ranking.score_name %><%= topCard.provisional ? ' vorläufig, aus geprüften Fakten' : '' %> · Punkte je Kategorie</p>
+      </a>
+    <% } else { %>
+      <div class="score-card">
+        <p class="caption">So setzt sich der <%= ranking.score_name %> zusammen</p>
+        <ul class="bars">
+          <% weights.forEach(function (w) { %>
+            <li><span><%= w.label %></span><span class="track"><span class="fill" style="width:<%= Math.round(100 * w.max / maxWeight) %>%"></span></span><span class="val"><%= w.max %> P.</span></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<div class="stats">
+  <div><strong><%= checkedCount %></strong><span><%= ranking.entity_label_pl %> geprüft</span></div>
+  <div><strong><%= criteriaCount %></strong><span>Kriterien</span></div>
+  <div><strong><%= weights.length %></strong><span>Kategorien</span></div>
+  <div><strong>0–100</strong><span><%= ranking.score_name %>, Formel öffentlich</span></div>
+</div>
+
+<section class="section" id="ranking">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2>Die besten <%= ranking.entity_label_pl %></h2>
+        <p>Sortiert nur nach <%= ranking.score_name %>. Ins Ranking kommt, wer mindestens <%= formula.min_completeness %> % der Punkte mit Fakten belegt hat.</p>
+      </div>
+    </div>
+
+    <form class="search card" method="get" action="#ranking" role="search">
+      <div class="search-row">
+        <div class="search-field grow">
+          <label for="q"><%= ranking.entity_label_sg %> oder Ort</label>
+          <input id="q" type="search" name="q" value="<%= search.q %>" placeholder="z. B. Mallorca oder Mar Azul">
+        </div>
+        <div class="search-field">
+          <label for="land">Land</label>
+          <select id="land" name="land">
+            <option value="">alle Länder</option>
+            <% countries.forEach(function (c) { var n = COUNTRIES.find(function (x) { return x[0] === c }); %><option value="<%= c %>" <%= search.country === c ? 'selected' : '' %>><%= n ? n[1] : c %></option><% }) %>
+          </select>
+        </div>
+        <div class="search-field">
+          <label for="monat">Reisemonat</label>
+          <select id="monat" name="monat">
+            <option value="">bester Monat</option>
+            <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+          </select>
+        </div>
+        <div class="search-field">
+          <label for="min"><%= ranking.score_name %> ab</label>
+          <select id="min" name="min">
+            <option value="">beliebig</option>
+            <% ranking.labels.slice().sort(function (a, b) { return b.min - a.min }).filter(function (l) { return l.min > 0 }).forEach(function (l) { %>
+              <option value="<%= l.min %>" <%= search.minScore === l.min ? 'selected' : '' %>><%= l.min %> · <%= l.label %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      <% if (filterFeatures.length) { %>
+        <details class="search-features" <%= search.features.length ? 'open' : '' %>>
+          <summary>Leistungen<%= search.features.length ? ' (' + search.features.length + ')' : '' %></summary>
+          <div class="chips">
+            <% filterFeatures.forEach(function (f) { %>
+              <label class="chip"><input type="checkbox" name="l" value="<%= f.code %>" <%= search.features.indexOf(f.code) >= 0 ? 'checked' : '' %>> <span><%= f.label %></span></label>
+            <% }) %>
+          </div>
+        </details>
+      <% } %>
+      <div class="search-actions">
+        <button class="btn" type="submit">Suchen</button>
+        <% if (searchActive) { %><a href="<%= base || '/' %>#ranking">Filter zurücksetzen</a><% } %>
+        <span class="muted"><%= searchActive ? ranked.length + ' von ' + totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' : totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' %></span>
+      </div>
+    </form>
+
+    <% if (!ranked.length && searchActive) { %>
+      <div class="card"><p style="margin:0">Kein <%= ranking.entity_label_sg %> passt zu allen Filtern. Entferne einzelne Leistungen oder <a href="<%= base || '/' %>#ranking">setze die Filter zurück</a>.</p></div>
+    <% } else if (!ranked.length) { %>
+      <div class="card"><p style="margin:0">Noch keine <%= ranking.entity_label_pl %> im Ranking. Die ersten Einträge werden gerade geprüft.</p></div>
+    <% } else { %>
+      <ol class="rank-list">
+        <% ranked.forEach(function (e) { %>
+          <li>
+            <a class="rank-item" href="<%= entityPath(e) %><%= month ? '?monat=' + month : '' %>">
+              <span class="pos"><%= e.rank %></span>
+              <span class="info">
+                <span class="name"><%= e.name %></span><br>
+                <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %></small>
+                <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
+                <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
+              </span>
+              <span class="score"><%= e.score %></span>
+            </a>
+          </li>
+        <% }) %>
+      </ol>
+    <% } %>
+
+    <% if (incomplete.length) { %>
+      <h3>Profil unvollständig</h3>
+      <p class="muted">Geprüft, aber noch nicht genug belegte Werte für einen Platz im Ranking.</p>
+      <ul class="rank-list">
+        <% incomplete.forEach(function (e) { %>
+          <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %></small></span><span class="score none">–</span></a></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head"><h2>So entsteht der <%= ranking.score_name %></h2></div>
+    <ol class="process">
+      <li><strong>Fakten sammeln</strong><p>Aus der Website des <%= ranking.entity_label_sg %>s, OpenStreetMap, Klimadaten und Hinweisen aus der Community.</p></li>
+      <li><strong>Von Hand prüfen</strong><p>Jeder Wert bekommt Quelle und Prüfdatum. Kein Eintrag geht ohne Freigabe online.</p></li>
+      <li><strong>Score berechnen</strong><p><%= totalPoints %> Punkte in <%= weights.length %> Kategorien, umgerechnet auf 0–100. Fehlende Werte zählen nicht gegen ein <%= ranking.entity_label_sg %>.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap weights">
+    <div>
+      <h2>Was zählt</h2>
+      <p class="lead">Die Gewichte stehen fest und gelten für alle <%= ranking.entity_label_pl %> gleich. Wer mehr zahlt, steht nicht weiter oben.</p>
+      <p><a class="btn secondary" href="<%= methodHref %>">Formel und alle <%= criteriaCount %> Kriterien</a></p>
+    </div>
+    <div class="card">
+      <ul class="bars">
+        <% weights.forEach(function (w) { %>
+          <li><span><%= w.label %></span><span class="track"><span class="fill" style="width:<%= Math.round(100 * w.max / maxWeight) %>%"></span></span><span class="val"><%= w.max %> P.</span></li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap principles">
+    <div><strong>Neutral</strong><p>Werbung, Affiliate-Links und Partnerschaften ändern weder Score noch Reihenfolge. Buchungslinks sind als Anzeige gekennzeichnet.</p></div>
+    <div><strong>Transparent</strong><p>Jeder Wert zeigt, woher er stammt: vom <%= ranking.entity_label_sg %> bestätigt, von uns geprüft oder automatisch ermittelt.</p></div>
+    <div><strong>Aktuell</strong><p>Werte, die älter als <%= formula.recheck_months %> Monate sind, werden neu geprüft.</p></div>
+  </div>
+</section>
+
+<% if (isHostRanking) { %>
+  <section class="cta-band">
+    <div class="wrap">
+      <div>
+        <h2><%= content.cta_title || (ranking.entity_label_sg + ' hinzufügen') %></h2>
+        <p><%= content.cta_text || '' %></p>
+      </div>
+      <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
+    </div>
+  </section>
+<% } %>
+
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>

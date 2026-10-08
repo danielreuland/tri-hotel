@@ -1,0 +1,36 @@
+<%- include('../partials/admin-head') %>
+<h1>Warteschlange</h1>
+<div class="pill-row">
+  <a class="badge <%= status === 'admin_review' ? 'accent' : '' %>" href="/admin?status=admin_review">in Admin-Prüfung</a>
+  <% Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' }).forEach(function (s) { %>
+    <a class="badge <%= status === s ? 'accent' : '' %>" href="/admin?status=<%= s %><%= rankingId ? '&ranking=' + rankingId : '' %>"><%= STATUS_LABELS[s] %>
+      <% var c = counts.find(function (x) { return x.status === s }) %>(<%= c ? c.n : 0 %>)</a>
+  <% }) %>
+  <a class="badge <%= status === null ? 'accent' : '' %>" href="/admin?status=alle">alle</a>
+</div>
+<form class="filters" method="get">
+  <input type="hidden" name="status" value="<%= status || 'alle' %>">
+  <select name="ranking" data-autosubmit>
+    <option value="">alle Rankings</option>
+    <% allRankings.forEach(function (r) { %><option value="<%= r.id %>" <%= rankingId === r.id ? 'selected' : '' %>><%= r.name %></option><% }) %>
+  </select>
+</form>
+<div class="table-scroll">
+<table>
+  <tr><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Hinweis</th></tr>
+  <% rows.forEach(function (r) { %>
+    <tr>
+      <td><%= formatDate(r.created_at) %></td>
+      <td><a href="/admin/meldungen/<%= r.id %>"><%= r.entity_name %></a><br><small><%= r.city %>, <%= r.country %><%= r.created_by_admin ? ' · Admin' : '' %></small></td>
+      <td><small><%= r.ranking_name %></small></td>
+      <td><span class="badge"><%= STATUS_LABELS[r.status] %></span></td>
+      <td class="num"><%= r.score === null || r.score === undefined ? '–' : r.score %></td>
+      <td class="num"><%= r.completeness === null || r.completeness === undefined ? '–' : Math.round(r.completeness) + ' %' %></td>
+      <td><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
+    </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="7" class="muted">Keine Meldungen in diesem Status.</td></tr><% } %>
+</table>
+</div>
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/admin-foot') %>

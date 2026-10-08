@@ -1,0 +1,128 @@
+<%- include('../partials/head') %>
+
+<p><a href="<%= base || '/' %>">← Alle <%= ranking.entity_label_pl %></a></p>
+
+<div class="grid grid-2" style="align-items:center">
+  <div>
+    <h1><%= entity.name %></h1>
+    <p class="muted"><%= entity.city %><%= entity.country ? ', ' + entity.country : '' %>
+      <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank">Website</a><% } %></p>
+  </div>
+  <div style="display:flex;gap:16px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
+    <div>
+      <div class="muted"><%= ranking.score_name %><%= month ? ' im ' + MONTHS[month - 1] : '' %></div>
+      <% if (result.score !== null) { %>
+        <div><strong><%= result.label %></strong></div>
+        <% if (result.provisional) { %><span class="badge warn">vorläufig</span><% } %>
+        <% if (!eligible) { %><span class="badge">Profil unvollständig</span><% } %>
+      <% } %>
+    </div>
+    <span class="score big <%= result.score === null ? 'none' : '' %>"><%= result.score === null ? '–' : result.score %></span>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <p style="margin:0">
+    Fakten-Score <strong><%= result.factScore === null ? '–' : Math.round(result.factScore) %></strong> ·
+    Vollständigkeit <strong><%= Math.round(result.completeness) %> %</strong>
+    <small>(ins Ranking ab <%= minCompleteness %> %)</small> ·
+    Athleten-Score <strong>folgt</strong> <small>(Bewertungen ab Version 2)</small>
+  </p>
+  <% if (result.provisional) { %>
+    <p class="muted" style="margin:.5em 0 0">Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p>
+  <% } %>
+  <form class="filters" method="get" style="margin-bottom:0">
+    <label for="monat" class="muted" style="margin:0">Reisemonat</label>
+    <select id="monat" name="monat" data-autosubmit>
+      <option value="">bester Monat</option>
+      <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+    </select>
+    <noscript><button class="btn small" type="submit">Neu berechnen</button></noscript>
+  </form>
+</div>
+
+<% if (featureGroups.length) { %>
+  <section style="margin-top:20px">
+    <h2 style="margin-top:0">Leistungen auf einen Blick</h2>
+    <div class="features">
+      <% featureGroups.forEach(function (g) { %>
+        <div class="group"><h3><%= g.label %></h3><ul><% g.items.forEach(function (f) { %><li><%= f.label %></li><% }) %></ul></div>
+      <% }) %>
+    </div>
+    <p class="muted"><small>Einheitliche Bezeichnungen für alle <%= ranking.entity_label_pl %>. Abgeleitet aus den geprüften Fakten unten oder von uns bzw. vom <%= ranking.entity_label_sg %> bestätigt.</small></p>
+  </section>
+<% } %>
+
+<% if (images.length) { %>
+  <div class="grid grid-3" style="margin-top:16px">
+    <% images.forEach(function (img) { %>
+      <figure>
+        <img src="/media/<%= img.id %>" alt="<%= entity.name %>" loading="lazy">
+        <figcaption>© <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><%= img.license ? ' · ' + img.license : '' %></figcaption>
+      </figure>
+    <% }) %>
+  </div>
+<% } %>
+
+<div class="grid grid-2" style="margin-top:8px">
+  <section>
+    <h2>Fakten</h2>
+    <% groups.forEach(function (g) { %>
+      <div class="facts-cat">
+        <h3><span><%= g.label %></span><small><%= g.points %> / <%= g.max %></small></h3>
+        <% g.items.forEach(function (it) { %>
+          <div class="fact">
+            <span><%= it.label %></span>
+            <span class="val <%= it.value === null ? 'unknown' : '' %>"><%= it.value === null ? 'unbekannt' : it.value %><% if (it.points !== null) { %> <small>(<%= it.points %>)</small><% } %></span>
+            <% if (it.source || it.disputed) { %>
+              <span class="src">
+                <%= it.source || '' %>
+                <% if (it.evidenceUrl) { %> · <a href="<%= it.evidenceUrl %>" rel="nofollow noopener" target="_blank">Fundstelle</a><% } %>
+                <% if (it.disputed) { %> · <span class="badge bad">strittig</span><% } %>
+              </span>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% }) %>
+    <p class="muted">Fehlt etwas oder stimmt ein Wert nicht? Schreib uns – wir prüfen jede Rückmeldung.</p>
+  </section>
+
+  <section>
+    <% if (entity.booking_url) { %>
+      <h2>Buchen</h2>
+      <div class="ad">
+        <div class="ad-label">Anzeige</div>
+        <p>Buchung über <%= entity.booking_provider || 'Partner' %>. Wir erhalten bei einer Buchung eine Provision – auf den <%= ranking.score_name %> hat das keinen Einfluss.</p>
+        <a class="btn secondary" href="<%= entity.booking_url %>" rel="sponsored nofollow noopener" target="_blank">Verfügbarkeit prüfen</a>
+      </div>
+    <% } %>
+
+    <% if (climate.length) { %>
+      <h2>Klima je Monat</h2>
+      <div class="table-scroll">
+        <table class="climate">
+          <tr><th></th><% climate.forEach(function (c) { %><th class="<%= c.month === result.month ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+          <tr><th>Ø max °C</th><% climate.forEach(function (c) { %><td class="<%= c.month === result.month ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
+          <tr><th>Ø min °C</th><% climate.forEach(function (c) { %><td class="<%= c.month === result.month ? 'sel' : '' %>"><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
+          <tr><th>Regentage</th><% climate.forEach(function (c) { %><td class="<%= c.month === result.month ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+        </table>
+      </div>
+      <p class="muted"><small>Quelle: Open-Meteo, Mittel der letzten drei Jahre. Markiert: der für den Score verwendete Monat.</small></p>
+    <% } %>
+
+    <% if (entity.lat && entity.lng) { %>
+      <h2>Lage</h2>
+      <div class="map-box" id="map" data-lat="<%= entity.lat %>" data-lng="<%= entity.lng %>" data-name="<%= entity.name %>">
+        <div>
+          <p>Die Karte wird von OpenStreetMap geladen. Dabei wird deine IP-Adresse an deren Server übertragen.</p>
+          <button class="btn small" type="button" id="load-map">Karte laden</button>
+          <p><a href="https://www.openstreetmap.org/?mlat=<%= entity.lat %>&mlon=<%= entity.lng %>#map=13/<%= entity.lat %>/<%= entity.lng %>" target="_blank" rel="noopener">Auf OpenStreetMap öffnen</a></p>
+        </div>
+      </div>
+    <% } %>
+  </section>
+</div>
+
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>

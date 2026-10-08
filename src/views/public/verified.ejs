@@ -1,0 +1,16 @@
+<%- include('../partials/head') %>
+<% if (result === 'ok') { %>
+  <h1>Danke, bestätigt!</h1>
+  <div class="card"><p>Wir prüfen deinen Vorschlag jetzt. Du bekommst eine Mail, sobald die Seite online ist oder falls wir sie nicht aufnehmen können.</p></div>
+<% } else if (result === 'already') { %>
+  <h1>Schon bestätigt</h1>
+  <div class="card"><p>Dieser Vorschlag ist bereits bestätigt und in Prüfung.</p></div>
+<% } else if (result === 'expired') { %>
+  <h1>Link abgelaufen</h1>
+  <div class="card"><p>Der Bestätigungslink war 72 Stunden gültig und ist abgelaufen. Du kannst das Hotel einfach noch einmal hinzufügen.</p></div>
+<% } else { %>
+  <h1>Link ungültig</h1>
+  <div class="card"><p>Dieser Bestätigungslink ist uns nicht bekannt. Bitte prüfe, ob er vollständig kopiert wurde.</p></div>
+<% } %>
+<p><a class="btn secondary" href="/">Zur Startseite</a></p>
+<%- include('../partials/foot') %>

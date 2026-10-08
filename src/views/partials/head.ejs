@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de" data-theme-default="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · <%= locals.site ? site.name : '' %></title>
+  <% if (typeof description !== 'undefined' && description) { %><meta name="description" content="<%= description %>"><% } %>
+  <% if (typeof canonical !== 'undefined' && canonical) { %><link rel="canonical" href="<%= canonical %>"><% } %>
+  <% if ((typeof noindex !== 'undefined' && noindex) || locals.noindexAll) { %><meta name="robots" content="noindex, nofollow"><% } %>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="/static/js/theme.js"></script>
+  <% if (locals.siteCss) { %><style><%- siteCss %></style><% } %>
+</head>
+<body class="<%= locals.fullWidth ? 'landing' : '' %>">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/"><%- include('logo') %></a>
+    <nav>
+      <% if (locals.hostRanking) { %>
+        <a href="/#ranking">Ranking</a>
+        <a href="<%= locals.scorePath %>">So funktioniert der <%= hostRanking.score_name %></a>
+        <a class="nav-cta" href="/<%= hostRanking.entity_type %>-hinzufuegen"><%= hostRanking.entity_label_sg %> hinzufügen</a>
+      <% } %>
+      <%- include('theme-toggle') %>
+    </nav>
+  </div>
+</header>
+<main>
+<% if (!locals.fullWidth) { %><div class="wrap"><% } %>

@@ -1,0 +1,9 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/rankings">← Rankings</a></p>
+<h1><%= title %></h1>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<form method="post" class="card">
+  <%- include('_ranking-fields') %>
+  <p><button class="btn" type="submit">Anlegen</button></p>
+</form>
+<%- include('../partials/admin-foot') %>

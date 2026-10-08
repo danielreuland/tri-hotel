@@ -1,0 +1,44 @@
+<%- include('../partials/admin-head') %>
+<h1>Aufgaben</h1>
+
+<h2>Antworten von Betreibern (<%= answers.length %>)</h2>
+<% if (!answers.length) { %><p class="muted">Keine offenen Antworten.</p><% } else { %>
+<div class="table-scroll"><table><tr><th>Objekt</th><th>Kriterium</th><th>Antwort</th><th></th></tr>
+<% answers.forEach(function (a) { %><tr>
+  <td><a href="/admin/meldungen/<%= a.submission_id %>#anfragen"><%= a.entity_name %></a><br><small class="muted"><%= formatDate(a.answered_at) %><%= a.reply_name ? ' · ' + a.reply_name : '' %></small></td>
+  <td><%= a.criterion_label %></td>
+  <td><strong><%= a.value ? (describeValue({ scoring: a.scoring }, a.value) || '') : 'weiß nicht' %></strong><% if (a.comment) { %><br><small class="muted">„<%= a.comment %>“</small><% } %></td>
+  <td style="white-space:nowrap">
+    <form method="post" action="/admin/antworten/<%= a.id %>/uebernehmen" style="display:inline"><input type="hidden" name="back" value="/admin/aufgaben"><button class="btn small" type="submit" <%= a.value ? '' : 'disabled' %>>Übernehmen</button></form>
+    <form method="post" action="/admin/antworten/<%= a.id %>/verwerfen" style="display:inline"><input type="hidden" name="back" value="/admin/aufgaben"><button class="btn small secondary" type="submit">Verwerfen</button></form>
+  </td></tr><% }) %>
+</table></div><% } %>
+
+<% if (failedInquiries.length) { %>
+<h2>Fehlgeschlagene Anfragen (<%= failedInquiries.length %>)</h2>
+<ul><% failedInquiries.forEach(function (i) { %><li><a href="/admin/meldungen/<%= i.submission_id %>#anfragen"><%= i.entity_name %></a> – <%= i.error %></li><% }) %></ul>
+<% } %>
+
+<h2>Strittige Werte (<%= disputed.length %>)</h2>
+<% if (!disputed.length) { %><p class="muted">Keine.</p><% } else { %>
+<table><tr><th>Objekt</th><th>Kriterium</th><th>Geprüft</th></tr>
+<% disputed.forEach(function (f) { %><tr><td><a href="/admin/meldungen/<%= f.submission_id %>#fakten"><%= f.entity_name %></a></td><td><%= f.criterion_label %></td><td><%= formatDate(f.checked_at) %></td></tr><% }) %>
+</table><% } %>
+
+<h2>Fällige Nachprüfungen (<%= recheck.length %>)</h2>
+<% if (!recheck.length) { %><p class="muted">Keine – alle Werte sind aktuell.</p><% } else { %>
+<table><tr><th>Objekt</th><th>Kriterium</th><th>Zuletzt geprüft</th></tr>
+<% recheck.forEach(function (f) { %><tr><td><a href="/admin/meldungen/<%= f.submission_id %>#fakten"><%= f.entity_name %></a></td><td><%= f.criterion_label %></td><td><%= formatDate(f.checked_at) %></td></tr><% }) %>
+</table><% } %>
+
+<h2>Bilder: Freigabe offen oder Rechte laufen ab (<%= images.length %>)</h2>
+<% if (!images.length) { %><p class="muted">Keine.</p><% } else { %>
+<table><tr><th>Objekt</th><th>Lizenz</th><th>Status</th></tr>
+<% images.forEach(function (i) { %><tr><td><a href="/admin/meldungen/<%= i.submission_id %>#bilder"><%= i.entity_name %></a></td><td><%= i.license %></td>
+  <td><%= i.approved_at ? '' : 'nicht freigegeben' %><%= i.valid_until ? ' · gültig bis ' + formatDate(i.valid_until) : '' %></td></tr><% }) %>
+</table><% } %>
+
+<h2>Hängende Auto-Prüfungen (<%= stuck.length %>)</h2>
+<% if (!stuck.length) { %><p class="muted">Keine.</p><% } else { %>
+<ul><% stuck.forEach(function (s) { %><li><a href="/admin/meldungen/<%= s.id %>"><%= s.entity_name %></a> – seit <%= new Date(s.updated_at).toLocaleString('de-DE') %></li><% }) %></ul><% } %>
+<%- include('../partials/admin-foot') %>

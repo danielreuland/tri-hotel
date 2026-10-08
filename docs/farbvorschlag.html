@@ -1,0 +1,247 @@
+<title>tri-hotel Farbvorschlag</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800&display=swap">
+<style>
+  /* Layout: Analyse oben, dann drei Paletten nebeneinander (auf dem Handy untereinander), Empfehlung mit Dunkel-Variante unten.
+     Die Seite selbst folgt dem Theme des Betrachters; die Mini-Mockups zeigen bewusst feste Paletten. */
+  :root {
+    --bg: #f4f6f8; --fg: #14202b; --muted: #5a6875; --card: #ffffff; --line: #d9e0e6; --accent: #0b6f6a;
+    --display: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    --body: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #0f151b; --fg: #e6edf3; --muted: #93a1ae; --card: #17202a; --line: #2a3643; --accent: #3fd3c4; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #0f151b; --fg: #e6edf3; --muted: #93a1ae; --card: #17202a; --line: #2a3643; --accent: #3fd3c4; color-scheme: dark; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; }
+  h1, h2 { font-family: var(--display); font-weight: 400; letter-spacing: .03em; line-height: 1.05; text-wrap: balance; }
+  h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 8px; }
+  h2 { font-size: 1.8rem; margin: 40px 0 12px; }
+  h3 { margin: 0 0 4px; font-size: 1.05rem; }
+  p { max-width: 70ch; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  .findings { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); margin-top: 16px; }
+  .finding { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .finding strong { display: block; margin-bottom: 2px; }
+  .finding p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  .palettes { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); align-items: start; }
+  .palette { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+  .palette.rec { outline: 3px solid var(--accent); outline-offset: -1px; }
+  .palette header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .tag { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--accent); color: var(--accent); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin: 12px 0; }
+  .sw { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: .72rem; }
+  .sw i { display: block; height: 30px; }
+  .sw span { display: block; padding: 3px 6px; font-variant-numeric: tabular-nums; }
+  .checks { list-style: none; padding: 0; margin: 10px 0 0; font-size: .82rem; display: grid; gap: 2px; }
+  .ok::before { content: "✓ "; color: #2f9e57; font-weight: 800; }
+  .warn::before { content: "! "; color: #c77700; font-weight: 800; }
+  .pro { margin: 10px 0 0; font-size: .9rem; }
+
+  /* ---------- Mini-Mockup, gesteuert über --m-* Variablen je Palette ---------- */
+  .mock { border-radius: 10px; overflow: hidden; border: 1px solid var(--m-line); background: var(--m-bg); color: var(--m-text); font: 13px/1.5 var(--body); }
+  .m-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--m-header); color: var(--m-header-text); }
+  .m-logo { font: 400 1.2rem var(--display); letter-spacing: .05em; }
+  .m-logo b { color: var(--m-logo-accent); font-weight: 400; }
+  .m-nav { font-size: .72rem; font-weight: 700; opacity: .9; display: flex; gap: 10px; }
+  .m-hero { padding: 14px 12px 12px; background: var(--m-hero); }
+  .m-eyebrow { font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--m-link); }
+  .m-h1 { font: 400 1.9rem/0.95 var(--display); margin: 4px 0 8px; color: var(--m-heading); }
+  .m-h1 em { font-style: normal; color: var(--m-highlight); }
+  .m-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .m-btn { border-radius: 99px; padding: 6px 12px; font-weight: 800; font-size: .74rem; background: var(--m-primary); color: var(--m-primary-text); }
+  .m-btn.cta { background: var(--m-cta); color: var(--m-cta-text); }
+  .m-btn.ghost { background: transparent; color: var(--m-text); border: 1px solid var(--m-line); }
+  .m-body { padding: 12px; display: grid; gap: 8px; }
+  .m-row { display: flex; gap: 10px; align-items: center; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: 8px; padding: 8px 10px; }
+  .m-pos { font: 400 1.2rem var(--display); color: var(--m-muted); width: 14px; text-align: right; }
+  .m-info { flex: 1; min-width: 0; }
+  .m-name { font-weight: 800; }
+  .m-sub { font-size: .7rem; color: var(--m-muted); }
+  .m-badge { font-size: .62rem; font-weight: 800; border: 1px solid var(--m-warn); color: var(--m-warn); border-radius: 99px; padding: 0 6px; }
+  .m-score { display: grid; place-items: center; min-width: 44px; height: 44px; border-radius: 10px; font: 400 1.6rem var(--display);
+    background: var(--m-score-bg); color: var(--m-score-text); border: 2px solid var(--m-score-ring); }
+  .m-card { background: var(--m-surface); border: 1px solid var(--m-line); border-radius: 8px; padding: 8px 10px; }
+  .m-fact { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--m-line); padding: 4px 0; }
+  .m-fact:last-child { border-bottom: 0; }
+  .m-src { font-size: .64rem; color: var(--m-muted); }
+  .m-src a { color: var(--m-link); }
+  .m-bar { display: grid; grid-template-columns: 6.5em 1fr 2.6em; gap: 6px; align-items: center; font-size: .7rem; }
+  .m-track { height: 6px; border-radius: 9px; background: var(--m-track); overflow: hidden; }
+  .m-track i { display: block; height: 100%; background: var(--m-bar); border-radius: 9px; }
+  .m-ad { border: 1px dashed var(--m-line); border-radius: 8px; padding: 8px 10px; background: var(--m-surface); }
+  .m-ad small { font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--m-muted); }
+
+  /* Palette A – Lagune: nah an triprep, Türkis bleibt Leitfarbe, für Text abgedunkelt */
+  .pal-a { --m-bg:#f6f9f9; --m-surface:#ffffff; --m-line:#d4dfdf; --m-text:#10212b; --m-heading:#10212b; --m-muted:#55656d;
+    --m-header:#ffffff; --m-header-text:#10212b; --m-logo-accent:#0a7c72; --m-hero:linear-gradient(180deg,#e3f6f4,#f6f9f9);
+    --m-link:#0a7c72; --m-highlight:#0a7c72; --m-primary:#0a7c72; --m-primary-text:#ffffff; --m-cta:#0dcfbd; --m-cta-text:#04211e;
+    --m-score-bg:#ffffff; --m-score-text:#0a7c72; --m-score-ring:#0a7c72; --m-bar:#0dcfbd; --m-track:#e3ecec; --m-warn:#9a6700; }
+  /* Palette B – Pool & Sonne: Navy für Vertrauen (Reisebranche), Türkis als Marke, Koralle nur für „melden“ */
+  .pal-b { --m-bg:#f5f8fb; --m-surface:#ffffff; --m-line:#d8e1ea; --m-text:#102a43; --m-heading:#12345a; --m-muted:#52637a;
+    --m-header:#12345a; --m-header-text:#ffffff; --m-logo-accent:#0dcfbd; --m-hero:linear-gradient(180deg,#e7f1f8,#f5f8fb);
+    --m-link:#0b6f6a; --m-highlight:#0b6f6a; --m-primary:#12345a; --m-primary-text:#ffffff; --m-cta:#ff7a59; --m-cta-text:#102a43;
+    --m-score-bg:#12345a; --m-score-text:#ffffff; --m-score-ring:#0dcfbd; --m-bar:#0dcfbd; --m-track:#e3eaf1; --m-warn:#9a6700; }
+  .pal-b-dark { --m-bg:#0f1a24; --m-surface:#162433; --m-line:#26384a; --m-text:#e7eef5; --m-heading:#ffffff; --m-muted:#93a4b5;
+    --m-header:#0b1520; --m-header-text:#e7eef5; --m-logo-accent:#0dcfbd; --m-hero:linear-gradient(180deg,#132638,#0f1a24);
+    --m-link:#3fd3c4; --m-highlight:#0dcfbd; --m-primary:#0dcfbd; --m-primary-text:#04211e; --m-cta:#ff7a59; --m-cta-text:#102a43;
+    --m-score-bg:#12345a; --m-score-text:#ffffff; --m-score-ring:#0dcfbd; --m-bar:#0dcfbd; --m-track:#22354a; --m-warn:#d29922; }
+  /* Palette C – Startnummer: Tinte + Signal-Orange, sportlich und plakativ */
+  .pal-c { --m-bg:#f7f7f5; --m-surface:#ffffff; --m-line:#e0dfd8; --m-text:#14213d; --m-heading:#14213d; --m-muted:#5c6475;
+    --m-header:#14213d; --m-header-text:#ffffff; --m-logo-accent:#f28c28; --m-hero:linear-gradient(180deg,#fff1e2,#f7f7f5);
+    --m-link:#a64d00; --m-highlight:#c25a00; --m-primary:#14213d; --m-primary-text:#ffffff; --m-cta:#f28c28; --m-cta-text:#14213d;
+    --m-score-bg:#ffffff; --m-score-text:#14213d; --m-score-ring:#f28c28; --m-bar:#f28c28; --m-track:#eeebe4; --m-warn:#9a6700; }
+
+  .decision { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); align-items: start; }
+  .decision ul { padding-left: 1.2em; margin: 6px 0 0; }
+  .decision li { margin-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 700; }
+  .scroll { overflow-x: auto; }
+</style>
+
+<div class="wrap">
+  <p class="muted" style="margin:0">tri-hotel.de · Farbvorschlag · 8. Oktober 2026 · <strong style="color:var(--accent)">Entschieden: B · Pool &amp; Sonne</strong></p>
+  <h1>Hell zuerst, mit Navy, Türkis und einem warmen Akzent</h1>
+  <p>Hotel- und Reiseportale arbeiten fast durchweg hell. Wer ein Hotel sucht, vergleicht Fakten, Preise und später Fotos; dafür steht ein ruhiger, heller Grund. Der dunkle Look von triprep passt zu einem Trainings-Tool, wirkt bei einer Hotelübersicht aber eher wie ein Dashboard als wie eine Empfehlung.</p>
+
+  <div class="findings">
+    <div class="finding"><strong>Konvention der Branche</strong><p>Große Hotel- und Bewertungsportale setzen auf weißen Grund, eine dunkelblaue oder kräftige Markenfarbe für Vertrauen und einen einzelnen warmen Akzent für die wichtigste Aktion.</p></div>
+    <div class="finding"><strong>Fotos kommen dazu</strong><p>Sobald Hotels Fotos freigeben, tragen Bilder die Seite. Helle Flächen lassen Pool, Meer und Zimmer wirken; dunkle Ränder machen Fotos schwer und kontrastreich.</p></div>
+    <div class="finding"><strong>Türkis allein trägt nicht auf Weiß</strong><p>#0DCFBD erreicht auf Weiß nur 1,97 : 1. Als Text, Link oder Button mit weißer Schrift ist es zu schwach (Minimum 4,5 : 1); als Balken, Ring oder Logo-Akzent funktioniert es.</p></div>
+    <div class="finding"><strong>Score braucht eine eigene Form</strong><p>Der Score ist das wichtigste Element. Er sollte sich von Buttons unterscheiden, damit niemand die Zahl anklickt oder einen Button für eine Bewertung hält.</p></div>
+  </div>
+
+  <h2>Drei Richtungen</h2>
+  <div class="palettes">
+
+    <section class="palette">
+      <header><h3>A · Lagune</h3><span class="tag" style="border-color:#8a96a0;color:#8a96a0">nah an triprep</span></header>
+      <div class="swatches">
+        <div class="sw"><i style="background:#f6f9f9"></i><span>Grund #F6F9F9</span></div>
+        <div class="sw"><i style="background:#10212b"></i><span>Text #10212B</span></div>
+        <div class="sw"><i style="background:#0a7c72"></i><span>Petrol #0A7C72</span></div>
+        <div class="sw"><i style="background:#0dcfbd"></i><span>Türkis #0DCFBD</span></div>
+      </div>
+      <div class="mock pal-a">
+        <div class="m-head"><span class="m-logo">TRI<b>-</b>HOTEL</span><span class="m-nav">Ranking · TriScore · Melden</span></div>
+        <div class="m-hero"><div class="m-eyebrow">Neutral · geprüft</div><div class="m-h1">Das richtige Hotel fürs <em>Trainingslager</em></div>
+          <div class="m-btns"><span class="m-btn">Zum Ranking</span><span class="m-btn cta">Hotel melden</span></div></div>
+        <div class="m-body">
+          <div class="m-row"><span class="m-pos">1</span><span class="m-info"><span class="m-name">Hotel Mar Azul</span><br><span class="m-sub">Colònia de Sant Jordi · Top-Trainingshotel</span> <span class="m-badge">vorläufig</span></span><span class="m-score">93</span></div>
+          <div class="m-card"><div class="m-bar"><span>Schwimmen</span><span class="m-track"><i style="width:100%"></i></span><span>30/30</span></div><div class="m-bar"><span>Rad</span><span class="m-track"><i style="width:89%"></i></span><span>25/28</span></div></div>
+          <div class="m-card"><div class="m-fact"><span>Becken</span><b>50 m im Hotel</b></div><div class="m-src">geprüft am 28.09.2026 · <a>Fundstelle</a></div></div>
+          <div class="m-ad"><small>Anzeige</small><br><span class="m-btn" style="display:inline-block;margin-top:4px">Verfügbarkeit prüfen</span></div>
+        </div>
+      </div>
+      <ul class="checks"><li class="ok">Text 15,6 : 1 · Links und Buttons 5,1 : 1</li><li class="warn">Türkis-Button nur mit dunkler Schrift lesbar</li></ul>
+      <p class="pro">Bleibt nah an triprep und wirkt frisch. Schwäche: Eine einzige Farbfamilie für Marke, Aktion und Score; „Hotel melden“ und „Buchen“ sehen sich ähnlich.</p>
+    </section>
+
+    <section class="palette rec">
+      <header><h3>B · Pool &amp; Sonne</h3><span class="tag">Empfehlung</span></header>
+      <div class="swatches">
+        <div class="sw"><i style="background:#f5f8fb"></i><span>Grund #F5F8FB</span></div>
+        <div class="sw"><i style="background:#12345a"></i><span>Navy #12345A</span></div>
+        <div class="sw"><i style="background:#0b6f6a"></i><span>Petrol #0B6F6A</span></div>
+        <div class="sw"><i style="background:#0dcfbd"></i><span>Türkis #0DCFBD</span></div>
+        <div class="sw"><i style="background:#ff7a59"></i><span>Koralle #FF7A59</span></div>
+      </div>
+      <div class="mock pal-b">
+        <div class="m-head"><span class="m-logo">TRI<b>-</b>HOTEL</span><span class="m-nav">Ranking · TriScore · Melden</span></div>
+        <div class="m-hero"><div class="m-eyebrow">Neutral · geprüft</div><div class="m-h1">Das richtige Hotel fürs <em>Trainingslager</em></div>
+          <div class="m-btns"><span class="m-btn">Zum Ranking</span><span class="m-btn cta">Hotel melden</span></div></div>
+        <div class="m-body">
+          <div class="m-row"><span class="m-pos">1</span><span class="m-info"><span class="m-name">Hotel Mar Azul</span><br><span class="m-sub">Colònia de Sant Jordi · Top-Trainingshotel</span> <span class="m-badge">vorläufig</span></span><span class="m-score">93</span></div>
+          <div class="m-card"><div class="m-bar"><span>Schwimmen</span><span class="m-track"><i style="width:100%"></i></span><span>30/30</span></div><div class="m-bar"><span>Rad</span><span class="m-track"><i style="width:89%"></i></span><span>25/28</span></div></div>
+          <div class="m-card"><div class="m-fact"><span>Becken</span><b>50 m im Hotel</b></div><div class="m-src">geprüft am 28.09.2026 · <a>Fundstelle</a></div></div>
+          <div class="m-ad"><small>Anzeige</small><br><span class="m-btn ghost" style="display:inline-block;margin-top:4px">Verfügbarkeit prüfen</span></div>
+        </div>
+      </div>
+      <ul class="checks"><li class="ok">Text 13,7 : 1 · Navy 12,6 : 1 · Links 6,0 : 1</li><li class="ok">Navy-Schrift auf Koralle 5,7 : 1</li></ul>
+      <p class="pro">Navy gibt Vertrauen wie bei etablierten Reiseportalen, Türkis bleibt als Markenzeichen (Logo, Score-Ring, Balken), Koralle ist allein der Mitmach-Aktion vorbehalten. Der Score bekommt eine eigene dunkle Kachel und ist damit klar kein Button.</p>
+    </section>
+
+    <section class="palette">
+      <header><h3>C · Startnummer</h3><span class="tag" style="border-color:#8a96a0;color:#8a96a0">sportlich</span></header>
+      <div class="swatches">
+        <div class="sw"><i style="background:#f7f7f5"></i><span>Grund #F7F7F5</span></div>
+        <div class="sw"><i style="background:#14213d"></i><span>Tinte #14213D</span></div>
+        <div class="sw"><i style="background:#f28c28"></i><span>Signal #F28C28</span></div>
+        <div class="sw"><i style="background:#a64d00"></i><span>Link #A64D00</span></div>
+      </div>
+      <div class="mock pal-c">
+        <div class="m-head"><span class="m-logo">TRI<b>-</b>HOTEL</span><span class="m-nav">Ranking · TriScore · Melden</span></div>
+        <div class="m-hero"><div class="m-eyebrow">Neutral · geprüft</div><div class="m-h1">Das richtige Hotel fürs <em>Trainingslager</em></div>
+          <div class="m-btns"><span class="m-btn">Zum Ranking</span><span class="m-btn cta">Hotel melden</span></div></div>
+        <div class="m-body">
+          <div class="m-row"><span class="m-pos">1</span><span class="m-info"><span class="m-name">Hotel Mar Azul</span><br><span class="m-sub">Colònia de Sant Jordi · Top-Trainingshotel</span> <span class="m-badge">vorläufig</span></span><span class="m-score">93</span></div>
+          <div class="m-card"><div class="m-bar"><span>Schwimmen</span><span class="m-track"><i style="width:100%"></i></span><span>30/30</span></div><div class="m-bar"><span>Rad</span><span class="m-track"><i style="width:89%"></i></span><span>25/28</span></div></div>
+          <div class="m-card"><div class="m-fact"><span>Becken</span><b>50 m im Hotel</b></div><div class="m-src">geprüft am 28.09.2026 · <a>Fundstelle</a></div></div>
+          <div class="m-ad"><small>Anzeige</small><br><span class="m-btn" style="display:inline-block;margin-top:4px">Verfügbarkeit prüfen</span></div>
+        </div>
+      </div>
+      <ul class="checks"><li class="ok">Text 14,9 : 1 · Tinte auf Orange 6,5 : 1</li><li class="warn">Weiß auf Orange nur 4,4 : 1 – Orange braucht dunkle Schrift</li></ul>
+      <p class="pro">Erinnert an Startnummern und Wettkampf, sehr eigenständig. Schwäche: Orange wird schnell als Warnung oder Rabatt gelesen und trennt tri-hotel optisch von triprep.</p>
+    </section>
+  </div>
+
+  <h2>B und C auf den echten Seiten</h2>
+  <p>Dieselben Vorlagen wie im Entwurf, nur mit der jeweiligen Palette. Oben rechts lässt sich auf Dunkel umschalten.</p>
+  <div class="findings">
+    <a class="finding" href="vergleich/b-startseite.html" style="text-decoration:none;color:inherit"><strong>B · Startseite →</strong><p>Navy-Kopf, Türkis für Score-Ring und Balken, Koralle nur bei „Hotel melden“.</p></a>
+    <a class="finding" href="vergleich/c-startseite.html" style="text-decoration:none;color:inherit"><strong>C · Startseite →</strong><p>Tinten-Kopf, Signal-Orange für Score, Balken, Hervorhebung und „Hotel melden“.</p></a>
+    <a class="finding" href="vergleich/b-hotelseite.html" style="text-decoration:none;color:inherit"><strong>B · Hotelseite →</strong><p>Score als dunkle Kachel mit Türkis-Ring; Buchung neutral umrandet.</p></a>
+    <a class="finding" href="vergleich/c-hotelseite.html" style="text-decoration:none;color:inherit"><strong>C · Hotelseite →</strong><p>Score als helle Kachel mit Orange-Ring; Buchung neutral umrandet.</p></a>
+  </div>
+  <p class="muted">Beobachtung: Auf den echten Seiten liegen B und C näher beieinander als in den Mini-Mockups, weil beide einen dunklen Kopf haben. Der Unterschied steckt in der Akzentfarbe: Türkis wirkt kühl und sachlich, Orange warm und sportlich, und Orange taucht in C an mehr Stellen auf (Score, Balken, Hervorhebung, Button).</p>
+
+  <h2>Empfehlung im Detail</h2>
+  <div class="decision">
+    <div>
+      <h3>B · Pool &amp; Sonne, Rollen der Farben</h3>
+      <ul>
+        <li><strong>Navy</strong>: Kopfzeile, Überschriften, Hauptbuttons („Zum Ranking“), Score-Kachel.</li>
+        <li><strong>Türkis</strong>: Logo-Strich, Score-Ring, Balken, Markierungen. Nie als Textfarbe auf Weiß.</li>
+        <li><strong>Petrol</strong>: Links und hervorgehobene Wörter (lesbare Türkis-Variante).</li>
+        <li><strong>Koralle</strong>: nur „Hotel melden“ und Antworten an Hotels. Buchungsbuttons bleiben bewusst neutral (Rahmen), damit Werbung nicht lauter ist als der Score.</li>
+        <li><strong>Hell als Standard</strong>: Die Seite startet immer hell, auch wenn das System dunkel eingestellt ist. Dunkel gibt es per Umschalter für alle, die es wollen; der Adminbereich darf weiter der Systemeinstellung folgen.</li>
+        <li><strong>Pro Site anpassbar</strong>: Die Farben sind Site-Einstellungen. hybrid-hotel.de kann später dieselbe Struktur mit eigener Leitfarbe nutzen.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Dunkle Variante (per Umschalter)</h3>
+      <div class="mock pal-b-dark">
+        <div class="m-head"><span class="m-logo">TRI<b>-</b>HOTEL</span><span class="m-nav">Ranking · TriScore · Melden</span></div>
+        <div class="m-hero"><div class="m-eyebrow">Neutral · geprüft</div><div class="m-h1">Das richtige Hotel fürs <em>Trainingslager</em></div>
+          <div class="m-btns"><span class="m-btn">Zum Ranking</span><span class="m-btn cta">Hotel melden</span></div></div>
+        <div class="m-body">
+          <div class="m-row"><span class="m-pos">1</span><span class="m-info"><span class="m-name">Hotel Mar Azul</span><br><span class="m-sub">Colònia de Sant Jordi · Top-Trainingshotel</span> <span class="m-badge">vorläufig</span></span><span class="m-score">93</span></div>
+          <div class="m-card"><div class="m-fact"><span>Becken</span><b>50 m im Hotel</b></div><div class="m-src">geprüft am 28.09.2026 · <a>Fundstelle</a></div></div>
+        </div>
+      </div>
+      <ul class="checks"><li class="ok">Türkis auf Dunkel 9,6 : 1 · Koralle-Button identisch zum Hellmodus</li></ul>
+    </div>
+  </div>
+
+  <h2>Kontraste (WCAG 2.2, Normtext ≥ 4,5 : 1)</h2>
+  <div class="scroll">
+    <table>
+      <tr><th>Kombination</th><th>Kontrast</th><th>Ergebnis</th></tr>
+      <tr><td>Türkis #0DCFBD auf Weiß (heute im Hellmodus für Links)</td><td>1,97 : 1</td><td>nicht lesbar als Text</td></tr>
+      <tr><td>B · Text #102A43 auf Grund #F5F8FB</td><td>13,74 : 1</td><td>sehr gut</td></tr>
+      <tr><td>B · Navy #12345A auf Weiß</td><td>12,62 : 1</td><td>sehr gut</td></tr>
+      <tr><td>B · Petrol-Link #0B6F6A auf Weiß</td><td>6,01 : 1</td><td>gut</td></tr>
+      <tr><td>B · Navy #102A43 auf Koralle #FF7A59 (Button „hinzufügen“)</td><td>5,70 : 1</td><td>gut</td></tr>
+      <tr><td>Weiß auf Koralle #FF7A59</td><td>2,57 : 1</td><td>zu schwach – daher Navy-Schrift</td></tr>
+      <tr><td>Weiß auf Ziegelrot #C2452A (erster Entwurf)</td><td>5,03 : 1</td><td>lesbar, wirkte aber braun</td></tr>
+      <tr><td>B · Nebentext #52637A auf Weiß</td><td>6,13 : 1</td><td>gut</td></tr>
+      <tr><td>A · Weiß auf Petrol #0A7C72</td><td>5,07 : 1</td><td>gut</td></tr>
+      <tr><td>C · Weiß auf Orange #C25A00</td><td>4,42 : 1</td><td>knapp zu wenig</td></tr>
+      <tr><td>C · Tinte auf Orange #F28C28</td><td>6,51 : 1</td><td>gut</td></tr>
+    </table>
+  </div>
+</div>

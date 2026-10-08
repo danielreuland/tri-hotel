@@ -1,0 +1,62 @@
+<%- include('../partials/admin-head') %>
+<% var t = s.theme || {}; var l = s.legal || {}; %>
+<p><a href="/admin/sites">← Sites</a></p>
+<h1><%= title %> <% if (locals.isDefault) { %><span class="badge accent">Standard</span><% } %></h1>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+
+<form method="post" action="/admin/sites/<%= isNew ? 'neu' : siteId %>" class="card">
+  <div class="form-row">
+    <div><label>Name (Marke) *</label><input name="name" type="text" required value="<%= s.name || '' %>" placeholder="hybrid-hotel.de"></div>
+    <div><label>Logo-Text *</label><input name="logo_text" type="text" required value="<%= s.logo_text || '' %>" placeholder="HYBRID-HOTEL"><small class="muted">Der erste Bindestrich erscheint in der Akzentfarbe.</small></div>
+    <div><label>Code *</label><input name="code" type="text" required value="<%= s.code || '' %>" placeholder="hybrid-hotel"></div>
+    <div><label>Status</label><select name="status"><% Object.keys(STATUSES).forEach(function (k) { %><option value="<%= k %>" <%= s.status === k ? 'selected' : '' %>><%= STATUSES[k] %></option><% }) %></select></div>
+  </div>
+  <div class="form-row">
+    <div><label>Hauptdomain *</label><input name="primary_domain" type="text" required value="<%= s.primary_domain || '' %>"></div>
+    <div><label>Weitere Domains</label><input name="domains" type="text" value="<%= (s.domains || []).join(', ') %>" placeholder="www.hybrid-hotel.de"></div>
+  </div>
+  <h3>Farben</h3>
+  <div class="form-row">
+    <div><label>Palette</label><select name="preset"><% Object.keys(PALETTES).forEach(function (k) { %><option value="<%= k %>" <%= (t.preset || 'pool') === k ? 'selected' : '' %>><%= PALETTES[k].name %></option><% }) %></select>
+      <small class="muted">Kontraste der Paletten sind geprüft. Einzelne Farben lassen sich unten überschreiben.</small></div>
+  </div>
+  <details>
+    <summary><small>Einzelne Farben überschreiben (fortgeschritten)</small></summary>
+    <div class="form-row">
+      <div><label>Hell (JSON)</label><textarea class="code" name="theme_light" style="min-height:90px" placeholder='{"cta":"#c2452a"}'><%= t.light && Object.keys(t.light).length ? JSON.stringify(t.light, null, 2) : '' %></textarea></div>
+      <div><label>Dunkel (JSON)</label><textarea class="code" name="theme_dark" style="min-height:90px"><%= t.dark && Object.keys(t.dark).length ? JSON.stringify(t.dark, null, 2) : '' %></textarea></div>
+    </div>
+    <small class="muted">Erlaubte Namen: <%= TOKENS.join(', ') %></small>
+  </details>
+  <h3>Mail</h3>
+  <div class="form-row">
+    <div><label>Absender *</label><input name="mail_from" type="email" required value="<%= s.mail_from || '' %>"></div>
+    <div><label>Antwortadresse</label><input name="mail_reply_to" type="email" value="<%= s.mail_reply_to || '' %>"></div>
+  </div>
+  <h3>Impressum</h3>
+  <div class="form-row">
+    <div><label>Anbieter</label><input name="legal_owner" type="text" value="<%= l.owner || '' %>"></div>
+    <div><label>E-Mail</label><input name="legal_email" type="email" value="<%= l.email || '' %>"></div>
+    <div><label>Verantwortlich (MStV)</label><input name="legal_responsible" type="text" value="<%= l.responsible || '' %>"></div>
+  </div>
+  <label>Anschrift</label><textarea name="legal_address" style="min-height:70px"><%= l.address || '' %></textarea>
+  <p><button class="btn" type="submit"><%= isNew ? 'Anlegen' : 'Speichern' %></button></p>
+</form>
+
+<% if (!isNew) { %>
+  <h2 id="personas">Virtuelle Mitarbeiter</h2>
+  <p class="muted">KI-Assistenz für automatisierte Aufgaben. Mails sind immer mit Namen und dem Hinweis „von unserer KI-Assistenz verfasst“ gekennzeichnet; Aktionen stehen unter diesem Namen im Log.</p>
+  <div class="grid grid-3">
+    <% personas.forEach(function (p) { %>
+      <form method="post" action="/admin/sites/<%= siteId %>/personas/<%= p.id %>" class="card">
+        <p class="eyebrow" style="margin:0"><%= ROLES[p.role] || p.role %></p>
+        <label>Name</label><input name="name" type="text" value="<%= p.name %>" required>
+        <label>Titel</label><input name="title" type="text" value="<%= p.title %>" required>
+        <label>Absender</label><input name="email" type="email" value="<%= p.email || '' %>" placeholder="sonst Absender der Site">
+        <label class="inline"><input type="checkbox" name="active" <%= p.active ? 'checked' : '' %>> aktiv</label>
+        <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
+      </form>
+    <% }) %>
+  </div>
+<% } %>
+<%- include('../partials/admin-foot') %>
