@@ -16,9 +16,15 @@ async function start() {
   await boss.createQueue('verify-expiry');
   await boss.createQueue('inquiry-send');
   await boss.createQueue('inquiry-daily');
+  await boss.createQueue('osm-retry');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
+  });
+
+  // OpenStreetMap-Schritt nachholen, wenn die Overpass-Server gestört waren
+  await boss.work('osm-retry', async (jobs) => {
+    for (const job of jobs) await autoCheck.retryOsm(job.data.submissionId, job.data.attempt);
   });
 
   // Unbestätigte Meldungen nach 72 h verfallen lassen (stündlich)
@@ -38,7 +44,7 @@ async function start() {
   });
   await boss.schedule('inquiry-daily', '0 8 * * *');
 
-  const enqueue = (name, data) => boss.send(name, data, { retryLimit: 2, retryDelay: 60 });
+  const enqueue = (name, data, opts = {}) => boss.send(name, data, { retryLimit: 2, retryDelay: 60, ...opts });
   submissions.setEnqueue(enqueue);
   inquiries.setEnqueue(enqueue);
   console.log('[jobs] gestartet');

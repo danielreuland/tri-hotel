@@ -8,10 +8,11 @@ const sites = require('./sites');
 const { logAction } = require('../lib/audit');
 const { newToken, sha256, ipHash, slugify, websiteKey } = require('../lib/util');
 
-let enqueue = async () => {}; // wird von jobs/index.js gesetzt
+let enqueueFn = async () => {}; // wird von jobs/index.js gesetzt
 function setEnqueue(fn) {
-  enqueue = fn;
+  enqueueFn = fn;
 }
+const enqueue = (name, data, opts) => enqueueFn(name, data, opts);
 
 function entityUrl(ranking, entity, site) {
   const base = sites.urlFor(site);
@@ -196,6 +197,7 @@ async function hold(submissionId, adminId, note) {
 
 module.exports = {
   setEnqueue,
+  enqueue,
   entityUrl,
   appendLog,
   setStatus,

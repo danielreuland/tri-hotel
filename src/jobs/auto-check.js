@@ -137,15 +137,11 @@ async function run(submissionId) {
     });
   }
 
-  // 5. OSM-Vorschläge nur für Kriterien ohne Wert aus der Website
+  // 5. OSM-Vorschläge nur für Kriterien ohne Wert aus der Website.
+  //    Sind die öffentlichen Overpass-Server gestört, wird der Schritt später automatisch nachgeholt.
   if (entity.lat !== null) {
-    await step(sub.id, 'Umgebung (OpenStreetMap)', async () => {
-      // Hinweis: geo.nearest versucht bei Überlastung automatisch weitere Overpass-Server
-      const existing = new Set((await rankings.getFacts(entity.id, ranking.id)).map((f) => f.criterion_id));
-      const facts = await geo.suggestFacts({ lat: Number(entity.lat), lng: Number(entity.lng) }, criteria.filter((c) => !existing.has(c.id)));
-      const n = await insertAutoFacts(entity.id, facts);
-      return `${n} Werte aus OpenStreetMap vorgeschlagen.`;
-    });
+    const ok = await osmStep(sub.id, entity, ranking, criteria, 'Umgebung (OpenStreetMap)');
+    if (!ok) await scheduleOsmRetry(sub.id, 1);
   }
 
   // 6. Score, K.O., Vollständigkeit -> Admin-Warteschlange
@@ -161,4 +157,40 @@ async function run(submissionId) {
   await submissions.setStatus(sub.id, 'admin_review');
 }
 
-module.exports = { run, insertAutoFacts };
+async function osmStep(subId, entity, ranking, criteria, label) {
+  return step(subId, label, async () => {
+    const existing = new Set((await rankings.getFacts(entity.id, ranking.id)).map((f) => f.criterion_id));
+    const facts = await geo.suggestFacts({ lat: Number(entity.lat), lng: Number(entity.lng) }, criteria.filter((c) => !existing.has(c.id)));
+    const n = await insertAutoFacts(entity.id, facts);
+    return `${n} Werte aus OpenStreetMap vorgeschlagen.`;
+  });
+}
+
+const OSM_RETRY_MINUTES = [30, 120, 480];
+
+async function scheduleOsmRetry(subId, attempt) {
+  if (attempt > OSM_RETRY_MINUTES.length) {
+    await submissions.appendLog(subId, 'Umgebung (OpenStreetMap)', false, 'Nach mehreren Versuchen nicht erreichbar – bitte später „Auto-Prüfung erneut starten“.');
+    return;
+  }
+  const minutes = OSM_RETRY_MINUTES[attempt - 1];
+  await submissions.enqueue('osm-retry', { submissionId: subId, attempt }, { startAfter: minutes * 60 });
+  await submissions.appendLog(subId, 'Umgebung (OpenStreetMap)', true, `Server gestört – neuer Versuch in ${minutes} Minuten (Versuch ${attempt + 1}).`);
+}
+
+// Nachholen des OSM-Schritts, danach Score neu berechnen
+async function retryOsm(submissionId, attempt) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  if (!sub || !sub.entity_id || ['rejected', 'expired', 'duplicate'].includes(sub.status)) return;
+  const entity = await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]);
+  if (!entity || entity.lat === null) return;
+  const ranking = await rankings.getRanking(sub.ranking_id);
+  const criteria = await rankings.getCriteria(ranking.id);
+  const ok = await osmStep(sub.id, entity, ranking, criteria, `Umgebung (OpenStreetMap), Versuch ${attempt + 1}`);
+  if (!ok) return scheduleOsmRetry(sub.id, attempt + 1);
+  const result = await rankings.recomputeEntity(entity.id, ranking.id);
+  await submissions.appendLog(sub.id, 'Score', !result.ko,
+    result.ko ? `K.O.: ${result.koReason}` : `Neu berechnet: ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`);
+}
+
+module.exports = { run, retryOsm, insertAutoFacts };
