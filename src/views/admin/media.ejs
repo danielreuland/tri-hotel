@@ -21,28 +21,49 @@
   };
 %>
 
+<%
+  var groups = [
+    { title: 'Plätze', hint: 'Startseite, Abschluss-Band, Methodik, Formular', items: rows.filter(function (m) { return m.slot }) },
+    { title: 'Regionen', hint: 'Kachel auf der Startseite und Titelbild der Regionsseite', items: rows.filter(function (m) { return m.region_id }) },
+  ];
+  var library = rows.filter(function (m) { return !m.slot && !m.region_id });
+%>
 <% if (!rows.length) { %>
   <p class="card">Noch keine Bilder. Lade unten das erste hoch.</p>
-<% } else { %>
+<% } %>
+<% var renderCards = function (list) { %>
   <div class="media-grid">
-    <% rows.forEach(function (m) { var cur = m.slot ? 'slot:' + m.slot : (m.region_id ? 'region:' + m.region_id : ''); var fid = 'm-' + m.id; %>
+    <% list.forEach(function (m) { var cur = m.slot ? 'slot:' + m.slot : (m.region_id ? 'region:' + m.region_id : ''); var fid = 'm-' + m.id; %>
       <div class="card media-card">
         <img <%- imgAttrs(m) %> alt="<%= m.alt %>" loading="lazy" sizes="320px">
         <p style="margin:8px 0 4px"><strong><%= m.slot ? SLOTS[m.slot] : (m.region_name ? 'Region: ' + m.region_name : 'nur Bibliothek') %></strong></p>
         <small class="muted"><%= m.credit %> · <%= m.license %><% if (m.source_url) { %> · <a href="<%= m.source_url %>" rel="noopener" target="_blank">Quelle</a><% } %><br><%= m.width %>×<%= m.height %> px</small>
-        <form id="<%= fid %>" method="post" action="/admin/medien/<%= m.id %>">
-          <label>Platz</label><select name="placement"><%- placementOptions(cur) %></select>
-          <label>Bildausschnitt</label>
-          <select name="focal"><% Object.keys(FOCAL_LABELS).forEach(function (k) { %><option value="<%= k %>" <%= FOCAL_VALUES[k] === m.focal ? 'selected' : '' %>><%= FOCAL_LABELS[k] %></option><% }) %></select>
-          <label>Bildbeschreibung</label><input name="alt" type="text" value="<%= m.alt %>">
-        </form>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn small" type="submit" form="<%= fid %>">Speichern</button>
-          <form method="post" action="/admin/medien/<%= m.id %>/loeschen" onsubmit="return confirm('Bild endgültig löschen?')"><button class="btn small secondary" type="submit">Löschen</button></form>
-        </div>
+        <details>
+          <summary><small>Bearbeiten</small></summary>
+          <form id="<%= fid %>" method="post" action="/admin/medien/<%= m.id %>">
+            <label>Platz</label><select name="placement"><%- placementOptions(cur) %></select>
+            <label>Bildausschnitt</label>
+            <select name="focal"><% Object.keys(FOCAL_LABELS).forEach(function (k) { %><option value="<%= k %>" <%= FOCAL_VALUES[k] === m.focal ? 'selected' : '' %>><%= FOCAL_LABELS[k] %></option><% }) %></select>
+            <label>Bildbeschreibung</label><input name="alt" type="text" value="<%= m.alt %>">
+          </form>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn small" type="submit" form="<%= fid %>">Speichern</button>
+            <form method="post" action="/admin/medien/<%= m.id %>/loeschen" onsubmit="return confirm('Bild endgültig löschen?')"><button class="btn small secondary" type="submit">Löschen</button></form>
+          </div>
+        </details>
       </div>
     <% }) %>
   </div>
+<% } %>
+<% groups.forEach(function (g) { if (!g.items.length) return; %>
+  <h2><%= g.title %> <small class="muted">(<%= g.items.length %>) · <%= g.hint %></small></h2>
+  <% renderCards(g.items) %>
+<% }) %>
+<% if (library.length) { %>
+  <details style="margin-bottom:24px">
+    <summary><strong>Bibliothek</strong> <small class="muted">(<%= library.length %> ungenutzte Bilder)</small></summary>
+    <% renderCards(library) %>
+  </details>
 <% } %>
 
 <h2>Bild hochladen</h2>

@@ -1,0 +1,65 @@
+<%- include('../partials/admin-head') %>
+<h1>Bilder</h1>
+<p class="muted">Alle Bilder der Objekte an einem Ort: Freigaben, ablaufende Nutzungsrechte, Herkunft. Hochladen und Hauptbild festlegen weiterhin in der Prüfansicht des Objekts (höchstens <%= MAX_PER_ENTITY %> Bilder je Objekt). Stimmungsbilder für Startseite und Regionen liegen unter <a href="/admin/medien">Medien</a>.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+
+<div class="pill-row">
+  <% Object.keys(IMAGE_FILTERS).forEach(function (k) { %>
+    <a class="badge <%= k === status ? 'good' : '' %>" href="/admin/bilder?status=<%= k %>"><%= IMAGE_FILTERS[k].label %> (<%= counts[k] %>)</a>
+  <% }) %>
+</div>
+
+<form method="get" class="filters">
+  <input type="hidden" name="status" value="<%= status %>">
+  <input type="search" name="q" value="<%= q %>" placeholder="Objekt oder Ort" aria-label="Objekt oder Ort suchen">
+  <select name="quelle" aria-label="Quelle">
+    <option value="">alle Quellen</option>
+    <% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>" <%= source === k ? 'selected' : '' %>><%= IMAGE_SOURCES[k] %></option><% }) %>
+  </select>
+  <button class="btn small secondary" type="submit">Filtern</button>
+</form>
+
+<% if (!rows.length) { %>
+  <p class="card">Keine Bilder in dieser Ansicht.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table>
+      <tr><th></th><th>Objekt</th><th>Herkunft</th><th>Rechte</th><th>Status</th><th></th></tr>
+      <% rows.forEach(function (img) { %>
+        <tr>
+          <td><a href="/admin/bilder/<%= img.id %>/datei" target="_blank" rel="noopener"><img class="thumb" src="/admin/bilder/<%= img.id %>/datei" alt="" loading="lazy"></a></td>
+          <td>
+            <% if (img.submission_id) { %><a href="/admin/meldungen/<%= img.submission_id %>#bilder"><%= img.entity_name %></a><% } else { %><%= img.entity_name %><% } %>
+            <br><small class="muted"><%= img.city || '' %><%= img.is_primary ? ' · Hauptbild' : '' %></small>
+          </td>
+          <td><small><%= IMAGE_SOURCES[img.source] %><br>© <%= String(img.credit || '').replace(/^\s*(©|\(c\))\s*/i, '') %></small></td>
+          <td><small><%= img.license %><br><%= img.valid_until ? 'gültig bis ' + formatDate(img.valid_until) : 'unbefristet' %></small></td>
+          <td>
+            <% if (img.valid_until && new Date(img.valid_until) < new Date(new Date().toDateString())) { %><span class="badge bad">abgelaufen</span>
+            <% } else if (img.approved_at) { %><span class="badge good">freigegeben</span>
+            <% } else { %><span class="badge warn">wartet</span><% } %>
+          </td>
+          <td style="white-space:nowrap">
+            <% if (!img.approved_at) { %>
+              <form method="post" action="/admin/bilder/<%= img.id %>/freigeben" style="display:inline"><input type="hidden" name="back" value="<%= back %>"><button class="btn small" type="submit">Freigeben</button></form>
+            <% } %>
+            <form method="post" action="/admin/bilder/<%= img.id %>/loeschen" style="display:inline" onsubmit="return confirm('Bild endgültig entfernen?')">
+              <input type="hidden" name="back" value="<%= back %>"><input type="hidden" name="reason" value="Admin (Übersicht)">
+              <button class="btn small danger" type="submit">Entfernen</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+  <% if (pages > 1) { var qs = function (p) { return '/admin/bilder?status=' + status + (source ? '&quelle=' + source : '') + (q ? '&q=' + encodeURIComponent(q) : '') + '&seite=' + p; }; %>
+    <nav class="pager" aria-label="Seiten">
+      <% if (page > 1) { %><a href="<%= qs(page - 1) %>">← zurück</a><% } %>
+      <span class="muted">Seite <%= page %> von <%= pages %> · <%= total %> Bilder</span>
+      <% if (page < pages) { %><a href="<%= qs(page + 1) %>">weiter →</a><% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<%- include('../partials/admin-foot') %>

@@ -20,19 +20,24 @@ function fileFor(id, width) {
   return path.join(DIR, `${id}-${width}.webp`);
 }
 
-// Original -> WebP-Varianten (nie größer als das Original). Liefert Maße und erzeugte Breiten.
-async function processUpload(id, sourcePath) {
+// Original -> WebP-Varianten (nie größer als das Original) unter <dir>/<id>-<breite>.webp.
+// Liefert Maße und erzeugte Breiten. Das Original löscht der Aufrufer.
+async function processImage(sourcePath, dir, id) {
   const sharp = require('sharp');
-  await fs.promises.mkdir(DIR, { recursive: true });
+  await fs.promises.mkdir(dir, { recursive: true });
   const meta = await sharp(sourcePath).rotate().metadata();
   const width = meta.autoOrient ? meta.autoOrient.width : meta.width;
   const height = meta.autoOrient ? meta.autoOrient.height : meta.height;
   const widths = WIDTHS.filter((w) => w <= width);
   if (!widths.length) widths.push(width);
   for (const w of widths) {
-    await sharp(sourcePath).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 78 }).toFile(fileFor(id, w));
+    await sharp(sourcePath).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 78 }).toFile(path.join(dir, `${id}-${w}.webp`));
   }
   return { width, height, variants: widths };
+}
+
+function processUpload(id, sourcePath) {
+  return processImage(sourcePath, DIR, id);
 }
 
 function removeFiles(m) {
@@ -61,14 +66,38 @@ function invalidate() {
   cache.clear();
 }
 
-// Attribute für <img>: src (mittlere Breite), srcset, width/height gegen Layoutsprünge
-function imgAttrs(m) {
-  if (!m) return '';
-  const v = m.variants || [];
+// Attribute für <img>: src (mittlere Breite), srcset, width/height gegen Layoutsprünge.
+// prefix: /bild (Stimmungsbilder) oder /media (Objektbilder)
+function imgAttrs(m, prefix = '/bild') {
+  if (!m || !(m.variants || []).length) return '';
+  const v = m.variants;
   const mid = v.includes(1280) ? 1280 : v[v.length - 1];
-  const url = (w) => `/bild/${m.id}-${w}.webp`;
+  const url = (w) => `${prefix}/${m.id}-${w}.webp`;
   const h = Math.round((m.height * mid) / m.width);
   return `src="${url(mid)}" srcset="${v.map((w) => `${url(w)} ${w}w`).join(', ')}" width="${mid}" height="${h}" style="object-position:${String(m.focal || '50% 50%').replace(/[^0-9% .a-z-]/gi, '')}"`;
 }
 
-module.exports = { SLOTS, WIDTHS, DIR, fileFor, processUpload, removeFiles, forSite, invalidate, imgAttrs };
+// ---------- Objektbilder (entity_images) ----------
+const ENTITY_DIR = path.join(config.uploadDir, 'entity-images');
+const MAX_PER_ENTITY = 8;
+
+function entityFileFor(id, width) {
+  return path.join(ENTITY_DIR, `${id}-${width}.webp`);
+}
+
+function processEntityImage(id, sourcePath) {
+  return processImage(sourcePath, ENTITY_DIR, id);
+}
+
+// Varianten und (bei Altbeständen) das Original entfernen
+function removeEntityFiles(img) {
+  for (const w of img.variants || []) fs.unlink(entityFileFor(img.id, w), () => {});
+  if (img.storage_path && !(img.variants || []).length) fs.unlink(path.join(config.uploadDir, path.basename(img.storage_path)), () => {});
+}
+
+const entityImgAttrs = (img) => imgAttrs(img, '/media');
+
+module.exports = {
+  SLOTS, WIDTHS, DIR, fileFor, processImage, processUpload, removeFiles, forSite, invalidate, imgAttrs,
+  ENTITY_DIR, MAX_PER_ENTITY, entityFileFor, processEntityImage, removeEntityFiles, entityImgAttrs,
+};

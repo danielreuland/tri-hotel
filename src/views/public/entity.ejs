@@ -68,10 +68,11 @@
 <% } %>
 
 <% if (images.length) { %>
-  <div class="grid grid-3" style="margin-top:16px">
+  <div class="grid grid-3 entity-photos" style="margin-top:16px">
     <% images.forEach(function (img) { %>
       <figure>
-        <img src="/media/<%= img.id %>" alt="<%= entity.name %>" loading="lazy">
+        <% if (img.variants && img.variants.length) { %><img <%- entityImgAttrs(img) %> sizes="(max-width: 700px) 100vw, 33vw" alt="<%= entity.name %>" loading="lazy">
+        <% } else { %><img src="/media/<%= img.id %>" alt="<%= entity.name %>" loading="lazy"><% } %>
         <figcaption>© <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><%= img.license ? ' · ' + img.license : '' %></figcaption>
       </figure>
     <% }) %>

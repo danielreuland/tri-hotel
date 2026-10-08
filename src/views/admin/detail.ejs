@@ -352,10 +352,10 @@
         </div>
       <% }) %>
       <details style="margin-top:12px">
-        <summary>Bild hochladen</summary>
+        <summary>Bild hochladen <small class="muted">(<%= images.length %> von <%= MAX_IMAGES %>)</small></summary>
         <form method="post" action="/admin/objekte/<%= entity.id %>/bilder" enctype="multipart/form-data">
           <input type="hidden" name="submission_id" value="<%= sub.id %>">
-          <label>Datei (JPG, PNG, WebP, max. 8 MB) *</label><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+          <label>Datei (JPG, PNG, WebP, max. 8 MB – wird automatisch verkleinert) *</label><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
           <div class="form-row">
             <div><label>Quelle *</label><select name="source" required><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
             <div><label>Lizenz *</label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>

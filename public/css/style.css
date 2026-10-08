@@ -346,3 +346,8 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .entity-text h3 { margin: 1.1em 0 .3em; }
 .entity-text p { margin: 0 0 .7em; }
 .entity-text ul { margin: 0 0 .7em; padding-left: 1.2em; }
+
+/* Objektbilder auf der Profilseite und in der Admin-Übersicht */
+.entity-photos img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--radius); display: block; }
+.thumb { width: 96px; height: 64px; object-fit: cover; border-radius: 6px; display: block; }
+.pager { display: flex; gap: 12px; align-items: center; margin: 16px 0; }

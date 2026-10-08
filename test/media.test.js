@@ -12,3 +12,10 @@ test('media.imgAttrs: srcset aus den erzeugten Breiten, Höhe passend, Ausschnit
   assert.match(media.imgAttrs({ ...m, variants: [800], width: 800, height: 400, focal: '"><script>' }), /src="\/bild\/.*-800\.webp".*object-position:script"/);
   assert.equal(media.imgAttrs(null), '');
 });
+
+test('media.entityImgAttrs: Objektbilder unter /media, Altbestand ohne Varianten -> leer', () => {
+  const img = { id: '11111111-2222-3333-4444-555555555555', width: 1600, height: 1200, variants: [640, 1280], focal: null };
+  assert.match(media.entityImgAttrs(img), /src="\/media\/11111111-2222-3333-4444-555555555555-1280\.webp"/);
+  assert.equal(media.entityImgAttrs({ ...img, variants: [] }), '');
+  assert.equal(media.MAX_PER_ENTITY, 8);
+});

@@ -271,15 +271,25 @@ router.get('/', wrap(async (req, res, next) => {
 router.get('/impressum', (req, res) => res.render('public/impressum', { title: 'Impressum' }));
 router.get('/datenschutz', (req, res) => res.render('public/datenschutz', { title: 'Datenschutz' }));
 
-// Öffentliche Bilder: nur freigegeben und mit gültigen Rechten, keine Hotlinks
-router.get('/media/:id', wrap(async (req, res, next) => {
-  if (!/^[0-9a-f-]{36}$/.test(req.params.id)) return next();
+// Öffentliche Objektbilder: nur freigegeben und mit gültigen Rechten, keine Hotlinks.
+// /media/<uuid>-<breite>.webp (Varianten) oder /media/<uuid> (Altbestand im Original)
+router.get('/media/:file', wrap(async (req, res, next) => {
+  const parts = /^([0-9a-f-]{36})(?:-(\d{2,4})\.webp)?$/.exec(req.params.file);
+  if (!parts) return next();
   const img = await db.one(
-    `SELECT storage_path FROM entity_images WHERE id = $1 AND approved_at IS NOT NULL AND (valid_until IS NULL OR valid_until >= current_date)`,
-    [req.params.id]
+    `SELECT id, storage_path, variants FROM entity_images WHERE id = $1 AND approved_at IS NOT NULL AND (valid_until IS NULL OR valid_until >= current_date)`,
+    [parts[1]]
   );
   if (!img) return next();
-  const file = path.join(config.uploadDir, path.basename(img.storage_path));
+  let file;
+  if (parts[2]) {
+    if (!img.variants.includes(Number(parts[2]))) return next();
+    file = media.entityFileFor(img.id, Number(parts[2]));
+    // kurze Cache-Dauer: Freigaben können widerrufen werden oder ablaufen
+    res.set('Cache-Control', 'public, max-age=86400');
+  } else {
+    file = path.join(config.uploadDir, path.basename(img.storage_path));
+  }
   if (!fs.existsSync(file)) return next();
   res.sendFile(file);
 }));

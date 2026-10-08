@@ -18,6 +18,7 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
 const describer = require('../services/describer');
+const media = require('../services/media');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -254,6 +255,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     CONSENT_TYPES: require('../lib/consents').TYPES,
     describeValue: scoring.describeValue,
     SUMMARY_MAX: describer.SUMMARY_MAX,
+    MAX_IMAGES: media.MAX_PER_ENTITY,
     flash: req.query.ok || null,
     error: req.query.fehler || null,
   });
@@ -575,43 +577,105 @@ const upload = multer({
 
 router.post('/objekte/:entityId/bilder', upload.single('file'), wrap(async (req, res) => {
   const b = req.body;
-  const back = `/admin/meldungen/${b.submission_id}`;
-  const missing = ['license', 'credit', 'release_proof'].filter((k) => !String(b[k] || '').trim());
-  if (!req.file || !IMAGE_SOURCES[b.source] || missing.length) {
+  const back = safeBack(b.back) || `/admin/meldungen/${b.submission_id}#bilder`;
+  const fail = (msg) => {
     if (req.file) fs.unlink(req.file.path, () => {});
-    return res.redirect(`${back}?fehler=${encodeURIComponent('Bild, Quelle, Lizenz, Urhebervermerk und Nachweis sind Pflicht.')}#bilder`);
+    res.redirect(withParam(back, 'fehler', msg));
+  };
+  const missing = ['license', 'credit', 'release_proof'].filter((k) => !String(b[k] || '').trim());
+  if (!req.file || !IMAGE_SOURCES[b.source] || missing.length) return fail('Bild, Quelle, Lizenz, Urhebervermerk und Nachweis sind Pflicht.');
+  const { n } = await db.one('SELECT count(*)::int AS n FROM entity_images WHERE entity_id = $1', [req.params.entityId]);
+  if (n >= media.MAX_PER_ENTITY) return fail(`Höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt – bitte erst ein Bild entfernen.`);
+  // WebP-Varianten erzeugen, Original verwerfen
+  const id = crypto.randomUUID();
+  let info;
+  try {
+    info = await media.processEntityImage(id, req.file.path);
+  } catch (err) {
+    return fail(`Bild konnte nicht verarbeitet werden: ${err.message}`);
   }
-  const img = await db.one(
-    `INSERT INTO entity_images (entity_id, storage_path, source, license, credit, source_url, release_proof, valid_until, is_primary)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
-    [req.params.entityId, req.file.filename, b.source, b.license.trim(), b.credit.trim(), normalizeUrl(b.source_url),
-      b.release_proof.trim(), b.valid_until || null, b.is_primary === 'on']
+  fs.unlink(req.file.path, () => {});
+  await db.query(
+    `INSERT INTO entity_images (id, entity_id, storage_path, source, license, credit, source_url, release_proof, valid_until, is_primary, width, height, variants)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    [id, req.params.entityId, `entity-images/${id}`, b.source, b.license.trim(), b.credit.trim(), normalizeUrl(b.source_url),
+      b.release_proof.trim(), b.valid_until || null, b.is_primary === 'on', info.width, info.height, info.variants]
   );
-  await logAction(req.session.admin.id, 'image', img.id, 'upload_image', { source: b.source, license: b.license });
-  res.redirect(`${back}?ok=Bild+hochgeladen+%E2%80%93+noch+nicht+freigegeben#bilder`);
+  await logAction(req.session.admin.id, 'image', id, 'upload_image', { source: b.source, license: b.license });
+  res.redirect(withParam(back, 'ok', 'Bild hochgeladen – noch nicht freigegeben'));
 }));
 
+// Übersicht aller Objektbilder: Freigaben, ablaufende Rechte, Quelle, Suche nach Objekt
+const IMAGE_FILTERS = {
+  pending: { label: 'wartet auf Freigabe', where: 'i.approved_at IS NULL' },
+  expiring: { label: 'Rechte laufen in 30 Tagen ab', where: `i.valid_until BETWEEN current_date AND current_date + 30` },
+  expired: { label: 'Rechte abgelaufen', where: 'i.valid_until < current_date' },
+  approved: { label: 'freigegeben und gültig', where: 'i.approved_at IS NOT NULL AND (i.valid_until IS NULL OR i.valid_until >= current_date)' },
+  all: { label: 'alle', where: 'true' },
+};
+const IMAGES_PER_PAGE = 50;
+
+router.get('/bilder', wrap(async (req, res) => {
+  const status = IMAGE_FILTERS[req.query.status] ? req.query.status : 'pending';
+  const source = IMAGE_SOURCES[req.query.quelle] ? req.query.quelle : null;
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  const page = Math.max(1, Math.min(1000, Number(req.query.seite) || 1));
+  const params = [source, q ? `%${q}%` : null];
+  const from = `FROM entity_images i JOIN entities e ON e.id = i.entity_id
+     WHERE ${IMAGE_FILTERS[status].where} AND ($1::image_source IS NULL OR i.source = $1) AND ($2::text IS NULL OR e.name ILIKE $2 OR e.city ILIKE $2)`;
+  const { n } = await db.one(`SELECT count(*)::int AS n ${from}`, params);
+  const rows = await db.many(
+    `SELECT i.*, e.name AS entity_name, e.city,
+            (SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1) AS submission_id
+       ${from} ORDER BY i.approved_at IS NULL DESC, i.valid_until NULLS LAST, i.created_at DESC
+      LIMIT ${IMAGES_PER_PAGE} OFFSET $3`,
+    [...params, (page - 1) * IMAGES_PER_PAGE]
+  );
+  const counts = Object.fromEntries(await Promise.all(Object.entries(IMAGE_FILTERS).map(async ([k, f]) =>
+    [k, (await db.one(`SELECT count(*)::int AS n FROM entity_images i WHERE ${f.where}`)).n])));
+  res.render('admin/images', {
+    title: 'Bilder', rows, total: n, page, pages: Math.max(1, Math.ceil(n / IMAGES_PER_PAGE)),
+    status, source, q, counts, IMAGE_FILTERS, IMAGE_SOURCES, MAX_PER_ENTITY: media.MAX_PER_ENTITY,
+    back: req.originalUrl, flash: req.query.ok || null, error: req.query.fehler || null,
+  });
+}));
+
+// Vorschau im Admin (auch nicht freigegebene Bilder): kleinste Variante bzw. Original bei Altbeständen
 router.get('/bilder/:id/datei', wrap(async (req, res, next) => {
-  const img = await db.one('SELECT storage_path FROM entity_images WHERE id = $1', [req.params.id]);
+  if (!UUID_RE.test(req.params.id)) return next();
+  const img = await db.one('SELECT id, storage_path, variants FROM entity_images WHERE id = $1', [req.params.id]);
   if (!img) return next();
-  res.sendFile(path.join(config.uploadDir, path.basename(img.storage_path)));
+  const file = img.variants.length ? media.entityFileFor(img.id, img.variants[0]) : path.join(config.uploadDir, path.basename(img.storage_path));
+  res.sendFile(file);
 }));
 
 router.post('/bilder/:id/freigeben', wrap(async (req, res) => {
   await db.query('UPDATE entity_images SET approved_at = now(), approved_by = $2 WHERE id = $1', [req.params.id, req.session.admin.id]);
   await logAction(req.session.admin.id, 'image', req.params.id, 'approve_image');
-  res.redirect(`/admin/meldungen/${req.body.submission_id}?ok=Bild+freigegeben#bilder`);
+  res.redirect(withParam(safeBack(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild freigegeben'));
 }));
 
 // Löschen = auch Takedown auf Verlangen des Rechteinhabers
 router.post('/bilder/:id/loeschen', wrap(async (req, res) => {
   const img = await db.one('DELETE FROM entity_images WHERE id = $1 RETURNING *', [req.params.id]);
   if (img) {
-    fs.unlink(path.join(config.uploadDir, path.basename(img.storage_path)), () => {});
+    media.removeEntityFiles(img);
     await logAction(req.session.admin.id, 'image', img.id, 'delete_image', { reason: req.body.reason || null, license: img.license, credit: img.credit });
   }
-  res.redirect(`/admin/meldungen/${req.body.submission_id}?ok=Bild+entfernt#bilder`);
+  res.redirect(withParam(safeBack(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild entfernt'));
 }));
+
+// Rücksprung nur innerhalb des Admins
+function safeBack(v) {
+  const s = String(v || '');
+  return /^\/admin(\/|$|\?)/.test(s) && !s.startsWith('//') ? s : null;
+}
+
+// Parameter vor einem #anker einfügen
+function withParam(url, key, value) {
+  const [base, hash] = url.split('#');
+  return `${base}${base.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(value)}${hash ? `#${hash}` : ''}`;
+}
 
 // ---------- Beschreibungstext ----------
 

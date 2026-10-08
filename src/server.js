@@ -58,6 +58,7 @@ app.locals.plausibleSrc = config.plausibleSrc;
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
+app.locals.entityImgAttrs = require('./services/media').entityImgAttrs;
 
 // Vorab-Phase: nichts indexieren
 if (config.noindex) {

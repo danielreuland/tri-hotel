@@ -2,6 +2,8 @@
 // queued -> (Agent + Versand) -> sent -> answered | expired ; Fehler -> failed ; Admin schließt -> closed
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const media = require('./media');
 const db = require('../db');
 const config = require('../config');
 const mailer = require('./mailer');
@@ -154,10 +156,30 @@ async function submitAnswers(inq, entity, site, body, files = []) {
   if (!answers.length && !photos.length && !String(body.note || '').trim() && body.consent_partner_contact !== 'on') {
     errors.push(inq.language === 'de' ? 'Bitte mindestens eine Frage beantworten.' : 'Please answer at least one question.');
   }
+  if (photos.length && !errors.length) {
+    const { n } = await db.one('SELECT count(*)::int AS n FROM entity_images WHERE entity_id = $1', [entity.id]);
+    if (n + photos.length > media.MAX_PER_ENTITY) {
+      const free = Math.max(media.MAX_PER_ENTITY - n, 0);
+      errors.push(inq.language === 'de' ? `Es sind noch ${free} Fotos möglich.` : `You can add ${free} more photos.`);
+    }
+  }
   if (errors.length) {
     for (const f of files) fs.unlink(f.path, () => {});
     return { errors };
   }
+  // Fotos als WebP-Varianten speichern, Originale verwerfen
+  const processed = [];
+  try {
+    for (const f of photos) {
+      const id = crypto.randomUUID();
+      processed.push({ id, ...(await media.processEntityImage(id, f.path)) });
+    }
+  } catch (err) {
+    for (const p of processed) media.removeEntityFiles(p);
+    for (const f of files) fs.unlink(f.path, () => {});
+    return { errors: [inq.language === 'de' ? 'Ein Foto konnte nicht verarbeitet werden.' : 'A photo could not be processed.'] };
+  }
+  for (const f of files) fs.unlink(f.path, () => {});
 
   const replyName = String(body.reply_name || '').trim().slice(0, 200) || null;
   const note = String(body.note || '').trim().slice(0, 2000) || null;
@@ -186,11 +208,11 @@ async function submitAnswers(inq, entity, site, body, files = []) {
     }
     const proof = `Upload über Anfrage ${inq.id} am ${at.toISOString()} von ${replyName || 'ohne Namen'} (${inq.recipient}); `
       + `Einwilligungen ${granted.join(', ')} (Wortlaut ${consentTexts.VERSION}, siehe Einwilligungen im Admin)`;
-    for (const f of photos) {
+    for (const p of processed) {
       await client.query(
-        `INSERT INTO entity_images (entity_id, storage_path, source, license, credit, release_proof, inquiry_id)
-         VALUES ($1, $2, 'owner_release', $3, $4, $5, $6)`,
-        [entity.id, path.basename(f.path), 'Nutzungserlaubnis des Betreibers', credit, proof, inq.id]
+        `INSERT INTO entity_images (id, entity_id, storage_path, source, license, credit, release_proof, inquiry_id, width, height, variants)
+         VALUES ($1, $2, $3, 'owner_release', $4, $5, $6, $7, $8, $9, $10)`,
+        [p.id, entity.id, `entity-images/${p.id}`, 'Nutzungserlaubnis des Betreibers', credit, proof, inq.id, p.width, p.height, p.variants]
       );
     }
     await client.query(
