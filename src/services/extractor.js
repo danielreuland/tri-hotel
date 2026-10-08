@@ -185,13 +185,13 @@ function parseValue(c, raw) {
 
 const normalizeWs = (t) => t.replace(/\s+/g, ' ').toLowerCase();
 
-async function extractAnthropic({ ranking, criteria, entity, pages, features = [] }) {
+async function extractAnthropic({ ranking, criteria, entity, pages, features = [], model }) {
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
 
   const extractable = criteria.filter((c) => describeCriterion(c));
   const askFeatures = features.filter((f) => !f.derive);
-  if ((!extractable.length && !askFeatures.length) || !pages.length) return { facts: [], features: [] };
+  if ((!extractable.length && !askFeatures.length) || !pages.length) return { facts: [], features: [], usage: null };
 
   const Schema = z.object({
     facts: z.array(
@@ -228,10 +228,11 @@ Regeln:
 
 ${pageBlock}`;
 
-  const client = require('../lib/llm').anthropic();
-  const response = await client.messages.parse(
+  const llm = require('../lib/llm');
+  await llm.assertBudget();
+  const response = await llm.anthropic().messages.parse(
     {
-      model: 'claude-opus-5-5',
+      model: model || llm.modelFor('extract'),
       max_tokens: 16000,
       output_config: { effort: 'medium', format: zodOutputFormat(Schema) },
       // Server-seitiger Fallback, falls ein Sicherheitsfilter die Anfrage ablehnt
@@ -240,7 +241,9 @@ ${pageBlock}`;
     },
     { headers: { 'anthropic-beta': 'server-side-fallback-2026-07-01' } }
   );
-  if (response.stop_reason === 'refusal' || !response.parsed_output) return { facts: [], features: [] };
+  // Bei Server-Fallback antwortet ggf. ein anderes Modell – gezählt wird das tatsächliche
+  const usage = { model: response.model, raw: response.usage };
+  if (response.stop_reason === 'refusal' || !response.parsed_output) return { facts: [], features: [], usage };
 
   const pageText = new Map(pages.map((p) => [p.url, normalizeWs(p.text)]));
   const out = [];
@@ -263,11 +266,11 @@ ${pageBlock}`;
     if (!feat || !quote || !source || !source.includes(quote) || featureOut.some((o) => o.featureId === feat.id)) continue;
     featureOut.push({ featureId: feat.id, evidenceUrl: f.evidence_url, evidenceText: f.evidence_text.slice(0, 500) });
   }
-  return { facts: out, features: featureOut };
+  return { facts: out, features: featureOut, usage };
 }
 
 const providers = {
-  none: async () => ({ facts: [], features: [] }),
+  none: async () => ({ facts: [], features: [], usage: null }),
   anthropic: extractAnthropic,
 };
 

@@ -218,9 +218,14 @@ async function loadDetail(id) {
   const featureCatalog = await featureService.catalog(ranking.entity_type);
   const present = entity ? await featureService.forEntity(ranking.entity_type, entity.id) : [];
   const manualFeatures = entity ? await db.many('SELECT * FROM entity_features WHERE entity_id = $1', [entity.id]) : [];
+  // KI-Verbrauch dieses Objekts und des laufenden Monats
+  const llmUsage = entity
+    ? await db.many(`SELECT * FROM llm_usage WHERE entity_id = $1 OR submission_id = $2 ORDER BY created_at DESC`, [entity.id, sub.id])
+    : await db.many(`SELECT * FROM llm_usage WHERE submission_id = $1 ORDER BY created_at DESC`, [sub.id]);
+  const llmMonth = await require('../lib/llm').monthSpend();
   return {
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
-    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf,
+    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth,
   };
 }
 

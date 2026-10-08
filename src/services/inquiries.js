@@ -77,6 +77,9 @@ async function send(inquiryId) {
       entity, ranking, criteria, facts, language: inq.language, adminNote: inq.admin_note, askPhotos: inq.ask_photos,
       persona, brand: site.name,
     });
+    if (draft.usage) {
+      await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
+    }
     const tok = newToken();
     const ok = await mailer.send({
       to: inq.recipient,

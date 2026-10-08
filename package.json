@@ -10,7 +10,8 @@
     "test": "node --test test/*.test.js",
     "migrate": "node scripts/migrate.js",
     "create-admin": "node scripts/create-admin.js",
-    "recompute": "node scripts/recompute.js"
+    "recompute": "node scripts/recompute.js",
+    "compare-models": "node scripts/compare-models.js"
   },
   "engines": {
     "node": ">=20"

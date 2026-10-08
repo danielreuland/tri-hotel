@@ -187,10 +187,11 @@ ${askPhotos ? '- Bitte zusätzlich höflich um Fotos des Hauses mit Nutzungserla
 - Gib dich nicht als Mensch aus und behaupte keine persönlichen Erfahrungen.
 - questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.`;
 
-  const client = require('../lib/llm').anthropic();
-  const response = await client.messages.parse(
+  const llm = require('../lib/llm');
+  await llm.assertBudget();
+  const response = await llm.anthropic().messages.parse(
     {
-      model: 'claude-opus-5-5',
+      model: llm.modelFor('inquiry'),
       max_tokens: 16000,
       output_config: { effort: 'medium', format: zodOutputFormat(Schema) },
       fallbacks: 'default',
@@ -198,22 +199,24 @@ ${askPhotos ? '- Bitte zusätzlich höflich um Fotos des Hauses mit Nutzungserla
     },
     { headers: { 'anthropic-beta': 'server-side-fallback-2026-07-01' } }
   );
-  if (response.stop_reason === 'refusal') return null;
-  return response.parsed_output || null;
+  const usage = { model: response.model, raw: response.usage };
+  if (response.stop_reason === 'refusal') return { draft: null, usage };
+  return { draft: response.parsed_output || null, usage };
 }
 
 // Erstellt den Entwurf. Fehler beim Modell führen zur Vorlage, nie zum Abbruch.
 async function draftInquiry(ctx) {
   const full = { ...ctx, language: ctx.language || languageFor(ctx.entity.country), brand: ctx.brand || config.baseHost };
   let draft = null;
+  let usage = null;
   if (config.llm.provider === 'anthropic') {
     try {
-      draft = await draftAnthropic(full);
+      ({ draft, usage } = await draftAnthropic(full));
     } catch (err) {
       console.error('[inquiry-agent] Modell nicht erreichbar, nutze Vorlage:', err.message);
     }
   }
-  return { language: full.language, ...sanitizeDraft(draft, full) };
+  return { language: full.language, ...sanitizeDraft(draft, full), usage };
 }
 
 module.exports = { draftInquiry, sanitizeDraft, fallbackDraft, answerOptions, isAskable, unclearCriteria, toFactValue, languageFor, LINK };

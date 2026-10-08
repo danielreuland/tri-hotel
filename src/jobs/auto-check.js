@@ -11,6 +11,7 @@ const geo = require('../services/geo');
 const climate = require('../services/climate');
 const extractor = require('../services/extractor');
 const featureService = require('../services/features');
+const llm = require('../lib/llm');
 
 async function step(subId, name, fn) {
   try {
@@ -100,6 +101,9 @@ async function run(submissionId) {
       const catalog = await featureService.catalog(ranking.entity_type);
       const pages = await extractor.fetchSite(entity.website, { labels: [...criteria.map((c) => c.label), ...catalog.map((f) => f.label)] });
       const found = await extractor.extract({ ranking, criteria, entity, pages, features: catalog });
+      const cost = found.usage
+        ? await llm.record({ purpose: 'extraction', model: found.usage.model, usage: found.usage.raw, entityId: entity.id, submissionId: sub.id })
+        : null;
       const n = await insertAutoFacts(entity.id, found.facts);
       // Leistungen ohne Ableitung als Vorschlag (Stufe 4); bestehende nie überschreiben
       let nf = 0;
@@ -124,7 +128,8 @@ async function run(submissionId) {
       } else {
         contact = ' Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.';
       }
-      return `${pages.length} Seiten gelesen, ${n} Werte und ${nf} Leistungen mit Fundstelle übernommen.${contact}`;
+      const spent = cost ? ` KI: ${found.usage.model}, ${llm.formatTokens(cost)}.` : '';
+      return `${pages.length} Seiten gelesen, ${n} Werte und ${nf} Leistungen mit Fundstelle übernommen.${contact}${spent}`;
     });
   }
 

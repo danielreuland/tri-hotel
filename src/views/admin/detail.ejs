@@ -346,6 +346,37 @@
     </section>
     <% } %>
 
+    <section class="card" style="margin-top:16px" id="ki-kosten">
+      <h2 style="margin-top:0">KI-Verbrauch</h2>
+      <%
+        var PURPOSES = { extraction: 'Website-Auswertung', inquiry: 'Anfrage-Entwurf', compare: 'Modellvergleich' };
+        var usd = function (n) { return Number(n).toFixed(2).replace('.', ',') + ' $'; };
+        var tok = function (n) { return Number(n).toLocaleString('de-DE'); };
+        var total = llmUsage.reduce(function (a, u) { return a + Number(u.cost_usd); }, 0);
+      %>
+      <% if (!llmUsage.length) { %>
+        <p class="muted">Für dieses Objekt wurde noch kein KI-Aufruf gespeichert.</p>
+      <% } else { %>
+        <div class="table-scroll">
+          <table>
+            <tr><th>Zeitpunkt</th><th>Zweck</th><th>Modell</th><th>Tokens ein</th><th>Tokens aus</th><th>Kosten (ca.)</th></tr>
+            <% llmUsage.forEach(function (u) { %>
+              <tr>
+                <td><%= new Date(u.created_at).toLocaleString('de-DE') %></td>
+                <td><%= PURPOSES[u.purpose] || u.purpose %></td>
+                <td><small><%= u.model %></small></td>
+                <td><%= tok(u.input_tokens + u.cache_read_tokens + u.cache_write_tokens) %></td>
+                <td><%= tok(u.output_tokens) %></td>
+                <td><%= usd(u.cost_usd) %></td>
+              </tr>
+            <% }) %>
+            <tr><th colspan="5">Summe dieses Objekts</th><th><%= usd(total) %></th></tr>
+          </table>
+        </div>
+      <% } %>
+      <p class="muted" style="margin-bottom:0"><small>Laufender Monat, alle Objekte: <%= usd(llmMonth.usd) %> bei <%= llmMonth.calls %> Aufrufen<%= llmMonth.budget ? ' · Budget ' + usd(llmMonth.budget) : ' · kein Monatsbudget gesetzt' %>. Kosten sind Schätzungen nach Listenpreis; maßgeblich ist die Abrechnung in der Claude Console.</small></p>
+    </section>
+
     <% if (emails.length) { %>
       <section class="card" style="margin-top:16px">
         <h2 style="margin-top:0">Mails</h2>

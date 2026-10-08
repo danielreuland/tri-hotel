@@ -1,6 +1,16 @@
 require('dotenv').config();
 const path = require('path');
 
+function parseJson(raw, fallback) {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error('[config] Ungültiges JSON in LLM_PRICES – Standardpreise werden verwendet');
+    return fallback;
+  }
+}
+
 const baseUrl = (process.env.BASE_URL || 'http://localhost:3010').replace(/\/$/, '');
 
 module.exports = {
@@ -28,6 +38,15 @@ module.exports = {
     apiKey: process.env.LLM_API_KEY,
     // nur für Schlüssel, die keinem Workspace zugeordnet sind (Header anthropic-workspace-id)
     workspaceId: process.env.LLM_WORKSPACE_ID || null,
+    // Modell je Aufgabe – z. B. Sonnet für die Extraktion, wenn der Modellvergleich das hergibt
+    models: {
+      extract: process.env.LLM_MODEL_EXTRACT || 'claude-opus-5-5',
+      inquiry: process.env.LLM_MODEL_INQUIRY || 'claude-opus-5-5',
+    },
+    // Preise je 1 Mio. Tokens überschreiben, z. B. {"opus":{"input":5,"output":25}}
+    prices: parseJson(process.env.LLM_PRICES, {}),
+    // Obergrenze je Kalendermonat in US-Dollar (leer = keine); zusätzlich zum Limit in der Claude Console
+    monthlyBudgetUsd: Number(process.env.LLM_MONTHLY_BUDGET_USD) || null,
   },
   uploadDir: path.resolve(process.env.UPLOAD_DIR || 'uploads'),
   // Vorab-Phase: Login über HTTP-Tunnel erlauben (COOKIE_SECURE=false) und Suchmaschinen aussperren (NOINDEX=true)
