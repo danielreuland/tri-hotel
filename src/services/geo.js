@@ -25,7 +25,7 @@ async function overpass(query) {
       });
       if (res.ok) return res.json();
       lastError = new Error(`Overpass ${res.status} (${new URL(url).hostname})`);
-      if (![429, 502, 503, 504].includes(res.status)) break;
+      if (![429, 500, 502, 503, 504].includes(res.status)) break;
     } catch (err) {
       lastError = new Error(`Overpass nicht erreichbar (${new URL(url).hostname}): ${err.message}`);
     }
