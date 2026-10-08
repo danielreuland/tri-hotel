@@ -136,10 +136,6 @@ async function createEntity(ranking, sub) {
 async function approve(submissionId, adminId) {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
   if (!sub || !sub.entity_id) throw new Error('Meldung ohne Objekt kann nicht freigegeben werden.');
-  const contact = await db.one('SELECT contact_email FROM entities WHERE id = $1', [sub.entity_id]);
-  if (!contact || !contact.contact_email) {
-    throw new Error('Bitte vor der Freigabe die Kontakt-E-Mail des Betreibers in den Stammdaten eintragen.');
-  }
   const ranking = await rankings.getRanking(sub.ranking_id);
   const result = await rankings.recomputeEntity(sub.entity_id, ranking.id);
   if (result.ko) throw new Error(`K.O.-Regel greift (${result.koReason}). Bitte ablehnen oder Wert korrigieren.`);

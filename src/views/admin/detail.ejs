@@ -69,9 +69,9 @@
         </div>
         <div class="form-row">
           <div>
-            <label>Kontakt-E-Mail des Betreibers *</label>
+            <label>Kontakt-E-Mail des Betreibers</label>
             <input name="contact_email" type="email" value="<%= entity.contact_email || '' %>" placeholder="für Anfragen und Freigaben">
-            <small class="muted"><% if (!entity.contact_email) { %><span style="color:var(--bad)">fehlt – nötig für Freigabe und Anfragen</span><% } else if (entity.contact_email_source === 'website') { %>automatisch gefunden<% if (entity.contact_email_evidence) { %> · <a href="<%= entity.contact_email_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %> – bitte prüfen<% } else { %>vom Admin eingetragen<% } %></small>
+            <small class="muted"><% if (!entity.contact_email) { %><span style="color:var(--ok)">fehlt – nötig für Anfragen an das <%= ranking.entity_label_sg %></span><% } else if (entity.contact_email_source === 'website') { %>automatisch gefunden<% if (entity.contact_email_evidence) { %> · <a href="<%= entity.contact_email_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %> – bitte prüfen<% } else { %>vom Admin eingetragen<% } %></small>
           </div>
         </div>
         <div class="form-row">
@@ -356,9 +356,9 @@
     <% if (['admin_review', 'auto_check', 'verified'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
         <form method="post" action="/admin/meldungen/<%= sub.id %>/freigeben">
-          <button class="btn" type="submit" style="width:100%" <%= entity && entity.contact_email && !result.ko ? '' : 'disabled' %>>Freigeben &amp; Mail senden</button>
+          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko ? '' : 'disabled' %>><%= sub.submitter_email ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
         </form>
-        <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Freigabe erst mit Kontakt-E-Mail des Betreibers.</small></p><% } %>
+        <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Ohne Kontakt-E-Mail keine Anfragen an das <%= ranking.entity_label_sg %> möglich (Stammdaten).</small></p><% } %>
         <details style="margin-top:10px">
           <summary>Ablehnen</summary>
           <form method="post" action="/admin/meldungen/<%= sub.id %>/ablehnen">
