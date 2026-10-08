@@ -9,7 +9,7 @@
 %>
 
 <section class="hero-band">
-  <div class="wrap hero-grid">
+  <div class="wrap hero-grid<%= topCard ? '' : ' single' %>">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
@@ -44,15 +44,6 @@
         </ul>
         <p class="muted" style="margin:14px 0 0;font-size:.85rem"><%= ranking.score_name %><%= topCard.provisional ? ' vorläufig, aus geprüften Fakten' : '' %> · Punkte je Kategorie</p>
       </a>
-    <% } else { %>
-      <div class="score-card">
-        <p class="caption">So setzt sich der <%= ranking.score_name %> zusammen</p>
-        <ul class="bars">
-          <% weights.forEach(function (w) { %>
-            <li><span><%= w.label %></span><span class="track"><span class="fill" style="width:<%= Math.round(100 * w.max / maxWeight) %>%"></span></span><span class="val"><%= w.max %> P.</span></li>
-          <% }) %>
-        </ul>
-      </div>
     <% } %>
   </div>
 </section>
@@ -163,23 +154,7 @@
       <li><strong>Von Hand prüfen</strong><p>Jeder Wert bekommt Quelle und Prüfdatum. Kein Eintrag geht ohne Freigabe online.</p></li>
       <li><strong>Score berechnen</strong><p><%= totalPoints %> Punkte in <%= weights.length %> Kategorien, umgerechnet auf 0–100. Fehlende Werte zählen nicht gegen ein <%= ranking.entity_label_sg %>.</p></li>
     </ol>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap weights">
-    <div>
-      <h2>Was zählt</h2>
-      <p class="lead">Die Gewichte stehen fest und gelten für alle <%= ranking.entity_label_pl %> gleich. Wer mehr zahlt, steht nicht weiter oben.</p>
-      <p><a class="btn secondary" href="<%= methodHref %>">Formel und alle <%= criteriaCount %> Kriterien</a></p>
-    </div>
-    <div class="card">
-      <ul class="bars">
-        <% weights.forEach(function (w) { %>
-          <li><span><%= w.label %></span><span class="track"><span class="fill" style="width:<%= Math.round(100 * w.max / maxWeight) %>%"></span></span><span class="val"><%= w.max %> P.</span></li>
-        <% }) %>
-      </ul>
-    </div>
+    <p style="margin-top:16px"><a href="<%= methodHref %>">Formel, Gewichte und alle <%= criteriaCount %> Kriterien ansehen →</a></p>
   </div>
 </section>
 
