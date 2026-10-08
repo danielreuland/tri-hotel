@@ -72,3 +72,14 @@ test('util: slugify, websiteKey, normalizeUrl', () => {
   assert.equal(normalizeUrl('example.com'), 'https://example.com/');
   assert.equal(normalizeUrl('javascript:alert(1)'), null);
 });
+
+test('extractor.scoreLink: Hotel-Unterseiten und Ausstattung vor Kette, Rechtliches nie', () => {
+  const hints = extractor.hintsFrom(['Radgarage', 'Sauna / Spa']);
+  const s = (path, text) => extractor.scoreLink(new URL(`https://kette.example${path}`), text, '/de/zafiro-tropic/', hints);
+  assert.ok(s('/de/zafiro-tropic/fitness/', 'Fitness') > s('/de/hotels/', 'Hotels'));
+  assert.ok(s('/de/zafiro-tropic/servicios/', 'Services') > s('/de/', 'Start'));
+  assert.ok(s('/de/radgarage/', '') > s('/de/ueber-uns/', 'Über uns'), 'Wort aus dem Kriterienkatalog');
+  assert.ok(s('/de/cookies/', 'Cookies') < -50);
+  assert.ok(s('/de/magazin/', 'Magazin') < -50);
+  assert.ok(s('/de/kontakt/', 'Kontakt') > s('/de/ueber-uns/', 'Über uns'), 'Kontakt für die E-Mail-Adresse');
+});

@@ -7,7 +7,16 @@
 // der tatsächlich auf der abgerufenen Seite vorkommt – sonst wird sie verworfen.
 const config = require('../config');
 
-const MAX_PAGES = 6;
+const MAX_PAGES = 10;
+
+// Seitenauswahl: gängige Begriffe für Ausstattungsseiten (DE/EN/ES/IT/PT), ergänzt um Wörter aus Kriterien und Leistungen
+const PAGE_HINTS = [
+  'sport', 'fitness', 'gym', 'pool', 'piscina', 'schwimm', 'swim', 'bike', 'rad', 'cycl', 'bici', 'spa', 'wellness', 'sauna',
+  'massage', 'physio', 'restaurant', 'gastronom', 'buffet', 'kulinar', 'food', 'servic', 'ausstatt', 'einricht', 'facilit',
+  'instalac', 'equip', 'leistung', 'angebot', 'aktivit', 'activit', 'training', 'lauf', 'running', 'camp', 'triathlon',
+];
+const PAGE_SKIP = /cookie|datenschutz|privacy|privacidad|impressum-?agb|agb|terms|condiciones|blog|magazin|news|presse|press|jobs?|karriere|career|empleo|gutschein|voucher|login|account|warenkorb|cart/i;
+const PAGE_CONTACT = /kontakt|contact|contacto|impressum|imprint|aviso-legal|legal-notice/i;
 const MAX_CHARS_PER_PAGE = 20000;
 
 // ---------- Website abrufen ----------
@@ -54,26 +63,56 @@ async function disallowedPaths(origin) {
   }
 }
 
-// Startseite + einige Unterseiten derselben Domain (kürzeste Pfade zuerst).
-async function fetchSite(website) {
+// Bewertet einen Link: Unterseiten des Hotels selbst und Ausstattungsseiten zuerst, Rechtliches/Blog nie.
+function scoreLink(url, text, startPath, hints) {
+  const path = decodeURIComponent(url.pathname).toLowerCase();
+  const hay = `${path} ${String(text || '').toLowerCase()}`;
+  if (PAGE_SKIP.test(path)) return -100;
+  let score = 0;
+  if (startPath.length > 1 && path.startsWith(startPath) && path !== startPath) score += 6;
+  for (const h of hints) if (hay.includes(h)) score += 3;
+  if (PAGE_CONTACT.test(hay)) score += 2;
+  score -= path.split('/').filter(Boolean).length * 0.1; // bei Gleichstand kürzere Pfade
+  return score;
+}
+
+// Wörter aus Kriterien und Leistungen (Datenbank) als zusätzliche Hinweise für die Seitenauswahl
+function hintsFrom(labels) {
+  const words = new Set(PAGE_HINTS);
+  for (const l of labels || []) {
+    for (const w of String(l).toLowerCase().split(/[^a-zäöüß]+/)) if (w.length >= 5) words.add(w.slice(0, 7));
+  }
+  return [...words];
+}
+
+// Startseite + passende Unterseiten derselben Domain
+async function fetchSite(website, { labels = [] } = {}) {
   const start = await fetchText(website);
   if (!start) return [];
   const origin = new URL(start.url).origin;
+  const startPath = new URL(start.url).pathname.toLowerCase().replace(/\/?$/, '/');
   const blocked = await disallowedPaths(origin);
   const allowed = (u) => !blocked.some((p) => new URL(u).pathname.startsWith(p));
   const pages = [{ url: start.url, text: htmlToText(start.html).slice(0, MAX_CHARS_PER_PAGE) }];
+  const hints = hintsFrom(labels);
 
-  const links = new Set();
-  for (const m of start.html.matchAll(/href="([^"#]+)"/gi)) {
+  const links = new Map();
+  for (const m of start.html.matchAll(/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
     try {
       const u = new URL(m[1], start.url);
-      if (u.origin === origin && !/\.(pdf|jpe?g|png|gif|svg|webp|zip|ics)$/i.test(u.pathname) && u.toString() !== start.url) {
-        u.hash = '';
-        links.add(u.toString());
-      }
+      u.hash = '';
+      if (u.origin !== origin || /\.(pdf|jpe?g|png|gif|svg|webp|zip|ics)$/i.test(u.pathname) || u.toString() === start.url) continue;
+      const text = htmlToText(m[2]).slice(0, 120);
+      const key = u.toString();
+      const score = scoreLink(u, text, startPath, hints);
+      if (!links.has(key) || links.get(key) < score) links.set(key, score);
     } catch { /* ungültiger Link */ }
   }
-  const candidates = [...links].filter(allowed).sort((a, b) => a.length - b.length).slice(0, MAX_PAGES - 1);
+  const candidates = [...links.entries()]
+    .filter(([u, s]) => s > -50 && allowed(u))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_PAGES - 1)
+    .map(([u]) => u);
   for (const url of candidates) {
     try {
       const page = await fetchText(url);
@@ -238,4 +277,4 @@ async function extract(args) {
   return provider(args);
 }
 
-module.exports = { extract, fetchSite, findContactEmail, htmlToText, parseValue, describeCriterion };
+module.exports = { extract, fetchSite, findContactEmail, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom };

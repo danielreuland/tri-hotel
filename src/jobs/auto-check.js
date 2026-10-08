@@ -97,8 +97,8 @@ async function run(submissionId) {
   // 4. Website-Extraktion (jeder Wert mit Fundstelle)
   if (entity.website) {
     await step(sub.id, 'Website-Extraktion', async () => {
-      const pages = await extractor.fetchSite(entity.website);
       const catalog = await featureService.catalog(ranking.entity_type);
+      const pages = await extractor.fetchSite(entity.website, { labels: [...criteria.map((c) => c.label), ...catalog.map((f) => f.label)] });
       const found = await extractor.extract({ ranking, criteria, entity, pages, features: catalog });
       const n = await insertAutoFacts(entity.id, found.facts);
       // Leistungen ohne Ableitung als Vorschlag (Stufe 4); bestehende nie überschreiben
