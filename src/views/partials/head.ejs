@@ -3,10 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><%= title %> · <%= locals.site ? site.name : '' %></title>
-  <% if (typeof description !== 'undefined' && description) { %><meta name="description" content="<%= description %>"><% } %>
-  <% if (typeof canonical !== 'undefined' && canonical) { %><link rel="canonical" href="<%= canonical %>"><% } %>
+  <% var pageTitle = title + (locals.site ? ' · ' + site.name : '');
+     var ogImg = locals.ogImage || (locals.siteUrl ? siteUrl + '/og/start.png' : null); %>
+  <title><%= pageTitle %></title>
+  <% if (locals.description) { %><meta name="description" content="<%= description %>"><% } %>
+  <% if (locals.canonical) { %><link rel="canonical" href="<%= canonical %>"><% } %>
   <% if ((typeof noindex !== 'undefined' && noindex) || locals.noindexAll) { %><meta name="robots" content="noindex, nofollow"><% } %>
+  <meta property="og:type" content="<%= locals.ogType || 'website' %>">
+  <meta property="og:locale" content="de_DE">
+  <% if (locals.site) { %><meta property="og:site_name" content="<%= site.name %>"><% } %>
+  <meta property="og:title" content="<%= title %>">
+  <% if (locals.description) { %><meta property="og:description" content="<%= description %>"><% } %>
+  <% if (locals.canonical) { %><meta property="og:url" content="<%= canonical %>"><% } %>
+  <% if (ogImg) { %><meta property="og:image" content="<%= ogImg %>"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:image" content="<%= ogImg %>"><% } %>
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="/static/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <% (locals.jsonLd || []).forEach(function (ld) { %><script type="application/ld+json"><%- ldJson(ld) %></script>
+  <% }) %>
+  <% if (locals.plausibleSrc && locals.site) { %><script defer data-domain="<%= site.primary_domain %>" src="<%= plausibleSrc %>"></script><% } %>
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="/static/js/theme.js"></script>
   <% if (locals.siteCss) { %><style><%- siteCss %></style><% } %>

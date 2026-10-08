@@ -1,6 +1,8 @@
 <%- include('../partials/head') %>
 
-<p><a href="<%= base || '/' %>">← Alle <%= ranking.entity_label_pl %></a></p>
+<nav class="crumbs" aria-label="Brotkrumen">
+  <% crumbs.forEach(function (c, i) { %><% if (i < crumbs.length - 1) { %><a href="<%= c.url.replace(siteUrl, '') || '/' %>"><%= c.name %></a> › <% } else { %><span><%= c.name %></span><% } %><% }) %>
+</nav>
 
 <div class="grid grid-2" style="align-items:center">
   <div>
@@ -123,6 +125,18 @@
     <% } %>
   </section>
 </div>
+
+<% if (nearby.length) { %>
+  <section>
+    <h2>Weitere <%= ranking.entity_label_pl %> <%= region.name_in %></h2>
+    <ul class="rank-list">
+      <% nearby.forEach(function (e) { %>
+        <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %> · <%= e.label %></small></span><span class="score"><%= e.score %></span></a></li>
+      <% }) %>
+    </ul>
+    <p><a href="<%= base %>/region/<%= region.slug %>">Alle <%= ranking.entity_label_pl %> <%= region.name_in %> →</a></p>
+  </section>
+<% } %>
 
 <% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>

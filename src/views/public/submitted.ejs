@@ -1,9 +1,10 @@
 <%- include('../partials/head') %>
-<h1>Danke für deinen Vorschlag!</h1>
+<h1 data-goal="Hotel vorgeschlagen">Danke für deinen Vorschlag!</h1>
 <div class="card">
   <p>Wir haben dir eine Mail geschickt. Bitte bestätige deinen Vorschlag über den Link darin – er ist 72 Stunden gültig.</p>
   <p>Danach prüfen wir das <%= ranking.entity_label_sg %> automatisch und von Hand. Sobald die Seite online ist, bekommst du Bescheid.</p>
   <p class="muted">Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach.</p>
 </div>
 <p><a class="btn secondary" href="/">Zur Startseite</a></p>
+<% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>

@@ -1,4 +1,8 @@
-// Öffentliche Seiten: Monatsfilter und Zwei-Klick-Karte (Leaflet erst nach Zustimmung laden).
+// Öffentliche Seiten: Monatsfilter, Zwei-Klick-Karte (Leaflet erst nach Zustimmung laden), Plausible-Ziele.
+document.querySelectorAll('[data-goal]').forEach(function (el) {
+  var send = function () { if (window.plausible) window.plausible(el.getAttribute('data-goal')); };
+  if (window.plausible) send(); else window.addEventListener('load', send);
+});
 document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
   el.addEventListener('change', function () { el.form.submit(); });
 });

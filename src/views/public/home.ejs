@@ -146,6 +146,19 @@
   </div>
 </section>
 
+<% var areaList = areaOverview.regions.filter(function (r) { return r.count > 0 }); if (!areaList.length) areaList = areaOverview.regions; %>
+<% if (areaList.length || areaOverview.countries.length) { %>
+<section class="section">
+  <div class="wrap">
+    <div class="section-head"><div><h2>Beliebte Regionen</h2><p>Die besten <%= ranking.entity_label_pl %> je Ziel, mit Klima und Ausstattung im Überblick.</p></div></div>
+    <div class="chips">
+      <% areaList.forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
+      <% areaOverview.countries.forEach(function (c) { %><a class="chip" href="<%= base %>/land/<%= c.slug %>"><%= c.name %> <span class="muted">(<%= c.count %>)</span></a><% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
 <section class="section">
   <div class="wrap">
     <div class="section-head"><h2>So entsteht der <%= ranking.score_name %></h2></div>

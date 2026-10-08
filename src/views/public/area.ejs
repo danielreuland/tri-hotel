@@ -1,0 +1,92 @@
+<%- include('../partials/head') %>
+<%
+  var formula = Object.assign({ min_completeness: 70 }, ranking.formula || {});
+  var methodHref = base + (isHostRanking ? scorePath : '/methodik');
+%>
+
+<nav class="crumbs" aria-label="Brotkrumen">
+  <% crumbs.forEach(function (c, i) { %><% if (i < crumbs.length - 1) { %><a href="<%= c.url.replace(siteUrl, '') || '/' %>"><%= c.name %></a> › <% } else { %><span><%= c.name %></span><% } %><% }) %>
+</nav>
+
+<section class="area-hero">
+  <p class="eyebrow"><%= area.type === 'region' ? 'Region' : 'Land' %> · <%= ranking.score_name %>-Ranking</p>
+  <h1><%= heading %></h1>
+  <% if (area.intro) { %><p class="lead"><%= area.intro %></p><% } %>
+  <div class="area-facts">
+    <div><strong><%= d.count %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
+    <% if (d.topScore !== null) { %><div><strong><%= d.topScore %></strong><span>bester <%= ranking.score_name %></span></div><% } %>
+    <% if (best) { %><div><strong class="months"><%= best %></strong><span>beste Reisemonate laut Klimadaten</span></div><% } %>
+  </div>
+</section>
+
+<section>
+  <h2>Die besten <%= ranking.entity_label_pl %> <%= area.nameIn %></h2>
+  <% if (!d.ranked.length) { %>
+    <div class="card">
+      <p style="margin-top:0">Hier ist noch kein <%= ranking.entity_label_sg %> im Ranking<%= d.incomplete.length ? ' – die Einträge unten sind geprüft, aber noch nicht vollständig' : '' %>.</p>
+      <% if (isHostRanking) { %><p style="margin-bottom:0"><a class="btn cta" href="/<%= ranking.entity_type %>-hinzufuegen">Ein <%= ranking.entity_label_sg %> <%= area.nameIn %> hinzufügen</a></p><% } %>
+    </div>
+  <% } else { %>
+    <p class="muted">Sortiert nur nach <%= ranking.score_name %>; die Zahl links ist der Platz im Gesamtranking.</p>
+    <ol class="rank-list">
+      <% d.ranked.forEach(function (e) { %>
+        <li>
+          <a class="rank-item" href="<%= entityPath(e) %>">
+            <span class="pos"><%= e.rank %></span>
+            <span class="info">
+              <span class="name"><%= e.name %></span><br>
+              <small><%= e.city %> · <%= e.label %></small>
+              <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
+              <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
+            </span>
+            <span class="score"><%= e.score %></span>
+          </a>
+        </li>
+      <% }) %>
+    </ol>
+  <% } %>
+  <% if (d.incomplete.length) { %>
+    <h3>Profil unvollständig</h3>
+    <ul class="rank-list">
+      <% d.incomplete.forEach(function (e) { %>
+        <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %></small></span><span class="score none">–</span></a></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<div class="grid grid-2" style="margin-top:8px">
+  <% if (d.featureShares.length) { %>
+    <section>
+      <h2>Ausstattung <%= area.nameIn %></h2>
+      <ul class="shares">
+        <% d.featureShares.forEach(function (f) { %>
+          <li><span><%= f.label %></span><span class="muted"><%= f.n %> von <%= d.count %></span></li>
+        <% }) %>
+      </ul>
+    </section>
+  <% } %>
+  <% if (d.climate.length) { %>
+    <section>
+      <h2>Klima <%= area.nameIn %></h2>
+      <div class="table-scroll">
+        <table class="climate">
+          <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+          <tr><th>Ø max °C</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
+          <tr><th>Regentage</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+        </table>
+      </div>
+      <p class="muted"><small>Mittel der <%= ranking.entity_label_pl %> <%= area.nameIn %> (Open-Meteo, letzte drei Jahre). Markiert: Monate, in denen das Klima im <%= ranking.score_name %> die volle Punktzahl erreicht. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
+    </section>
+  <% } %>
+</div>
+
+<section>
+  <h2>Weitere Ziele</h2>
+  <div class="chips">
+    <% otherRegions.forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
+    <% countries.forEach(function (c) { %><a class="chip" href="<%= base %>/land/<%= c.slug %>"><%= c.name %> <span class="muted">(<%= c.count %>)</span></a><% }) %>
+  </div>
+</section>
+
+<%- include('../partials/foot') %>

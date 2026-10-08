@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const config = require('./config');
@@ -15,15 +16,17 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.disable('x-powered-by');
 
+const plausibleOrigin = config.plausibleSrc ? new URL(config.plausibleSrc).origin : null;
+app.use(compression());
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", 'https://unpkg.com'],
+        scriptSrc: ["'self'", 'https://unpkg.com', ...(plausibleOrigin ? [plausibleOrigin] : [])],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
         imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org', 'https://unpkg.com'],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", ...(plausibleOrigin ? [plausibleOrigin] : [])],
       },
     },
     // Standard der Browser; mit "no-referrer" senden Formulare die Herkunft als "null"
@@ -50,6 +53,8 @@ app.locals.MONTHS = MONTHS;
 app.locals.COUNTRIES = require('./lib/countries');
 app.locals.baseUrl = config.baseUrl;
 app.locals.noindexAll = config.noindex;
+app.locals.plausibleSrc = config.plausibleSrc;
+app.locals.ldJson = require('./lib/seo').ldJson;
 
 // Vorab-Phase: nichts indexieren
 if (config.noindex) {
@@ -58,9 +63,7 @@ if (config.noindex) {
     next();
   });
 }
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain').send(config.noindex ? 'User-agent: *\nDisallow: /\n' : 'User-agent: *\nDisallow: /admin\nDisallow: /anfrage/\nDisallow: /bestaetigen/\n');
-});
+
 
 app.use(sameOrigin);
 app.use(rankingContext);
@@ -69,8 +72,10 @@ app.use('/admin', require('./routes/admin'));
 app.use('/admin/rankings', require('./routes/admin-rankings'));
 app.use('/admin/sites', require('./routes/admin-sites'));
 app.use('/admin/leistungen', require('./routes/admin-features'));
+app.use('/admin/regionen', require('./routes/admin-regions'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/inquiry'));
+app.use('/', require('./routes/seo'));
 app.use('/', require('./routes/public'));
 
 app.use((req, res) => res.status(404).render('public/error', { title: 'Nicht gefunden', message: 'Diese Seite gibt es nicht.' }));

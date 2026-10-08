@@ -33,6 +33,8 @@ module.exports = {
   // Vorab-Phase: Login über HTTP-Tunnel erlauben (COOKIE_SECURE=false) und Suchmaschinen aussperren (NOINDEX=true)
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production',
   noindex: process.env.NOINDEX === 'true',
+  // Plausible (ohne Cookies), z. B. https://analytics.triprep.de/js/script.outbound-links.tagged-events.js
+  plausibleSrc: process.env.PLAUSIBLE_SRC || null,
   // Admin-Login: Google (empfohlen) und optional Passwort
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || null,

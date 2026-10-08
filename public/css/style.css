@@ -255,6 +255,20 @@ figcaption { font-size: .78rem; color: var(--muted); }
 .feature-line { display: block; font-size: .8rem; color: var(--muted); margin-top: 2px; }
 @media (max-width: 760px) { .search-row { grid-template-columns: 1fr 1fr; } .search-field.grow { grid-column: 1 / -1; } }
 
+/* ---------- Brotkrumen, Regionen ---------- */
+.crumbs { font-size: .88rem; color: var(--muted); margin: 0 0 14px; }
+.crumbs a { color: var(--muted); }
+.area-hero { padding-block: 8px 12px; }
+.area-hero .lead { max-width: 70ch; }
+.area-facts { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 18px 0 8px; }
+.area-facts strong { display: block; font: 400 2.4rem/1 var(--head); color: var(--heading); }
+.area-facts strong.months { font-size: 1.6rem; line-height: 1.2; }
+.area-facts span { color: var(--muted); font-size: .9rem; }
+.shares { list-style: none; padding: 0; margin: 0; }
+.shares li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+a.chip { text-decoration: none; color: var(--text); }
+a.chip:hover { border-color: var(--primary); }
+
 /* ---------- Leistungen ---------- */
 .features { columns: 2 220px; column-gap: 24px; }
 .features .group { break-inside: avoid; margin-bottom: 12px; }

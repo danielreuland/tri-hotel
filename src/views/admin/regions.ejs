@@ -1,0 +1,41 @@
+<%- include('../partials/admin-head') %>
+<h1>Regionen</h1>
+<p class="muted">Jede Region ist eine eigene Landingpage (z. B. /region/mallorca). <%= ' ' %>Hotels ordnen sich über ihre Koordinaten zu (Mittelpunkt + Radius). Mit weniger als zwei Hotels bleibt die Seite für Suchmaschinen gesperrt.</p>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<div class="table-scroll">
+<table>
+  <tr><th>Region</th><th>Seite</th><th>Land</th><th class="num">Radius</th><th>Status</th></tr>
+  <% rows.forEach(function (r) { %>
+    <tr>
+      <td><a href="/admin/regionen/<%= r.id %>"><%= r.name %></a><br><small class="muted"><%= r.name_in %></small></td>
+      <td><small><%= r.site_name %> · /region/<%= r.slug %></small></td>
+      <td><%= r.country %></td>
+      <td class="num"><%= Number(r.radius_km) %> km</td>
+      <td><span class="badge"><%= r.status %></span></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+
+<% var e = edit || { status: 'active', sort_order: 100 }; %>
+<h2 id="form"><%= edit && edit.id ? 'Region bearbeiten: ' + edit.name : 'Neue Region' %></h2>
+<form method="post" action="/admin/regionen<%= edit && edit.id ? '/' + edit.id : '' %>" class="card">
+  <div class="form-row">
+    <div><label>Site</label><select name="site_id"><% sites.forEach(function (s) { %><option value="<%= s.id %>" <%= e.site_id === s.id ? 'selected' : '' %>><%= s.name %></option><% }) %></select></div>
+    <div><label>Name *</label><input name="name" type="text" required value="<%= e.name || '' %>" placeholder="Mallorca"></div>
+    <div><label>„auf/am/in …“ *</label><input name="name_in" type="text" required value="<%= e.name_in || '' %>" placeholder="auf Mallorca"></div>
+    <div><label>Slug</label><input name="slug" type="text" value="<%= e.slug || '' %>" placeholder="mallorca"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Land *</label><input name="country" type="text" maxlength="2" required value="<%= e.country || '' %>" placeholder="ES"></div>
+    <div><label>Breitengrad *</label><input name="lat" type="text" required value="<%= e.lat || '' %>"></div>
+    <div><label>Längengrad *</label><input name="lng" type="text" required value="<%= e.lng || '' %>"></div>
+    <div><label>Radius km *</label><input name="radius_km" type="text" required value="<%= e.radius_km || '' %>"></div>
+    <div><label>Reihenfolge</label><input name="sort_order" type="number" value="<%= e.sort_order %>"></div>
+    <div><label>Status</label><select name="status"><% ['active', 'draft', 'archived'].forEach(function (s) { %><option value="<%= s %>" <%= e.status === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+  </div>
+  <label>Einleitungstext <small class="muted">eigener Text je Region, wichtig für Google (2–4 Sätze)</small></label>
+  <textarea name="intro"><%= e.intro || '' %></textarea>
+  <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button></p>
+</form>
+<%- include('../partials/admin-foot') %>

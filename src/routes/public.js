@@ -7,6 +7,8 @@ const rankings = require('../services/rankings');
 const scoring = require('../services/scoring');
 const features = require('../services/features');
 const featureLib = require('../lib/features');
+const areas = require('../services/areas');
+const seo = require('../lib/seo');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -76,9 +78,22 @@ async function renderList(req, res, ranking) {
   }
 
   const content = ranking.content || {};
+  const siteUrl = res.locals.siteUrl;
+  const base = rankingBase(ranking);
+  const searchActive = featureLib.isActive(search) || Boolean(month);
+  const overview = await areas.overview(ranking, req.site.id);
+  const homeTitle = content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name;
   res.render('public/home', {
-    title: ranking.name,
-    description: content.hero_text || ranking.description,
+    title: homeTitle,
+    description: `${ranking.score_name} 0–100: ${allRanked.length} ${ranking.entity_label_pl} nach geprüften Fakten bewertet – ${(content.hero_text || ranking.description || '').split('. ')[0]}.`.slice(0, 160),
+    canonical: `${siteUrl}${base || '/'}`,
+    // Suchergebnis- und Filterseiten nicht indexieren (doppelte Inhalte)
+    noindex: searchActive,
+    jsonLd: [
+      seo.websiteLd(req.site, siteUrl),
+      seo.itemListLd(ranking.name, allRanked.slice(0, 20).map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` }))),
+    ],
+    areaOverview: overview,
     fullWidth: true,
     ranking,
     content,
@@ -87,7 +102,7 @@ async function renderList(req, res, ranking) {
     month,
     topCard,
     search,
-    searchActive: featureLib.isActive(search) || Boolean(month),
+    searchActive,
     countries,
     filterFeatures,
     totalCount: allRanked.length,
@@ -147,7 +162,22 @@ async function renderEntity(req, res, ranking, slug) {
     return { label: cat.label, items, points: known.reduce((s, i) => s + i.points, 0), max: items.reduce((s, i) => s + i.max, 0) };
   });
 
-  const featureGroups = featureLib.groupFeatures(await features.forEntity(ranking.entity_type, entity.id));
+  const entityFeatureList = await features.forEntity(ranking.entity_type, entity.id);
+  const featureGroups = featureLib.groupFeatures(entityFeatureList);
+  // Brotkrumen und „Weitere … in der Region“
+  const siteUrl = res.locals.siteUrl;
+  const base = rankingBase(ranking);
+  const inRegions = await areas.regionsOf(req.site.id, entity);
+  const region = inRegions[0] || null;
+  const crumbs = [{ name: ranking.name, url: `${siteUrl}${base || '/'}` }];
+  if (entity.country) crumbs.push({ name: seo.countryName(entity.country), url: `${siteUrl}${base}/land/${seo.countrySlug(entity.country)}` });
+  if (region) crumbs.push({ name: region.name, url: `${siteUrl}${base}/region/${region.slug}` });
+  crumbs.push({ name: entity.name, url: `${siteUrl}${entityPath(ranking, entity)}` });
+  let nearby = [];
+  if (region) {
+    const { ranked } = await areas.liveWithRank(ranking, null);
+    nearby = ranked.filter((e) => e.id !== entity.id && seo.inRegion(e, region)).slice(0, 4);
+  }
 
   const images = await db.many(
     `SELECT * FROM entity_images WHERE entity_id = $1 AND approved_at IS NOT NULL
@@ -156,10 +186,25 @@ async function renderEntity(req, res, ranking, slug) {
   );
   const formula = scoring.withDefaults(ranking.formula);
 
+  const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
+  const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
+  const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
-    title: `${entity.name} – ${ranking.score_name}`,
-    description: `${ranking.score_name} für ${entity.name} (${entity.city}): geprüfte Fakten mit Quelle je Wert.`,
-    canonical: `${res.locals.siteUrl}${entityPath(ranking, entity)}`,
+    title: `${entity.name} (${entity.city || seo.countryName(entity.country)}) – ${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`,
+    description: (result.eligible
+      ? `${ranking.score_name} ${result.score}/100 (${result.label}) für ${entity.name}${entity.city ? ` in ${entity.city}` : ''}. `
+      : `${entity.name}${entity.city ? ` in ${entity.city}` : ''} im ${ranking.name}-Ranking. `)
+      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle, Klima je Monat und Lage.',
+    canonical,
+    ogImage,
+    ogType: 'article',
+    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage }), seo.breadcrumbLd(crumbs)],
+    crumbs,
+    region,
+    nearby,
+    entityPath: (e) => entityPath(ranking, e),
+    // Monatsansicht nicht indexieren (gleicher Inhalt mit anderem Score)
+    noindex: Boolean(month),
     ranking,
     entity,
     result,
@@ -179,6 +224,8 @@ async function renderMethod(req, res, ranking) {
   const [categories, criteria] = await Promise.all([rankings.getCategories(ranking.id), rankings.getCriteria(ranking.id)]);
   res.render('public/method', {
     title: `So funktioniert der ${ranking.score_name}`,
+    description: `Formel, Gewichte und alle ${criteria.length} Kriterien des ${ranking.score_name}: offen und für alle ${ranking.entity_label_pl} gleich. Partner und Werbung ändern den Score nicht.`,
+    canonical: `${res.locals.siteUrl}${ranking.is_default && req.hostRanking && req.hostRanking.id === ranking.id ? res.locals.scorePath : `/rankings/${ranking.slug}/methodik`}`,
     ranking,
     formula: scoring.withDefaults(ranking.formula),
     categories: categories.map((cat) => ({ ...cat, criteria: criteria.filter((c) => c.category_id === cat.id) })),
@@ -246,6 +293,67 @@ router.get('/rankings/:rslug/methodik', wrap(async (req, res, next) => {
 router.get('/rankings/:rslug/:eslug', wrap(async (req, res, next) => {
   const ranking = req.site && (await rankings.getRankingBySlug(req.params.rslug, req.site.id));
   if (!ranking || !(await renderEntity(req, res, ranking, req.params.eslug))) return next();
+}));
+
+// ---------- Regionen und Länder (SEO-Landingpages) ----------
+
+const MONTHS_DE = require('../lib/util').MONTHS;
+
+async function renderArea(req, res, ranking, area) {
+  const month = parseMonth(req.query.monat);
+  const d = await areas.pageData(ranking, area, month);
+  const siteUrl = res.locals.siteUrl;
+  const base = rankingBase(ranking);
+  const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
+  const ov = await areas.overview(ranking, req.site.id);
+  const best = seo.monthRanges(d.bestMonths, MONTHS_DE);
+  const heading = `${ranking.name} ${area.nameIn}`;
+  const crumbs = [{ name: ranking.name, url: `${siteUrl}${base || '/'}` }];
+  if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
+  crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
+  res.render('public/area', {
+    title: `${heading}${d.ranked.length ? ` – die ${d.ranked.length} besten nach ${ranking.score_name}` : ''}`,
+    description: (d.count
+      ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
+      : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
+      + (best ? ` Beste Reisemonate: ${best}.` : '') + ' Jeder Wert mit Quelle.',
+    canonical: `${siteUrl}${path}`,
+    ogImage: `${siteUrl}/og/${area.type === 'region' ? 'region' : 'land'}/${area.slug}.png`,
+    // Seiten mit zu wenigen Einträgen und Monatsansichten nicht indexieren
+    noindex: !d.indexable || Boolean(month),
+    jsonLd: [
+      seo.breadcrumbLd(crumbs),
+      ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
+    ],
+    heading, ranking, area, d, month, best, crumbs, base,
+    otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
+    countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug)),
+    entityPath: (e) => entityPath(ranking, e),
+    isHostRanking: req.hostRanking && req.hostRanking.id === ranking.id,
+  });
+}
+
+async function findArea(siteId, kind, slug) {
+  if (kind === 'region') {
+    const r = await areas.region(siteId, slug);
+    return r ? areas.regionArea(r) : null;
+  }
+  const code = seo.countryFromSlug(slug);
+  return code ? areas.countryArea(code) : null;
+}
+
+router.get('/:kind(region|land)/:slug', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  const area = r && (await findArea(req.site.id, req.params.kind, req.params.slug));
+  if (!area) return next();
+  await renderArea(req, res, r, area);
+}));
+
+router.get('/rankings/:rslug/:kind(region|land)/:slug', wrap(async (req, res, next) => {
+  const ranking = req.site && (await rankings.getRankingBySlug(req.params.rslug, req.site.id));
+  const area = ranking && (await findArea(req.site.id, req.params.kind, req.params.slug));
+  if (!area) return next();
+  await renderArea(req, res, ranking, area);
 }));
 
 // Methodik des Host-Rankings unter /<scorename>, z. B. /triscore
