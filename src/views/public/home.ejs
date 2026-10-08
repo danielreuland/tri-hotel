@@ -152,17 +152,19 @@
 </section>
 
 <% var areaList = areaOverview.regions.filter(function (r) { return r.count > 0 }); if (!areaList.length) areaList = areaOverview.regions; %>
-<% if (areaList.length || areaOverview.countries.length) { %>
+<% if (areaList.length || areaOverview.countries.length || Object.keys(siteMedia.regions).length) { %>
 <section class="section">
   <div class="wrap">
     <div class="section-head"><div><h2>Beliebte Regionen</h2><p>Die besten <%= ranking.entity_label_pl %> je Ziel, mit Klima und Ausstattung im Überblick.</p></div></div>
-    <% var withPhoto = areaList.filter(function (r) { return siteMedia.regions[r.region.id] }); %>
+    <% // Regionen mit Foto immer als Kachel (auch ohne Einträge: die Seite lädt dann zum Hinzufügen ein), meiste Einträge zuerst
+       var withPhoto = areaOverview.regions.filter(function (r) { return siteMedia.regions[r.region.id] })
+         .sort(function (a, b) { return b.count - a.count }); %>
     <% if (withPhoto.length) { %>
       <div class="region-cards">
         <% withPhoto.forEach(function (r) { var m = siteMedia.regions[r.region.id]; %>
           <a class="region-card" href="<%= base %>/region/<%= r.slug %>">
             <img <%- imgAttrs(m) %> sizes="(max-width: 700px) 100vw, 33vw" alt="" loading="lazy">
-            <span class="label"><strong><%= r.name %></strong><% if (r.count) { %><small><%= r.count %> <%= r.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl %></small><% } %></span>
+            <span class="label"><strong><%= r.name %></strong><small><%= r.count ? r.count + ' ' + (r.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl) : 'noch im Aufbau' %></small></span>
             <small class="photo-credit"><%= m.credit %></small>
           </a>
         <% }) %>

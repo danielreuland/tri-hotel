@@ -317,7 +317,7 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .hero-band.has-photo > .wrap, .cta-band.has-photo > .wrap { position: relative; z-index: 2; }
 /* Text links bleibt lesbar: Verlauf aus der Hintergrundfarbe (hell wie dunkel über Tokens) */
 .hero-band.has-photo::before { background: linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 42%, color-mix(in srgb, var(--bg) 20%, transparent) 100%); }
-.cta-band.has-photo::before { background: color-mix(in srgb, var(--header-bg) 82%, transparent); }
+.cta-band.has-photo::before { background: linear-gradient(90deg, color-mix(in srgb, var(--header-bg) 88%, transparent) 0%, color-mix(in srgb, var(--header-bg) 60%, transparent) 100%); }
 .cta-band.has-photo .wrap { padding-block: 56px; }
 @media (max-width: 900px) {
   .hero-band.has-photo::before { background: color-mix(in srgb, var(--bg) 84%, transparent); }
