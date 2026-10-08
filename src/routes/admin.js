@@ -17,6 +17,7 @@ const featureService = require('../services/features');
 const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
+const describer = require('../services/describer');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -223,9 +224,16 @@ async function loadDetail(id) {
     ? await db.many(`SELECT * FROM llm_usage WHERE entity_id = $1 OR submission_id = $2 ORDER BY created_at DESC`, [entity.id, sub.id])
     : await db.many(`SELECT * FROM llm_usage WHERE submission_id = $1 ORDER BY created_at DESC`, [sub.id]);
   const llmMonth = await require('../lib/llm').monthSpend();
+  // Beschreibungstext: gespeicherter Stand + ob die Fakten seitdem geändert wurden
+  let text = null;
+  let textStale = false;
+  if (entity) {
+    text = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]);
+    if (text && text.input_hash) textStale = describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash;
+  }
   return {
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
-    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth,
+    featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
   };
 }
 
@@ -245,6 +253,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     IMAGE_SOURCES,
     CONSENT_TYPES: require('../lib/consents').TYPES,
     describeValue: scoring.describeValue,
+    SUMMARY_MAX: describer.SUMMARY_MAX,
     flash: req.query.ok || null,
     error: req.query.fehler || null,
   });
@@ -602,6 +611,69 @@ router.post('/bilder/:id/loeschen', wrap(async (req, res) => {
     await logAction(req.session.admin.id, 'image', img.id, 'delete_image', { reason: req.body.reason || null, license: img.license, credit: img.credit });
   }
   res.redirect(`/admin/meldungen/${req.body.submission_id}?ok=Bild+entfernt#bilder`);
+}));
+
+// ---------- Beschreibungstext ----------
+
+async function subWithEntity(id) {
+  const sub = await db.one('SELECT id, entity_id, ranking_id FROM submissions WHERE id = $1', [id]);
+  return sub && sub.entity_id ? sub : null;
+}
+
+// Entwurf aus den geprüften Daten erzeugen (überschreibt den bisherigen Entwurf, Status wird „Entwurf“)
+router.post('/meldungen/:id/text/erzeugen', wrap(async (req, res, next) => {
+  const sub = await subWithEntity(req.params.id);
+  if (!sub) return next();
+  const back = `/admin/meldungen/${sub.id}`;
+  if (config.llm.provider !== 'anthropic') return res.redirect(`${back}?fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#text`);
+  const input = await describer.gather(sub.entity_id, sub.ranking_id);
+  let out;
+  try {
+    out = await describer.generate(input);
+  } catch (err) {
+    console.error('[describer]', err.message);
+    return res.redirect(`${back}?fehler=${encodeURIComponent(`Text konnte nicht erzeugt werden: ${err.message.slice(0, 200)}`)}#text`);
+  }
+  if (out.usage) {
+    await require('../lib/llm').record({ purpose: 'description', model: out.usage.model, usage: out.usage.raw, entityId: sub.entity_id, submissionId: sub.id });
+  }
+  if (!out.text) return res.redirect(`${back}?fehler=${encodeURIComponent('Das Modell hat keinen Text geliefert.')}#text`);
+  await db.query(
+    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, input_hash, model, generated_at, status, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, now(), 'draft', $7, now())
+     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+       model = EXCLUDED.model, generated_at = now(), status = 'draft', updated_by = EXCLUDED.updated_by, updated_at = now()`,
+    [sub.entity_id, sub.ranking_id, out.text.summary, out.text.body, describer.inputHash(input), out.usage.model, req.session.admin.id]
+  );
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', { model: out.usage.model });
+  res.redirect(`${back}?ok=${encodeURIComponent('Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
+}));
+
+// Speichern, Freigeben, Zurückziehen
+router.post('/meldungen/:id/text', wrap(async (req, res, next) => {
+  const sub = await subWithEntity(req.params.id);
+  if (!sub) return next();
+  const back = `/admin/meldungen/${sub.id}`;
+  const summary = describer.shorten(req.body.summary, describer.SUMMARY_MAX);
+  const body = String(req.body.body || '').replace(/\r/g, '').trim().slice(0, 8000);
+  const action = ['save', 'publish', 'unpublish'].includes(req.body.action) ? req.body.action : 'save';
+  if (action === 'publish' && (!summary || !body)) return res.redirect(`${back}?fehler=${encodeURIComponent('Kurzbeschreibung und Text sind zum Freigeben nötig.')}#text`);
+  const existing = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [sub.entity_id, sub.ranking_id]);
+  // Von Hand geschrieben oder bearbeitet: Fingerabdruck auf den aktuellen Stand setzen, wenn der Admin freigibt
+  const hash = action === 'publish' ? describer.inputHash(await describer.gather(sub.entity_id, sub.ranking_id)) : existing && existing.input_hash;
+  const status = action === 'publish' ? 'published' : action === 'unpublish' ? 'draft' : (existing ? existing.status : 'draft');
+  await db.query(
+    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, input_hash, status, published_at, published_by, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $6 = 'published' THEN now() END, CASE WHEN $6 = 'published' THEN $7::uuid END, $7, now())
+     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+       status = EXCLUDED.status, updated_by = EXCLUDED.updated_by, updated_at = now(),
+       published_at = CASE WHEN EXCLUDED.status = 'published' AND $8 THEN now() ELSE entity_texts.published_at END,
+       published_by = CASE WHEN EXCLUDED.status = 'published' AND $8 THEN EXCLUDED.updated_by ELSE entity_texts.published_by END`,
+    [sub.entity_id, sub.ranking_id, summary, body, hash, status, req.session.admin.id, action === 'publish']
+  );
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, `text_${action}`, { status });
+  const msg = { save: 'Text gespeichert', publish: 'Text freigegeben – jetzt auf der Profilseite sichtbar', unpublish: 'Text zurückgezogen' }[action];
+  res.redirect(`${back}?ok=${encodeURIComponent(msg)}#text`);
 }));
 
 // ---------- Aufgaben ----------

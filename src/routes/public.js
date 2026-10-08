@@ -10,6 +10,7 @@ const featureLib = require('../lib/features');
 const areas = require('../services/areas');
 const seo = require('../lib/seo');
 const media = require('../services/media');
+const describer = require('../services/describer');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -186,20 +187,22 @@ async function renderEntity(req, res, ranking, slug) {
     [entity.id]
   );
   const formula = scoring.withDefaults(ranking.formula);
+  // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
+  const text = await db.one(`SELECT summary, body, published_at FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
   const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
   const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
     title: `${entity.name} (${entity.city || seo.countryName(entity.country)}) – ${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`,
-    description: (result.eligible
+    description: text && text.summary ? text.summary : (result.eligible
       ? `${ranking.score_name} ${result.score}/100 (${result.label}) für ${entity.name}${entity.city ? ` in ${entity.city}` : ''}. `
       : `${entity.name}${entity.city ? ` in ${entity.city}` : ''} im ${ranking.name}-Ranking. `)
       + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle, Klima je Monat und Lage.',
     canonical,
     ogImage,
     ogType: 'article',
-    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage }), seo.breadcrumbLd(crumbs)],
+    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary }), seo.breadcrumbLd(crumbs)],
     crumbs,
     region,
     nearby,
@@ -216,6 +219,8 @@ async function renderEntity(req, res, ranking, slug) {
     climate,
     month,
     images,
+    textBlocks: text ? describer.parseBody(text.body) : [],
+    textDate: text && text.published_at,
     base: rankingBase(ranking),
   });
   return true;

@@ -42,6 +42,7 @@ module.exports = {
     models: {
       extract: process.env.LLM_MODEL_EXTRACT || 'claude-opus-5-5',
       inquiry: process.env.LLM_MODEL_INQUIRY || 'claude-opus-5-5',
+      describe: process.env.LLM_MODEL_DESCRIBE || 'claude-sonnet-5-5',
     },
     // Preise je 1 Mio. Tokens überschreiben, z. B. {"opus":{"input":5,"output":25}}
     prices: parseJson(process.env.LLM_PRICES, {}),

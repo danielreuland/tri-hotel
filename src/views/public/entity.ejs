@@ -43,6 +43,18 @@
   </form>
 </div>
 
+<% if (textBlocks.length) { %>
+  <section class="entity-text" style="margin-top:20px">
+    <h2 style="margin-top:0">Unsere Einschätzung</h2>
+    <% textBlocks.forEach(function (b) { %>
+      <% if (b.type === 'h') { %><h3><%= b.text %></h3>
+      <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
+      <% } else { %><p><%= b.text %></p><% } %>
+    <% }) %>
+    <p class="muted"><small>Redaktionstext auf Basis der geprüften Fakten unten<%= textDate ? ', Stand ' + new Date(textDate).toLocaleDateString('de-DE') : '' %>.</small></p>
+  </section>
+<% } %>
+
 <% if (featureGroups.length) { %>
   <section style="margin-top:20px">
     <h2 style="margin-top:0">Leistungen auf einen Blick</h2>

@@ -340,3 +340,9 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 /* Admin: Medienbibliothek */
 .media-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); margin-bottom: 24px; }
 .media-card img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; }
+
+/* Redaktioneller Text auf der Profilseite */
+.entity-text { max-width: 72ch; }
+.entity-text h3 { margin: 1.1em 0 .3em; }
+.entity-text p { margin: 0 0 .7em; }
+.entity-text ul { margin: 0 0 .7em; padding-left: 1.2em; }

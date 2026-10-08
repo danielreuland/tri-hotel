@@ -132,7 +132,7 @@ function breadcrumbLd(items) {
 }
 
 // Objekt mit redaktioneller Bewertung (nur wenn ein aussagekräftiger Score vorliegt)
-function entityLd({ entity, ranking, site, url, result, image }) {
+function entityLd({ entity, ranking, site, url, result, image, description }) {
   const type = ranking.entity_type === 'hotel' ? 'Hotel' : 'LocalBusiness';
   const ld = {
     '@context': 'https://schema.org',
@@ -143,6 +143,7 @@ function entityLd({ entity, ranking, site, url, result, image }) {
   };
   if (entity.lat && entity.lng) ld.geo = { '@type': 'GeoCoordinates', latitude: Number(entity.lat), longitude: Number(entity.lng) };
   if (image) ld.image = image;
+  if (description) ld.description = description;
   if (result && result.eligible && result.score !== null) {
     ld.review = {
       '@type': 'Review',

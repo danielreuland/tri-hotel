@@ -182,6 +182,35 @@
       </form>
     </section>
 
+    <section class="card" style="margin-top:16px" id="text">
+      <h2 style="margin-top:0">Beschreibungstext</h2>
+      <p class="muted" style="margin-top:0"><small>Steht auf der Profilseite über den Fakten; die Kurzbeschreibung ist zugleich die Meta-Beschreibung für Google. Der KI-Entwurf beruht nur auf den geprüften Daten dieser Seite. Öffentlich erst nach Freigabe.</small></p>
+      <p>
+        <% if (!text) { %><span class="badge">noch kein Text</span>
+        <% } else { %>
+          <span class="badge <%= text.status === 'published' ? 'good' : 'warn' %>"><%= text.status === 'published' ? 'freigegeben' : 'Entwurf' %></span>
+          <% if (textStale) { %><span class="badge bad" title="Fakten, Klima oder Leistungen haben sich seit dem Erzeugen bzw. der Freigabe geändert">veraltet – Fakten geändert</span><% } %>
+          <small class="muted"><%= text.model ? 'erzeugt mit ' + text.model + (text.generated_at ? ' am ' + new Date(text.generated_at).toLocaleString('de-DE') : '') : 'von Hand geschrieben' %><%= text.published_at ? ' · freigegeben am ' + new Date(text.published_at).toLocaleString('de-DE') : '' %></small>
+        <% } %>
+      </p>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/erzeugen" style="margin-bottom:12px"
+            <% if (text) { %>onsubmit="return confirm('Den bisherigen Text durch einen neuen Entwurf ersetzen?')"<% } %>>
+        <button class="btn small secondary" type="submit"><%= text ? 'Neu erzeugen' : 'Entwurf erzeugen' %></button>
+        <small class="muted">ca. 1 Cent</small>
+      </form>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/text">
+        <label for="t-summary">Kurzbeschreibung <small class="muted">ein Satz, max. <%= SUMMARY_MAX %> Zeichen</small></label>
+        <input id="t-summary" name="summary" type="text" maxlength="<%= SUMMARY_MAX %>" value="<%= text ? text.summary : '' %>">
+        <label for="t-body">Text <small class="muted">Absätze durch Leerzeile trennen · „## “ = Zwischenüberschrift · „- “ = Aufzählung</small></label>
+        <textarea id="t-body" name="body" rows="14"><%= text ? text.body : '' %></textarea>
+        <div class="filters" style="margin-bottom:0">
+          <button class="btn small secondary" type="submit" name="action" value="save">Speichern</button>
+          <button class="btn small" type="submit" name="action" value="publish"><%= text && text.status === 'published' ? 'Erneut freigeben' : 'Freigeben' %></button>
+          <% if (text && text.status === 'published') { %><button class="btn small secondary" type="submit" name="action" value="unpublish">Zurückziehen</button><% } %>
+        </div>
+      </form>
+    </section>
+
     <section class="card" style="margin-top:16px" id="anfragen">
       <h2 style="margin-top:0">Anfragen an den Betreiber</h2>
       <% var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
@@ -349,7 +378,7 @@
     <section class="card" style="margin-top:16px" id="ki-kosten">
       <h2 style="margin-top:0">KI-Verbrauch</h2>
       <%
-        var PURPOSES = { extraction: 'Website-Auswertung', inquiry: 'Anfrage-Entwurf', compare: 'Modellvergleich' };
+        var PURPOSES = { extraction: 'Website-Auswertung', inquiry: 'Anfrage-Entwurf', description: 'Beschreibungstext', compare: 'Modellvergleich' };
         var usd = function (n) { return Number(n).toFixed(2).replace('.', ',') + ' $'; };
         var tok = function (n) { return Number(n).toLocaleString('de-DE'); };
         var total = llmUsage.reduce(function (a, u) { return a + Number(u.cost_usd); }, 0);
