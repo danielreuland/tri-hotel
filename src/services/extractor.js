@@ -147,7 +147,6 @@ function parseValue(c, raw) {
 const normalizeWs = (t) => t.replace(/\s+/g, ' ').toLowerCase();
 
 async function extractAnthropic({ ranking, criteria, entity, pages, features = [] }) {
-  const Anthropic = require('@anthropic-ai/sdk');
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
 
@@ -190,7 +189,7 @@ Regeln:
 
 ${pageBlock}`;
 
-  const client = new Anthropic({ apiKey: config.llm.apiKey });
+  const client = require('../lib/llm').anthropic();
   const response = await client.messages.parse(
     {
       model: 'claude-opus-5-5',

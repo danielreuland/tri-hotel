@@ -26,6 +26,8 @@ module.exports = {
   llm: {
     provider: process.env.LLM_PROVIDER || 'none',
     apiKey: process.env.LLM_API_KEY,
+    // nur für Schlüssel, die keinem Workspace zugeordnet sind (Header anthropic-workspace-id)
+    workspaceId: process.env.LLM_WORKSPACE_ID || null,
   },
   uploadDir: path.resolve(process.env.UPLOAD_DIR || 'uploads'),
   // Vorab-Phase: Login über HTTP-Tunnel erlauben (COOKIE_SECURE=false) und Suchmaschinen aussperren (NOINDEX=true)

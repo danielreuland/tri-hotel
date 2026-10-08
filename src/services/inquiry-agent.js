@@ -147,7 +147,6 @@ function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPh
 }
 
 async function draftAnthropic(ctx) {
-  const Anthropic = require('@anthropic-ai/sdk');
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
   const { entity, ranking, criteria, facts, language, brand, adminNote, askPhotos, persona } = ctx;
@@ -188,7 +187,7 @@ ${askPhotos ? '- Bitte zusätzlich höflich um Fotos des Hauses mit Nutzungserla
 - Gib dich nicht als Mensch aus und behaupte keine persönlichen Erfahrungen.
 - questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.`;
 
-  const client = new Anthropic({ apiKey: config.llm.apiKey });
+  const client = require('../lib/llm').anthropic();
   const response = await client.messages.parse(
     {
       model: 'claude-opus-5-5',
