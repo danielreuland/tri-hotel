@@ -395,7 +395,18 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
 router.post('/meldungen/:id/freigeben', wrap(async (req, res) => {
   try {
     await submissions.approve(req.params.id, req.session.admin.id);
-    res.redirect(`/admin/meldungen/${req.params.id}?ok=Freigegeben+und+Mail+versendet`);
+    const sub = await db.one('SELECT submitter_email, verified_by FROM submissions WHERE id = $1', [req.params.id]);
+    res.redirect(`/admin/meldungen/${req.params.id}?ok=${encodeURIComponent(submissions.mayMailSubmitter(sub) ? 'Freigegeben und Mail versendet' : 'Freigegeben')}`);
+  } catch (err) {
+    res.redirect(`/admin/meldungen/${req.params.id}?fehler=${encodeURIComponent(err.message)}`);
+  }
+}));
+
+// Unbestätigte Meldung ohne E-Mail-Bestätigung in die Auto-Prüfung geben
+router.post('/meldungen/:id/bestaetigen', wrap(async (req, res) => {
+  try {
+    await submissions.verifyByAdmin(req.params.id, req.session.admin.id);
+    res.redirect(`/admin/meldungen/${req.params.id}?ok=${encodeURIComponent('Auto-Prüfung läuft – Seite in etwa einer Minute neu laden')}`);
   } catch (err) {
     res.redirect(`/admin/meldungen/${req.params.id}?fehler=${encodeURIComponent(err.message)}`);
   }

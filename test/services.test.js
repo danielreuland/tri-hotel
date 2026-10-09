@@ -91,3 +91,11 @@ test('extractor.scoreLink: Hotel-Unterseiten und Ausstattung vor Kette, Rechtlic
   assert.ok(s('/de/magazin/', 'Magazin') < -50);
   assert.ok(s('/de/kontakt/', 'Kontakt') > s('/de/ueber-uns/', 'Über uns'), 'Kontakt für die E-Mail-Adresse');
 });
+
+test('submissions.mayMailSubmitter: nur bestätigte Melder-Adressen bekommen Mails', () => {
+  const { mayMailSubmitter } = require('../src/services/submissions');
+  assert.equal(mayMailSubmitter({ submitter_email: 'a@b.de', verified_at: new Date(), verified_by: null }), true);
+  assert.equal(mayMailSubmitter({ submitter_email: 'a@b.de', verified_at: null, verified_by: null }), false, 'unbestätigt');
+  assert.equal(mayMailSubmitter({ submitter_email: 'a@b.de', verified_at: new Date(), verified_by: 'admin' }), false, 'vom Admin statt Melder bestätigt');
+  assert.equal(mayMailSubmitter({ submitter_email: null, verified_at: new Date(), verified_by: null }), false);
+});

@@ -425,10 +425,27 @@
       <p id="pv-ko" class="<%= result.ko ? '' : 'hidden' %>" style="color:var(--bad)<%= result.ko ? '' : ';display:none' %>">K.O.: <span><%= result.koReason || '' %></span></p>
     </div>
 
+    <% if (['received', 'expired'].includes(sub.status)) { %>
+      <div class="card" style="margin-top:12px">
+        <p style="margin-top:0"><strong><%= sub.status === 'expired' ? 'Bestätigungslink abgelaufen' : 'Wartet auf E-Mail-Bestätigung' %></strong><br>
+          <small class="muted">Die Auto-Prüfung startet erst, wenn der Melder den Link in seiner Mail anklickt. Du kannst sie auch selbst starten. Die Adresse <%= sub.submitter_email || '' %> gilt dann als unbestätigt und bekommt keine Mails von uns.</small></p>
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/bestaetigen">
+          <button class="btn" type="submit" style="width:100%">Ohne Bestätigung prüfen</button>
+        </form>
+        <details style="margin-top:10px">
+          <summary>Ablehnen (z. B. Spam)</summary>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/ablehnen">
+            <textarea name="reason" required placeholder="Begründung (intern, keine Mail an unbestätigte Adressen)"></textarea>
+            <button class="btn small danger" type="submit">Ablehnen</button>
+          </form>
+        </details>
+      </div>
+    <% } %>
+
     <% if (['admin_review', 'auto_check', 'verified'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
         <form method="post" action="/admin/meldungen/<%= sub.id %>/freigeben">
-          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko && !sub.possible_duplicate_of ? '' : 'disabled' %>><%= sub.submitter_email ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
+          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko && !sub.possible_duplicate_of ? '' : 'disabled' %>><%= sub.submitter_email && sub.verified_at && !sub.verified_by ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
         </form>
         <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Ohne Kontakt-E-Mail keine Anfragen an das <%= ranking.entity_label_sg %> möglich (Stammdaten).</small></p><% } %>
         <details style="margin-top:10px">

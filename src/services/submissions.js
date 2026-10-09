@@ -79,6 +79,22 @@ async function recentCountByIp(ip) {
 }
 
 // Bestätigungslink. Ergebnis: { status: 'ok'|'expired'|'invalid'|'already', submission }
+// Admin gibt eine unbestätigte Meldung selbst in die Auto-Prüfung (Melder-Adresse bleibt unbestätigt)
+async function verifyByAdmin(submissionId, adminId) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  if (!sub) throw new Error('Meldung nicht gefunden.');
+  if (!['received', 'expired'].includes(sub.status)) throw new Error('Nur für unbestätigte Meldungen möglich.');
+  await setStatus(sub.id, 'verified', { verified_at: new Date(), verified_by: adminId });
+  await logAction(adminId, 'submission', sub.id, 'verify_by_admin', { submitter_email_confirmed: false });
+  await enqueue('auto-check', { submissionId: sub.id });
+  return sub;
+}
+
+// Mails an den Melder nur, wenn er seine Adresse selbst über den Link bestätigt hat
+function mayMailSubmitter(sub) {
+  return Boolean(sub.submitter_email && sub.verified_at && !sub.verified_by);
+}
+
 async function verify(token) {
   const sub = await db.one('SELECT * FROM submissions WHERE verify_token_hash = $1', [sha256(token)]);
   if (!sub) return { status: 'invalid' };
@@ -151,7 +167,7 @@ async function approve(submissionId, adminId) {
   });
 
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]);
-  if (sub.submitter_email) {
+  if (mayMailSubmitter(sub)) {
     const site = await sites.forRanking(ranking);
     await mailer.send({
       to: sub.submitter_email,
@@ -177,7 +193,7 @@ async function reject(submissionId, adminId, reason) {
     }
     await logAction(adminId, 'submission', sub.id, 'reject', { reason }, c);
   });
-  if (sub.submitter_email) {
+  if (mayMailSubmitter(sub)) {
     const ranking = await rankings.getRanking(sub.ranking_id);
     await mailer.send({
       to: sub.submitter_email, template: 'rejected', site: await sites.forRanking(ranking), submissionId: sub.id,
@@ -235,6 +251,8 @@ module.exports = {
   create,
   recentCountByIp,
   verify,
+  verifyByAdmin,
+  mayMailSubmitter,
   expireOld,
   findDuplicate,
   createEntity,
