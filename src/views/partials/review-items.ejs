@@ -1,0 +1,19 @@
+<%# Prüfpunkte eines Objekts: items, entityId, rankingId, linkBase (z. B. /admin/meldungen/<id>), back %>
+<% var LV = { block: ['bad', 'Blockiert'], todo: ['warn', 'Prüfen'], hint: ['', 'Empfohlen'] }; %>
+<ul class="review-items">
+  <% items.forEach(function (i) { %>
+    <li class="lvl-<%= i.level %>">
+      <span class="badge <%= LV[i.level][0] %>"><%= LV[i.level][1] %></span>
+      <span class="txt"><% if (i.anchor) { %><a href="<%= linkBase %>#<%= i.anchor %>"><%= i.text %></a><% } else { %><%= i.text %><% } %>
+        <% if (i.detail) { %><br><small class="muted"><%= i.detail %></small><% } %></span>
+      <% if (i.dismissable) { %>
+        <form method="post" action="/admin/pruefpunkte/erledigt" class="dismiss" title="Als erledigt markieren – erscheint wieder, wenn sich der Punkt ändert">
+          <input type="hidden" name="entity_id" value="<%= entityId %>"><input type="hidden" name="ranking_id" value="<%= rankingId %>">
+          <input type="hidden" name="key" value="<%= i.key %>"><input type="hidden" name="fingerprint" value="<%= i.text %>|<%= i.detail || '' %>">
+          <input type="hidden" name="back" value="<%= back %>">
+          <button class="btn small secondary" type="submit">✓ erledigt</button>
+        </form>
+      <% } %>
+    </li>
+  <% }) %>
+</ul>

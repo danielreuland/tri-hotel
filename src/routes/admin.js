@@ -19,6 +19,7 @@ const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
 const describer = require('../services/describer');
 const media = require('../services/media');
+const reviewlist = require('../services/reviewlist');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -168,6 +169,12 @@ router.get('/', wrap(async (req, res) => {
       ORDER BY s.created_at DESC LIMIT 300`,
     [status, rankingId]
   );
+  // Offene Prüfpunkte je Objekt (nur Admin-Prüfung und live)
+  for (const r of rows) {
+    if (!r.entity_id || !['admin_review', 'live'].includes(r.status)) continue;
+    const l = await reviewlist.load(r.id);
+    if (l) r.review = { open: l.review.open, blockers: l.review.blockers };
+  }
   const counts = await db.many(`SELECT status, count(*)::int AS n FROM submissions GROUP BY status`);
   const allRankings = await db.many(`SELECT id, name FROM rankings ORDER BY name`);
   res.render('admin/queue', { title: 'Warteschlange', rows, status, rankingId, counts, allRankings });
@@ -244,7 +251,8 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
   const factByCrit = Object.fromEntries(d.facts.map((f) => [f.criterion_id, f]));
   const detailByCrit = Object.fromEntries(d.result.details.map((x) => [x.criterionId, x]));
   const criteriaByCode = Object.fromEntries(d.criteria.map((c) => [c.code, c]));
-  const review = require('../services/reviewlist').build(d);
+  const dismissals = d.entity ? await db.many('SELECT * FROM review_dismissals WHERE entity_id = $1 AND ranking_id = $2', [d.entity.id, d.ranking.id]) : [];
+  const review = reviewlist.build(d, dismissals);
   res.render('admin/detail', {
     review,
     title: d.sub.entity_name,
@@ -570,6 +578,81 @@ router.post('/einwilligungen/:consentId/widerrufen', wrap(async (req, res) => {
   res.redirect(safeBack(req.body.back));
 }));
 
+// Prüfpunkt als erledigt markieren (erscheint wieder, wenn er sich ändert) bzw. alle wieder einblenden
+router.post('/pruefpunkte/erledigt', wrap(async (req, res) => {
+  const b = req.body;
+  const back = backOrNull(b.back) || '/admin/aufgaben';
+  if (!UUID_RE.test(b.entity_id || '') || !UUID_RE.test(b.ranking_id || '') || !String(b.key || '').trim()) return res.redirect(back);
+  await db.query(
+    `INSERT INTO review_dismissals (entity_id, ranking_id, item_key, fingerprint, dismissed_by) VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (entity_id, ranking_id, item_key) DO UPDATE SET fingerprint = EXCLUDED.fingerprint, dismissed_by = EXCLUDED.dismissed_by, dismissed_at = now()`,
+    [b.entity_id, b.ranking_id, String(b.key).slice(0, 120), String(b.fingerprint || '').slice(0, 2000), req.session.admin.id]
+  );
+  await logAction(req.session.admin.id, 'entity', b.entity_id, 'dismiss_review_item', { key: b.key });
+  res.redirect(back);
+}));
+
+router.post('/pruefpunkte/zuruecksetzen', wrap(async (req, res) => {
+  const b = req.body;
+  if (UUID_RE.test(b.entity_id || '') && UUID_RE.test(b.ranking_id || '')) {
+    await db.query('DELETE FROM review_dismissals WHERE entity_id = $1 AND ranking_id = $2', [b.entity_id, b.ranking_id]);
+    await logAction(req.session.admin.id, 'entity', b.entity_id, 'reset_review_items');
+  }
+  res.redirect(backOrNull(b.back) || '/admin/aufgaben');
+}));
+
+// Übersicht aller Anfragen an Betreiber: an welches Objekt, an welche Adresse, von wem, mit welchem Stand
+const INQUIRY_FILTERS = {
+  offen: { label: 'offen (Entwurf, geplant, versendet)', where: `i.status IN ('draft','queued','sent')` },
+  draft: { label: 'Entwürfe zur Freigabe', where: `i.status = 'draft'` },
+  sent: { label: 'versendet, ohne Antwort', where: `i.status IN ('queued','sent')` },
+  answered: { label: 'beantwortet', where: `i.status = 'answered'` },
+  failed: { label: 'fehlgeschlagen', where: `i.status = 'failed'` },
+  closed: { label: 'abgelaufen oder geschlossen', where: `i.status IN ('expired','closed')` },
+  alle: { label: 'alle', where: 'true' },
+};
+const INQUIRY_STATUS = { draft: 'Entwurf', queued: 'wird formuliert', sent: 'versendet', answered: 'beantwortet', expired: 'abgelaufen', failed: 'fehlgeschlagen', closed: 'geschlossen' };
+
+router.get('/anfragen', wrap(async (req, res) => {
+  const status = INQUIRY_FILTERS[req.query.status] ? req.query.status : 'offen';
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  const rows = await db.many(
+    `SELECT i.*, e.name AS entity_name, e.city, p.name AS persona_name, u.email AS created_by_email, a.email AS approved_by_email,
+            (SELECT array_agg(c.label ORDER BY c.sort_order) FROM criteria c WHERE c.id = ANY(i.criteria_ids)) AS criteria_labels,
+            (SELECT count(*)::int FROM inquiry_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending') AS pending_answers,
+            COALESCE(i.submission_id, (SELECT s.id FROM submissions s WHERE s.entity_id = i.entity_id ORDER BY s.created_at DESC LIMIT 1)) AS sub_id
+       FROM inquiries i JOIN entities e ON e.id = i.entity_id
+       LEFT JOIN personas p ON p.id = i.persona_id
+       LEFT JOIN admin_users u ON u.id = i.created_by LEFT JOIN admin_users a ON a.id = i.approved_by
+      WHERE ${INQUIRY_FILTERS[status].where} AND ($1::text IS NULL OR e.name ILIKE $1 OR i.recipient ILIKE $1)
+      ORDER BY (i.status = 'draft') DESC, COALESCE(i.answered_at, i.sent_at, i.created_at) DESC LIMIT 300`,
+    [q ? `%${q}%` : null]
+  );
+  const counts = Object.fromEntries(await Promise.all(Object.entries(INQUIRY_FILTERS).map(async ([k, f]) =>
+    [k, (await db.one(`SELECT count(*)::int AS n FROM inquiries i WHERE ${f.where}`)).n])));
+  res.render('admin/inquiries', { title: 'Anfragen', rows, status, q, counts, INQUIRY_FILTERS, INQUIRY_STATUS, mailProvider: config.mail.provider });
+}));
+
+// Entwurf freigeben (Fragen, Fotos und Hinweis können vorher angepasst werden) oder verwerfen
+router.post('/anfragen/:inquiryId/freigeben', wrap(async (req, res) => {
+  const back = backOrNull(req.body.back) || '/admin/anfragen';
+  try {
+    await inquiries.approveDraft(req.params.inquiryId, {
+      criteriaIds: [].concat(req.body.criteria || []).filter((v) => UUID_RE.test(v)),
+      askPhotos: req.body.ask_photos === 'on',
+      adminNote: String(req.body.note || '').trim().slice(0, 1000),
+    }, req.session.admin.id);
+    res.redirect(withParam(back, 'ok', 'Anfrage freigegeben – der Agent formuliert und versendet sie.'));
+  } catch (err) {
+    res.redirect(withParam(back, 'fehler', err.message));
+  }
+}));
+
+router.post('/anfragen/:inquiryId/verwerfen', wrap(async (req, res) => {
+  await inquiries.discardDraft(req.params.inquiryId, req.session.admin.id);
+  res.redirect(withParam(backOrNull(req.body.back) || '/admin/anfragen', 'ok', 'Entwurf verworfen'));
+}));
+
 router.post('/anfragen/:inquiryId/schliessen', wrap(async (req, res) => {
   await inquiries.close(req.params.inquiryId, req.session.admin.id);
   res.redirect(safeBack(req.body.back));
@@ -620,7 +703,7 @@ const upload = multer({
 
 router.post('/objekte/:entityId/bilder', upload.single('file'), wrap(async (req, res) => {
   const b = req.body;
-  const back = safeBack(b.back) || `/admin/meldungen/${b.submission_id}#bilder`;
+  const back = backOrNull(b.back) || `/admin/meldungen/${b.submission_id}#bilder`;
   const fail = (msg) => {
     if (req.file) fs.unlink(req.file.path, () => {});
     res.redirect(withParam(back, 'fehler', msg));
@@ -695,7 +778,7 @@ router.get('/bilder/:id/datei', wrap(async (req, res, next) => {
 router.post('/bilder/:id/freigeben', wrap(async (req, res) => {
   await db.query('UPDATE entity_images SET approved_at = now(), approved_by = $2 WHERE id = $1', [req.params.id, req.session.admin.id]);
   await logAction(req.session.admin.id, 'image', req.params.id, 'approve_image');
-  res.redirect(withParam(safeBack(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild freigegeben'));
+  res.redirect(withParam(backOrNull(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild freigegeben'));
 }));
 
 // Löschen = auch Takedown auf Verlangen des Rechteinhabers
@@ -705,11 +788,11 @@ router.post('/bilder/:id/loeschen', wrap(async (req, res) => {
     media.removeEntityFiles(img);
     await logAction(req.session.admin.id, 'image', img.id, 'delete_image', { reason: req.body.reason || null, license: img.license, credit: img.credit });
   }
-  res.redirect(withParam(safeBack(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild entfernt'));
+  res.redirect(withParam(backOrNull(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild entfernt'));
 }));
 
-// Rücksprung nur innerhalb des Admins
-function safeBack(v) {
+// Rücksprung nur innerhalb des Admins (mit Query), sonst null
+function backOrNull(v) {
   const s = String(v || '');
   return /^\/admin(\/|$|\?)/.test(s) && !s.startsWith('//') ? s : null;
 }
@@ -820,7 +903,18 @@ router.get('/aufgaben', wrap(async (req, res) => {
   const stuck = await db.many(
     `SELECT * FROM submissions WHERE status IN ('verified','auto_check') AND updated_at < now() - interval '1 hour' ORDER BY updated_at`
   );
-  res.render('admin/tasks', { title: 'Aufgaben', disputed, recheck, images, stuck, answers, failedInquiries, describeValue: scoring.describeValue });
+  // Prüfberichte: offene Punkte je Objekt (Admin-Prüfung und live), meiste Blocker zuerst
+  const subs = await db.many(`SELECT id FROM submissions WHERE entity_id IS NOT NULL AND status IN ('admin_review','live') ORDER BY entity_name`);
+  const reports = [];
+  for (const s of subs) {
+    const l = await reviewlist.load(s.id);
+    if (l && l.review.items.length) reports.push(l);
+  }
+  reports.sort((a, b) => b.review.blockers - a.review.blockers || b.review.open - a.review.open);
+  res.render('admin/tasks', {
+    title: 'Aufgaben', disputed, recheck, images, stuck, answers, failedInquiries, describeValue: scoring.describeValue,
+    reports, reportsDone: subs.length - reports.length, STATUS_LABELS,
+  });
 }));
 
 // ---------- Team: Admins freischalten (Login mit Google über die E-Mail-Adresse) ----------

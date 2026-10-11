@@ -1,5 +1,6 @@
 // Auto-Prüfung einer bestätigten Meldung:
 // Dublette? -> Objekt anlegen -> Website (Strukturdaten + KI, ggf. 2. Durchgang) -> Koordinaten -> Klima -> OSM-Vorschläge
+// -> Score -> Anfrage-Entwurf für offene Punkte
 // -> Score + K.O. + Vollständigkeit -> Admin-Warteschlange.
 // Einzelne Schritte dürfen scheitern; sie landen im pipeline_log, der Admin entscheidet.
 const db = require('../db');
@@ -220,6 +221,13 @@ async function run(submissionId, { refresh = false } = {}) {
     ? `K.O.: ${result.koReason}`
     : `Vorläufiger ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`;
   await submissions.appendLog(sub.id, 'Score', !result.ko, summary);
+  // 7. Offene Punkte als Anfrage-Entwurf an den Betreiber vorbereiten (Versand erst nach Freigabe im Admin)
+  if (!result.ko) {
+    await step(sub.id, 'Anfrage-Entwurf', async () => {
+      const r = await require('../services/inquiries').createDraft({ entityId: entity.id, rankingId: ranking.id, submissionId: sub.id });
+      return r.reason;
+    });
+  }
   if (!refresh) await submissions.setStatus(sub.id, 'admin_review');
 }
 

@@ -1,0 +1,46 @@
+<%- include('../partials/admin-head') %>
+<h1>Anfragen</h1>
+<p class="muted">Alle Anfragen an Betreiber: an welches Objekt, an welche Adresse, von welcher Persona, wer sie freigegeben hat und wie der Stand ist. Entwürfe legt die Auto-Prüfung für offene Punkte an – verschickt wird erst nach deiner Freigabe in der Prüfansicht.</p>
+<% if (mailProvider === 'console') { %><div class="flash" style="border-color:var(--ok)"><strong>Mailversand noch nicht eingerichtet:</strong> freigegebene Anfragen werden formuliert und protokolliert, aber nicht zugestellt.</div><% } %>
+
+<div class="pill-row">
+  <% Object.keys(INQUIRY_FILTERS).forEach(function (k) { %>
+    <a class="badge <%= k === status ? 'good' : '' %>" href="/admin/anfragen?status=<%= k %>"><%= INQUIRY_FILTERS[k].label %> (<%= counts[k] %>)</a>
+  <% }) %>
+</div>
+<form method="get" class="filters">
+  <input type="hidden" name="status" value="<%= status %>">
+  <input type="search" name="q" value="<%= q %>" placeholder="Objekt oder E-Mail-Adresse" aria-label="Suchen">
+  <button class="btn small secondary" type="submit">Suchen</button>
+</form>
+
+<% if (!rows.length) { %>
+  <p class="card">Keine Anfragen in dieser Ansicht.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table>
+      <tr><th>Objekt</th><th>An</th><th>Fragen</th><th>Status</th><th>Verlauf</th><th></th></tr>
+      <% rows.forEach(function (i) { var labels = i.criteria_labels || []; %>
+        <tr>
+          <td><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><strong><%= i.entity_name %></strong></a><br><small class="muted"><%= i.city || '' %></small></td>
+          <td><small><%= i.recipient %><br><%= i.persona_name ? 'von ' + i.persona_name + ' (KI)' : '' %> · <%= i.language.toUpperCase() %></small></td>
+          <td><small title="<%= labels.join(', ') %>"><%= labels.length %> Fragen<%= i.ask_photos ? ' + Fotos' : '' %><br><span class="muted"><%= labels.slice(0, 3).join(', ') %><%= labels.length > 3 ? ' …' : '' %></span></small></td>
+          <td>
+            <span class="badge <%= i.status === 'draft' ? 'warn' : i.status === 'answered' ? 'good' : i.status === 'failed' ? 'bad' : '' %>"><%= INQUIRY_STATUS[i.status] %></span>
+            <% if (i.pending_answers) { %><br><small><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><%= i.pending_answers %> Antwort(en) übernehmen</a></small><% } %>
+            <% if (i.error && i.status !== 'closed') { %><br><small style="color:var(--bad)"><%= i.error %></small><% } %>
+          </td>
+          <td><small class="muted">
+            <%= i.auto_created ? 'Entwurf automatisch' : 'angelegt von ' + (i.created_by_email || 'Admin') %> · <%= formatDate(i.created_at) %>
+            <%- i.approved_at ? '<br>' : '' %><%= i.approved_at ? 'freigegeben ' + formatDate(i.approved_at) + (i.approved_by_email ? ' von ' + i.approved_by_email : '') : '' %>
+            <%- i.sent_at ? '<br>' : '' %><%= i.sent_at ? 'versendet ' + formatDate(i.sent_at) : '' %><%= i.reminder_sent_at ? ' · erinnert ' + formatDate(i.reminder_sent_at) : '' %>
+            <%- i.answered_at ? '<br>' : '' %><%= i.answered_at ? 'Antwort ' + formatDate(i.answered_at) + (i.reply_name ? ' von ' + i.reply_name : '') : '' %>
+          </small></td>
+          <td style="white-space:nowrap"><% if (i.status === 'draft') { %><a class="btn small" href="/admin/meldungen/<%= i.sub_id %>#anfragen">Prüfen &amp; freigeben</a><% } %></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+<% } %>
+
+<%- include('../partials/admin-foot') %>

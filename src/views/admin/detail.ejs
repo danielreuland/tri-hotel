@@ -31,21 +31,24 @@
   </div>
 <% } %>
 
-<% if (review.items.length) { var LV = { block: ['bad', 'Blockiert'], todo: ['warn', 'Prüfen'], hint: ['', 'Empfohlen'] }; %>
+<% if (entity) { %>
   <section class="card review-list" id="pruefliste">
-    <h2 style="margin:0 0 4px">Zu prüfen <small class="muted"><%= review.open ? review.open + ' offen' : 'nur Empfehlungen' %><%= review.blockers ? ' · ' + review.blockers + ' blockierend' : '' %></small></h2>
-    <ul>
-      <% review.items.forEach(function (i) { %>
-        <li class="lvl-<%= i.level %>">
-          <span class="badge <%= LV[i.level][0] %>"><%= LV[i.level][1] %></span>
-          <% if (i.anchor) { %><a href="#<%= i.anchor %>"><%= i.text %></a><% } else { %><%= i.text %><% } %>
-          <% if (i.detail) { %><br><small class="muted"><%= i.detail %></small><% } %>
-        </li>
-      <% }) %>
-    </ul>
+    <% if (review.items.length) { %>
+      <h2 style="margin:0 0 4px">Zu prüfen <small class="muted"><%= review.open ? review.open + ' offen' : 'nur Empfehlungen' %><%= review.blockers ? ' · ' + review.blockers + ' blockierend' : '' %></small></h2>
+      <%- include('../partials/review-items', { items: review.items, entityId: entity.id, rankingId: ranking.id, linkBase: '', back: '/admin/meldungen/' + sub.id + '#pruefliste' }) %>
+    <% } else { %>
+      <strong>✓ Alles geprüft.</strong> <small class="muted">Keine offenen Punkte.</small>
+    <% } %>
+    <% if (review.dismissed) { %>
+      <form method="post" action="/admin/pruefpunkte/zuruecksetzen" style="margin-top:8px">
+        <input type="hidden" name="entity_id" value="<%= entity.id %>"><input type="hidden" name="ranking_id" value="<%= ranking.id %>">
+        <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#pruefliste">
+        <small class="muted"><%= review.dismissed %> als erledigt ausgeblendet ·</small> <button class="linklike" type="submit"><small>wieder einblenden</small></button>
+      </form>
+    <% } %>
   </section>
-<% } else if (entity) { %>
-  <section class="card review-list" id="pruefliste"><strong>✓ Alles geprüft.</strong> <small class="muted">Keine offenen Punkte.</small></section>
+<% } else if (review.items.length) { %>
+  <section class="card review-list" id="pruefliste"><strong><%= review.items[0].text %></strong></section>
 <% } %>
 
 <div class="admin-detail">
@@ -245,12 +248,33 @@
 
     <section class="card" style="margin-top:16px" id="anfragen">
       <h2 style="margin-top:0">Anfragen an den Betreiber</h2>
-      <% var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
+      <% var draftInq = inquiryList.find(function (i) { return i.status === 'draft' });
+         var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
          var askable = criteria.filter(function (c) { return c.scoring.type === 'option' || c.scoring.type === 'bool' });
          var unclearIds = unclear.map(function (c) { return c.id });
          var hasApprovedImage = images.some(function (i) { return i.approved_at }); %>
       <% if (!entity.contact_email) { %>
         <p class="errors" style="margin:0">Für Anfragen fehlt die Kontakt-E-Mail des Betreibers (Stammdaten).</p>
+      <% } else if (draftInq) { var draftIds = draftInq.criteria_ids; %>
+        <form method="post" action="/admin/anfragen/<%= draftInq.id %>/freigeben" class="draft-box">
+          <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
+          <p style="margin-top:0"><span class="badge warn">Entwurf</span> <strong>Anfrage an <%= draftInq.recipient %></strong>
+            <small class="muted">· <%= draftInq.auto_created ? 'automatisch angelegt' : 'angelegt' %> <%= formatDate(draftInq.created_at) %><%= draftInq.persona_id && personas[draftInq.persona_id] ? ' · schreibt: ' + personas[draftInq.persona_id] + ' (KI)' : '' %></small></p>
+          <p class="muted" style="margin:0 0 6px"><small>Auswahl anpassen und freigeben. Erst dann formuliert der Agent die Mail in der Sprache des Betreibers (<%= draftInq.language.toUpperCase() %>) und verschickt sie.</small></p>
+          <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
+            <% askable.filter(function (c) { return draftIds.indexOf(c.id) >= 0 || unclearIds.indexOf(c.id) >= 0 }).forEach(function (c) { var f = factByCrit[c.id]; %>
+              <label class="inline" style="margin:0"><input type="checkbox" name="criteria" value="<%= c.id %>" <%= draftIds.indexOf(c.id) >= 0 && unclearIds.indexOf(c.id) >= 0 ? 'checked' : '' %>>
+                <span><%= c.label %> <small class="muted"><%= !f ? 'unbekannt' : f.disputed ? 'strittig' : f.trust_level === 4 ? 'Vorschlag' : 'geprüft' %></small></span></label>
+            <% }) %>
+          </div>
+          <label class="inline"><input type="checkbox" name="ask_photos" <%= draftInq.ask_photos ? 'checked' : '' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
+          <label for="draft-note">Hinweis an den Agenten <small class="muted">optional</small></label>
+          <textarea id="draft-note" name="note" style="min-height:50px"><%= draftInq.admin_note || '' %></textarea>
+          <div class="filters" style="margin-bottom:0">
+            <button class="btn" type="submit">Freigeben &amp; senden</button>
+            <button class="btn small secondary" type="submit" formaction="/admin/anfragen/<%= draftInq.id %>/verwerfen" formnovalidate>Entwurf verwerfen</button>
+          </div>
+        </form>
       <% } else if (openInq) { %>
         <p class="muted">Es läuft eine offene Anfrage an <strong><%= openInq.recipient %></strong>. Eine neue ist erst nach Antwort oder Abschluss möglich.</p>
       <% } else { %>
@@ -278,7 +302,7 @@
         </form>
       <% } %>
 
-      <% inquiryList.forEach(function (inq) { var personaName = inq.persona_id && personas[inq.persona_id]; var statusText = { queued: 'wird formuliert', sent: 'versendet', answered: 'beantwortet', expired: 'abgelaufen', failed: 'fehlgeschlagen', closed: 'geschlossen' }[inq.status]; %>
+      <% inquiryList.filter(function (inq) { return inq.status !== 'draft' }).forEach(function (inq) { var personaName = inq.persona_id && personas[inq.persona_id]; var statusText = { draft: 'Entwurf', queued: 'wird formuliert', sent: 'versendet', answered: 'beantwortet', expired: 'abgelaufen', failed: 'fehlgeschlagen', closed: 'geschlossen' }[inq.status]; %>
         <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:12px">
           <p style="margin:0 0 6px">
             <span class="badge <%= inq.status === 'answered' ? 'good' : inq.status === 'failed' ? 'bad' : inq.status === 'sent' ? 'accent' : '' %>"><%= statusText %></span>

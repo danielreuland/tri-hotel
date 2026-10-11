@@ -57,6 +57,73 @@ async function start({ entityId, rankingId, submissionId, criteriaIds, askPhotos
   return row;
 }
 
+// ---------- Entwürfe aus der Auto-Prüfung ----------
+
+const MAX_DRAFT_QUESTIONS = 8;
+
+// Fragen für einen Entwurf: erst unbekannte, dann strittige, dann automatisch ermittelte – je nach Punkten
+function draftCriteria(criteria, facts) {
+  const byCrit = new Map(facts.map((f) => [f.criterion_id, f]));
+  const rank = (c) => {
+    const f = byCrit.get(c.id);
+    return !f ? 0 : f.disputed ? 1 : 2;
+  };
+  return unclearCriteria(criteria, facts)
+    .sort((a, b) => rank(a) - rank(b) || b.max_points - a.max_points)
+    .slice(0, MAX_DRAFT_QUESTIONS);
+}
+
+// Legt einen Entwurf an, wenn es offene Punkte, eine Kontaktadresse und keine offene Anfrage gibt.
+// Ergebnis: { created: bool, reason, inquiry? }
+async function createDraft({ entityId, rankingId, submissionId }) {
+  const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
+  if (!entity) return { created: false, reason: 'Objekt nicht gefunden.' };
+  if (!isEmail(entity.contact_email)) return { created: false, reason: 'Keine Kontakt-E-Mail – kein Entwurf.' };
+  const open = await db.one(`SELECT status FROM inquiries WHERE entity_id = $1 AND ranking_id = $2 AND status IN ('draft','queued','sent')`, [entityId, rankingId]);
+  if (open) return { created: false, reason: `Es gibt schon eine offene Anfrage (${open.status === 'draft' ? 'Entwurf' : 'läuft'}).` };
+  const criteria = await rankings.getCriteria(rankingId);
+  const facts = await rankings.getFacts(entityId, rankingId);
+  const ask = draftCriteria(criteria, facts);
+  const hasImage = await db.one('SELECT 1 FROM entity_images WHERE entity_id = $1 AND approved_at IS NOT NULL LIMIT 1', [entityId]);
+  if (!ask.length) return { created: false, reason: 'Keine offenen Punkte, die man beim Betreiber erfragen kann.' };
+  const ranking = await rankings.getRanking(rankingId);
+  const persona = await sites.persona(ranking.site_id, 'data_inquiry');
+  try {
+    const row = await db.one(
+      `INSERT INTO inquiries (entity_id, ranking_id, submission_id, recipient, language, criteria_ids, ask_photos, persona_id, status, auto_created)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'draft',true) RETURNING *`,
+      [entityId, rankingId, submissionId || null, entity.contact_email, agent.languageFor(entity.country), ask.map((c) => c.id), !hasImage, persona ? persona.id : null]
+    );
+    await logAction(null, 'inquiry', row.id, 'draft_inquiry', { criteria: ask.map((c) => c.code), recipient: entity.contact_email });
+    return { created: true, reason: `Entwurf mit ${ask.length} Fragen${!hasImage ? ' und Foto-Anfrage' : ''} an ${entity.contact_email} – wartet auf Freigabe.`, inquiry: row };
+  } catch (err) {
+    if (err.code === '23505') return { created: false, reason: 'Es gibt schon eine offene Anfrage.' };
+    throw err;
+  }
+}
+
+// Entwurf (ggf. angepasst) freigeben -> Agent formuliert und versendet
+async function approveDraft(inquiryId, { criteriaIds, askPhotos, adminNote }, adminId) {
+  const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
+  if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
+  const entity = await db.one('SELECT contact_email FROM entities WHERE id = $1', [inq.entity_id]);
+  if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
+  if (!criteria.length && !askPhotos) throw new Error('Bitte mindestens einen Wert oder die Fotos auswählen.');
+  await db.query(
+    `UPDATE inquiries SET status = 'queued', criteria_ids = $2, ask_photos = $3, admin_note = $4, recipient = $5,
+       approved_by = $6, approved_at = now(), created_by = COALESCE(created_by, $6), updated_at = now() WHERE id = $1`,
+    [inq.id, criteria.map((c) => c.id), Boolean(askPhotos), adminNote || null, entity.contact_email, adminId]
+  );
+  await logAction(adminId, 'inquiry', inq.id, 'approve_inquiry_draft', { criteria: criteria.map((c) => c.code), askPhotos: Boolean(askPhotos) });
+  await enqueue('inquiry-send', { inquiryId: inq.id });
+}
+
+async function discardDraft(inquiryId, adminId) {
+  const r = await db.query(`UPDATE inquiries SET status = 'closed', error = 'Entwurf verworfen', updated_at = now() WHERE id = $1 AND status = 'draft'`, [inquiryId]);
+  if (r.rowCount) await logAction(adminId, 'inquiry', inquiryId, 'discard_inquiry_draft');
+}
+
 function answerUrl(site, token) {
   return `${sites.urlFor(site)}/anfrage/${token}`;
 }
@@ -336,6 +403,10 @@ async function withdrawConsent(consentId, adminId, note) {
 }
 
 module.exports = {
+  createDraft,
+  approveDraft,
+  discardDraft,
+  draftCriteria,
   setEnqueue, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
   dailyMaintenance, isImageFile, MAX_PHOTOS,
 };

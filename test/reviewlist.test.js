@@ -50,3 +50,24 @@ test('reviewlist: ohne Koordinaten blockiert', () => {
   d.entity.lat = null;
   assert.equal(review.build(d).blockers, 1);
 });
+
+test('reviewlist: „erledigt“ blendet aus, bis sich der Punkt ändert; Blocker lassen sich nicht ausblenden', () => {
+  const d = base();
+  d.text = null;
+  const first = review.build(d);
+  const hint = first.items.find((i) => i.key === 'text-missing');
+  const dismissals = [{ item_key: 'text-missing', fingerprint: review.fingerprint(hint) }, { item_key: 'missing', fingerprint: 'alter Stand|' }];
+  const r = review.build(d, dismissals);
+  assert.ok(!r.items.some((i) => i.key === 'text-missing'));
+  assert.ok(r.items.some((i) => i.key === 'missing'), 'geänderter Punkt erscheint wieder');
+  assert.equal(r.dismissed, 1);
+  d.entity.lat = null;
+  const blocked = review.build(d, [{ item_key: 'coords-missing', fingerprint: 'x' }]);
+  assert.ok(blocked.items.find((i) => i.key === 'coords-missing').dismissable === false);
+});
+
+test('reviewlist: Anfrage-Entwurf als Aufgabe', () => {
+  const d = base();
+  d.inquiryList = [{ status: 'draft', recipient: 'info@h.example', criteria_ids: ['b'], answers: [] }];
+  assert.match(review.build(d).items.map((i) => i.text).join(' '), /Anfrage-Entwurf an info@h\.example \(1 Fragen\)/);
+});

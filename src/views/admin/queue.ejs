@@ -18,7 +18,7 @@
 </form>
 <div class="table-scroll">
 <table>
-  <tr><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Hinweis</th></tr>
+  <tr><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Offen</th><th>Hinweis</th></tr>
   <% rows.forEach(function (r) { %>
     <tr>
       <td><%= formatDate(r.created_at) %></td>
@@ -28,10 +28,11 @@
       <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>
       <td class="num"><% if (r.score === null || r.score === undefined) { %>–<% } else if (incomplete) { %><span class="muted" title="Nur wenige Werte bekannt – der Score ist noch nicht aussagekräftig"><%= r.score %></span><br><small class="muted">unvollständig</small><% } else { %><%= r.score %><% } %></td>
       <td class="num"><%= r.completeness === null || r.completeness === undefined ? '–' : Math.round(r.completeness) + ' %' %></td>
+      <td><% if (r.review) { %><a href="/admin/meldungen/<%= r.id %>#pruefliste" style="text-decoration:none"><% if (r.review.blockers) { %><span class="badge bad"><%= r.review.blockers %> blockiert</span> <% } %><% if (r.review.open - r.review.blockers > 0) { %><span class="badge warn"><%= r.review.open - r.review.blockers %> prüfen</span><% } %><% if (!r.review.open) { %><span class="badge good">✓</span><% } %></a><% } else { %>–<% } %></td>
       <td><% if (r.possible_duplicate_name) { %><span class="badge warn">mögliche Dublette</span> <small><%= r.possible_duplicate_name %></small><% } %><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
   <% }) %>
-  <% if (!rows.length) { %><tr><td colspan="7" class="muted">Keine Meldungen in diesem Status.</td></tr><% } %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Keine Meldungen in diesem Status.</td></tr><% } %>
 </table>
 </div>
 <% locals.scripts = ['/static/js/site.js'] %>

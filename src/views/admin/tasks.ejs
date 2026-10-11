@@ -1,6 +1,23 @@
 <%- include('../partials/admin-head') %>
 <h1>Aufgaben</h1>
 
+<h2>Prüfberichte (<%= reports.length %>)</h2>
+<p class="muted" style="margin-top:0">Offene Punkte je Objekt aus Admin-Prüfung und Live-Bestand. Erledigtes verschwindet von selbst; mit „✓ erledigt“ blendest du einen Punkt aus, bis er sich ändert.<%= reportsDone ? ' ' + reportsDone + ' weitere ohne offene Punkte.' : '' %></p>
+<% if (!reports.length) { %><p class="card">Keine offenen Prüfpunkte.</p><% } %>
+<% reports.forEach(function (r) { %>
+  <details class="card report" <%= r.review.blockers ? 'open' : '' %> style="margin-bottom:10px">
+    <summary>
+      <strong><%= r.sub.entity_name %></strong>
+      <span class="badge"><%= STATUS_LABELS[r.sub.status] %></span>
+      <% if (r.review.blockers) { %><span class="badge bad"><%= r.review.blockers %> blockierend</span><% } %>
+      <% if (r.review.open - r.review.blockers > 0) { %><span class="badge warn"><%= r.review.open - r.review.blockers %> prüfen</span><% } %>
+      <small class="muted"><%= r.result.score === null ? '' : 'Score ' + r.result.score + ' · ' %>Vollst. <%= Math.round(r.result.completeness) %> %</small>
+    </summary>
+    <%- include('../partials/review-items', { items: r.review.items, entityId: r.entity.id, rankingId: r.ranking.id, linkBase: '/admin/meldungen/' + r.sub.id, back: '/admin/aufgaben' }) %>
+    <p style="margin:8px 0 0"><a href="/admin/meldungen/<%= r.sub.id %>">Prüfansicht öffnen →</a></p>
+  </details>
+<% }) %>
+
 <h2>Antworten von Betreibern (<%= answers.length %>)</h2>
 <% if (!answers.length) { %><p class="muted">Keine offenen Antworten.</p><% } else { %>
 <div class="table-scroll"><table><tr><th>Objekt</th><th>Kriterium</th><th>Antwort</th><th></th></tr>

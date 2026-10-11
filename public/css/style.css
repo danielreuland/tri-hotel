@@ -368,3 +368,11 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .fact-tools { align-items: center; gap: 8px 16px; }
 .fact-tools .legend { font-size: .85rem; color: var(--muted); }
 .only-open .crit-row.state-ok { display: none; }
+.draft-box { border: 1px dashed var(--ok); border-radius: var(--radius); padding: 12px 14px; }
+.review-items { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.review-items li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
+.review-items .badge { min-width: 6.5em; text-align: center; flex: none; }
+.review-items .txt { flex: 1; min-width: 0; }
+.review-items .dismiss { flex: none; margin: 0; }
+.report summary { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; cursor: pointer; }
+.linklike { background: none; border: 0; padding: 0; color: var(--accent-strong); text-decoration: underline; cursor: pointer; font: inherit; }
