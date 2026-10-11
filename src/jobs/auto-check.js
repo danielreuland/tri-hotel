@@ -85,10 +85,13 @@ async function insertAutoFacts(entityId, facts) {
   return n;
 }
 
-async function run(submissionId) {
+// refresh: Daten eines bereits freigegebenen Objekts aktualisieren – Status und Sichtbarkeit bleiben unverändert,
+// neue Werte kommen nur als Vorschläge hinzu.
+async function run(submissionId, { refresh = false } = {}) {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
-  if (!sub || !['verified', 'auto_check'].includes(sub.status)) return;
-  await submissions.setStatus(sub.id, 'auto_check');
+  if (!sub) return;
+  if (refresh ? !(sub.status === 'live' && sub.entity_id) : !['verified', 'auto_check'].includes(sub.status)) return;
+  if (!refresh) await submissions.setStatus(sub.id, 'auto_check');
   const ranking = await rankings.getRanking(sub.ranking_id);
   const criteria = await rankings.getCriteria(ranking.id);
 
@@ -217,7 +220,7 @@ async function run(submissionId) {
     ? `K.O.: ${result.koReason}`
     : `Vorläufiger ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`;
   await submissions.appendLog(sub.id, 'Score', !result.ko, summary);
-  await submissions.setStatus(sub.id, 'admin_review');
+  if (!refresh) await submissions.setStatus(sub.id, 'admin_review');
 }
 
 async function osmStep(subId, entity, ranking, criteria, label) {

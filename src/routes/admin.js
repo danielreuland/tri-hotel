@@ -450,6 +450,20 @@ router.post('/meldungen/:id/pruefen', wrap(async (req, res, next) => {
   res.redirect(`/admin/meldungen/${sub.id}?ok=Auto-Pr%C3%BCfung+l%C3%A4uft`);
 }));
 
+// Live-Objekt: Auto-Prüfung im Hintergrund wiederholen, Objekt bleibt online (neue Werte nur als Vorschläge)
+router.post('/meldungen/:id/aktualisieren', wrap(async (req, res, next) => {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);
+  if (!sub) return next();
+  if (sub.status !== 'live' || !sub.entity_id) {
+    return res.redirect(`/admin/meldungen/${sub.id}?fehler=${encodeURIComponent('Nur für freigegebene Objekte – sonst „Auto-Prüfung erneut starten“.')}`);
+  }
+  await logAction(req.session.admin.id, 'submission', sub.id, 'refresh_auto_check');
+  await submissions.appendLog(sub.id, 'Daten aktualisieren', true, 'Vom Admin gestartet – Objekt bleibt online.');
+  const jobs = require('../jobs/auto-check');
+  jobs.run(sub.id, { refresh: true }).catch((err) => console.error('[admin] refresh', err));
+  res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Aktualisierung läuft – Seite in 1–2 Minuten neu laden')}`);
+}));
+
 // ---------- Leistungen je Objekt (nur Katalog-Einträge ohne Ableitung) ----------
 
 router.post('/meldungen/:id/leistungen', wrap(async (req, res, next) => {

@@ -37,8 +37,8 @@
       <h2 style="margin-top:0">Meldung</h2>
       <div class="form-row">
         <div><strong>Ort:</strong> <%= sub.city %>, <%= sub.country %></div>
-        <div><strong>Website:</strong> <a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a></div>
-        <div><strong><%= sub.created_by_admin ? 'Angelegt von:' : 'Eingereicht von:' %></strong> <%= sub.created_by_admin ? (sub.created_by_email || 'Admin') + ' (Admin)' : (sub.submitter_email || '–') %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
+        <div style="overflow-wrap:anywhere"><strong>Website:</strong> <a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a></div>
+        <div style="overflow-wrap:anywhere"><strong><%= sub.created_by_admin ? 'Angelegt von:' : 'Eingereicht von:' %></strong> <%= sub.created_by_admin ? (sub.created_by_email || 'Admin') + ' (Admin)' : (sub.submitter_email || '–') %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
         <div><strong>Bestätigt:</strong> <%= sub.verified_at ? formatDate(sub.verified_at) : 'nein' %></div>
       </div>
       <% var hintKeys = Object.keys(sub.hints || {}); if (hintKeys.length) { %>
@@ -424,6 +424,15 @@
       <p style="margin:0">F <strong id="pv-f"><%= result.factScore === null ? '–' : result.factScore %></strong> · Vollst. <strong id="pv-c"><%= result.completeness %></strong> %</p>
       <p id="pv-ko" class="<%= result.ko ? '' : 'hidden' %>" style="color:var(--bad)<%= result.ko ? '' : ';display:none' %>">K.O.: <span><%= result.koReason || '' %></span></p>
     </div>
+
+    <% if (sub.status === 'live' && entity) { %>
+      <div class="card" style="margin-top:12px">
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/aktualisieren">
+          <button class="btn small secondary" type="submit" style="width:100%">Daten aktualisieren</button>
+        </form>
+        <p class="muted" style="margin:6px 0 0"><small>Wiederholt die Auto-Prüfung (Website, Koordinaten, Klima, Umgebung). Das <%= ranking.entity_label_sg %> bleibt online; neue Werte kommen nur als Vorschläge hinzu, deine Einträge bleiben unverändert.</small></p>
+      </div>
+    <% } %>
 
     <% if (['received', 'expired'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
