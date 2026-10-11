@@ -27,6 +27,7 @@ test('reviewlist: alles erledigt bis auf fehlendes Kriterium -> nur Empfehlung',
 test('reviewlist: Vorschläge, ungefähre Koordinaten, zu geringe Vollständigkeit, fehlgeschlagener Schritt', () => {
   const d = base();
   d.facts.push({ criterion_id: 'b', trust_level: 4, disputed: false });
+  d.criteria.push({ id: 'c', label: 'Laufbahn', max_points: 8, scoring: { type: 'bool' } });
   d.entity.attributes.geo_source = 'Postleitzahlgebiet der Anschrift (ungefähr – bitte prüfen)';
   d.result.completeness = 40;
   d.sub.pipeline_log = [
@@ -41,6 +42,7 @@ test('reviewlist: Vorschläge, ungefähre Koordinaten, zu geringe Vollständigke
   assert.ok(!/Umgebung/.test(texts), 'erfolgreiche Wiederholung erledigt den Schritt');
   assert.match(texts, /„Klima“ fehlgeschlagen/);
   assert.equal(r.items[0].level, 'block');
+  assert.match(r.items[0].text, /Vollständigkeit 40 %.*Laufbahn \(8\)/);
 });
 
 test('reviewlist: ohne Koordinaten blockiert', () => {
