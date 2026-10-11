@@ -22,14 +22,14 @@ test('sitedata: Kartenlinks, eingebettete Karte, Geo-Metatag; ungültiges JSON s
   const html = `<script type="application/ld+json">{kaputt</script>
     <a href="https://www.google.com/maps/place/Hotel/@28.2294926,-13.9886535,17z">Karte</a>
     <iframe src="https://www.google.com/maps/embed?pb=!1m18!2d13.3025009!3d47.7965744!2m3"></iframe>
-    <a href="https://maps.google.de/maps?q=47.1%2C11.2&amp;z=3">x</a>
+    <a href="https://maps.google.de/maps?q=47.1234%2C11.2345&amp;z=3">x</a>
     <meta name="geo.position" content="40.5;-3.7">`;
   const d = sitedata.fromHtml(html);
   const kinds = d.geo.map((g) => `${g.kind}:${g.lat},${g.lng}`);
   assert.ok(kinds.includes('Geo-Metatag:40.5,-3.7'));
   assert.ok(kinds.includes('Kartenlink:28.2294926,-13.9886535'));
   assert.ok(kinds.includes('eingebettete Karte:47.7965744,13.3025009'));
-  assert.ok(kinds.includes('Kartenlink:47.1,11.2'));
+  assert.ok(kinds.includes('Kartenlink:47.1234,11.2345'));
   assert.equal(sitedata.validLatLng(0, 0), null);
 });
 
