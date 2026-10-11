@@ -1,0 +1,202 @@
+// Systemmails, im Admin je Site bearbeitbar (Tabelle email_templates).
+// Der Text ist einfacher Text mit Platzhaltern – kein Code:
+//   {{hotel}}          Platzhalter (siehe VARS je Vorlage)
+//   **fett**           Fettschrift
+//   [Text](https://…)  Link; steht er allein in einem Absatz, wird er als Button gezeigt
+//   Leerzeile          neuer Absatz
+// Ein Absatz entfällt, wenn ein darin verwendeter Platzhalter leer ist (z. B. Score noch unbekannt);
+// Ausnahme: Zusätze wie {{vorlaeufig}} oder {{fotos}} (OPTIONAL).
+// Kopf (Marke) und Fuß (Impressum/Datenschutz) kommen immer aus dem festen Layout.
+const path = require('path');
+const ejs = require('ejs');
+
+// Standardtexte (Ausgangsstand, „Auf Standard zurücksetzen“)
+const DEFAULTS = {
+  verify: {
+    label: 'Vorschlag bestätigen',
+    recipient: 'Melder (Formular „hinzufügen“)',
+    trigger: 'direkt nach dem Absenden des Formulars',
+    subject: 'Bitte bestätige deinen Vorschlag: {{hotel}}',
+    body: `Hallo,
+
+danke, dass du **{{hotel}}** für das Ranking „{{ranking}}“ vorgeschlagen hast.
+
+Bitte bestätige deinen Vorschlag mit einem Klick:
+
+[Vorschlag bestätigen]({{link}})
+
+Der Link ist {{stunden}} Stunden gültig. Danach prüfen wir die Angaben automatisch und von Hand und melden uns, sobald die Seite online ist.
+
+Du hast nichts vorgeschlagen? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.`,
+  },
+  live: {
+    label: 'Seite ist online',
+    recipient: 'Melder (nur mit bestätigter Adresse)',
+    trigger: 'bei Freigabe im Admin',
+    subject: '{{hotel}} ist jetzt online',
+    body: `Hallo,
+
+gute Nachrichten: **{{hotel}}** ist jetzt online.
+
+[Seite ansehen]({{link}})
+
+{{scorename}}: **{{score}}**{{vorlaeufig}}
+
+Danke, dass du mithilfst, die Übersicht vollständiger zu machen.`,
+  },
+  rejected: {
+    label: 'Absage',
+    recipient: 'Melder (nur mit bestätigter Adresse)',
+    trigger: 'bei Ablehnung im Admin',
+    subject: 'Dein Vorschlag: {{hotel}}',
+    body: `Hallo,
+
+danke für deinen Vorschlag **{{hotel}}**. Leider können wir den Eintrag nicht in das Ranking „{{ranking}}“ aufnehmen.
+
+**Begründung:** {{begruendung}}
+
+Falls du Informationen hast, die das ändern, antworte gern auf diese Mail.`,
+  },
+  duplicate: {
+    label: 'Schon vorhanden (Dublette)',
+    recipient: 'Melder',
+    trigger: 'wenn der Admin eine Dublette bestätigt',
+    subject: '{{hotel}} ist schon bei uns',
+    body: `Hallo,
+
+danke für deinen Vorschlag! **{{hotel}}** ist bereits bei uns erfasst.
+
+Hier ist die Seite: [{{link}}]({{link}})
+
+{{in_pruefung}}`,
+  },
+  'inquiry-answered': {
+    label: 'Antwort eines Betreibers (an Admin)',
+    recipient: 'Admin (ADMIN_NOTIFY_EMAIL)',
+    trigger: 'wenn ein Betreiber eine Anfrage beantwortet',
+    subject: 'Antwort vom Betreiber: {{hotel}}',
+    body: `**{{hotel}}** hat auf die Anfrage geantwortet: {{antworten}} Antwort(en){{fotos}}.
+
+Neue Einwilligungen: **{{einwilligungen}}**
+
+[In der Prüfansicht ansehen]({{link}}) – die Werte werden erst übernommen, wenn du sie bestätigst.`,
+  },
+};
+
+// Platzhalter je Vorlage: Beschreibung für den Admin
+const VARS = {
+  common: { hotel: 'Name des Objekts', ranking: 'Name des Rankings', scorename: 'Scorename, z. B. TriScore', site: 'Name der Site', startseite: 'Adresse der Startseite' },
+  verify: { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden' },
+  live: { link: 'Link zur Profilseite', score: 'Score (leer, wenn noch unbekannt)', vorlaeufig: '„ (vorläufig …)“, solange keine Bewertungen vorliegen' },
+  rejected: { begruendung: 'Begründung aus dem Admin' },
+  duplicate: { link: 'Link zur bestehenden Seite (leer, solange sie nicht online ist)', in_pruefung: 'Hinweis „gerade in Prüfung“, wenn noch nicht online' },
+  'inquiry-answered': { link: 'Link zur Prüfansicht', antworten: 'Anzahl Antworten', fotos: '„, 2 Foto(s)“ oder leer', einwilligungen: 'neue Einwilligungen (leer, wenn keine)' },
+};
+
+// Beispielwerte für Vorschau und Testversand
+function sampleData(key, site) {
+  const ranking = { name: 'Triathlon-Hotels', score_name: 'TriScore' };
+  const base = { ranking, entityName: 'Beispielhotel Mar Azul' };
+  const url = `https://${(site && site.primary_domain) || 'tri-hotel.de'}`;
+  return {
+    verify: { ...base, link: `${url}/bestaetigen/beispiel`, hours: 72 },
+    live: { ...base, link: `${url}/hotel/beispielhotel-mar-azul`, score: 82, provisional: true },
+    rejected: { ...base, reason: 'Im Umkreis von 5 km gibt es kein Becken mit mindestens 25 m.' },
+    duplicate: { ...base, link: `${url}/hotel/beispielhotel-mar-azul` },
+    'inquiry-answered': { ...base, answers: 3, photos: 2, consents: ['Fotos im Profil'], link: `${url}/admin/meldungen/beispiel#anfragen` },
+  }[key] || base;
+}
+
+// Daten aus dem Programm -> Platzhalterwerte (Texte, keine Objekte)
+function varsFor(key, data, site, baseUrl) {
+  const d = data || {};
+  const r = d.ranking || {};
+  const v = {
+    hotel: d.entityName || '', ranking: r.name || '', scorename: r.score_name || '', site: (site && site.name) || '', startseite: baseUrl || '',
+  };
+  if (key === 'verify') Object.assign(v, { link: d.link || '', stunden: String(d.hours || '') });
+  if (key === 'live') {
+    const known = d.score !== null && d.score !== undefined;
+    Object.assign(v, { link: d.link || '', score: known ? String(d.score) : '', vorlaeufig: known && d.provisional ? ' (vorläufig, solange noch keine Bewertungen vorliegen)' : '' });
+  }
+  if (key === 'rejected') v.begruendung = d.reason || '';
+  if (key === 'duplicate') {
+    Object.assign(v, { link: d.link || '', in_pruefung: d.link ? '' : `Der Eintrag ist gerade in Prüfung. Sobald er online ist, findest du ihn auf ${baseUrl || ''}.` });
+  }
+  if (key === 'inquiry-answered') {
+    Object.assign(v, {
+      link: d.link || '', antworten: String(d.answers ?? ''), fotos: d.photos ? `, ${d.photos} Foto(s)` : '',
+      einwilligungen: (d.consents || []).join(', '),
+    });
+  }
+  return v;
+}
+
+// Diese Platzhalter dürfen leer sein, ohne dass der Absatz entfällt (Zusätze innerhalb eines Satzes)
+const OPTIONAL = new Set(['vorlaeufig', 'fotos']);
+
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const BUTTON = 'display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold';
+
+function fill(text, vars) {
+  return String(text).replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (m, k) => (k in vars ? vars[k] : m));
+}
+
+// Unbekannte Platzhalter (Tippfehler) für die Prüfung beim Speichern
+function unknownPlaceholders(key, ...texts) {
+  const allowed = { ...VARS.common, ...(VARS[key] || {}) };
+  const out = new Set();
+  for (const t of texts) for (const m of String(t || '').matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)) if (!(m[1] in allowed)) out.add(m[1]);
+  return [...out];
+}
+
+const safeUrl = (u) => (/^(https?:\/\/|mailto:)/i.test(u.trim()) ? u.trim() : null);
+
+// Inline: **fett** und [Text](URL), alles andere maskiert
+function inline(text) {
+  let out = '';
+  let last = 0;
+  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  for (const m of text.matchAll(re)) {
+    out += esc(text.slice(last, m.index));
+    if (m[1] !== undefined) out += `<strong>${esc(m[1])}</strong>`;
+    else {
+      const url = safeUrl(m[3]);
+      out += url ? `<a href="${esc(url)}">${esc(m[2])}</a>` : esc(m[0]);
+    }
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+
+// Text -> HTML-Absätze. Absätze mit leerem Platzhalter entfallen.
+function bodyHtml(body, vars) {
+  const paras = String(body || '').replace(/\r/g, '').split(/\n{2,}/);
+  const html = [];
+  for (const raw of paras) {
+    const used = [...raw.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map((m) => m[1]);
+    if (used.some((k) => k in vars && !OPTIONAL.has(k) && !String(vars[k]).trim())) continue;
+    const para = fill(raw, vars).trim();
+    if (!para) continue;
+    const button = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(para);
+    const url = button && safeUrl(button[2]);
+    if (url) {
+      html.push(`<p><a href="${esc(url)}" style="${BUTTON}">${esc(button[1])}</a></p>`);
+    } else {
+      html.push(`<p>${para.split('\n').map(inline).join('<br>')}</p>`);
+    }
+  }
+  return html.join('\n');
+}
+
+async function render(tpl, key, data, site, baseUrl) {
+  const vars = varsFor(key, data, site, baseUrl);
+  const views = path.join(__dirname, '..', 'views', 'emails');
+  const locals = { site, baseUrl };
+  const top = await ejs.renderFile(path.join(views, '_layout_top.ejs'), locals);
+  const bottom = await ejs.renderFile(path.join(views, '_layout_bottom.ejs'), locals);
+  const subject = fill(tpl.subject, vars).replace(/\s+/g, ' ').trim();
+  return { subject, html: `${top}\n${bodyHtml(tpl.body, vars)}\n${bottom}` };
+}
+
+module.exports = { DEFAULTS, VARS, sampleData, varsFor, fill, bodyHtml, inline, render, unknownPlaceholders };

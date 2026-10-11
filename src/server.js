@@ -78,6 +78,7 @@ app.use('/admin/sites', require('./routes/admin-sites'));
 app.use('/admin/leistungen', require('./routes/admin-features'));
 app.use('/admin/regionen', require('./routes/admin-regions'));
 app.use('/admin/medien', require('./routes/admin-media'));
+app.use('/admin/emails', require('./routes/admin-emails'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/inquiry'));
 app.use('/', require('./routes/seo'));

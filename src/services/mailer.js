@@ -9,13 +9,18 @@ const config = require('../config');
 const db = require('../db');
 const sites = require('./sites');
 
-const SUBJECTS = {
-  verify: (d) => `Bitte bestätige deinen Vorschlag: ${d.entityName}`,
-  duplicate: (d) => `${d.entityName} ist schon bei uns`,
-  rejected: (d) => `Dein Vorschlag: ${d.entityName}`,
-  live: (d) => `${d.entityName} ist jetzt online`,
-  'inquiry-answered': (d) => `Antwort vom Betreiber: ${d.entityName}`,
-};
+const mailtemplates = require('./mailtemplates');
+
+// Betreff für Mails ohne Vorlage (Agenten-Mails setzen ihn selbst)
+const SUBJECTS = {};
+
+// Aktive Vorlage der Site oder Standardtext
+async function templateFor(site, key, language = 'de') {
+  const row = site
+    ? await db.one(`SELECT subject, body FROM email_templates WHERE site_id = $1 AND key = $2 AND language = $3 AND active`, [site.id, key, language])
+    : null;
+  return row || mailtemplates.DEFAULTS[key];
+}
 
 let smtpTransport = null;
 
@@ -57,8 +62,16 @@ async function send({ to, template, data, site = null, persona = null, submissio
   const locals = { ...data, site: s, baseUrl: sites.urlFor(s) };
   const from = sites.mailFrom(s, persona);
   const replyTo = (s && s.mail_reply_to) || config.mail.replyTo;
-  const html = await ejs.renderFile(path.join(__dirname, '..', 'views', 'emails', `${template}.ejs`), locals);
-  const subject = locals.subject || (SUBJECTS[template] ? SUBJECTS[template](locals) : s.name);
+  // Im Admin gepflegte Vorlage der Site, sonst Standardtext; Agenten-Mails (inquiry) bleiben EJS mit Agententext
+  let html;
+  let subject;
+  if (mailtemplates.DEFAULTS[template]) {
+    const tpl = await templateFor(s, template);
+    ({ html, subject } = await mailtemplates.render(tpl, template, data, s, locals.baseUrl));
+  } else {
+    html = await ejs.renderFile(path.join(__dirname, '..', 'views', 'emails', `${template}.ejs`), locals);
+    subject = locals.subject || (SUBJECTS[template] ? SUBJECTS[template](locals) : s.name);
+  }
   let status = 'sent';
   let providerId = null;
   try {
@@ -68,10 +81,10 @@ async function send({ to, template, data, site = null, persona = null, submissio
     console.error(`[mail] Versand fehlgeschlagen (${template} an ${to}):`, err.message);
   }
   await db.query(
-    `INSERT INTO email_log (submission_id, inquiry_id, recipient, template, status, provider_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-    [submissionId, inquiryId, to, template, status, providerId]
+    `INSERT INTO email_log (submission_id, inquiry_id, recipient, template, status, provider_id, subject, site_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [submissionId, inquiryId, to, template, status, providerId, subject, s ? s.id : null]
   );
   return status === 'sent';
 }
 
-module.exports = { send };
+module.exports = { send, templateFor };

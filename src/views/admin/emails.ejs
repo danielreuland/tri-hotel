@@ -1,0 +1,69 @@
+<%- include('../partials/admin-head') %>
+<h1>E-Mails</h1>
+<p class="muted">Texte der automatischen Mails je Site. Kopf (Marke) und Fuß (Impressum, Datenschutz) sind fest. Die Anfragen an Betreiber formuliert der Agent je Anfrage selbst – sie stehen nur im Protokoll.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (provider === 'console') { %>
+  <div class="flash" style="border-color:var(--warn)"><strong>Mailversand noch nicht eingerichtet.</strong> Mails werden nur protokolliert und ins Server-Log geschrieben (MAIL_PROVIDER=console). Mit SMTP-Zugang gehen sie wirklich raus.</div>
+<% } %>
+
+<% if (sites.length > 1) { %>
+  <form method="get" class="filters"><label for="site">Site</label>
+    <select id="site" name="site" data-autosubmit><% sites.forEach(function (s) { %><option value="<%= s.id %>" <%= s.id === site.id ? 'selected' : '' %>><%= s.name %></option><% }) %></select>
+  </form>
+<% } %>
+
+<div class="table-scroll">
+  <table>
+    <tr><th>Mail</th><th>Empfänger</th><th>Wann</th><th>Text</th></tr>
+    <% KEYS.forEach(function (k) { var d = DEFAULTS[k], t = byKey[k]; %>
+      <tr>
+        <td><a href="/admin/emails/<%= k %>?site=<%= site.id %>"><strong><%= d.label %></strong></a></td>
+        <td><small><%= d.recipient %></small></td>
+        <td><small><%= d.trigger %></small></td>
+        <td><% if (t && t.active) { %><span class="badge good">angepasst</span> <small class="muted">Version <%= t.version %> · <%= formatDate(t.updated_at) %><%= t.updated_by_email ? ' · ' + t.updated_by_email : '' %></small><% } else { %><span class="badge">Standardtext</span><% } %></td>
+      </tr>
+    <% }) %>
+  </table>
+</div>
+
+<h2 id="protokoll">Versandprotokoll</h2>
+<%
+  var LABELS = {}; KEYS.forEach(function (k) { LABELS[k] = DEFAULTS[k].label; }); LABELS.inquiry = 'Anfrage an Betreiber (Agent)';
+  var qs = function (o) { var p = Object.assign({ site: site.id, status: status || '', vorlage: template || '', seite: 1 }, o);
+    return '/admin/emails?' + Object.keys(p).filter(function (k) { return p[k] !== '' && p[k] !== null; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&') + '#protokoll'; };
+%>
+<form method="get" class="filters" action="/admin/emails#protokoll">
+  <input type="hidden" name="site" value="<%= site.id %>">
+  <select name="vorlage" aria-label="Mail"><option value="">alle Mails</option><% Object.keys(LABELS).forEach(function (k) { %><option value="<%= k %>" <%= template === k ? 'selected' : '' %>><%= LABELS[k] %></option><% }) %></select>
+  <select name="status" aria-label="Status"><option value="">alle</option><option value="sent" <%= status === 'sent' ? 'selected' : '' %>>gesendet</option><option value="failed" <%= status === 'failed' ? 'selected' : '' %>>fehlgeschlagen</option></select>
+  <button class="btn small secondary" type="submit">Filtern</button>
+</form>
+<% if (!log.length) { %>
+  <p class="card">Noch keine Mails in dieser Ansicht.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table>
+      <tr><th>Zeitpunkt</th><th>Mail</th><th>An</th><th>Betreff</th><th>Bezug</th><th>Status</th></tr>
+      <% log.forEach(function (l) { %>
+        <tr>
+          <td><small><%= new Date(l.created_at).toLocaleString('de-DE') %></small></td>
+          <td><small><%= LABELS[l.template] || l.template %></small></td>
+          <td><small><%= l.recipient %></small></td>
+          <td><small><%= l.subject || '–' %></small></td>
+          <td><small><% if (l.submission_id) { %><a href="/admin/meldungen/<%= l.submission_id %>"><%= l.entity_name || 'Meldung' %></a><% } else if (l.inquiry_entity) { %><%= l.inquiry_entity %><% } else { %>–<% } %></small></td>
+          <td><span class="badge <%= l.status === 'sent' ? 'good' : 'bad' %>"><%= l.status === 'sent' ? (l.provider_id === 'console' ? 'nur Log' : 'gesendet') : 'fehlgeschlagen' %></span></td>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+  <% if (pages > 1) { %>
+    <nav class="pager" aria-label="Seiten">
+      <% if (page > 1) { %><a href="<%= qs({ seite: page - 1 }) %>">← zurück</a><% } %>
+      <span class="muted">Seite <%= page %> von <%= pages %> · <%= total %> Mails</span>
+      <% if (page < pages) { %><a href="<%= qs({ seite: page + 1 }) %>">weiter →</a><% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<% locals.scripts = ['/static/js/admin.js'] %>
+<%- include('../partials/admin-foot') %>

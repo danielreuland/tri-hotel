@@ -1,0 +1,55 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/emails?site=<%= site.id %>">← E-Mails</a></p>
+<h1><%= def.label %></h1>
+<p class="muted">An: <%= def.recipient %> · Versand: <%= def.trigger %> · Site: <%= site.name %></p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<% if (locals.unsaved) { %><div class="flash" style="border-color:var(--warn)">Vorschau mit ungespeicherten Änderungen.</div><% } %>
+
+<div class="admin-detail">
+  <div>
+    <form method="post" action="/admin/emails/<%= key %>" class="card">
+      <input type="hidden" name="site_id" value="<%= site.id %>">
+      <label for="subject">Betreff</label>
+      <input id="subject" name="subject" type="text" maxlength="200" value="<%= tpl.subject %>">
+      <label for="body">Text</label>
+      <textarea id="body" name="body" rows="16"><%= tpl.body %></textarea>
+      <p class="muted"><small>Leerzeile = neuer Absatz · <code>**fett**</code> · <code>[Text](Link)</code> – allein in einem Absatz wird daraus ein Button. Ein Absatz entfällt, wenn ein Platzhalter darin leer ist.</small></p>
+      <div class="filters" style="margin-bottom:0">
+        <button class="btn small secondary" type="submit" name="action" value="preview">Vorschau aktualisieren</button>
+        <button class="btn small" type="submit" name="action" value="save">Speichern</button>
+      </div>
+    </form>
+
+    <h2>Vorschau <small class="muted">mit Beispieldaten</small></h2>
+    <div class="card">
+      <p style="margin-top:0"><small class="muted">Betreff:</small> <strong><%= preview.subject %></strong></p>
+      <div class="mail-preview"><%- preview.html %></div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <strong>Platzhalter</strong>
+      <ul class="log-list" style="margin-top:8px">
+        <% Object.keys(vars).forEach(function (k) { %><li><code>{{<%= k %>}}</code><br><small class="muted"><%= vars[k] %></small></li><% }) %>
+      </ul>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <p style="margin-top:0"><% if (saved && saved.active) { %><span class="badge good">angepasst</span> Version <%= saved.version %>, <%= formatDate(saved.updated_at) %><%= saved.updated_by_email ? ' von ' + saved.updated_by_email : '' %><% } else { %><span class="badge">Standardtext</span><% } %></p>
+      <form method="post" action="/admin/emails/<%= key %>">
+        <input type="hidden" name="site_id" value="<%= site.id %>">
+        <button class="btn small secondary" type="submit" name="action" value="test" style="width:100%">Testmail an <%= adminEmail %></button>
+        <p class="muted" style="margin:6px 0 0"><small>Mit Beispieldaten und dem gespeicherten Text<%= provider === 'console' ? ' – solange kein Mailversand eingerichtet ist, nur im Server-Log' : '' %>.</small></p>
+      </form>
+      <% if (saved) { %>
+        <form method="post" action="/admin/emails/<%= key %>" style="margin-top:10px" onsubmit="return confirm('Eigenen Text verwerfen und Standardtext verwenden?')">
+          <input type="hidden" name="site_id" value="<%= site.id %>">
+          <button class="btn small secondary" type="submit" name="action" value="reset" style="width:100%">Auf Standardtext zurücksetzen</button>
+        </form>
+      <% } %>
+    </div>
+  </aside>
+</div>
+
+<%- include('../partials/admin-foot') %>
