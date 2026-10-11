@@ -65,13 +65,13 @@ async function geocode({ name, city, country }) {
 }
 
 // Photon (Komoot, OSM-Daten): unscharfe Suche nach Unterkünften
-async function photon(q, { near } = {}) {
+async function photon(q, { near, tag = 'tourism' } = {}) {
   const params = new URLSearchParams({ q, limit: '8', lang: 'de' });
   if (near) {
     params.set('lat', String(near.lat));
     params.set('lon', String(near.lng));
   }
-  params.append('osm_tag', 'tourism');
+  if (tag) params.append('osm_tag', tag);
   const res = await fetch(`https://photon.komoot.io/api/?${params}`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Photon ${res.status}`);
   const json = await res.json();
@@ -144,29 +144,42 @@ async function locate({ name, city, country }, candidates = {}) {
     const r = accept(g, `Website (${g.kind})`, g.url);
     if (r) return r;
   }
-  // 2. Anschrift (Strukturdaten der Website oder KI-Auswertung mit Fundstelle) -> strukturierte Suche
+  // 2. Anschrift (Strukturdaten der Website oder KI-Auswertung mit Fundstelle):
+  //    strukturiert -> Freitext -> Photon -> Straße ohne Hausnummer; die Postleitzahl allein erst ganz am Ende (ungefähr)
   const seenAddr = new Set();
+  const postcodeFallbacks = [];
   for (const a of candidates.addresses || []) {
     if (!a.street && !a.text) continue;
     const key = `${a.street || a.text}|${a.postal_code || ''}|${a.city || ''}`.toLowerCase();
     if (seenAddr.has(key)) continue;
     seenAddr.add(key);
-    try {
-      const params = a.street
-        ? { street: a.street, city: a.city || city || '', ...(a.postal_code ? { postalcode: a.postal_code } : {}), limit: '1' }
-        : { q: a.text, limit: '1' };
-      const c = (a.country || cc || '').toLowerCase();
-      if (c) params.countrycodes = c;
-      const hit = hitOf((await nominatim(params))[0]);
-      if (!hit) {
-        tried.push(`Anschrift „${a.street || a.text}“: nicht gefunden`);
-        continue;
+    const c = (a.country || cc || '').toLowerCase();
+    const label = `${a.street || a.text}${a.postal_code ? `, ${a.postal_code}` : ''}${a.city ? ` ${a.city}` : ''}`;
+    const freeText = a.street ? [a.street, [a.postal_code, a.city || city].filter(Boolean).join(' ')].filter(Boolean).join(', ') : a.text;
+    const streetOnly = a.street && a.street.replace(/[,\s]*\d+[a-z]?(\s*[-/]\s*\d+[a-z]?)?\s*$/i, '').trim();
+    const attempts = [
+      a.street && { kind: 'Nominatim', params: { street: a.street, city: a.city || city || '', ...(a.postal_code ? { postalcode: a.postal_code } : {}), limit: '1' } },
+      { kind: 'Nominatim', params: { q: freeText, limit: '1' } },
+      { kind: 'Photon', q: freeText },
+      streetOnly && streetOnly !== a.street && { kind: 'Nominatim', params: { street: streetOnly, city: a.city || city || '', ...(a.postal_code ? { postalcode: a.postal_code } : {}), limit: '1' }, approx: 'Straße ohne Hausnummer' },
+    ].filter(Boolean);
+    for (const t of attempts) {
+      try {
+        let hit = null;
+        if (t.kind === 'Photon') {
+          hit = (await photon(t.q, { near: center, tag: null })).find((h) => !c || !h.country || h.country === c.toUpperCase()) || null;
+        } else {
+          hit = hitOf((await nominatim({ ...t.params, ...(c ? { countrycodes: c } : {}) }))[0]);
+        }
+        if (!hit) continue;
+        const r = accept(hit, `Anschrift von der Website${t.approx ? ` (${t.approx})` : ''}`, `${label} → ${hit.display}`, { postalCode: a.postal_code });
+        if (r) return r;
+      } catch (err) {
+        tried.push(`Anschrift (${t.kind}): ${err.message}`);
       }
-      const r = accept(hit, 'Anschrift von der Website', `${a.street || a.text}${a.city ? `, ${a.city}` : ''} → ${hit.display}`, { postalCode: a.postal_code });
-      if (r) return r;
-    } catch (err) {
-      tried.push(`Anschrift: ${err.message}`);
     }
+    tried.push(`Anschrift „${label}“: nicht genau gefunden`);
+    if (a.postal_code) postcodeFallbacks.push({ ...a, c, label });
   }
   // 3. Name + Ort, dann Kernname (ohne „Hotel“, Sterne …), jeweils Nominatim und Photon (nur Unterkünfte)
   const core = coreName(name);
@@ -190,6 +203,17 @@ async function locate({ name, city, country }, candidates = {}) {
       }
     } catch (err) {
       tried.push(`Photon „${q}“: ${err.message}`);
+    }
+  }
+  // 4. Letzte Stufe: Mitte des Postleitzahlgebiets der Website-Anschrift (ungefähr – bitte im Admin prüfen)
+  for (const a of postcodeFallbacks) {
+    try {
+      const hit = hitOf((await nominatim({ postalcode: a.postal_code, ...(a.city ? { city: a.city } : {}), ...(a.c ? { countrycodes: a.c } : {}), limit: '1' }))[0]);
+      if (!hit) continue;
+      const r = accept({ ...hit, postcode: hit.postcode || a.postal_code }, 'Postleitzahlgebiet der Anschrift (ungefähr – bitte prüfen)', `${a.label} → ${hit.display}`, { postalCode: a.postal_code });
+      if (r) return { ...r, approximate: true };
+    } catch (err) {
+      tried.push(`Postleitzahl: ${err.message}`);
     }
   }
   return { lat: null, lng: null, tried };
