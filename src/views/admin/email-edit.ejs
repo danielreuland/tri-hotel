@@ -4,7 +4,7 @@
 <p class="muted">An: <%= def.recipient %> · Versand: <%= def.trigger %> · Site: <%= site.name %></p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
-<% if (locals.unsaved) { %><div class="flash" style="border-color:var(--warn)">Vorschau mit ungespeicherten Änderungen.</div><% } %>
+<% if (locals.unsaved) { %><div class="flash" style="border-color:var(--ok)">Vorschau mit ungespeicherten Änderungen.</div><% } %>
 
 <div class="admin-detail">
   <div>

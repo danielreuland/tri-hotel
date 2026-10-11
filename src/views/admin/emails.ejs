@@ -3,7 +3,7 @@
 <p class="muted">Texte der automatischen Mails je Site. Kopf (Marke) und Fuß (Impressum, Datenschutz) sind fest. Die Anfragen an Betreiber formuliert der Agent je Anfrage selbst – sie stehen nur im Protokoll.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (provider === 'console') { %>
-  <div class="flash" style="border-color:var(--warn)"><strong>Mailversand noch nicht eingerichtet.</strong> Mails werden nur protokolliert und ins Server-Log geschrieben (MAIL_PROVIDER=console). Mit SMTP-Zugang gehen sie wirklich raus.</div>
+  <div class="flash" style="border-color:var(--ok)"><strong>Mailversand noch nicht eingerichtet.</strong> Mails werden nur protokolliert und ins Server-Log geschrieben (MAIL_PROVIDER=console). Mit SMTP-Zugang gehen sie wirklich raus.</div>
 <% } %>
 
 <% if (sites.length > 1) { %>

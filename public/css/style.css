@@ -354,3 +354,17 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 
 /* Admin: Mailvorschau (Mail-HTML bringt eigene Inline-Stile mit, hier nur Rahmen) */
 .mail-preview { background: #fff; color: #1b1f24; border-radius: 8px; padding: 16px; overflow-x: auto; }
+
+/* Admin: Prüfliste und Markierung offener Fakten */
+.review-list { margin: 0 0 16px; border-left: 4px solid var(--ok); }
+.review-list ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.review-list li { line-height: 1.4; }
+.review-list .badge { min-width: 6.5em; text-align: center; margin-right: 6px; }
+.crit-row.state-auto td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
+.crit-row.state-missing td:first-child { box-shadow: inset 4px 0 0 var(--border); }
+.crit-row.state-disputed td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
+.crit-row.state-auto { background: color-mix(in srgb, var(--ok) 7%, transparent); }
+.crit-row .evidence { color: var(--muted); font-style: italic; }
+.fact-tools { align-items: center; gap: 8px 16px; }
+.fact-tools .legend { font-size: .85rem; color: var(--muted); }
+.only-open .crit-row.state-ok { display: none; }

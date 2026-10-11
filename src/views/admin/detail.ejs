@@ -31,6 +31,23 @@
   </div>
 <% } %>
 
+<% if (review.items.length) { var LV = { block: ['bad', 'Blockiert'], todo: ['warn', 'Prüfen'], hint: ['', 'Empfohlen'] }; %>
+  <section class="card review-list" id="pruefliste">
+    <h2 style="margin:0 0 4px">Zu prüfen <small class="muted"><%= review.open ? review.open + ' offen' : 'nur Empfehlungen' %><%= review.blockers ? ' · ' + review.blockers + ' blockierend' : '' %></small></h2>
+    <ul>
+      <% review.items.forEach(function (i) { %>
+        <li class="lvl-<%= i.level %>">
+          <span class="badge <%= LV[i.level][0] %>"><%= LV[i.level][1] %></span>
+          <% if (i.anchor) { %><a href="#<%= i.anchor %>"><%= i.text %></a><% } else { %><%= i.text %><% } %>
+          <% if (i.detail) { %><br><small class="muted"><%= i.detail %></small><% } %>
+        </li>
+      <% }) %>
+    </ul>
+  </section>
+<% } else if (entity) { %>
+  <section class="card review-list" id="pruefliste"><strong>✓ Alles geprüft.</strong> <small class="muted">Keine offenen Punkte.</small></section>
+<% } %>
+
 <div class="admin-detail">
   <div>
     <section class="card">
@@ -66,7 +83,7 @@
       <div class="card" style="margin-top:16px"><p>Noch kein Objekt angelegt – die Auto-Prüfung ist noch nicht gelaufen.</p></div>
     <% } else { %>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card" style="margin-top:16px" id="stammdaten">
       <h2 style="margin-top:0">Stammdaten</h2>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/objekt">
         <div class="form-row">
@@ -97,6 +114,16 @@
     <section class="card" style="margin-top:16px" id="fakten">
       <h2 style="margin-top:0">Fakten</h2>
       <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Beim Ändern eines Werts springt die Vertrauensstufe auf 2 (Admin geprüft).</p>
+      <% var autoWithEvidence = facts.filter(function (f) { return f.trust_level === 4 && f.evidence_url && !f.disputed }).length; %>
+      <div class="filters fact-tools">
+        <label class="inline" style="margin:0"><input type="checkbox" id="only-open"> Nur offene Punkte zeigen</label>
+        <span class="legend"><span class="badge warn">Vorschlag</span> automatisch, bitte prüfen · <span class="badge">fehlt</span> unbekannt · <span class="badge bad">strittig</span></span>
+        <% if (autoWithEvidence) { %>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/vorschlaege-bestaetigen" onsubmit="return confirm('Alle <%= autoWithEvidence %> Vorschläge mit Fundstelle als „Admin geprüft“ übernehmen? Vorher bitte Fundstellen ansehen.')">
+            <button class="btn small secondary" type="submit"><%= autoWithEvidence %> Vorschläge mit Fundstelle übernehmen</button>
+          </form>
+        <% } %>
+      </div>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/fakten" id="facts-form" data-submission="<%= sub.id %>">
         <div class="table-scroll">
         <table>
@@ -104,8 +131,13 @@
             <tr><th colspan="5"><h3 style="margin:.4em 0"><%= cat.label %></h3></th></tr>
             <% criteria.filter(function (c) { return c.category_id === cat.id }).forEach(function (c) {
                  var f = factByCrit[c.id]; var d = detailByCrit[c.id]; var s = c.scoring; var name = 'facts[' + c.id + ']'; var cur = valueString(c, f); %>
-              <tr class="crit-row <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
-                <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %><br><small class="muted"><%= c.code %> · max <%= c.max_points %></small></td>
+              <% var state = s.type === 'climate' ? (climateRow ? 'ok' : 'missing') : !f ? 'missing' : f.disputed ? 'disputed' : f.trust_level === 4 ? 'auto' : 'ok'; %>
+              <tr class="crit-row state-<%= state %> <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
+                <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %>
+                  <% if (state === 'auto') { %> <span class="badge warn">Vorschlag</span><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
+                  <br><small class="muted"><%= c.code %> · max <%= c.max_points %></small>
+                  <% if (state === 'auto' && f.evidence_text) { %><br><small class="evidence">„<%= f.evidence_text.slice(0, 160) %><%= f.evidence_text.length > 160 ? '…' : '' %>“<% if (f.evidence_url) { %> <a href="<%= f.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %>
+                </td>
                 <td style="min-width:190px">
                   <% if (s.type === 'climate') { %>
                     <%= describeValue(c, null, climateRow) || 'keine Klimadaten' %><br><small class="muted"><%= result.month ? 'bester Monat: ' + MONTHS[result.month - 1] : '' %></small>

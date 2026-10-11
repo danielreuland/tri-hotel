@@ -244,7 +244,9 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
   const factByCrit = Object.fromEntries(d.facts.map((f) => [f.criterion_id, f]));
   const detailByCrit = Object.fromEntries(d.result.details.map((x) => [x.criterionId, x]));
   const criteriaByCode = Object.fromEntries(d.criteria.map((c) => [c.code, c]));
+  const review = require('../services/reviewlist').build(d);
   res.render('admin/detail', {
+    review,
     title: d.sub.entity_name,
     ...d,
     factByCrit,
@@ -448,6 +450,22 @@ router.post('/meldungen/:id/pruefen', wrap(async (req, res, next) => {
   const jobs = require('../jobs/auto-check');
   jobs.run(sub.id).catch((err) => console.error('[admin] auto-check', err));
   res.redirect(`/admin/meldungen/${sub.id}?ok=Auto-Pr%C3%BCfung+l%C3%A4uft`);
+}));
+
+// Alle automatischen Vorschläge mit Fundstelle (und nicht strittig) als „Admin geprüft“ übernehmen
+router.post('/meldungen/:id/vorschlaege-bestaetigen', wrap(async (req, res, next) => {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);
+  if (!sub || !sub.entity_id) return next();
+  const rows = await db.many(
+    `UPDATE entity_facts f SET trust_level = 2, source = 'admin', checked_at = now()
+      FROM criteria c WHERE c.id = f.criterion_id AND c.ranking_id = $2
+        AND f.entity_id = $1 AND f.trust_level = 4 AND f.evidence_url IS NOT NULL AND NOT f.disputed
+      RETURNING f.id, c.code`,
+    [sub.entity_id, sub.ranking_id]
+  );
+  for (const r of rows) await logAction(req.session.admin.id, 'fact', r.id, 'confirm_auto_fact', { criterion: r.code });
+  await rankings.recomputeEntity(sub.entity_id, sub.ranking_id);
+  res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent(`${rows.length} Vorschläge als geprüft übernommen`)}#fakten`);
 }));
 
 // Live-Objekt: Auto-Prüfung im Hintergrund wiederholen, Objekt bleibt online (neue Werte nur als Vorschläge)

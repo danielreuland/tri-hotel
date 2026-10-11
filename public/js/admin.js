@@ -3,6 +3,20 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
   el.addEventListener('change', function () { el.form.submit(); });
 });
 
+// Prüfansicht: nur offene Fakten (Vorschläge, fehlende, strittige) zeigen; Wahl bleibt im Browser gespeichert
+(function () {
+  var box = document.getElementById('only-open');
+  var form = document.getElementById('facts-form');
+  if (!box || !form) return;
+  var apply = function () { form.classList.toggle('only-open', box.checked); };
+  try { box.checked = localStorage.getItem('onlyOpenFacts') === '1'; } catch (e) { /* ohne Speicher */ }
+  apply();
+  box.addEventListener('change', function () {
+    apply();
+    try { localStorage.setItem('onlyOpenFacts', box.checked ? '1' : '0'); } catch (e) { /* ohne Speicher */ }
+  });
+})();
+
 (function () {
   var form = document.getElementById('facts-form');
   if (!form) return;
