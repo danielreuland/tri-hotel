@@ -36,17 +36,151 @@ async function overpass(query) {
 // Erlaubt nur Tag-Filter wie ["key"="value"], ["key"!~"a|b"], ["key"]
 const SELECTOR_RE = /^(\["[\w:]+"((=|!=|~|!~)"[^"\]]*")?\])+$/;
 
-async function geocode({ name, city, country }) {
-  const params = new URLSearchParams({ q: [name, city].filter(Boolean).join(', '), format: 'jsonv2', limit: '1' });
-  if (country) params.set('countrycodes', country.toLowerCase());
-  const res = await fetch(`${NOMINATIM}?${params}`, {
+// Nominatim erlaubt höchstens eine Anfrage pro Sekunde
+let lastNominatim = 0;
+async function nominatim(params) {
+  const wait = lastNominatim + 1100 - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastNominatim = Date.now();
+  const res = await fetch(`${NOMINATIM}?${new URLSearchParams({ format: 'jsonv2', addressdetails: '1', ...params })}`, {
     headers: { 'User-Agent': config.userAgent, 'Accept-Language': 'de' },
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`Nominatim ${res.status}`);
-  const [hit] = await res.json();
-  if (!hit) return null;
-  return { lat: Number(hit.lat), lng: Number(hit.lon), display: hit.display_name, osmUrl: `https://www.openstreetmap.org/${hit.osm_type}/${hit.osm_id}` };
+  return res.json();
+}
+
+function hitOf(h) {
+  return h && {
+    lat: Number(h.lat), lng: Number(h.lon), display: h.display_name, osmUrl: `https://www.openstreetmap.org/${h.osm_type}/${h.osm_id}`,
+    category: `${h.category || h.class || ''}=${h.type || ''}`, country: h.address && h.address.country_code ? h.address.country_code.toUpperCase() : null,
+  };
+}
+
+async function geocode({ name, city, country }) {
+  const params = { q: [name, city].filter(Boolean).join(', '), limit: '1' };
+  if (country) params.countrycodes = country.toLowerCase();
+  return hitOf((await nominatim(params))[0]) || null;
+}
+
+// Photon (Komoot, OSM-Daten): unscharfe Suche nach Unterkünften
+async function photon(q, { near } = {}) {
+  const params = new URLSearchParams({ q, limit: '8', lang: 'de' });
+  if (near) {
+    params.set('lat', String(near.lat));
+    params.set('lon', String(near.lng));
+  }
+  params.append('osm_tag', 'tourism');
+  const res = await fetch(`https://photon.komoot.io/api/?${params}`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`Photon ${res.status}`);
+  const json = await res.json();
+  return (json.features || []).map((f) => ({
+    lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
+    display: [f.properties.name, f.properties.street, f.properties.city || f.properties.town || f.properties.village].filter(Boolean).join(', '),
+    country: f.properties.countrycode ? f.properties.countrycode.toUpperCase() : null,
+    category: `${f.properties.osm_key}=${f.properties.osm_value}`,
+    osmUrl: `https://www.openstreetmap.org/${{ N: 'node', W: 'way', R: 'relation' }[f.properties.osm_type] || 'node'}/${f.properties.osm_id}`,
+  }));
+}
+
+// Name ohne Gattungsbegriffe und Sterne, z. B. „Playitas Aparthotel ****“ -> „Playitas“
+function coreName(name) {
+  return String(name || '')
+    .replace(/[*★☆]+/g, ' ')
+    .replace(/\b(hotel|aparthotel|apart-?hotel|resort|spa|suites?|apartments?|appartements?|boutique|hostal|hostel|pension|gasthof|gasthaus|landhaus|sporthotel|wellnesshotel|hotels?|&|and|und|the|das|der|die|le|la|el|il)\b/gi, ' ')
+    .replace(/[^\p{L}\p{N}' -]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const LODGING_CATEGORY = /tourism=(hotel|apartment|guest_house|hostel|motel|chalet|resort)|leisure=resort/;
+const MAX_CITY_KM = 40;
+
+// Koordinaten aus mehreren Quellen, je Treffer mit Plausibilitätsprüfung gegen das Ortszentrum.
+// candidates: { geo: [{lat,lng,kind,url}], addresses: [{street,postal_code,city,country,url}] }
+// Ergebnis: { lat, lng, source, detail, url? } oder null; tried = Protokoll der Versuche
+async function locate({ name, city, country }, candidates = {}) {
+  const tried = [];
+  const cc = country ? country.toUpperCase() : null;
+  let center = null;
+  if (city) {
+    try {
+      const params = { city, limit: '1' };
+      if (cc) params.countrycodes = cc.toLowerCase();
+      center = hitOf((await nominatim(params))[0]);
+      if (!center) center = hitOf((await nominatim({ q: city, limit: '1', ...(cc ? { countrycodes: cc.toLowerCase() } : {}) }))[0]);
+    } catch (err) {
+      tried.push(`Ortszentrum: ${err.message}`);
+    }
+  }
+  const plausible = (p) => {
+    if (p.country && cc && p.country !== cc) return `liegt in ${p.country}, nicht in ${cc}`;
+    if (center) {
+      const d = distanceKm(center, p);
+      if (d > MAX_CITY_KM) return `${Math.round(d)} km vom Ortszentrum ${city}`;
+    }
+    return null;
+  };
+  const accept = (p, source, detail) => {
+    const why = plausible(p);
+    if (why) {
+      tried.push(`${source}: verworfen (${why})`);
+      return null;
+    }
+    const dist = center ? `, ${distanceKm(center, p).toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
+    return { lat: p.lat, lng: p.lng, source, detail: `${detail}${dist}`, url: p.url || p.osmUrl || null, tried };
+  };
+
+  // 1. Koordinaten direkt von der Website (Strukturdaten, Metatag, Kartenlink)
+  for (const g of candidates.geo || []) {
+    const r = accept(g, `Website (${g.kind})`, g.url);
+    if (r) return r;
+  }
+  // 2. Anschrift (Strukturdaten der Website oder KI-Auswertung mit Fundstelle) -> strukturierte Suche
+  for (const a of candidates.addresses || []) {
+    if (!a.street && !a.text) continue;
+    try {
+      const params = a.street
+        ? { street: a.street, city: a.city || city || '', ...(a.postal_code ? { postalcode: a.postal_code } : {}), limit: '1' }
+        : { q: a.text, limit: '1' };
+      const c = (a.country || cc || '').toLowerCase();
+      if (c) params.countrycodes = c;
+      const hit = hitOf((await nominatim(params))[0]);
+      if (!hit) {
+        tried.push(`Anschrift „${a.street || a.text}“: nicht gefunden`);
+        continue;
+      }
+      const r = accept(hit, 'Anschrift von der Website', `${a.street || a.text}${a.city ? `, ${a.city}` : ''} → ${hit.display}`);
+      if (r) return r;
+    } catch (err) {
+      tried.push(`Anschrift: ${err.message}`);
+    }
+  }
+  // 3. Name + Ort, dann Kernname (ohne „Hotel“, Sterne …), jeweils Nominatim und Photon (nur Unterkünfte)
+  const core = coreName(name);
+  const queries = [...new Set([[name, city].filter(Boolean).join(', '), core && city ? `${core}, ${city}` : null, core || null].filter(Boolean))];
+  for (const q of queries) {
+    try {
+      const hit = hitOf((await nominatim({ q, limit: '1', ...(cc ? { countrycodes: cc.toLowerCase() } : {}) }))[0]);
+      if (hit) {
+        const r = accept(hit, 'Namenssuche (Nominatim)', `„${q}“ → ${hit.display}`);
+        if (r) return r;
+      } else tried.push(`Nominatim „${q}“: nichts gefunden`);
+    } catch (err) {
+      tried.push(`Nominatim „${q}“: ${err.message}`);
+    }
+    try {
+      const hits = (await photon(q, { near: center })).filter((h) => LODGING_CATEGORY.test(h.category));
+      if (!hits.length) tried.push(`Photon „${q}“: keine Unterkunft gefunden`);
+      for (const h of hits.slice(0, 3)) {
+        const r = accept(h, 'Namenssuche (Photon)', `„${q}“ → ${h.display}`);
+        if (r) return r;
+      }
+    } catch (err) {
+      tried.push(`Photon „${q}“: ${err.message}`);
+    }
+  }
+  return { lat: null, lng: null, tried };
 }
 
 function distanceKm(a, b) {
@@ -109,4 +243,6 @@ async function suggestFacts(point, criteria) {
   return out;
 }
 
-module.exports = { geocode, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };
+module.exports = {
+  locate,
+  coreName, geocode, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };

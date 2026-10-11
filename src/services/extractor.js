@@ -6,6 +6,7 @@
 // Regel: Kein Wert ohne Fundstelle. Jede Angabe braucht URL + wörtlichen Textausschnitt,
 // der tatsächlich auf der abgerufenen Seite vorkommt – sonst wird sie verworfen.
 const config = require('../config');
+const sitedata = require('./sitedata');
 
 const MAX_PAGES = 10;
 
@@ -43,24 +44,66 @@ async function fetchText(url) {
   return { url: res.url, html };
 }
 
-async function disallowedPaths(origin) {
+// robots.txt: gesperrte Pfade für alle Bots und angegebene Sitemaps
+async function robotsInfo(origin) {
+  const info = { disallow: [], sitemaps: [] };
   try {
     const res = await fetch(`${origin}/robots.txt`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return [];
+    if (!res.ok) return info;
     const lines = (await res.text()).split('\n').map((l) => l.trim());
-    const out = [];
     let applies = false;
     for (const line of lines) {
       const [k, ...rest] = line.split(':');
       const key = (k || '').toLowerCase();
       const val = rest.join(':').trim();
       if (key === 'user-agent') applies = val === '*';
-      else if (applies && key === 'disallow' && val) out.push(val);
+      else if (applies && key === 'disallow' && val) info.disallow.push(val);
+      else if (key === 'sitemap' && /^https?:\/\//i.test(val)) info.sitemaps.push(val);
     }
-    return out;
+  } catch { /* ohne robots.txt */ }
+  return info;
+}
+
+// <loc>-Einträge einer Sitemap (oder eines Sitemap-Index)
+function parseSitemap(xml) {
+  const locs = [...String(xml).matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1].replace(/&amp;/g, '&'));
+  return { isIndex: /<sitemapindex[\s>]/i.test(xml), locs };
+}
+
+async function fetchXml(url) {
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    return (await res.text()).slice(0, 2_000_000);
   } catch {
-    return [];
+    return null;
   }
+}
+
+// URLs aus der Sitemap; bei einem Index die Teil-Sitemaps der Sprache/des Pfads der Startseite zuerst
+async function sitemapUrls(origin, declared, startPath) {
+  const first = declared.length ? declared : [`${origin}/sitemap.xml`, `${origin}/sitemap_index.xml`];
+  const urls = new Set();
+  for (const sm of first.slice(0, 3)) {
+    const xml = await fetchXml(sm);
+    if (!xml) continue;
+    const parsed = parseSitemap(xml);
+    if (!parsed.isIndex) {
+      parsed.locs.forEach((u) => urls.add(u));
+    } else {
+      const lang = startPath.split('/').filter(Boolean)[0] || '';
+      const children = parsed.locs
+        .sort((a, b) => Number(lang && b.includes(`/${lang}`)) - Number(lang && a.includes(`/${lang}`)))
+        .filter((u) => !/image|video|post|blog|news|product|attachment/i.test(u))
+        .slice(0, 4);
+      for (const c of children) {
+        const cx = await fetchXml(c);
+        if (cx) parseSitemap(cx).locs.forEach((u) => urls.add(u));
+      }
+    }
+    if (urls.size) break;
+  }
+  return [...urls].slice(0, 2000);
 }
 
 // Bewertet einen Link: Unterseiten des Hotels selbst und Ausstattungsseiten zuerst, Rechtliches/Blog nie.
@@ -85,41 +128,64 @@ function hintsFrom(labels) {
   return [...words];
 }
 
-// Startseite + passende Unterseiten derselben Domain
+function pageOf(fetched) {
+  return { url: fetched.url, text: htmlToText(fetched.html).slice(0, MAX_CHARS_PER_PAGE), data: sitedata.fromHtml(fetched.html) };
+}
+
+// Startseite + passende Unterseiten derselben Domain (Links der Startseite und Sitemap).
+// pages.more = weitere, noch nicht abgerufene Kandidaten für einen zweiten Durchgang.
 async function fetchSite(website, { labels = [] } = {}) {
   const start = await fetchText(website);
-  if (!start) return [];
+  if (!start) return Object.assign([], { more: [], origin: null });
   const origin = new URL(start.url).origin;
   const startPath = new URL(start.url).pathname.toLowerCase().replace(/\/?$/, '/');
-  const blocked = await disallowedPaths(origin);
-  const allowed = (u) => !blocked.some((p) => new URL(u).pathname.startsWith(p));
-  const pages = [{ url: start.url, text: htmlToText(start.html).slice(0, MAX_CHARS_PER_PAGE) }];
+  const robots = await robotsInfo(origin);
+  const allowed = (u) => !robots.disallow.some((p) => new URL(u).pathname.startsWith(p));
+  const pages = [pageOf(start)];
   const hints = hintsFrom(labels);
 
-  const links = new Map();
-  for (const m of start.html.matchAll(/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+  const links = new Map(); // url -> { score, text }
+  const consider = (href, text) => {
     try {
-      const u = new URL(m[1], start.url);
+      const u = new URL(href, start.url);
       u.hash = '';
-      if (u.origin !== origin || /\.(pdf|jpe?g|png|gif|svg|webp|zip|ics)$/i.test(u.pathname) || u.toString() === start.url) continue;
-      const text = htmlToText(m[2]).slice(0, 120);
+      if (u.origin !== origin || /\.(pdf|jpe?g|png|gif|svg|webp|zip|ics|xml)$/i.test(u.pathname) || u.toString() === start.url) return;
       const key = u.toString();
       const score = scoreLink(u, text, startPath, hints);
-      if (!links.has(key) || links.get(key) < score) links.set(key, score);
+      if (!links.has(key) || links.get(key).score < score) links.set(key, { score, text });
     } catch { /* ungültiger Link */ }
-  }
-  const candidates = [...links.entries()]
-    .filter(([u, s]) => s > -50 && allowed(u))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, MAX_PAGES - 1)
-    .map(([u]) => u);
-  for (const url of candidates) {
+  };
+  for (const m of start.html.matchAll(/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi)) consider(m[1], htmlToText(m[2]).slice(0, 120));
+  // Sitemap: findet Ausstattungsseiten, die nicht von der Startseite verlinkt sind (Link-Text unbekannt)
+  for (const u of await sitemapUrls(origin, robots.sitemaps, startPath)) consider(u, '');
+
+  const ranked = [...links.entries()].filter(([u, l]) => l.score > -50 && allowed(u)).sort((a, b) => b[1].score - a[1].score);
+  const take = ranked.slice(0, MAX_PAGES - 1).map(([u]) => u);
+  for (const url of take) {
     try {
       const page = await fetchText(url);
-      if (page) pages.push({ url: page.url, text: htmlToText(page.html).slice(0, MAX_CHARS_PER_PAGE) });
+      if (page && !pages.some((p) => p.url === page.url)) pages.push(pageOf(page));
     } catch { /* Seite überspringen */ }
   }
-  return pages;
+  return Object.assign(pages, { more: ranked.slice(MAX_PAGES - 1, 60).map(([url, l]) => ({ url, text: l.text })), origin, startPath });
+}
+
+// Zweiter Durchgang: weitere Seiten passend zu den noch fehlenden Angaben abrufen
+async function fetchMore(pages, labels, max = 6) {
+  const hints = hintsFrom(labels).filter((h) => !PAGE_HINTS.includes(h)).concat(PAGE_HINTS);
+  const startPath = pages.startPath || '/';
+  const ranked = (pages.more || [])
+    .map((c) => ({ ...c, score: scoreLink(new URL(c.url), c.text, startPath, hints) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max);
+  const out = [];
+  for (const c of ranked) {
+    try {
+      const page = await fetchText(c.url);
+      if (page && !pages.some((p) => p.url === page.url) && !out.some((p) => p.url === page.url)) out.push(pageOf(page));
+    } catch { /* Seite überspringen */ }
+  }
+  return out;
 }
 
 // ---------- Kontakt-E-Mail ----------
@@ -191,7 +257,7 @@ async function extractAnthropic({ ranking, criteria, entity, pages, features = [
 
   const extractable = criteria.filter((c) => describeCriterion(c));
   const askFeatures = features.filter((f) => !f.derive);
-  if ((!extractable.length && !askFeatures.length) || !pages.length) return { facts: [], features: [], usage: null };
+  if ((!extractable.length && !askFeatures.length) || !pages.length) return { facts: [], features: [], address: null, usage: null };
 
   const Schema = z.object({
     facts: z.array(
@@ -209,6 +275,14 @@ async function extractAnthropic({ ranking, criteria, entity, pages, features = [
         evidence_text: z.string(),
       })
     ),
+    // Postanschrift des Objekts (für die Koordinatensuche); null, wenn nicht eindeutig angegeben
+    address: z.object({
+      street: z.string(),
+      postal_code: z.string(),
+      city: z.string(),
+      evidence_url: z.string(),
+      evidence_text: z.string(),
+    }).nullable(),
   });
 
   const pageBlock = pages.map((p, i) => `<page index="${i + 1}" url="${p.url}">\n${p.text}\n</page>`).join('\n\n');
@@ -219,6 +293,8 @@ ${extractable.map(describeCriterion).join('\n')}
 
 Gib außerdem unter "features" nur die folgenden Leistungen an, wenn die Website sie ausdrücklich anbietet:
 ${askFeatures.map((f) => `- ${f.code}: ${f.label}`).join('\n')}
+
+Gib unter "address" die Postanschrift von „${entity.name}“ an (Straße mit Hausnummer, Postleitzahl, Ort), wenn sie auf den Seiten steht – nicht die einer Hotelkette, eines Büros oder eines anderen Hauses. Sonst null.
 
 Regeln:
 - Gib ein Kriterium nur an, wenn die Website es eindeutig belegt. Im Zweifel weglassen.
@@ -243,7 +319,7 @@ ${pageBlock}`;
   );
   // Bei Server-Fallback antwortet ggf. ein anderes Modell – gezählt wird das tatsächliche
   const usage = { model: response.model, raw: response.usage };
-  if (response.stop_reason === 'refusal' || !response.parsed_output) return { facts: [], features: [], usage };
+  if (response.stop_reason === 'refusal' || !response.parsed_output) return { facts: [], features: [], address: null, usage };
 
   const pageText = new Map(pages.map((p) => [p.url, normalizeWs(p.text)]));
   const out = [];
@@ -266,11 +342,21 @@ ${pageBlock}`;
     if (!feat || !quote || !source || !source.includes(quote) || featureOut.some((o) => o.featureId === feat.id)) continue;
     featureOut.push({ featureId: feat.id, evidenceUrl: f.evidence_url, evidenceText: f.evidence_text.slice(0, 500) });
   }
-  return { facts: out, features: featureOut, usage };
+  // Anschrift nur mit überprüfbarer Fundstelle
+  let address = null;
+  const a = response.parsed_output.address;
+  if (a && a.street && a.city) {
+    const quote = normalizeWs(a.evidence_text || '');
+    const source = pageText.get(a.evidence_url);
+    if (quote && source && source.includes(quote)) {
+      address = { street: a.street.trim().slice(0, 200), postal_code: a.postal_code.trim().slice(0, 20) || null, city: a.city.trim().slice(0, 120), url: a.evidence_url };
+    }
+  }
+  return { facts: out, features: featureOut, address, usage };
 }
 
 const providers = {
-  none: async () => ({ facts: [], features: [], usage: null }),
+  none: async () => ({ facts: [], features: [], address: null, usage: null }),
   anthropic: extractAnthropic,
 };
 
@@ -280,4 +366,4 @@ async function extract(args) {
   return provider(args);
 }
 
-module.exports = { extract, fetchSite, findContactEmail, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom };
+module.exports = { extract, fetchSite, fetchMore, findContactEmail, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };

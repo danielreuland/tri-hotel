@@ -1,5 +1,5 @@
 // Auto-Prüfung einer bestätigten Meldung:
-// Dublette? -> Objekt anlegen -> Geodaten -> Klima -> Website-Extraktion -> OSM-Vorschläge
+// Dublette? -> Objekt anlegen -> Website (Strukturdaten + KI, ggf. 2. Durchgang) -> Koordinaten -> Klima -> OSM-Vorschläge
 // -> Score + K.O. + Vollständigkeit -> Admin-Warteschlange.
 // Einzelne Schritte dürfen scheitern; sie landen im pipeline_log, der Admin entscheidet.
 const db = require('../db');
@@ -12,6 +12,52 @@ const climate = require('../services/climate');
 const extractor = require('../services/extractor');
 const featureService = require('../services/features');
 const llm = require('../lib/llm');
+const config = require('../config');
+const sitedata = require('../services/sitedata');
+
+// Zweiter Durchgang nur, wenn danach noch mehrere auslesbare Kriterien fehlen
+const MIN_MISSING_FOR_SECOND_PASS = 3;
+
+// Ein KI-Durchgang: extrahieren, Verbrauch protokollieren, Fakten und Leistungen als Vorschläge speichern
+async function extractRound(subId, ranking, criteria, entity, pages, features) {
+  const found = await extractor.extract({ ranking, criteria, entity, pages, features });
+  const cost = found.usage
+    ? await llm.record({ purpose: 'extraction', model: found.usage.model, usage: found.usage.raw, entityId: entity.id, submissionId: subId })
+    : null;
+  const n = await insertAutoFacts(entity.id, found.facts);
+  let nf = 0;
+  for (const f of found.features) {
+    const r = await db.query(
+      `INSERT INTO entity_features (entity_id, feature_id, source, trust_level, evidence_url, evidence_text)
+       VALUES ($1, $2, 'auto', 4, $3, $4) ON CONFLICT DO NOTHING`,
+      [entity.id, f.featureId, f.evidenceUrl, f.evidenceText]
+    );
+    nf += r.rowCount;
+  }
+  return { facts: n, features: nf, address: found.address || null, cost };
+}
+
+function sumCost(a, b) {
+  return { input: a.input + b.input, output: a.output + b.output, cacheRead: a.cacheRead + b.cacheRead, cacheWrite: a.cacheWrite + b.cacheWrite, usd: Math.round((a.usd + b.usd) * 10000) / 10000 };
+}
+
+// Auslesbare Kriterien (Option/Ja-Nein/Zahl), zu denen noch kein Wert vorliegt
+async function missingExtractable(entityId, rankingId, criteria) {
+  const have = new Set((await rankings.getFacts(entityId, rankingId)).map((f) => f.criterion_id));
+  return criteria.filter((c) => !have.has(c.id) && extractor.describeCriterion(c));
+}
+
+async function missingCatalogFeatures(entityId, catalog) {
+  const have = new Set((await db.many('SELECT feature_id FROM entity_features WHERE entity_id = $1', [entityId])).map((r) => r.feature_id));
+  return catalog.filter((f) => !f.derive && !have.has(f.id));
+}
+
+// Seiten nach Treffern der gesuchten Begriffe sortieren (Startseite bleibt vorn)
+function rankPages(pages, labels) {
+  const words = extractor.hintsFrom(labels).filter((w) => w.length >= 4);
+  const hits = (p) => words.reduce((n, w) => n + (p.text.toLowerCase().includes(w) ? 1 : 0), 0);
+  return [...pages].sort((a, b) => hits(b) - hits(a));
+}
 
 async function step(subId, name, fn) {
   try {
@@ -68,19 +114,78 @@ async function run(submissionId) {
     await db.query('UPDATE submissions SET entity_id = $2 WHERE id = $1', [sub.id, entity.id]);
   }
 
-  // 2. Geodaten
-  if (entity.lat === null) {
-    await step(sub.id, 'Koordinaten', async () => {
-      const hit = await geo.geocode({ name: entity.name, city: entity.city, country: entity.country });
-      if (!hit) throw new Error('Adresse nicht gefunden – bitte Koordinaten im Admin eintragen.');
-      await db.query('UPDATE entities SET lat = $2, lng = $3, updated_at = now() WHERE id = $1', [entity.id, hit.lat, hit.lng]);
-      entity.lat = hit.lat;
-      entity.lng = hit.lng;
-      return `${hit.lat}, ${hit.lng} (${hit.display})`;
+  // 2. Website lesen und auswerten (vor den Koordinaten: liefert Anschrift, Kartenlinks, Strukturdaten)
+  let site = { geo: [], addresses: [], emails: [], amenities: [] };
+  let found = { address: null };
+  if (entity.website) {
+    await step(sub.id, 'Website-Auswertung', async () => {
+      const catalog = await featureService.catalog(ranking.entity_type);
+      const labels = [...criteria.map((c) => c.label), ...catalog.map((f) => f.label)];
+      const pages = await extractor.fetchSite(entity.website, { labels });
+      if (!pages.length) throw new Error('Website nicht erreichbar.');
+      site = sitedata.merge(pages);
+      const res = await extractRound(sub.id, ranking, criteria, entity, pages, catalog);
+      found = res;
+      const parts = [`${pages.length} Seiten gelesen, ${res.facts} Werte und ${res.features} Leistungen mit Fundstelle übernommen.`];
+
+      // Zweiter, gezielter Durchgang für noch fehlende Kriterien (weitere Seiten passend zu deren Begriffen)
+      const missing = await missingExtractable(entity.id, ranking.id, criteria);
+      if (missing.length >= MIN_MISSING_FOR_SECOND_PASS && config.llm.provider !== 'none') {
+        const more = await extractor.fetchMore(pages, missing.map((c) => c.label));
+        const focus = rankPages([...more, ...pages], missing.map((c) => c.label)).slice(0, 10);
+        const missingFeatures = await missingCatalogFeatures(entity.id, catalog);
+        const res2 = await extractRound(sub.id, ranking, missing, entity, focus, missingFeatures);
+        if (!found.address && res2.address) found.address = res2.address;
+        if (res2.cost) res.cost = res.cost ? sumCost(res.cost, res2.cost) : res2.cost;
+        site = sitedata.merge([...pages, ...more]);
+        parts.push(`2. Durchgang (${missing.length} offene Kriterien, ${more.length} weitere Seiten): ${res2.facts} Werte, ${res2.features} Leistungen.`);
+      }
+
+      // Kontakt-E-Mail für spätere Anfragen (nur wenn noch keine eingetragen ist): Strukturdaten zuerst
+      const hit = site.emails[0] ? { email: site.emails[0].email, evidenceUrl: site.emails[0].url } : extractor.findContactEmail(pages, entity.website);
+      if (hit) {
+        const r = await db.query(
+          `UPDATE entities SET contact_email = $2, contact_email_source = 'website', contact_email_evidence = $3, updated_at = now()
+            WHERE id = $1 AND contact_email IS NULL`,
+          [entity.id, hit.email, hit.evidenceUrl]
+        );
+        if (r.rowCount) parts.push(`Kontakt-E-Mail: ${hit.email}.`);
+      } else {
+        parts.push('Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.');
+      }
+      // Anschrift merken (Stammdaten-Zusatz, mit Fundstelle)
+      const address = site.addresses.find((a) => a.street) || found.address;
+      if (address) {
+        await db.query(`UPDATE entities SET attributes = attributes || jsonb_build_object('address', $2::jsonb), updated_at = now() WHERE id = $1`,
+          [entity.id, JSON.stringify({ street: address.street || address.text || null, postal_code: address.postal_code || null, city: address.city || null, url: address.url })]);
+        parts.push(`Anschrift: ${address.street || address.text}${address.city ? `, ${address.city}` : ''}.`);
+      }
+      if (site.geo.length) parts.push(`Koordinaten auf der Website gefunden (${site.geo[0].kind}).`);
+      if (res.cost) parts.push(`KI gesamt: ${llm.formatTokens(res.cost)}.`);
+      return parts.join(' ');
     });
   }
 
-  // 3. Klima je Monat
+  // 3. Koordinaten: Website-Koordinaten -> Anschrift -> Namenssuche, jeweils gegen das Ortszentrum geprüft
+  if (entity.lat === null) {
+    await step(sub.id, 'Koordinaten', async () => {
+      const addresses = [...site.addresses];
+      if (found.address) addresses.push(found.address);
+      const hit = await geo.locate({ name: entity.name, city: entity.city, country: entity.country }, { geo: site.geo, addresses });
+      if (hit.lat === null) {
+        throw new Error(`Nicht gefunden – bitte Koordinaten im Admin eintragen. Versucht: ${hit.tried.join('; ') || '–'}`);
+      }
+      await db.query(
+        `UPDATE entities SET lat = $2, lng = $3, attributes = attributes || jsonb_build_object('geo_source', $4::text), updated_at = now() WHERE id = $1`,
+        [entity.id, hit.lat, hit.lng, `${hit.source}${hit.url ? ` (${hit.url})` : ''}`]
+      );
+      entity.lat = hit.lat;
+      entity.lng = hit.lng;
+      return `${hit.lat.toFixed(5)}, ${hit.lng.toFixed(5)} – ${hit.source}: ${hit.detail}`;
+    });
+  }
+
+  // 4. Klima je Monat
   if (entity.lat !== null) {
     await step(sub.id, 'Klima', async () => {
       const months = await climate.monthlyClimate({ lat: entity.lat, lng: entity.lng });
@@ -92,44 +197,6 @@ async function run(submissionId) {
         );
       }
       return '12 Monate von Open-Meteo übernommen.';
-    });
-  }
-
-  // 4. Website-Extraktion (jeder Wert mit Fundstelle)
-  if (entity.website) {
-    await step(sub.id, 'Website-Extraktion', async () => {
-      const catalog = await featureService.catalog(ranking.entity_type);
-      const pages = await extractor.fetchSite(entity.website, { labels: [...criteria.map((c) => c.label), ...catalog.map((f) => f.label)] });
-      const found = await extractor.extract({ ranking, criteria, entity, pages, features: catalog });
-      const cost = found.usage
-        ? await llm.record({ purpose: 'extraction', model: found.usage.model, usage: found.usage.raw, entityId: entity.id, submissionId: sub.id })
-        : null;
-      const n = await insertAutoFacts(entity.id, found.facts);
-      // Leistungen ohne Ableitung als Vorschlag (Stufe 4); bestehende nie überschreiben
-      let nf = 0;
-      for (const f of found.features) {
-        const r = await db.query(
-          `INSERT INTO entity_features (entity_id, feature_id, source, trust_level, evidence_url, evidence_text)
-           VALUES ($1, $2, 'auto', 4, $3, $4) ON CONFLICT DO NOTHING`,
-          [entity.id, f.featureId, f.evidenceUrl, f.evidenceText]
-        );
-        nf += r.rowCount;
-      }
-      // Kontakt-E-Mail für spätere Anfragen an den Betreiber (nur wenn noch keine eingetragen ist)
-      let contact = '';
-      const hit = extractor.findContactEmail(pages, entity.website);
-      if (hit) {
-        const r = await db.query(
-          `UPDATE entities SET contact_email = $2, contact_email_source = 'website', contact_email_evidence = $3, updated_at = now()
-            WHERE id = $1 AND contact_email IS NULL`,
-          [entity.id, hit.email, hit.evidenceUrl]
-        );
-        if (r.rowCount) contact = ` Kontakt-E-Mail: ${hit.email}.`;
-      } else {
-        contact = ' Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.';
-      }
-      const spent = cost ? ` KI: ${found.usage.model}, ${llm.formatTokens(cost)}.` : '';
-      return `${pages.length} Seiten gelesen, ${n} Werte und ${nf} Leistungen mit Fundstelle übernommen.${contact}${spent}`;
     });
   }
 
@@ -189,4 +256,4 @@ async function retryOsm(submissionId, attempt) {
     result.ko ? `K.O.: ${result.koReason}` : `Neu berechnet: ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`);
 }
 
-module.exports = { run, retryOsm, insertAutoFacts };
+module.exports = { run, retryOsm, insertAutoFacts, rankPages, sumCost };
