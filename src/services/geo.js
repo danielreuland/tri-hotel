@@ -102,23 +102,24 @@ const MAX_CITY_KM = 40;
 async function locate({ name, city, country }, candidates = {}) {
   const tried = [];
   const cc = country ? country.toUpperCase() : null;
-  let center = null;
+  // Ortszentren: gleichnamige Orte gibt es mehrfach (z. B. zwei „Hopfgarten“ in Tirol) – geprüft wird gegen den nächstgelegenen
+  let centers = [];
   if (city) {
     try {
-      const params = { city, limit: '1' };
+      const params = { city, limit: '5' };
       if (cc) params.countrycodes = cc.toLowerCase();
-      center = hitOf((await nominatim(params))[0]);
-      if (!center) center = hitOf((await nominatim({ q: city, limit: '1', ...(cc ? { countrycodes: cc.toLowerCase() } : {}) }))[0]);
+      centers = (await nominatim(params)).map(hitOf);
+      if (!centers.length) centers = (await nominatim({ q: city, limit: '5', ...(cc ? { countrycodes: cc.toLowerCase() } : {}) })).map(hitOf);
     } catch (err) {
       tried.push(`Ortszentrum: ${err.message}`);
     }
   }
+  const center = centers[0] || null;
+  const nearestCenterKm = (p) => (centers.length ? Math.min(...centers.map((c) => distanceKm(c, p))) : null);
   const plausible = (p) => {
     if (p.country && cc && p.country !== cc) return `liegt in ${p.country}, nicht in ${cc}`;
-    if (center) {
-      const d = distanceKm(center, p);
-      if (d > MAX_CITY_KM) return `${Math.round(d)} km vom Ortszentrum ${city}`;
-    }
+    const d = nearestCenterKm(p);
+    if (d !== null && d > MAX_CITY_KM) return `${Math.round(d)} km vom Ort ${city}`;
     return null;
   };
   const accept = (p, source, detail) => {
@@ -127,7 +128,8 @@ async function locate({ name, city, country }, candidates = {}) {
       tried.push(`${source}: verworfen (${why})`);
       return null;
     }
-    const dist = center ? `, ${distanceKm(center, p).toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
+    const d = nearestCenterKm(p);
+    const dist = d !== null ? `, ${d.toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
     return { lat: p.lat, lng: p.lng, source, detail: `${detail}${dist}`, url: p.url || p.osmUrl || null, tried };
   };
 
@@ -137,8 +139,12 @@ async function locate({ name, city, country }, candidates = {}) {
     if (r) return r;
   }
   // 2. Anschrift (Strukturdaten der Website oder KI-Auswertung mit Fundstelle) -> strukturierte Suche
+  const seenAddr = new Set();
   for (const a of candidates.addresses || []) {
     if (!a.street && !a.text) continue;
+    const key = `${a.street || a.text}|${a.postal_code || ''}|${a.city || ''}`.toLowerCase();
+    if (seenAddr.has(key)) continue;
+    seenAddr.add(key);
     try {
       const params = a.street
         ? { street: a.street, city: a.city || city || '', ...(a.postal_code ? { postalcode: a.postal_code } : {}), limit: '1' }
