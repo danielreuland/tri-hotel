@@ -54,6 +54,7 @@ function hitOf(h) {
   return h && {
     lat: Number(h.lat), lng: Number(h.lon), display: h.display_name, osmUrl: `https://www.openstreetmap.org/${h.osm_type}/${h.osm_id}`,
     category: `${h.category || h.class || ''}=${h.type || ''}`, country: h.address && h.address.country_code ? h.address.country_code.toUpperCase() : null,
+    postcode: (h.address && h.address.postcode) || null,
   };
 }
 
@@ -76,8 +77,9 @@ async function photon(q, { near } = {}) {
   const json = await res.json();
   return (json.features || []).map((f) => ({
     lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
-    display: [f.properties.name, f.properties.street, f.properties.city || f.properties.town || f.properties.village].filter(Boolean).join(', '),
+    display: [f.properties.name, f.properties.street, f.properties.postcode, f.properties.city || f.properties.town || f.properties.village, f.properties.district].filter(Boolean).join(', '),
     country: f.properties.countrycode ? f.properties.countrycode.toUpperCase() : null,
+    postcode: f.properties.postcode || null,
     category: `${f.properties.osm_key}=${f.properties.osm_value}`,
     osmUrl: `https://www.openstreetmap.org/${{ N: 'node', W: 'way', R: 'relation' }[f.properties.osm_type] || 'node'}/${f.properties.osm_id}`,
   }));
@@ -116,20 +118,24 @@ async function locate({ name, city, country }, candidates = {}) {
   }
   const center = centers[0] || null;
   const nearestCenterKm = (p) => (centers.length ? Math.min(...centers.map((c) => distanceKm(c, p))) : null);
-  const plausible = (p) => {
+  const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  // Starke Belege vor der Entfernung: gleiche Postleitzahl (Anschriftssuche) oder Ortsname im Treffer (Namenssuche)
+  const plausible = (p, { postalCode } = {}) => {
     if (p.country && cc && p.country !== cc) return `liegt in ${p.country}, nicht in ${cc}`;
+    if (postalCode && p.postcode && p.postcode.replace(/\s/g, '') === String(postalCode).replace(/\s/g, '')) return null;
+    if (city && norm(p.display).includes(norm(city))) return null;
     const d = nearestCenterKm(p);
     if (d !== null && d > MAX_CITY_KM) return `${Math.round(d)} km vom Ort ${city}`;
     return null;
   };
-  const accept = (p, source, detail) => {
-    const why = plausible(p);
+  const accept = (p, source, detail, opts) => {
+    const why = plausible(p, opts);
     if (why) {
       tried.push(`${source}: verworfen (${why})`);
       return null;
     }
     const d = nearestCenterKm(p);
-    const dist = d !== null ? `, ${d.toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
+    const dist = d !== null && d <= MAX_CITY_KM ? `, ${d.toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
     return { lat: p.lat, lng: p.lng, source, detail: `${detail}${dist}`, url: p.url || p.osmUrl || null, tried };
   };
 
@@ -156,7 +162,7 @@ async function locate({ name, city, country }, candidates = {}) {
         tried.push(`Anschrift „${a.street || a.text}“: nicht gefunden`);
         continue;
       }
-      const r = accept(hit, 'Anschrift von der Website', `${a.street || a.text}${a.city ? `, ${a.city}` : ''} → ${hit.display}`);
+      const r = accept(hit, 'Anschrift von der Website', `${a.street || a.text}${a.city ? `, ${a.city}` : ''} → ${hit.display}`, { postalCode: a.postal_code });
       if (r) return r;
     } catch (err) {
       tried.push(`Anschrift: ${err.message}`);
