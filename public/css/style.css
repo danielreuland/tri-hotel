@@ -416,6 +416,7 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 
 /* Startseite: Kopfbereich läuft ohne Kante in den Inhalt über */
 .hero-band { border-bottom: 0; }
-.hero-band.has-photo::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 140px; z-index: 1;
-  background: linear-gradient(to bottom, transparent, var(--bg)); pointer-events: none; }
+.hero-band.has-photo::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 45%; min-height: 160px; z-index: 1; pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 0%, transparent) 0%, color-mix(in srgb, var(--bg) 35%, transparent) 40%,
+    color-mix(in srgb, var(--bg) 80%, transparent) 75%, var(--bg) 100%); }
 .hero-band + .section { padding-top: 24px; }
