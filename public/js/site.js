@@ -32,3 +32,21 @@ if (mapBtn) {
     document.body.appendChild(js);
   });
 }
+
+// Fakten: alle Kategorien auf- bzw. zuklappen
+document.querySelectorAll('[data-toggle-all]').forEach(function (btn) {
+  var box = document.getElementById(btn.getAttribute('data-toggle-all'));
+  if (!box) return;
+  var items = box.querySelectorAll('details');
+  var sync = function () {
+    var allOpen = Array.prototype.every.call(items, function (d) { return d.open; });
+    btn.textContent = btn.getAttribute(allOpen ? 'data-open-text' : 'data-closed-text');
+    return allOpen;
+  };
+  btn.addEventListener('click', function () {
+    var open = !sync();
+    items.forEach(function (d) { d.open = open; });
+    sync();
+  });
+  items.forEach(function (d) { d.addEventListener('toggle', sync); });
+});

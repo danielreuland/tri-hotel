@@ -81,10 +81,19 @@
 
 <div class="grid grid-2 grid-content" style="margin-top:8px">
   <section>
-    <h2>Fakten</h2>
-    <% groups.forEach(function (g) { %>
-      <div class="facts-cat">
-        <h3><span><%= g.label %></span><small><%= g.points %> / <%= g.max %></small></h3>
+    <div class="facts-head">
+      <h2>Fakten</h2>
+      <button type="button" class="linklike" data-toggle-all="facts" data-open-text="alle zuklappen" data-closed-text="alle aufklappen">alle aufklappen</button>
+    </div>
+    <div class="facts-groups" id="facts">
+    <% groups.forEach(function (g) { var unknown = g.items.filter(function (it) { return it.value === null }).length; var pct = g.max ? Math.round(100 * g.points / g.max) : 0; %>
+      <details class="facts-cat">
+        <summary>
+          <span class="cat"><%= g.label %></span>
+          <span class="bar" aria-hidden="true"><span style="width:<%= pct %>%"></span></span>
+          <span class="pts"><%= g.points %> / <%= g.max %></span>
+          <small class="sub"><%= g.items.length %> <%= g.items.length === 1 ? 'Kriterium' : 'Kriterien' %><%= unknown ? ' · ' + unknown + ' unbekannt' : '' %></small>
+        </summary>
         <% g.items.forEach(function (it) { %>
           <div class="fact">
             <span><%= it.label %></span>
@@ -98,8 +107,9 @@
             <% } %>
           </div>
         <% }) %>
-      </div>
+      </details>
     <% }) %>
+    </div>
     <p class="muted">Fehlt etwas oder stimmt ein Wert nicht? Schreib uns – wir prüfen jede Rückmeldung.</p>
   </section>
 
