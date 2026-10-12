@@ -412,3 +412,4 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .lbl-inquiry_failed { background: #cf222e; } .lbl-recheck { background: #b45309; } .lbl-image_rights { background: #be185d; }
 .lbl-stuck { background: #57606a; } .lbl-unconfirmed { background: #0369a1; } .lbl-manual { background: #374151; }
 .pill-row .badge.lbl:not(.on) { opacity: .55; }
+.task-card li { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

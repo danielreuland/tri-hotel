@@ -49,7 +49,7 @@
             <h3><% if (t.link) { %><a href="<%= t.link %>"><%= t.title %></a><% } else { %><%= t.title %><% } %></h3>
             <% if (lines.length) { %>
               <ul>
-                <% lines.slice(0, 4).forEach(function (l) { %><li class="lvl-<%= l.level %>"><%= l.text %></li><% }) %>
+                <% lines.slice(0, 4).forEach(function (l) { %><li class="lvl-<%= l.level %>" title="<%= l.text %>"><%= l.text %></li><% }) %>
                 <% if (lines.length > 4) { %><li class="muted">+ <%= lines.length - 4 %> weitere</li><% } %>
               </ul>
             <% } %>
