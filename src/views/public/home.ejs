@@ -5,7 +5,7 @@
   var methodHref = base + (isHostRanking ? scorePath : '/methodik');
   var formula = Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {});
   var maxWeight = Math.max.apply(null, weights.map(function (w) { return w.max }).concat([1]));
-  var checkedCount = ranked.length + incomplete.length;
+
 %>
 
 <% var heroImg = siteMedia.slots.home_hero, ctaImg = siteMedia.slots.cta_band; %>
@@ -52,13 +52,6 @@
     <% } %>
   </div>
 </section>
-
-<div class="stats">
-  <div><strong><%= checkedCount %></strong><span><%= ranking.entity_label_pl %> geprüft</span></div>
-  <div><strong><%= criteriaCount %></strong><span>Kriterien</span></div>
-  <div><strong><%= weights.length %></strong><span>Kategorien</span></div>
-  <div><strong>0–100</strong><span><%= ranking.score_name %>, Formel öffentlich</span></div>
-</div>
 
 <section class="section" id="ranking">
   <div class="wrap">
