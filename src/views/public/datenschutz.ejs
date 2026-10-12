@@ -1,19 +1,81 @@
 <%- include('../partials/head') %>
-<h1>Datenschutz</h1>
-<div class="card">
-  <!-- ENTWURF: vor dem Livegang vervollständigen und rechtlich prüfen lassen. -->
-  <h3>Verantwortlicher</h3>
-  <p>Siehe <a href="/impressum">Impressum</a>.</p>
-  <h3>Formular „hinzufügen“</h3>
-  <p>Wenn du einen Eintrag vorschlägst, speichern wir deine Angaben und deine E-Mail-Adresse, um dir den Bestätigungslink und Nachrichten zu diesem Vorschlag zu schicken (Art. 6 Abs. 1 lit. a und b DSGVO). Deine IP-Adresse speichern wir nicht im Klartext, sondern nur als Hashwert zum Schutz vor Missbrauch.</p>
-  <p>Für den Mailversand nutzen wir einen Dienstleister mit Serverstandort in der EU: [Anbieter].</p>
-  <h3>Anfragen an Betreiber</h3>
-  <p>Um Angaben auf einem Profil zu bestätigen, schreiben wir die öffentlich angegebene Kontaktadresse des Betriebs an. Antworten und hochgeladene Fotos (mit der im Formular erteilten Nutzungserlaubnis) speichern wir zu diesem Zweck; Fotos erscheinen erst nach unserer Prüfung und können jederzeit per E-Mail zurückgezogen werden.</p>
-  <h3>Karten</h3>
-  <p>Karten werden erst geladen, wenn du auf „Karte laden“ klickst. Dann werden Kartendaten von OpenStreetMap (OpenStreetMap Foundation) und die Kartenbibliothek von unpkg.com abgerufen; dabei wird deine IP-Adresse an diese Server übertragen.</p>
-  <h3>Admin-Login</h3>
-  <p>Für den Adminbereich wird ein technisch notwendiges Session-Cookie gesetzt. Für Besucher setzen wir keine Cookies.</p>
-  <h3>Deine Rechte</h3>
-  <p>Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit, Widerspruch und Beschwerde bei einer Aufsichtsbehörde.</p>
+<%
+  var legal = (site && site.legal) || {};
+  var lines = function (t) { return String(t || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean); };
+  var email = legal.email || site.mail_from;
+  var R = retention;
+%>
+<h1>Datenschutzerklärung</h1>
+<div class="card legal">
+  <p class="muted">Stand: <%= legalDate %> · <a href="/privacy" hreflang="en" lang="en">English version</a></p>
+
+  <h2>1. Verantwortlicher</h2>
+  <p><%= legal.owner || '[Anbieter fehlt]' %><br><% lines(legal.address).forEach(function (l) { %><%= l %><br><% }) %>
+    E-Mail: <a href="mailto:<%= email %>"><%= email %></a><% if (legal.phone) { %> · Telefon: <%= legal.phone %><% } %></p>
+  <p>Ein Datenschutzbeauftragter ist nicht benannt, weil keine gesetzliche Pflicht dazu besteht. Bei Fragen zum Datenschutz schreib uns an die oben genannte Adresse.</p>
+
+  <h2>2. Überblick</h2>
+  <p>Wir verarbeiten personenbezogene Daten nur, soweit es für den Betrieb dieser Website und ihre Funktionen nötig ist. Für Besucher setzen wir <strong>keine Tracking-Cookies</strong> und binden beim normalen Seitenaufruf <strong>keine Inhalte von Drittanbietern</strong> ein: Schriften, Bilder und Skripte liefern wir vom eigenen Server aus.</p>
+
+  <h2>3. Hosting und Server-Logdateien</h2>
+  <p>Die Website, die Datenbank und unser E-Mail-Postfach liegen bei der IONOS SE, Elgendorfer Str. 57, 56410 Montabaur, auf Servern in Deutschland. Mit IONOS besteht ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO).</p>
+  <p>Beim Aufruf einer Seite verarbeitet der Server technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Statuscode, übertragene Datenmenge, Referrer und Browserkennung. Das dient der Auslieferung der Seite, der Sicherheit und der Fehlersuche (Art. 6 Abs. 1 lit. f DSGVO). Logdateien mit IP-Adressen löschen wir spätestens nach 7 Tagen.</p>
+
+  <h2>4. Cookies und Speicher im Browser</h2>
+  <p>Besucher erhalten von uns keine Cookies. Wählst du „hell“ oder „dunkel“, merkt sich dein Browser diese Einstellung im lokalen Speicher (localStorage); sie verlässt dein Gerät nicht. Das ist für die von dir gewünschte Funktion unbedingt erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Du kannst den Eintrag jederzeit über die Browsereinstellungen löschen.</p>
+  <p>Nur für den internen Adminbereich setzen wir ein technisch notwendiges Sitzungs-Cookie; die Anmeldung dort erfolgt über Google (Google Ireland Limited) und betrifft ausschließlich unser Team.</p>
+  <% if (plausibleSrc) { %>
+    <h2>5. Reichweitenmessung</h2>
+    <p>Wir messen Seitenaufrufe mit Plausible Analytics, ohne Cookies und ohne Profile über einzelne Besucher. Dabei werden keine personenbezogenen Daten gespeichert; die IP-Adresse wird nur kurzzeitig zur Bildung einer täglich wechselnden, nicht rückführbaren Kennung verwendet (Art. 6 Abs. 1 lit. f DSGVO).</p>
+  <% } %>
+
+  <h2 id="vorschlag">Vorschlag „hinzufügen“</h2>
+  <p>Wenn du eine Unterkunft vorschlägst, verarbeiten wir deine Angaben zur Unterkunft, deine E-Mail-Adresse und – falls angegeben – deine Rolle und Hinweise. Mit der E-Mail-Adresse schicken wir dir einen Bestätigungslink (damit niemand fremde Adressen eintragen kann) und Nachrichten zu genau diesem Vorschlag. Rechtsgrundlage ist unser berechtigtes Interesse an einer vollständigen, missbrauchsfreien Übersicht und dein Interesse an der Bearbeitung (Art. 6 Abs. 1 lit. f DSGVO).</p>
+  <p>Zum Schutz vor Missbrauch speichern wir deine IP-Adresse nicht im Klartext, sondern nur als nicht umkehrbaren Hashwert; diesen löschen wir nach <%= R.ipHashDays %> Tagen. Deine E-Mail-Adresse löschen wir <%= R.submitterMonths %> Monate nach Abschluss des Vorschlags (online, abgelehnt oder verfallen). Unbestätigte Vorschläge verfallen nach 72 Stunden.</p>
+
+  <h2 id="kontakt">Kontaktformular und E-Mail</h2>
+  <p>Schreibst du uns über das Kontaktformular oder per E-Mail, verarbeiten wir deine Nachricht, deine E-Mail-Adresse und – falls angegeben – deinen Namen, um dir zu antworten (Art. 6 Abs. 1 lit. f DSGVO, bei Anfragen zu einem Vertrag lit. b). Beim Formular speichern wir zum Schutz vor Missbrauch einen Hashwert der IP-Adresse für <%= R.ipHashDays %> Tage. Nachrichten löschen wir <%= R.contactMonths %> Monate nach Erledigung, sofern keine Aufbewahrungspflicht besteht.</p>
+
+  <h2 id="betreiber">Anfragen an Betreiber von Unterkünften</h2>
+  <p>Damit Angaben auf einem Profil stimmen, schreiben wir die öffentlich angegebene Kontaktadresse des Betriebs an und bitten um Bestätigung einzelner Angaben (Art. 6 Abs. 1 lit. f DSGVO; berechtigtes Interesse an korrekten Informationen). Die Nachricht formuliert unsere KI-Assistenz und ist als solche gekennzeichnet; freigegeben wird sie von unserem Team. Über einen persönlichen Link können Betreiber antworten. Wir speichern die Antworten, den angegebenen Namen und eine freie Nachricht; Name und Nachricht löschen wir <%= R.inquiryMonths %> Monate nach Abschluss der Anfrage, die bestätigten Angaben bleiben als Teil des Profils erhalten.</p>
+  <p>Hochgeladene Fotos und weitere Erlaubnisse (z. B. Nutzung in sozialen Medien, Kontakt zu Partnerangeboten) verarbeiten wir nur mit ausdrücklicher Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Wir protokollieren Zeitpunkt, Wortlaut und Absender der Einwilligung als Nachweis (Art. 7 Abs. 1 DSGVO). Eine Einwilligung kann jederzeit per E-Mail widerrufen werden; die betroffenen Fotos entfernen wir dann. Den Nachweis bewahren wir nach einem Widerruf noch <%= R.consentYearsAfterEnd %> Jahre auf.</p>
+
+  <h2 id="profile">Profile von Unterkünften und Auswertung öffentlicher Quellen</h2>
+  <p>Profile enthalten Angaben über Unterkünfte, die wir öffentlich zugänglichen Quellen entnehmen (vor allem der Website des Betriebs, OpenStreetMap, Wetterdaten von Open-Meteo) und von Hand prüfen. Soweit dabei Daten einer Person betroffen sind – etwa bei inhabergeführten Häusern – ist Rechtsgrundlage unser berechtigtes Interesse an einer neutralen, vollständigen Übersicht (Art. 6 Abs. 1 lit. f DSGVO). Beim Auslesen der Websites und für Textentwürfe nutzen wir den KI-Dienst der Anthropic PBC (USA); übermittelt werden dabei öffentliche Inhalte der Hotel-Website und unsere Profildaten, keine Daten von Besuchern dieser Seite. Grundlage der Übermittlung sind die Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO); Anthropic verwendet die Daten nach seinen Geschäftsbedingungen nicht zum Training seiner Modelle.</p>
+  <p>Der Score ist eine Bewertung von Unterkünften, keine automatisierte Entscheidung über Personen im Sinne von Art. 22 DSGVO.</p>
+
+  <h2 id="karten">Karten</h2>
+  <p>Karten laden wir erst, wenn du auf „Karte laden“ klickst. Dann ruft dein Browser Kartenkacheln von den Servern der OpenStreetMap Foundation (St John’s Innovation Centre, Cowley Road, Cambridge, CB4 0WS, Vereinigtes Königreich) ab; dabei wird deine IP-Adresse dorthin übertragen. Für das Vereinigte Königreich besteht ein Angemessenheitsbeschluss der EU-Kommission. Rechtsgrundlage ist deine Einwilligung durch den Klick (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Die Kartenbibliothek selbst liefern wir vom eigenen Server aus.</p>
+
+  <h2>Links zu Buchungsportalen</h2>
+  <p>Als „Anzeige“ gekennzeichnete Links führen zu Buchungsportalen. Erst wenn du einen solchen Link anklickst, verlässt du unsere Seite; ab dann gelten die Datenschutzhinweise des jeweiligen Anbieters.</p>
+
+  <h2>Empfänger</h2>
+  <ul>
+    <li>IONOS SE (Hosting, Datenbank, E-Mail) – Auftragsverarbeiter, Deutschland</li>
+    <li>Anthropic PBC (KI-Auswertung öffentlicher Hotel-Inhalte, Textentwürfe) – Auftragsverarbeiter, USA, Standardvertragsklauseln</li>
+    <li>OpenStreetMap Foundation (Kartenkacheln, nur nach Klick auf „Karte laden“) – Vereinigtes Königreich</li>
+    <li>Google Ireland Limited (Anmeldung im internen Adminbereich, nur unser Team)</li>
+  </ul>
+
+  <h2 id="rechte">Deine Rechte</h2>
+  <p>Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und kannst erteilte Einwilligungen jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3). Eine E-Mail an <a href="mailto:<%= email %>"><%= email %></a> genügt.</p>
+  <div class="notice">
+    <p style="margin:0"><strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Soweit wir Daten auf Grundlage berechtigter Interessen verarbeiten (Art. 6 Abs. 1 lit. f DSGVO), kannst du aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe nachweisen, die deine Interessen überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.</p>
+  </div>
+  <p>Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO). Für uns zuständig ist:<br>
+    <% lines(legal.authority).forEach(function (l) { %><%= l %><br><% }) %><% if (!legal.authority) { %>[Aufsichtsbehörde fehlt]<% } %></p>
+
+  <h2>Speicherdauer im Überblick</h2>
+  <table>
+    <tr><td>Server-Logdateien mit IP-Adresse</td><td>höchstens 7 Tage</td></tr>
+    <tr><td>IP-Hash aus Formularen</td><td><%= R.ipHashDays %> Tage</td></tr>
+    <tr><td>E-Mail-Adresse aus Vorschlägen</td><td><%= R.submitterMonths %> Monate nach Abschluss</td></tr>
+    <tr><td>Kontaktnachrichten</td><td><%= R.contactMonths %> Monate nach Erledigung</td></tr>
+    <tr><td>Protokoll versendeter E-Mails</td><td><%= R.emailLogMonths %> Monate</td></tr>
+    <tr><td>Name und Nachricht aus Betreiber-Antworten</td><td><%= R.inquiryMonths %> Monate nach Abschluss der Anfrage</td></tr>
+    <tr><td>Einwilligungsnachweise</td><td>bis <%= R.consentYearsAfterEnd %> Jahre nach Widerruf</td></tr>
+  </table>
+  <p class="muted"><small>Gesetzliche Aufbewahrungspflichten (z. B. für geschäftliche Korrespondenz) bleiben unberührt.</small></p>
 </div>
 <%- include('../partials/foot') %>

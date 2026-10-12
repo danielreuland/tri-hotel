@@ -1,13 +1,31 @@
 <%- include('../partials/head') %>
-<% var legal = (site && site.legal) || {}; %>
+<%
+  var legal = (site && site.legal) || {};
+  var lines = function (t) { return String(t || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean); };
+  var email = legal.email || site.mail_from;
+%>
 <h1>Impressum</h1>
-<div class="card">
-  <!-- Angaben kommen aus sites.legal (Admin › Sites). Vor dem Livegang vervollständigen und rechtlich prüfen lassen. -->
-  <p><strong>Angaben gemäß § 5 DDG</strong></p>
-  <p><%= legal.owner || '[Name]' %><br><%- (legal.address || '[Straße Nr.], [PLZ Ort]').split('\n').map(function (l) { return l.replace(/&/g, '&amp;').replace(/</g, '&lt;') }).join('<br>') %></p>
-  <p>E-Mail: <%= legal.email || site.mail_from %></p>
-  <p><strong>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:</strong> <%= legal.responsible || legal.owner || '[Name, Anschrift]' %></p>
-  <p><strong>Hinweis zu Werbung:</strong> Buchungslinks sind Affiliate-Links und als „Anzeige“ gekennzeichnet. Sie haben keinen Einfluss auf Score oder Reihenfolge.</p>
-  <p><strong>KI-Assistenz:</strong> Einige Nachrichten an Betreiber werden von unserer KI-Assistenz verfasst und sind als solche gekennzeichnet. Antworten liest ein Mensch aus unserem Team.</p>
+<div class="card legal">
+  <h2>Angaben gemäß § 5 DDG</h2>
+  <p><%= legal.owner || '[Anbieter fehlt]' %><br>
+    <% lines(legal.address).forEach(function (l, i) { %><%= l %><br><% }) %><% if (!legal.address) { %>[Anschrift fehlt]<br><% } %></p>
+
+  <h2>Kontakt</h2>
+  <p>E-Mail: <a href="mailto:<%= email %>"><%= email %></a><br>
+    <% if (legal.phone) { %>Telefon: <%= legal.phone %><br><% } %>
+    Kontaktformular: <a href="/kontakt"><%= site.primary_domain %>/kontakt</a></p>
+
+  <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+  <p><%= legal.responsible || legal.owner || '[fehlt]' %><% if (!legal.responsible || /wie oben/i.test(legal.responsible)) { %><br>Anschrift wie oben<% } %></p>
+
+  <h2>Redaktionelle Grundsätze</h2>
+  <p><%= site.name %> bewertet Unterkünfte nach einer öffentlich einsehbaren Methode. Werbung, Affiliate-Links und Partnerschaften haben keinen Einfluss auf Score oder Reihenfolge. Buchungslinks sind als „Anzeige“ gekennzeichnet; bei einer Buchung über einen solchen Link erhalten wir gegebenenfalls eine Provision.</p>
+  <p>Einige Arbeitsschritte unterstützt Software mit künstlicher Intelligenz: das Auslesen öffentlicher Angaben von Hotel-Websites (als Vorschlag, den wir prüfen), Entwürfe für Beschreibungstexte (von uns geprüft und freigegeben) und Anfragen an Betreiber, die als Nachricht unserer KI-Assistenz gekennzeichnet sind. Antworten liest ein Mensch aus unserem Team.</p>
+
+  <h2>Bildnachweise</h2>
+  <p>Stimmungsbilder stammen von Unsplash (Unsplash-Lizenz); der Urhebervermerk steht jeweils am Bild. Fotos von Unterkünften zeigen wir nur mit Erlaubnis der Rechteinhaber, ebenfalls mit Urhebervermerk.</p>
+
+  <h2>Verbraucherstreitbeilegung</h2>
+  <p>Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
 </div>
 <%- include('../partials/foot') %>

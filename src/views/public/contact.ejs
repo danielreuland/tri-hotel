@@ -1,0 +1,20 @@
+<%- include('../partials/head') %>
+<h1>Kontakt</h1>
+<% if (sent) { %>
+  <div class="card"><p style="margin:0"><strong>Danke für deine Nachricht!</strong> Wir melden uns in der Regel innerhalb von zwei Werktagen per E-Mail.</p></div>
+<% } else { %>
+  <p class="lead">Fragen, Hinweise zu einem Eintrag oder eine Korrektur? Schreib uns – wir antworten per E-Mail, meist innerhalb von zwei Werktagen. Oder direkt an <a href="mailto:<%= (site && site.legal && site.legal.email) || site.mail_from %>"><%= (site && site.legal && site.legal.email) || site.mail_from %></a>.</p>
+  <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+  <form method="post" class="card" novalidate>
+    <div class="form-row">
+      <div><label for="c-name">Name <small class="muted">optional</small></label><input id="c-name" name="name" type="text" maxlength="120" value="<%= form.name || '' %>" autocomplete="name"></div>
+      <div><label for="c-email">E-Mail *</label><input id="c-email" name="email" type="email" maxlength="200" required value="<%= form.email || '' %>" autocomplete="email"></div>
+    </div>
+    <label for="c-msg">Nachricht *</label>
+    <textarea id="c-msg" name="message" rows="7" maxlength="5000" required><%= form.message || '' %></textarea>
+    <div class="hp" aria-hidden="true"><label for="company_url">Bitte leer lassen</label><input id="company_url" name="company_url" type="text" tabindex="-1" autocomplete="off"></div>
+    <label class="inline"><input type="checkbox" name="privacy" required> <span>Ich habe die <a href="/datenschutz#kontakt" target="_blank">Hinweise zum Datenschutz</a> gelesen. Meine Angaben werden nur zur Beantwortung verwendet. *</span></label>
+    <p style="margin-bottom:0"><button class="btn" type="submit">Nachricht senden</button></p>
+  </form>
+<% } %>
+<%- include('../partials/foot') %>

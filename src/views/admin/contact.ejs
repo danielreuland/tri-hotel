@@ -1,0 +1,22 @@
+<%- include('../partials/admin-head') %>
+<h1>Kontakt</h1>
+<p class="muted">Nachrichten aus dem Kontaktformular. Antwort per E-Mail; danach als erledigt markieren. Erledigte Nachrichten werden nach 12 Monaten gelöscht.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<h2>Offen (<%= open.length %>)</h2>
+<% if (!open.length) { %><p class="card">Keine offenen Nachrichten.</p><% } %>
+<% open.forEach(function (m) { %>
+  <article class="card" id="m-<%= m.id %>" style="margin-bottom:10px">
+    <p style="margin-top:0"><strong><%= m.name || 'ohne Namen' %></strong> · <a href="mailto:<%= m.email %>?subject=<%= encodeURIComponent('Deine Nachricht an uns') %>"><%= m.email %></a> <small class="muted">· <%= new Date(m.created_at).toLocaleString('de-DE') %></small></p>
+    <p style="white-space:pre-wrap"><%= m.message %></p>
+    <form method="post" action="/admin/kontakt/<%= m.id %>/erledigt"><button class="btn small" type="submit">Erledigt</button></form>
+  </article>
+<% }) %>
+<% if (handled.length) { %>
+  <details style="margin-top:16px"><summary>Erledigt (<%= handled.length %>)</summary>
+    <% handled.forEach(function (m) { %>
+      <div class="card" style="margin-top:8px"><small class="muted"><%= m.name || 'ohne Namen' %> · <%= m.email %> · <%= new Date(m.created_at).toLocaleDateString('de-DE') %> · erledigt <%= new Date(m.handled_at).toLocaleDateString('de-DE') %><%= m.handled_by_email ? ' von ' + m.handled_by_email : '' %></small>
+        <p style="white-space:pre-wrap;margin-bottom:0"><%= m.message %></p></div>
+    <% }) %>
+  </details>
+<% } %>
+<%- include('../partials/admin-foot') %>

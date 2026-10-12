@@ -39,7 +39,11 @@
     <div><label>E-Mail</label><input name="legal_email" type="email" value="<%= l.email || '' %>"></div>
     <div><label>Verantwortlich (MStV)</label><input name="legal_responsible" type="text" value="<%= l.responsible || '' %>"></div>
   </div>
-  <label>Anschrift</label><textarea name="legal_address" style="min-height:70px"><%= l.address || '' %></textarea>
+  <div class="form-row">
+    <div><label>Telefon <small class="muted">optional – zweiter Kontaktweg ist das Kontaktformular</small></label><input name="legal_phone" type="text" value="<%= l.phone || '' %>"></div>
+  </div>
+  <label>Anschrift <small class="muted">ladungsfähig, kein Postfach</small></label><textarea name="legal_address" style="min-height:70px"><%= l.address || '' %></textarea>
+  <label>Datenschutz-Aufsichtsbehörde <small class="muted">nach Sitz des Anbieters; Name, Anschrift, Website – eine Zeile je Angabe</small></label><textarea name="legal_authority" style="min-height:70px"><%= l.authority || '' %></textarea>
   <p><button class="btn" type="submit"><%= isNew ? 'Anlegen' : 'Speichern' %></button></p>
 </form>
 

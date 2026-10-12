@@ -17,6 +17,7 @@ async function start() {
   await boss.createQueue('inquiry-send');
   await boss.createQueue('inquiry-daily');
   await boss.createQueue('osm-retry');
+  await boss.createQueue('retention');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -43,6 +44,14 @@ async function start() {
     if (r.expired || r.reminded) console.log(`[jobs] Anfragen: ${r.reminded} erinnert, ${r.expired} verfallen`);
   });
   await boss.schedule('inquiry-daily', '0 8 * * *');
+
+  // Löschfristen (täglich 3:30 Uhr)
+  await boss.work('retention', async () => {
+    const r = await require('../services/retention').run();
+    const n = Object.values(r).reduce((a, b) => a + b, 0);
+    if (n) console.log('[jobs] Löschfristen:', JSON.stringify(r));
+  });
+  await boss.schedule('retention', '30 3 * * *');
 
   const enqueue = (name, data, opts = {}) => boss.send(name, data, { retryLimit: 2, retryDelay: 60, ...opts });
   submissions.setEnqueue(enqueue);

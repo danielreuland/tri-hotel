@@ -15,6 +15,7 @@ const LABELS = {
   image_rights: 'Bildrechte',
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
+  contact: 'Kontaktanfrage',
   manual: 'Eigene Aufgabe',
 };
 // Punkte, die eine eigene Karte haben, erscheinen nicht noch einmal im Prüfbericht
@@ -80,6 +81,11 @@ async function collect() {
     } else if (new Date(s.updated_at) < new Date(Date.now() - 3600 * 1000)) {
       push({ source: 'stuck', source_key: `stuck:${s.id}`, title: s.entity_name, detail: [{ level: 'block', text: 'Auto-Prüfung seit über einer Stunde ohne Ergebnis – erneut starten' }], link: detailLink(s.id), entity_id: null });
     }
+  }
+  // Kontaktformular: offene Nachrichten
+  for (const m of await db.many(`SELECT id, name, email, message FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`)) {
+    push({ source: 'contact', source_key: `contact:${m.id}`, title: m.name ? `${m.name} (${m.email})` : m.email,
+      detail: [{ level: 'todo', text: m.message.replace(/\s+/g, ' ').slice(0, 300) }], link: `/admin/kontakt#m-${m.id}`, entity_id: null });
   }
   return out;
 }

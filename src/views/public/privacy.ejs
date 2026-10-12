@@ -1,0 +1,35 @@
+<%- include('../partials/head') %>
+<%
+  var legal = (site && site.legal) || {};
+  var lines = function (t) { return String(t || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean); };
+  var email = legal.email || site.mail_from;
+  var R = retention;
+%>
+<div lang="en">
+<h1>Privacy policy</h1>
+<div class="card legal">
+  <p class="muted">Last updated: <%= legalDate %> · This is a translation; the <a href="/datenschutz" hreflang="de">German version</a> is authoritative.</p>
+
+  <h2>Controller</h2>
+  <p><%= legal.owner || '' %><br><% lines(legal.address).forEach(function (l) { %><%= l %><br><% }) %>Email: <a href="mailto:<%= email %>"><%= email %></a></p>
+
+  <h2>Hosting and server logs</h2>
+  <p>The website, database and mailbox are hosted by IONOS SE, Elgendorfer Str. 57, 56410 Montabaur, Germany, on servers in Germany (data processing agreement under Art. 28 GDPR). The server processes technically necessary data (IP address, time, requested URL, status, referrer, browser) for delivery and security (Art. 6(1)(f) GDPR). Log files containing IP addresses are deleted after 7 days at the latest. We do not set cookies for visitors and do not load third-party content on normal page views.</p>
+
+  <h2>Requests to accommodation operators</h2>
+  <p>To keep profiles accurate, we write to the publicly listed business contact address and ask operators to confirm individual details (Art. 6(1)(f) GDPR – legitimate interest in accurate information). The message is drafted by our AI assistant, labelled as such and approved by our team. Via a personal link, operators can answer; we store the answers, the name given and an optional message. Name and message are deleted <%= R.inquiryMonths %> months after the request is closed; confirmed details remain part of the profile.</p>
+  <p>Photos and further permissions (e.g. use on social media, contact regarding partner offers) are processed only with explicit consent (Art. 6(1)(a) GDPR). We record time, wording and sender of each consent as proof (Art. 7(1) GDPR). Consent can be withdrawn at any time by email; affected photos are then removed. Proof of consent is kept for <%= R.consentYearsAfterEnd %> years after withdrawal.</p>
+
+  <h2>Profiles and public sources</h2>
+  <p>Profiles contain information about accommodation businesses taken from publicly available sources (mainly the operator's website, OpenStreetMap, Open-Meteo weather data) and checked manually (Art. 6(1)(f) GDPR). To read websites and draft texts we use the AI service of Anthropic PBC (USA); only public website content and our profile data are transmitted, on the basis of the EU Standard Contractual Clauses (Art. 46(2)(c) GDPR). The score rates accommodation businesses; it is not an automated decision about individuals (Art. 22 GDPR).</p>
+
+  <h2>Maps</h2>
+  <p>Maps load only after you click “Karte laden” (load map). Your browser then requests map tiles from the OpenStreetMap Foundation (United Kingdom; adequacy decision), which receives your IP address (Art. 6(1)(a) GDPR).</p>
+
+  <h2>Your rights</h2>
+  <p>You have the right of access, rectification, erasure, restriction, data portability and to withdraw consent at any time (Art. 15–20, 7(3) GDPR). Just email <a href="mailto:<%= email %>"><%= email %></a>.</p>
+  <div class="notice"><p style="margin:0"><strong>Right to object (Art. 21 GDPR):</strong> where we process data based on legitimate interests, you may object at any time on grounds relating to your particular situation. We will then stop processing unless we demonstrate compelling legitimate grounds or the processing serves legal claims.</p></div>
+  <p>You may lodge a complaint with a supervisory authority (Art. 77 GDPR). Ours is:<br><% lines(legal.authority).forEach(function (l) { %><%= l %><br><% }) %></p>
+</div>
+</div>
+<%- include('../partials/foot') %>

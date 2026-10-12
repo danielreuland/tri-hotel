@@ -920,6 +920,24 @@ router.post('/aufgaben/:id/loeschen', wrap(async (req, res) => {
   res.redirect('/admin/aufgaben?ok=Aufgabe+gel%C3%B6scht');
 }));
 
+// ---------- Kontaktnachrichten ----------
+
+router.get('/kontakt', wrap(async (req, res) => {
+  const open = await db.many(`SELECT * FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`);
+  const handled = await db.many(
+    `SELECT m.*, u.email AS handled_by_email FROM contact_messages m LEFT JOIN admin_users u ON u.id = m.handled_by
+      WHERE m.handled_at IS NOT NULL ORDER BY m.handled_at DESC LIMIT 50`);
+  res.render('admin/contact', { title: 'Kontakt', open, handled, flash: req.query.ok || null });
+}));
+
+router.post('/kontakt/:id/erledigt', wrap(async (req, res) => {
+  if (UUID_RE.test(req.params.id)) {
+    await db.query('UPDATE contact_messages SET handled_at = now(), handled_by = $2 WHERE id = $1 AND handled_at IS NULL', [req.params.id, req.session.admin.id]);
+    await logAction(req.session.admin.id, 'contact', req.params.id, 'handle_contact');
+  }
+  res.redirect('/admin/kontakt?ok=Als+erledigt+markiert');
+}));
+
 // ---------- Team: Admins freischalten (Login mit Google über die E-Mail-Adresse) ----------
 
 router.get('/team', wrap(async (req, res) => {

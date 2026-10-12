@@ -13,10 +13,10 @@ if (mapBtn) {
     var box = document.getElementById('map');
     var css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    css.href = '/static/vendor/leaflet/leaflet.css';
     document.head.appendChild(css);
     var js = document.createElement('script');
-    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.src = '/static/vendor/leaflet/leaflet.js';
     js.onload = function () {
       var lat = Number(box.dataset.lat);
       var lng = Number(box.dataset.lng);

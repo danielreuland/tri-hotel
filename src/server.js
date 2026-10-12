@@ -23,9 +23,9 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", 'https://unpkg.com', ...(plausibleOrigin ? [plausibleOrigin] : [])],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
-        imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org', 'https://unpkg.com'],
+        scriptSrc: ["'self'", ...(plausibleOrigin ? [plausibleOrigin] : [])],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
         connectSrc: ["'self'", ...(plausibleOrigin ? [plausibleOrigin] : [])],
       },
     },
@@ -36,6 +36,8 @@ app.use(
 app.use(express.urlencoded({ extended: true, limit: '200kb' }));
 app.use(express.json({ limit: '200kb' }));
 app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0 }));
+// Kartenbibliothek Leaflet aus dem eigenen Server (kein CDN, keine Datenübertragung an Dritte)
+app.use('/static/vendor/leaflet', express.static(path.join(__dirname, '..', 'node_modules', 'leaflet', 'dist'), { maxAge: config.isProd ? '30d' : 0 }));
 
 app.use(
   session({
@@ -58,6 +60,9 @@ app.locals.plausibleSrc = config.plausibleSrc;
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
+// Rechtstexte: Löschfristen direkt aus der Konfiguration, Stand der Texte
+app.locals.retention = require('./services/retention').RETENTION;
+app.locals.legalDate = '12. Oktober 2026';
 app.locals.entityImgAttrs = require('./services/media').entityImgAttrs;
 
 // Vorab-Phase: nichts indexieren
@@ -80,6 +85,7 @@ app.use('/admin/regionen', require('./routes/admin-regions'));
 app.use('/admin/medien', require('./routes/admin-media'));
 app.use('/admin/emails', require('./routes/admin-emails'));
 app.use('/', require('./routes/submit'));
+app.use('/', require('./routes/contact'));
 app.use('/', require('./routes/inquiry'));
 app.use('/', require('./routes/seo'));
 app.use('/', require('./routes/public'));

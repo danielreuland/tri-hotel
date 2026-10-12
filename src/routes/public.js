@@ -269,7 +269,8 @@ router.get('/', wrap(async (req, res, next) => {
 }));
 
 router.get('/impressum', (req, res) => res.render('public/impressum', { title: 'Impressum' }));
-router.get('/datenschutz', (req, res) => res.render('public/datenschutz', { title: 'Datenschutz' }));
+router.get('/datenschutz', (req, res) => res.render('public/datenschutz', { title: 'Datenschutzerklärung', description: 'Welche Daten wir verarbeiten, wofür, wie lange – und deine Rechte.' }));
+router.get('/privacy', (req, res) => res.render('public/privacy', { title: 'Privacy policy', description: 'Privacy policy (English translation).' }));
 
 // Öffentliche Objektbilder: nur freigegeben und mit gültigen Rechten, keine Hotlinks.
 // /media/<uuid>-<breite>.webp (Varianten) oder /media/<uuid> (Altbestand im Original)

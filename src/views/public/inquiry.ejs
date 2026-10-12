@@ -56,7 +56,7 @@
     <p><button class="btn large cta" type="submit"><%= de ? 'Angaben senden' : 'Send answers' %></button></p>
     <p class="muted" style="margin:0"><small><%= de
       ? 'Ihre Angaben verwenden wir nur für Ihr Profil. Der Eintrag ist kostenlos, die Platzierung lässt sich nicht kaufen.'
-      : 'We only use your answers for your profile. The listing is free of charge; rankings cannot be bought.' %> <a href="/datenschutz"><%= de ? 'Datenschutz' : 'Privacy' %></a></small></p>
+      : 'We only use your answers for your profile. The listing is free of charge; rankings cannot be bought.' %> <a href="<%= de ? '/datenschutz' : '/privacy' %>"><%= de ? 'Datenschutz' : 'Privacy' %></a></small></p>
   </section>
 </form>
 

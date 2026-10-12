@@ -34,6 +34,8 @@ function readForm(b) {
       address: String(b.legal_address || '').trim(),
       email: String(b.legal_email || '').trim(),
       responsible: String(b.legal_responsible || '').trim(),
+      phone: String(b.legal_phone || '').trim(),
+      authority: String(b.legal_authority || '').trim(),
     },
     status: STATUSES[b.status] ? b.status : 'draft',
   };
@@ -57,6 +59,10 @@ function readForm(b) {
     }
   }
   if (!isEmail(f.mail_from)) errors.push('Absender-Adresse ungültig.');
+  // Ohne vollständiges Impressum geht keine Site live
+  if (f.status === 'active' && (!f.legal.owner || !f.legal.address || !isEmail(f.legal.email) || !f.legal.authority)) {
+    errors.push('Für eine aktive Site sind im Impressum Anbieter, Anschrift, E-Mail und Datenschutz-Aufsichtsbehörde Pflicht.');
+  }
   if (f.mail_reply_to && !isEmail(f.mail_reply_to)) errors.push('Antwortadresse ungültig.');
   return { f, errors };
 }
