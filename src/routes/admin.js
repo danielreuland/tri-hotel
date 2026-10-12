@@ -20,6 +20,7 @@ const { normalizeUrl } = require('../lib/util');
 const describer = require('../services/describer');
 const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
+const tasks = require('../services/tasks');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -869,52 +870,54 @@ router.post('/meldungen/:id/text', wrap(async (req, res, next) => {
 // ---------- Aufgaben ----------
 
 router.get('/aufgaben', wrap(async (req, res) => {
-  const disputed = await db.many(
-    `SELECT f.*, c.label AS criterion_label, e.name AS entity_name, s.id AS submission_id
-       FROM entity_facts f JOIN criteria c ON c.id = f.criterion_id JOIN entities e ON e.id = f.entity_id
-       LEFT JOIN LATERAL (SELECT id FROM submissions WHERE entity_id = e.id AND ranking_id = c.ranking_id ORDER BY created_at DESC LIMIT 1) s ON true
-      WHERE f.disputed ORDER BY e.name`
-  );
-  const recheck = await db.many(
-    `SELECT f.*, c.label AS criterion_label, e.name AS entity_name, s.id AS submission_id
-       FROM entity_facts f JOIN criteria c ON c.id = f.criterion_id JOIN rankings r ON r.id = c.ranking_id
-       JOIN entities e ON e.id = f.entity_id
-       JOIN entity_rankings er ON er.entity_id = e.id AND er.ranking_id = r.id AND er.status = 'live'
-       LEFT JOIN LATERAL (SELECT id FROM submissions WHERE entity_id = e.id AND ranking_id = r.id ORDER BY created_at DESC LIMIT 1) s ON true
-      WHERE f.checked_at < now() - make_interval(months => COALESCE((r.formula->>'recheck_months')::int, 18))
-      ORDER BY f.checked_at LIMIT 200`
-  );
-  const images = await db.many(
-    `SELECT i.*, e.name AS entity_name, s.id AS submission_id
-       FROM entity_images i JOIN entities e ON e.id = i.entity_id
-       LEFT JOIN LATERAL (SELECT id FROM submissions WHERE entity_id = e.id ORDER BY created_at DESC LIMIT 1) s ON true
-      WHERE (i.valid_until IS NOT NULL AND i.valid_until < current_date + 30) OR i.approved_at IS NULL
-      ORDER BY i.valid_until NULLS LAST`
-  );
-  const answers = await db.many(
-    `SELECT a.*, c.label AS criterion_label, c.scoring, e.name AS entity_name, i.submission_id, i.answered_at, i.reply_name
-       FROM inquiry_answers a JOIN inquiries i ON i.id = a.inquiry_id JOIN criteria c ON c.id = a.criterion_id
-       JOIN entities e ON e.id = i.entity_id
-      WHERE a.status = 'pending' ORDER BY i.answered_at`
-  );
-  const failedInquiries = await db.many(
-    `SELECT i.*, e.name AS entity_name FROM inquiries i JOIN entities e ON e.id = i.entity_id WHERE i.status = 'failed' ORDER BY i.updated_at DESC`
-  );
-  const stuck = await db.many(
-    `SELECT * FROM submissions WHERE status IN ('verified','auto_check') AND updated_at < now() - interval '1 hour' ORDER BY updated_at`
-  );
-  // Prüfberichte: offene Punkte je Objekt (Admin-Prüfung und live), meiste Blocker zuerst
-  const subs = await db.many(`SELECT id FROM submissions WHERE entity_id IS NOT NULL AND status IN ('admin_review','live') ORDER BY entity_name`);
-  const reports = [];
-  for (const s of subs) {
-    const l = await reviewlist.load(s.id);
-    if (l && l.review.items.length) reports.push(l);
-  }
-  reports.sort((a, b) => b.review.blockers - a.review.blockers || b.review.open - a.review.open);
+  await tasks.sync();
+  const assignee = ['me', 'none'].includes(req.query.wer) ? req.query.wer : null;
+  const label = tasks.LABELS[req.query.label] ? req.query.label : null;
+  const columns = await tasks.board({ assignee, label, me: req.session.admin.id });
+  const team = await db.many(`SELECT id, email, display_name FROM admin_users ORDER BY COALESCE(display_name, email)`);
   res.render('admin/tasks', {
-    title: 'Aufgaben', disputed, recheck, images, stuck, answers, failedInquiries, describeValue: scoring.describeValue,
-    reports, reportsDone: subs.length - reports.length, STATUS_LABELS,
+    title: 'Aufgaben', columns, team, assignee, label, STATUSES: tasks.STATUSES, LABELS: tasks.LABELS, me: req.session.admin.id,
+    flash: req.query.ok || null, error: req.query.fehler || null,
   });
+}));
+
+// Karte verschieben (Drag & Drop: JSON mit Reihenfolge; ohne JavaScript: Formular mit Zielspalte)
+router.post('/aufgaben/:id/verschieben', wrap(async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(404).end();
+  const order = Array.isArray(req.body.order) ? req.body.order.filter((x) => UUID_RE.test(x)) : null;
+  try {
+    await tasks.move(req.params.id, req.body.status, order, req.session.admin.id);
+    if (req.is('json')) return res.json({ ok: true });
+    res.redirect(backOrNull(req.body.back) || '/admin/aufgaben');
+  } catch (err) {
+    if (req.is('json')) return res.status(400).json({ error: err.message });
+    res.redirect(`/admin/aufgaben?fehler=${encodeURIComponent(err.message)}`);
+  }
+}));
+
+router.post('/aufgaben/:id/zuweisen', wrap(async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(404).end();
+  const who = UUID_RE.test(req.body.assignee_id || '') ? req.body.assignee_id : null;
+  await tasks.assign(req.params.id, who, req.session.admin.id);
+  if (req.is('json')) return res.json({ ok: true });
+  res.redirect(backOrNull(req.body.back) || '/admin/aufgaben');
+}));
+
+router.post('/aufgaben', wrap(async (req, res) => {
+  try {
+    await tasks.createManual({
+      title: req.body.title, note: req.body.note, link: req.body.link,
+      assigneeId: UUID_RE.test(req.body.assignee_id || '') ? req.body.assignee_id : null,
+    }, req.session.admin.id);
+    res.redirect('/admin/aufgaben?ok=Aufgabe+angelegt');
+  } catch (err) {
+    res.redirect(`/admin/aufgaben?fehler=${encodeURIComponent(err.message)}`);
+  }
+}));
+
+router.post('/aufgaben/:id/loeschen', wrap(async (req, res) => {
+  if (UUID_RE.test(req.params.id)) await tasks.removeManual(req.params.id, req.session.admin.id);
+  res.redirect('/admin/aufgaben?ok=Aufgabe+gel%C3%B6scht');
 }));
 
 // ---------- Team: Admins freischalten (Login mit Google über die E-Mail-Adresse) ----------

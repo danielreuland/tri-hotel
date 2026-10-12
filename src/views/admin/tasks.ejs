@@ -1,61 +1,87 @@
 <%- include('../partials/admin-head') %>
-<h1>Aufgaben</h1>
-
-<h2>Prüfberichte (<%= reports.length %>)</h2>
-<p class="muted" style="margin-top:0">Offene Punkte je Objekt aus Admin-Prüfung und Live-Bestand. Erledigtes verschwindet von selbst; mit „✓ erledigt“ blendest du einen Punkt aus, bis er sich ändert.<%= reportsDone ? ' ' + reportsDone + ' weitere ohne offene Punkte.' : '' %></p>
-<% if (!reports.length) { %><p class="card">Keine offenen Prüfpunkte.</p><% } %>
-<% reports.forEach(function (r) { %>
-  <details class="card report" <%= r.review.blockers ? 'open' : '' %> style="margin-bottom:10px">
-    <summary>
-      <strong><%= r.sub.entity_name %></strong>
-      <span class="badge"><%= STATUS_LABELS[r.sub.status] %></span>
-      <% if (r.review.blockers) { %><span class="badge bad"><%= r.review.blockers %> blockierend</span><% } %>
-      <% if (r.review.open - r.review.blockers > 0) { %><span class="badge warn"><%= r.review.open - r.review.blockers %> prüfen</span><% } %>
-      <small class="muted"><%= r.result.score === null ? '' : 'Score ' + r.result.score + ' · ' %>Vollst. <%= Math.round(r.result.completeness) %> %</small>
-    </summary>
-    <%- include('../partials/review-items', { items: r.review.items, entityId: r.entity.id, rankingId: r.ranking.id, linkBase: '/admin/meldungen/' + r.sub.id, back: '/admin/aufgaben' }) %>
-    <p style="margin:8px 0 0"><a href="/admin/meldungen/<%= r.sub.id %>">Prüfansicht öffnen →</a></p>
+<%
+  var who = function (u) { return u ? (u.display_name || u.email.split('@')[0]) : ''; };
+  var initials = function (name) { return String(name || '?').split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join(''); };
+  var LV = { block: 'bad', todo: 'warn', hint: '' };
+  var qs = function (o) { var p = Object.assign({ wer: assignee || '', label: label || '' }, o);
+    var q = Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); return '/admin/aufgaben' + (q ? '?' + q : ''); };
+  var back = qs({});
+%>
+<div class="board-head">
+  <h1 style="margin:0">Aufgaben</h1>
+  <details class="new-task">
+    <summary class="btn small">+ Aufgabe</summary>
+    <form method="post" action="/admin/aufgaben" class="card">
+      <label for="t-title">Titel *</label><input id="t-title" name="title" type="text" maxlength="200" required>
+      <label for="t-note">Notiz <small class="muted">eine Zeile je Punkt</small></label><textarea id="t-note" name="note" rows="3"></textarea>
+      <div class="form-row">
+        <div><label for="t-link">Link im Admin <small class="muted">optional</small></label><input id="t-link" name="link" type="text" placeholder="/admin/meldungen/…"></div>
+        <div><label for="t-who">Zuständig</label><select id="t-who" name="assignee_id"><option value="">niemand</option><% team.forEach(function (u) { %><option value="<%= u.id %>" <%= u.id === me ? 'selected' : '' %>><%= who(u) %></option><% }) %></select></div>
+      </div>
+      <button class="btn small" type="submit">Anlegen</button>
+    </form>
   </details>
-<% }) %>
+</div>
+<p class="muted" style="margin-top:4px">Karten entstehen automatisch aus Prüfberichten, Antworten, Anfrage-Entwürfen und weiteren Anlässen. Ist der Anlass erledigt, wandern sie von selbst nach „Erledigt“; ändert er sich, öffnen sie sich wieder. Karten per Maus zwischen den Spalten ziehen.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
 
-<h2>Antworten von Betreibern (<%= answers.length %>)</h2>
-<% if (!answers.length) { %><p class="muted">Keine offenen Antworten.</p><% } else { %>
-<div class="table-scroll"><table><tr><th>Objekt</th><th>Kriterium</th><th>Antwort</th><th></th></tr>
-<% answers.forEach(function (a) { %><tr>
-  <td><a href="/admin/meldungen/<%= a.submission_id %>#anfragen"><%= a.entity_name %></a><br><small class="muted"><%= formatDate(a.answered_at) %><%= a.reply_name ? ' · ' + a.reply_name : '' %></small></td>
-  <td><%= a.criterion_label %></td>
-  <td><strong><%= a.value ? (describeValue({ scoring: a.scoring }, a.value) || '') : 'weiß nicht' %></strong><% if (a.comment) { %><br><small class="muted">„<%= a.comment %>“</small><% } %></td>
-  <td style="white-space:nowrap">
-    <form method="post" action="/admin/antworten/<%= a.id %>/uebernehmen" style="display:inline"><input type="hidden" name="back" value="/admin/aufgaben"><button class="btn small" type="submit" <%= a.value ? '' : 'disabled' %>>Übernehmen</button></form>
-    <form method="post" action="/admin/antworten/<%= a.id %>/verwerfen" style="display:inline"><input type="hidden" name="back" value="/admin/aufgaben"><button class="btn small secondary" type="submit">Verwerfen</button></form>
-  </td></tr><% }) %>
-</table></div><% } %>
+<div class="pill-row">
+  <a class="badge <%= !assignee ? 'good' : '' %>" href="<%= qs({ wer: '' }) %>">alle</a>
+  <a class="badge <%= assignee === 'me' ? 'good' : '' %>" href="<%= qs({ wer: 'me' }) %>">meine</a>
+  <a class="badge <%= assignee === 'none' ? 'good' : '' %>" href="<%= qs({ wer: 'none' }) %>">nicht zugewiesen</a>
+  <span class="muted" style="margin:0 4px">·</span>
+  <a class="badge <%= !label ? 'good' : '' %>" href="<%= qs({ label: '' }) %>">alle Labels</a>
+  <% Object.keys(LABELS).forEach(function (k) { %><a class="badge lbl lbl-<%= k %> <%= label === k ? 'on' : '' %>" href="<%= qs({ label: k }) %>"><%= LABELS[k] %></a><% }) %>
+</div>
 
-<% if (failedInquiries.length) { %>
-<h2>Fehlgeschlagene Anfragen (<%= failedInquiries.length %>)</h2>
-<ul><% failedInquiries.forEach(function (i) { %><li><a href="/admin/meldungen/<%= i.submission_id %>#anfragen"><%= i.entity_name %></a> – <%= i.error %></li><% }) %></ul>
-<% } %>
+<div class="board" data-back="<%= back %>">
+  <% Object.keys(STATUSES).forEach(function (st) { var cards = columns[st]; %>
+    <section class="task-col" data-status="<%= st %>" aria-label="<%= STATUSES[st] %>">
+      <h2><%= STATUSES[st] %> <span class="count"><%= cards.length %></span><% if (st === 'done') { %> <small class="muted">letzte 30 Tage</small><% } %></h2>
+      <div class="task-list">
+        <% cards.forEach(function (t) { var lines = t.detail || []; var nb = lines.filter(function (l) { return l.level === 'block' }).length; var nt = lines.filter(function (l) { return l.level === 'todo' }).length; %>
+          <article class="task-card <%= nb ? 'has-block' : '' %>" draggable="true" data-id="<%= t.id %>">
+            <header>
+              <span class="badge lbl lbl-<%= t.source %>"><%= LABELS[t.source] || t.source %></span>
+              <% if (nb) { %><span class="badge bad"><%= nb %> blockiert</span><% } %><% if (nt && t.source === 'review') { %><span class="badge warn"><%= nt %> prüfen</span><% } %>
+            </header>
+            <h3><% if (t.link) { %><a href="<%= t.link %>"><%= t.title %></a><% } else { %><%= t.title %><% } %></h3>
+            <% if (lines.length) { %>
+              <ul>
+                <% lines.slice(0, 4).forEach(function (l) { %><li class="lvl-<%= l.level %>"><%= l.text %></li><% }) %>
+                <% if (lines.length > 4) { %><li class="muted">+ <%= lines.length - 4 %> weitere</li><% } %>
+              </ul>
+            <% } %>
+            <footer>
+              <form method="post" action="/admin/aufgaben/<%= t.id %>/zuweisen" class="assign">
+                <input type="hidden" name="back" value="<%= back %>">
+                <span class="avatar <%= t.assignee_id ? '' : 'none' %>" title="<%= t.assignee_email || 'niemand zugewiesen' %>"><%= t.assignee_id ? initials(t.assignee_name || t.assignee_email.split('@')[0]) : '?' %></span>
+                <select name="assignee_id" aria-label="Zuständig" data-assign>
+                  <option value="">niemand</option>
+                  <% team.forEach(function (u) { %><option value="<%= u.id %>" <%= u.id === t.assignee_id ? 'selected' : '' %>><%= who(u) %></option><% }) %>
+                </select>
+                <noscript><button class="btn small secondary" type="submit">OK</button></noscript>
+              </form>
+              <form method="post" action="/admin/aufgaben/<%= t.id %>/verschieben" class="move">
+                <input type="hidden" name="back" value="<%= back %>">
+                <select name="status" aria-label="Spalte" data-move>
+                  <% Object.keys(STATUSES).forEach(function (s2) { %><option value="<%= s2 %>" <%= s2 === st ? 'selected' : '' %>><%= STATUSES[s2] %></option><% }) %>
+                </select>
+                <noscript><button class="btn small secondary" type="submit">OK</button></noscript>
+              </form>
+            </footer>
+            <% if (st === 'done') { %><p class="meta"><%= t.done_auto ? 'automatisch erledigt' : 'erledigt' + (t.done_by_email ? ' von ' + t.done_by_email.split('@')[0] : '') %> · <%= formatDate(t.done_at || t.updated_at) %></p><% } %>
+            <% if (t.source === 'manual') { %>
+              <form method="post" action="/admin/aufgaben/<%= t.id %>/loeschen" onsubmit="return confirm('Aufgabe löschen?')" class="meta"><button class="linklike" type="submit"><small>löschen</small></button></form>
+            <% } %>
+          </article>
+        <% }) %>
+        <p class="empty muted"><small>Keine Karten</small></p>
+      </div>
+    </section>
+  <% }) %>
+</div>
 
-<h2>Strittige Werte (<%= disputed.length %>)</h2>
-<% if (!disputed.length) { %><p class="muted">Keine.</p><% } else { %>
-<table><tr><th>Objekt</th><th>Kriterium</th><th>Geprüft</th></tr>
-<% disputed.forEach(function (f) { %><tr><td><a href="/admin/meldungen/<%= f.submission_id %>#fakten"><%= f.entity_name %></a></td><td><%= f.criterion_label %></td><td><%= formatDate(f.checked_at) %></td></tr><% }) %>
-</table><% } %>
-
-<h2>Fällige Nachprüfungen (<%= recheck.length %>)</h2>
-<% if (!recheck.length) { %><p class="muted">Keine – alle Werte sind aktuell.</p><% } else { %>
-<table><tr><th>Objekt</th><th>Kriterium</th><th>Zuletzt geprüft</th></tr>
-<% recheck.forEach(function (f) { %><tr><td><a href="/admin/meldungen/<%= f.submission_id %>#fakten"><%= f.entity_name %></a></td><td><%= f.criterion_label %></td><td><%= formatDate(f.checked_at) %></td></tr><% }) %>
-</table><% } %>
-
-<h2>Bilder: Freigabe offen oder Rechte laufen ab (<%= images.length %>)</h2>
-<% if (!images.length) { %><p class="muted">Keine.</p><% } else { %>
-<table><tr><th>Objekt</th><th>Lizenz</th><th>Status</th></tr>
-<% images.forEach(function (i) { %><tr><td><a href="/admin/meldungen/<%= i.submission_id %>#bilder"><%= i.entity_name %></a></td><td><%= i.license %></td>
-  <td><%= i.approved_at ? '' : 'nicht freigegeben' %><%= i.valid_until ? ' · gültig bis ' + formatDate(i.valid_until) : '' %></td></tr><% }) %>
-</table><% } %>
-
-<h2>Hängende Auto-Prüfungen (<%= stuck.length %>)</h2>
-<% if (!stuck.length) { %><p class="muted">Keine.</p><% } else { %>
-<ul><% stuck.forEach(function (s) { %><li><a href="/admin/meldungen/<%= s.id %>"><%= s.entity_name %></a> – seit <%= new Date(s.updated_at).toLocaleString('de-DE') %></li><% }) %></ul><% } %>
+<% locals.scripts = ['/static/js/admin.js'] %>
 <%- include('../partials/admin-foot') %>

@@ -77,3 +77,94 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
     timer = setTimeout(preview, 250);
   });
 })();
+
+
+// Aufgaben: Kanban mit Drag & Drop; Spalte und Zuständigkeit auch per Auswahlliste (ohne Maus)
+(function () {
+  var board = document.querySelector('.board');
+  if (!board) return;
+  var dragged = null;
+
+  function post(url, body) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body), credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error('Speichern fehlgeschlagen'); return r.json(); });
+  }
+  function counts() {
+    board.querySelectorAll('.task-col').forEach(function (col) {
+      col.querySelector('.count').textContent = col.querySelectorAll('.task-card').length;
+    });
+  }
+  function save(card) {
+    var col = card.closest('.task-col');
+    var status = col.getAttribute('data-status');
+    var order = Array.prototype.map.call(col.querySelectorAll('.task-card'), function (c) { return c.getAttribute('data-id'); });
+    var sel = card.querySelector('[data-move]');
+    if (sel) sel.value = status;
+    counts();
+    return post('/admin/aufgaben/' + card.getAttribute('data-id') + '/verschieben', { status: status, order: order })
+      .catch(function (e) { alert(e.message); location.reload(); });
+  }
+  function afterElement(list, y) {
+    var cards = Array.prototype.filter.call(list.querySelectorAll('.task-card'), function (c) { return c !== dragged; });
+    for (var i = 0; i < cards.length; i++) {
+      var box = cards[i].getBoundingClientRect();
+      if (y < box.top + box.height / 2) return cards[i];
+    }
+    return null;
+  }
+
+  board.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.task-card');
+    if (!card) return;
+    dragged = card;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+  });
+  board.addEventListener('dragend', function () {
+    if (dragged) dragged.classList.remove('dragging');
+    board.querySelectorAll('.drop-target').forEach(function (l) { l.classList.remove('drop-target'); });
+    dragged = null;
+  });
+  board.querySelectorAll('.task-list').forEach(function (list) {
+    list.addEventListener('dragover', function (e) {
+      if (!dragged) return;
+      e.preventDefault();
+      list.classList.add('drop-target');
+      var after = afterElement(list, e.clientY);
+      var empty = list.querySelector('.empty');
+      if (after) list.insertBefore(dragged, after); else list.insertBefore(dragged, empty);
+    });
+    list.addEventListener('dragleave', function (e) { if (!list.contains(e.relatedTarget)) list.classList.remove('drop-target'); });
+    list.addEventListener('drop', function (e) {
+      e.preventDefault();
+      list.classList.remove('drop-target');
+      if (dragged) save(dragged);
+    });
+  });
+
+  // Auswahlliste „Spalte“: Karte ans Ende der Zielspalte
+  board.querySelectorAll('[data-move]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var card = sel.closest('.task-card');
+      var list = board.querySelector('.task-col[data-status="' + sel.value + '"] .task-list');
+      list.insertBefore(card, list.querySelector('.empty'));
+      save(card);
+    });
+  });
+  // Zuständigkeit sofort speichern
+  board.querySelectorAll('[data-assign]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var card = sel.closest('.task-card');
+      post('/admin/aufgaben/' + card.getAttribute('data-id') + '/zuweisen', { assignee_id: sel.value })
+        .then(function () {
+          var av = card.querySelector('.avatar');
+          var name = sel.options[sel.selectedIndex].text;
+          av.classList.toggle('none', !sel.value);
+          av.textContent = sel.value ? name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join('') : '?';
+          av.title = sel.value ? name : 'niemand zugewiesen';
+        })
+        .catch(function (e) { alert(e.message); });
+    });
+  });
+})();
