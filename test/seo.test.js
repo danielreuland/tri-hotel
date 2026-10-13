@@ -66,3 +66,13 @@ test('Vorschaubild: Titel wird umbrochen und gekürzt, Text maskiert', () => {
   assert.ok(svg.includes('>91<'));
   assert.ok(svg.includes('#12345a'), 'Farben der Palette');
 });
+
+test('seo.googleMapsUrl: Suche nach Name und Anschrift, mit Place ID exakt', () => {
+  const seo = require('../src/lib/seo');
+  const e = { name: 'Hotel Jakob', city: 'Fuschl am See', country: 'AT', attributes: { address: { street: 'Dorfplatz 3', postal_code: '5330' } } };
+  const u = new URL(seo.googleMapsUrl(e));
+  assert.equal(u.origin + u.pathname, 'https://www.google.com/maps/search/');
+  assert.equal(u.searchParams.get('query'), 'Hotel Jakob, Dorfplatz 3, 5330, Fuschl am See, Österreich');
+  assert.equal(u.searchParams.get('query_place_id'), null);
+  assert.equal(new URL(seo.googleMapsUrl({ ...e, attributes: { google_place_id: 'ChIJabc123def' } })).searchParams.get('query_place_id'), 'ChIJabc123def');
+});

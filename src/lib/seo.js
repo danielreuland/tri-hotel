@@ -157,7 +157,19 @@ function entityLd({ entity, ranking, site, url, result, image, description }) {
   return ld;
 }
 
+// Link zu den Google-Bewertungen eines Ortes über die offiziellen Maps-URLs (kein Schlüssel, keine Datenübertragung beim Seitenaufruf).
+// Mit Place ID exakt, sonst Suche nach Name und Anschrift bzw. Ort.
+function googleMapsUrl(entity) {
+  const a = (entity.attributes || {}).address || {};
+  const query = [entity.name, a.street, a.postal_code, a.city || entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ');
+  const params = new URLSearchParams({ api: '1', query });
+  const placeId = (entity.attributes || {}).google_place_id;
+  if (placeId) params.set('query_place_id', placeId);
+  return `https://www.google.com/maps/search/?${params}`;
+}
+
 module.exports = {
+  googleMapsUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
   averageClimate, bestMonths, monthRanges, featureShares,
   ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd,

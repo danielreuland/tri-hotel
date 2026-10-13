@@ -59,6 +59,7 @@ app.locals.plausibleSrc = config.plausibleSrc;
 // Cache-Busting: neue Kennung je Start (Deploy), damit Browser geänderte CSS/JS sofort laden
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
+app.locals.googleMapsUrl = require('./lib/seo').googleMapsUrl;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
 // Rechtstexte: Löschfristen direkt aus der Konfiguration, Stand der Texte
 app.locals.retention = require('./services/retention').RETENTION;

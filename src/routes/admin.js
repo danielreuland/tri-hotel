@@ -385,6 +385,11 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
     booking_provider: String(b.booking_provider || '').trim() || null,
     contact_email: String(b.contact_email || '').trim().toLowerCase() || null,
   };
+  // Google Place ID (optional, nur für den exakten Link zu den Google-Bewertungen)
+  const placeId = String(b.google_place_id || '').trim();
+  if (placeId && !/^[A-Za-z0-9_-]{10,300}$/.test(placeId)) {
+    return res.redirect(`/admin/meldungen/${sub.id}?fehler=${encodeURIComponent('Google Place ID ungültig (Beispiel: ChIJ…).')}`);
+  }
   if (upd.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(upd.contact_email)) {
     return res.redirect(`/admin/meldungen/${sub.id}?fehler=${encodeURIComponent('Kontakt-E-Mail ist ungültig.')}`);
   }
@@ -392,12 +397,14 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
   await db.query(
     `UPDATE entities SET name=$2, city=$3, country=$4, website=$5, lat=$6, lng=$7, booking_url=$8, booking_provider=$9,
        contact_email=$10,
+       attributes = CASE WHEN $12 = '' THEN attributes - 'google_place_id' ELSE attributes || jsonb_build_object('google_place_id', $12::text) END,
        contact_email_source = CASE WHEN $11 THEN 'admin' ELSE contact_email_source END,
        contact_email_evidence = CASE WHEN $11 THEN NULL ELSE contact_email_evidence END,
        updated_at=now() WHERE id=$1`,
     [old.id, upd.name, upd.city, upd.country, upd.website, upd.lat, upd.lng, upd.booking_url, upd.booking_provider,
-      upd.contact_email, emailChanged]
+      upd.contact_email, emailChanged, placeId]
   );
+  if (placeId !== ((old.attributes || {}).google_place_id || '')) await logAction(req.session.admin.id, 'entity', old.id, 'edit_google_place_id', { new: placeId || null });
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
   res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);

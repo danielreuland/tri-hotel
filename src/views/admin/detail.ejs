@@ -110,6 +110,11 @@
           <div><label>Buchungslink (Affiliate)</label><input name="booking_url" type="url" value="<%= entity.booking_url || '' %>"></div>
           <div><label>Anbieter</label><input name="booking_provider" type="text" placeholder="z. B. Booking.com, Stay22" value="<%= entity.booking_provider || '' %>"></div>
         </div>
+        <div class="form-row">
+          <div><label>Google Place ID <small class="muted">optional – macht den Link „Bewertungen bei Google“ exakt</small></label>
+            <input name="google_place_id" type="text" value="<%= (entity.attributes || {}).google_place_id || '' %>" placeholder="ChIJ…">
+            <small class="muted"><a href="https://developers.google.com/maps/documentation/places/web-service/place-id#find-id" target="_blank" rel="noopener">Place ID finden ↗</a> · ohne ID sucht der Link nach Name und Anschrift · <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="noopener">Link testen ↗</a></small></div>
+        </div>
         <p><button class="btn small" type="submit">Stammdaten speichern</button> <small class="muted">Slug: <%= entity.slug %></small></p>
       </form>
     </section>

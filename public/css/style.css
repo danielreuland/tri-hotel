@@ -497,3 +497,4 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .camp-head h1 { margin: .1em 0; }
 .camp-head-cta { display: flex; gap: 10px; align-items: center; }
 .rank-item.static { cursor: default; }
+.other-opinions { margin: 12px 0 0; }
