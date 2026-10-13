@@ -3,7 +3,7 @@ document.querySelectorAll('[data-goal]').forEach(function (el) {
   var send = function () { if (window.plausible) window.plausible(el.getAttribute('data-goal')); };
   if (window.plausible) send(); else window.addEventListener('load', send);
 });
-document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
+document.querySelectorAll('select[data-autosubmit], input[data-autosubmit-check]').forEach(function (el) {
   el.addEventListener('change', function () { el.form.submit(); });
 });
 

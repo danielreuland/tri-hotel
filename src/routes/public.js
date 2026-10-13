@@ -11,6 +11,7 @@ const areas = require('../services/areas');
 const seo = require('../lib/seo');
 const media = require('../services/media');
 const describer = require('../services/describer');
+const camps = require('../services/camps');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -188,6 +189,7 @@ async function renderEntity(req, res, ranking, slug) {
   );
   const formula = scoring.withDefaults(ranking.formula);
   // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
+  const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
   const text = await db.one(`SELECT summary, body, published_at FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
@@ -220,6 +222,7 @@ async function renderEntity(req, res, ranking, slug) {
     month,
     images,
     textBlocks: text ? describer.parseBody(text.body) : [],
+    campProviders, CAMP_MODELS: camps.MODELS,
     textDate: text && text.published_at,
     base: rankingBase(ranking),
   });

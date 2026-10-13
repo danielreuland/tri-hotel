@@ -1,6 +1,16 @@
 const rankings = require('../services/rankings');
 const sites = require('../services/sites');
 const media = require('../services/media');
+const fs = require('fs');
+const path = require('path');
+
+// Hat die Site eine Trainingscamp-Seite? (Vorlage unter views/sites/<code>/trainingscamp.ejs)
+const guideCache = new Map();
+function hasCampGuide(site) {
+  if (!site) return false;
+  if (!guideCache.has(site.code)) guideCache.set(site.code, fs.existsSync(path.join(__dirname, '..', 'views', 'sites', site.code, 'trainingscamp.ejs')));
+  return guideCache.get(site.code);
+}
 const { slugify } = require('../lib/util');
 
 // Bestimmt Site (Marke) und das Ranking, das unter diesem Host auf "/" ausgeliefert wird:
@@ -17,6 +27,7 @@ async function rankingContext(req, res, next) {
     res.locals.siteCss = sites.themeCss(site);
     res.locals.siteUrl = sites.urlFor(site);
     res.locals.hostRanking = ranking;
+    res.locals.campGuide = hasCampGuide(site);
     // Stimmungsbilder der Site je Platz/Region (nur für öffentliche Seiten relevant, zwischengespeichert)
     res.locals.siteMedia = site && !req.path.startsWith('/admin') ? await media.forSite(site.id) : { slots: {}, regions: {} };
     res.locals.scorePath = ranking ? `/${slugify(ranking.score_name)}` : '/methodik';

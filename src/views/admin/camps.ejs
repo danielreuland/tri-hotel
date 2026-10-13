@@ -1,0 +1,19 @@
+<%- include('../partials/admin-head') %>
+<h1>Camp-Anbieter</h1>
+<p class="muted">Neutral gelistet unter <a href="/trainingscamp#anbieter" target="_blank">/trainingscamp</a>, alphabetisch, ohne Score. „Klicks“ zählt Weiterleitungen zum Anbieter (ohne personenbezogene Daten) – Grundlage für Partnergespräche.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<p><a class="btn small" href="/admin/camps/neu">+ Anbieter</a></p>
+<div class="table-scroll"><table>
+  <tr><th>Anbieter</th><th>Typ</th><th>Ziele</th><th class="num">Hotels</th><th class="num">Klicks 30 T.</th><th class="num">gesamt</th><th>Status</th></tr>
+  <% rows.forEach(function (p) { var s = stats[p.id] || { last30: 0, total: 0 }; %>
+    <tr>
+      <td><a href="/admin/camps/<%= p.id %>"><strong><%= p.name %></strong></a><% if (p.partner) { %> <span class="badge warn">Partner</span><% } %><br><small class="muted">/trainingscamp/anbieter/<%= p.slug %></small></td>
+      <td><small><%= MODELS[p.model] %></small></td>
+      <td><small><%= p.destinations.join(', ') %></small></td>
+      <td class="num"><%= p.hotels %><% if (p.linked) { %> <small class="muted">(<%= p.linked %> im Ranking)</small><% } %></td>
+      <td class="num"><%= s.last30 %></td><td class="num"><%= s.total %></td>
+      <td><span class="badge <%= p.status === 'active' ? 'good' : '' %>"><%= p.status %></span></td>
+    </tr>
+  <% }) %>
+</table></div>
+<%- include('../partials/admin-foot') %>

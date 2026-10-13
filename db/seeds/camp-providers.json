@@ -1,0 +1,180 @@
+{
+  "site": "tri-hotel",
+  "as_of": "2026-10-12",
+  "providers": [
+    {
+      "slug": "hannes-hawaii-tours", "name": "Hannes Hawaii Tours", "model": "operator", "model_label": "Reiseveranstalter", "seat": "Allgäu, seit 1987",
+      "summary": "Größtes Programm im deutschsprachigen Raum mit rund 40 Camps pro Saison, eingeteilt in zwei Leistungsstufen. Feste Partnerhotels auf Fuerteventura, Lanzarote und Mallorca, dazu Schwimm-, Einsteiger- und Masters-Camps sowie Camps im Allgäu. Außerdem Self-guided-Reisen und Wettkampfreisen.",
+      "website": "https://www.hannes-hawaii-tours.de/camps/uebersicht",
+      "destinations": ["Fuerteventura", "Lanzarote", "Mallorca", "Allgäu"], "regions": ["Kanaren", "Mallorca", "Deutschland"],
+      "features": { "hotel": "yes", "flight": "unknown", "camp_only": false, "beginner": true, "women": false, "swim": true, "family": null },
+      "prices": [{ "label": "Tri-Camps", "duration": "meist 14 Tage", "price": "ab 832–1.305 €", "included": "laut Terminübersicht Hotel und Camp", "excluded": "je Camp prüfen" }],
+      "hotels": [
+        { "hotel_name": "Hotel Playitas Resort", "place": "Las Playitas, Fuerteventura", "region": "Kanaren", "entity": "Playitas Hotel" },
+        { "hotel_name": "Barceló Lanzarote Active Resort", "place": "Costa Teguise, Lanzarote", "region": "Kanaren" },
+        { "hotel_name": "Zafiro Tropic", "place": "Alcúdia, Mallorca", "region": "Mallorca", "entity": "Hotel Zafiro Tropic" },
+        { "hotel_name": "Zafiro Palace", "place": "Alcúdia, Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Zafiro Alzinar Mar", "place": "Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Globales Janeiro", "place": "Can Picafort, Mallorca", "region": "Mallorca", "entity": "Hotel Globals Janeiro" },
+        { "hotel_name": "Fergus Club Font de Sa Cala", "place": "Capdepera, Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Hotel Krone", "place": "Stein/Immenstadt, Allgäu", "region": "Deutschland" },
+        { "hotel_name": "Hotel Wiesengrund", "place": "Allgäu", "region": "Deutschland" }
+      ]
+    },
+    {
+      "slug": "ausdauerakademie", "name": "Ausdauerakademie", "model": "operator", "model_label": "Reiseveranstalter (Pauschalreise)", "seat": "Weiden",
+      "summary": "Pauschal-Trainingslager auf Mallorca im Frühjahr, geleitet von einem A-Trainer und Ex-Profi. Radgruppen bis 12 Personen, Unterwasser-Videoanalyse und eigene Physiotherapeuten. Parallel ein Jugendcamp mit Kinderbetreuung in den Osterferien.",
+      "website": "https://www.ausdauerakademie.de/tours/triathlon-trainingslager-mallorca-2027",
+      "destinations": ["Mallorca"], "regions": ["Mallorca"],
+      "features": { "hotel": "yes", "flight": "yes", "camp_only": false, "beginner": true, "women": false, "swim": false, "family": true, "family_note": "Jugendcamp, Kinderbetreuung", "max_group": "12 je Radgruppe" },
+      "prices": [{ "label": "Trainingslager Mallorca", "duration": "7 / 14 Nächte", "price": "719 / 1.199 €", "included": "Hotel mit Halbpension, Pasta-Büffet, Transfer, Training, 1 Physio-Behandlung", "excluded": "Flug, Rad" }],
+      "hotels": [
+        { "hotel_name": "Globales Concord", "place": "Can Picafort, Mallorca", "region": "Mallorca", "entity": "Globales Concord" },
+        { "hotel_name": "Ferrer Janeiro (vermutlich Globales Janeiro)", "place": "Can Picafort, Mallorca", "region": "Mallorca", "entity": "Hotel Globals Janeiro" }
+      ]
+    },
+    {
+      "slug": "pro-trainingtours", "name": "PRO.TrainingTours", "model": "group", "model_label": "Veranstalter für Gruppen und Vereine", "seat": "Darmstadt, seit über 30 Jahren",
+      "summary": "Organisiert Trainingslager für Einzelsportler, Vereine, Teams und Verbände – mit oder ohne eigene Trainer. Unterkunft, Poolzeiten und Transfer werden passend zur Gruppe gebucht.",
+      "website": "https://protrainingtours.de/",
+      "destinations": ["Europa"], "regions": ["Europa"],
+      "features": { "hotel": "yes", "flight": "unknown", "camp_only": false, "beginner": null, "women": false, "swim": null, "family": null },
+      "prices": [], "hotels": []
+    },
+    {
+      "slug": "club-la-santa", "name": "Club La Santa", "model": "resort", "model_label": "Sportresort", "seat": "La Santa, Lanzarote",
+      "summary": "Sportresort mit drei 50-m-Becken und 400-m-Bahn. Eigene englischsprachige Camps (u. a. Masters 50+, Langdistanz, nur Frauen) zu einer günstigen Campgebühr; dazu Gast-Camps vieler deutscher Coaches. Camps nur für Gäste des Resorts.",
+      "website": "https://www.clublasanta.com/de/events",
+      "destinations": ["Lanzarote"], "regions": ["Kanaren"],
+      "features": { "hotel": "required", "flight": "yes", "camp_only": false, "beginner": null, "women": true, "swim": true, "family": true, "max_group": "30 (Leder-Camp)" },
+      "prices": [{ "label": "Hauseigene Camps", "duration": "7 Tage", "price": "200–220 €", "included": "Coaching, Anlagen", "excluded": "Unterkunft (Pflicht im Resort), Rad" }],
+      "hotels": [{ "hotel_name": "Club La Santa", "place": "La Santa, Lanzarote", "region": "Kanaren" }]
+    },
+    {
+      "slug": "triathlonschule", "name": "Triathlonschule", "model": "coach", "model_label": "Coach und Veranstalter (Buchung über Ocean & Sports)", "seat": "Playa Honda, Lanzarote",
+      "summary": "Camps eines ehemaligen Profis mit Sitz auf Lanzarote, teils gemeinsam mit Anne Haug (Langdistanz, Race Performance, Laufwoche). Tri- und Performance-Camps auf Lanzarote, Einsteiger- und Familiencamps auf Mallorca. Gebucht wird über den Veranstalter Ocean & Sports.",
+      "website": "https://www.triathlonschule.com/",
+      "destinations": ["Lanzarote", "Mallorca"], "regions": ["Kanaren", "Mallorca"],
+      "features": { "hotel": "yes", "flight": "unknown", "camp_only": null, "beginner": true, "women": false, "swim": true, "family": true, "family_note": "Familiencamp", "max_group": "8 je Radgruppe" },
+      "prices": [],
+      "hotels": [{ "hotel_name": "Viva Blue & Spa", "place": "Playa de Muro, Mallorca", "region": "Mallorca" }]
+    },
+    {
+      "slug": "t3-training", "name": "T3 Training", "model": "resort", "model_label": "Coaching am Trainingszentrum", "seat": "La Caleta, Teneriffa",
+      "summary": "Deutschsprachige Camps am Tenerife Top Training mit 50- und 25-m-Becken, Strömungskanal und 330-m-Bahn. Höchstens 20 Teilnehmende; Hotel optional über ein Partnerhotel, Flüge nicht im Angebot. Auch für Gruppen und Vereine.",
+      "website": "https://www.t3-training.de/trainingscamps/triathlon+camps/",
+      "destinations": ["Teneriffa"], "regions": ["Kanaren"],
+      "features": { "hotel": "optional", "flight": "no", "camp_only": true, "beginner": null, "women": false, "swim": true, "family": true, "family_note": "Kinder frei", "max_group": "20" },
+      "prices": [{ "label": "Tri Camp SOLO", "duration": "7 Tage", "price": "960 €", "included": "Coaching, Eintritt Trainingszentrum, Strömungskanal", "excluded": "Hotel, Flug" }],
+      "hotels": [{ "hotel_name": "Hotel Jardin Caleta", "place": "La Caleta, Teneriffa", "region": "Kanaren" }]
+    },
+    {
+      "slug": "sonja-tajsich", "name": "Sonja Tajsich", "model": "coach", "model_label": "Coach (Ex-Profi, Sportwissenschaftlerin)", "seat": null,
+      "summary": "Camps einer ehemaligen Profi-Triathletin: seit über 15 Jahren auf Lanzarote (Pauschalreise über TUI) und in Kärnten am Klopeiner See mit Streckencheck für den Ironman Austria, dazu ein Rad-Camp in den Bergen. Camp auch ohne Hotel buchbar.",
+      "website": "https://www.sonja-tajsich.de/trainingslager-auf-lanzarote/",
+      "destinations": ["Lanzarote", "Kärnten"], "regions": ["Kanaren", "Alpen"],
+      "features": { "hotel": "yes", "flight": "partner", "flight_note": "über TUI", "camp_only": true, "beginner": true, "women": false, "swim": false, "family": true },
+      "prices": [
+        { "label": "Klopeiner See", "duration": "4 / 7 Tage", "price": "ab 485 / 935 €", "included": "Hotel mit Frühstück, Training, Sauna", "excluded": "Anreise" },
+        { "label": "Lanzarote", "duration": "14 Nächte", "price": "1.795–1.895 € + 420 € Camp", "included": "Flug, Hotel, Transfer", "excluded": "Rad" }
+      ],
+      "hotels": [
+        { "hotel_name": "Barceló Lanzarote Active Resort", "place": "Costa Teguise, Lanzarote", "region": "Kanaren" },
+        { "hotel_name": "Hotel Alpensee", "place": "Klopeiner See, Kärnten", "region": "Alpen" }
+      ]
+    },
+    {
+      "slug": "leder-coaching", "name": "Leder Coaching", "model": "coach", "model_label": "Coaches (Ex-Profis)", "seat": "Darmstadt",
+      "summary": "Breitestes Coach-Programm: Camps in Südafrika, auf Lanzarote und Mallorca, am Gardasee, am Fuschlsee und im Zillertal – darunter Ladies-, Schwimm- und Seequerungs-Camps sowie Rad-Etappenfahrten. Gebucht wird jeweils beim Partner vor Ort.",
+      "website": "https://www.lothar-leder.de/camps",
+      "destinations": ["Südafrika", "Lanzarote", "Mallorca", "Gardasee", "Fuschlsee", "Zillertal"], "regions": ["Südafrika", "Kanaren", "Mallorca", "Italien", "Alpen"],
+      "features": { "hotel": "partner", "flight": "partner", "camp_only": false, "beginner": true, "women": true, "women_note": "Ladies Camp", "swim": true, "family": null, "max_group": "30" },
+      "prices": [{ "label": "Camp im Club La Santa", "duration": "7 / 14 Tage", "price": "400 / 700 €", "included": "Coaching", "excluded": "Unterkunft, Flug" }],
+      "hotels": [
+        { "hotel_name": "Club La Santa", "place": "La Santa, Lanzarote", "region": "Kanaren" },
+        { "hotel_name": "Best Swim Center", "place": "Colonia Sant Jordi, Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Aktivhotel Santa Lucia", "place": "Torbole, Gardasee", "region": "Italien" },
+        { "hotel_name": "Hotel Jakob", "place": "Fuschl am See, Österreich", "region": "Alpen", "entity": "Hotel Jakob am See" }
+      ]
+    },
+    {
+      "slug": "jorge-sports", "name": "Jorge Sports", "model": "coach", "model_label": "Coach mit Sitz auf Mallorca", "seat": "Mallorca",
+      "summary": "Sportwissenschaftler mit Sitz auf Mallorca: Triathlon-Camp im Frühjahr mit 5 bis 20 Teilnehmenden, wattgesteuertem Radtraining und Videoanalyse, dazu ein Einsteiger-Camp, viele Kraul-Camps und Fernziele. Camp auch ohne Hotel buchbar.",
+      "website": "https://jorge-sports.com/camps/triathlon-camp-mallorca/",
+      "destinations": ["Mallorca", "Lanzarote"], "regions": ["Mallorca", "Kanaren"],
+      "features": { "hotel": "optional", "flight": "partner", "flight_note": "über ein Reisebüro", "camp_only": true, "beginner": true, "women": false, "swim": true, "family": null, "max_group": "20" },
+      "prices": [{ "label": "Triathlon Camp Mallorca", "duration": "10 Tage", "price": "450 € (Frühbucher 400 €)", "included": "Coaching, Schwimmbad", "excluded": "Hotel, Anreise, Transfer" }],
+      "hotels": [
+        { "hotel_name": "Allsun Hotel Bella Paguera", "place": "Paguera, Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Club Pollentia Resort", "place": "Alcúdia, Mallorca", "region": "Mallorca" }
+      ]
+    },
+    {
+      "slug": "tricamp", "name": "Tricamp", "model": "coach", "model_label": "Coaches mit Leistungsdiagnostik", "seat": null,
+      "summary": "Acht Camps im Jahr mit Leistungsdiagnostik: Basis in Alcúdia (Family-, Oster- und Rookie-Camps), dazu Swim & Run auf Lanzarote sowie Schwimm- und Laufcamps in Deutschland.",
+      "website": "https://tricamp.de/",
+      "destinations": ["Mallorca", "Lanzarote", "Deutschland"], "regions": ["Mallorca", "Kanaren", "Deutschland"],
+      "features": { "hotel": "yes", "flight": "no", "camp_only": null, "beginner": true, "beginner_note": "Rookie-Camp", "women": false, "swim": true, "family": true, "family_note": "Family-Camp" },
+      "prices": [{ "label": "Rookie Camp Mallorca", "duration": "7 Nächte", "price": "949 €", "included": "Hotel mit Halbpension, 8 Trainingstage", "excluded": "Flug, Transfer, Rad" }],
+      "hotels": [
+        { "hotel_name": "Viva Blue & Spa", "place": "Playa de Muro, Mallorca", "region": "Mallorca" },
+        { "hotel_name": "Robinson Club Fleesensee", "place": "Göhren-Lebbin, Mecklenburg", "region": "Deutschland" }
+      ]
+    },
+    {
+      "slug": "trivolution", "name": "Trivolution", "model": "coach", "model_label": "Coaching-Netzwerk", "seat": "Wiesbaden",
+      "summary": "Kleines Camp an der Westalgarve mit höchstens 14 Athleten, drei Coaches und eigenen Köchen. Termin für 2027 noch nicht veröffentlicht.",
+      "website": "https://trivolution-training.com/trainingscamps-2/",
+      "destinations": ["Algarve"], "regions": ["Portugal"],
+      "features": { "hotel": "yes", "hotel_note": "inkl. Köche", "flight": "unknown", "camp_only": null, "beginner": true, "women": false, "swim": false, "family": null, "max_group": "14" },
+      "prices": [],
+      "hotels": [{ "hotel_name": "Herdade da Vagem", "place": "Rogil bei Aljezur, Algarve", "region": "Portugal" }]
+    },
+    {
+      "slug": "triathlon-szene", "name": "triathlon-szene.de", "model": "coach", "model_label": "Coach", "seat": "Kirchzarten bei Freiburg",
+      "summary": "Kurzcamps über Feiertage im Schwarzwald und in Südbaden, ohne Flug und ohne Hotelpaket: Radtage und ein Triathloncamp.",
+      "website": "https://www.triathlon-szene.de/trainingslager.php",
+      "destinations": ["Südbaden"], "regions": ["Deutschland"],
+      "features": { "hotel": "no", "flight": "no", "camp_only": true, "beginner": null, "women": false, "swim": false, "family": null },
+      "prices": [{ "label": "Triathloncamp Südbaden", "duration": "4 Tage", "price": "299 €", "included": "Coaching", "excluded": "Hotel, Anreise" }],
+      "hotels": []
+    },
+    {
+      "slug": "sportingwomen", "name": "sportingWOMEN", "model": "community", "model_label": "Event-Veranstalter, nur für Frauen", "seat": "Augsburg",
+      "summary": "Camps ausschließlich für Frauen mit großer Teilnehmerzahl: ein Triathlon-Camp in Zell am See-Kaprun, bei dem Kraulen keine Voraussetzung ist, mit Mini-Triathlon zum Abschluss, dazu Schwimmcamps in Österreich und im Erzgebirge.",
+      "website": "https://www.sporting-women.de/womens-triathlon-camp/",
+      "destinations": ["Zell am See", "Erzgebirge"], "regions": ["Alpen", "Deutschland"],
+      "features": { "hotel": "yes", "flight": "no", "camp_only": null, "beginner": true, "women": true, "swim": true, "family": false, "max_group": "ca. 100 Teilnehmerinnen" },
+      "prices": [],
+      "hotels": [
+        { "hotel_name": "Tauern Spa Zell am See-Kaprun", "place": "Kaprun, Österreich", "region": "Alpen" },
+        { "hotel_name": "Sportcamp Woferlgut", "place": "Bruck an der Großglocknerstraße, Österreich", "region": "Alpen" },
+        { "hotel_name": "Sportpark Rabenberg", "place": "Breitenbrunn, Erzgebirge", "region": "Deutschland" }
+      ]
+    },
+    {
+      "slug": "plattfuss-podcast", "name": "Plattfuss Podcast", "model": "community", "model_label": "Community-Camp (Rennrad)", "seat": null,
+      "summary": "Rennrad-Camp einer Podcast-Community auf Mallorca für alle Niveaus, mit täglichen Ausfahrten von 70 bis 120 km. Kein Triathlon-Camp; gebucht wird über Hannes Hawaii Tours.",
+      "website": "https://plattfuss-podcast.de/pages/trainingslager",
+      "destinations": ["Mallorca"], "regions": ["Mallorca"],
+      "features": { "hotel": "yes", "flight": "unknown", "camp_only": false, "beginner": true, "women": false, "swim": false, "family": null, "family_note": "Begleitpersonen willkommen" },
+      "prices": [{ "label": "Rennrad-Camp", "duration": "7 Nächte", "price": "ca. 1.050 €", "included": "Hotel, Sportpaket", "excluded": "Rad (Verleih optional)" }],
+      "hotels": [{ "hotel_name": "Zafiro Tropic", "place": "Alcúdia, Mallorca", "region": "Mallorca", "entity": "Hotel Zafiro Tropic" }]
+    },
+    {
+      "slug": "ks-sportsworld", "name": "KS-Sportsworld", "model": "coach", "model_label": "Coaching mit Diagnostik und Mentaltraining", "seat": null, "status": "draft",
+      "summary": "Coaching-Firma mit Mentaltraining und Leistungsdiagnostik. Camps werden auf der Website genannt, aber nicht beschrieben.",
+      "website": "https://www.ks-sportsworld.de",
+      "destinations": [], "regions": [],
+      "features": {}, "prices": [], "hotels": []
+    }
+  ],
+  "open_points": [
+    "Camp-Anbieter: Preise 2027 bei Triathlonschule, sportingWOMEN und Trivolution anfragen",
+    "Camp-Anbieter: Hannes Hawaii Tours – klären, ob die ab-Preise den Flug enthalten",
+    "Camp-Anbieter: KS-Sportsworld – Camp-Angebot direkt erfragen (Profil steht auf Entwurf)",
+    "Camp-Anbieter: Trivolution – Termin 2027 und aktuelle Website klären",
+    "Camp-Anbieter: weitere Namen prüfen (Corpus Sport, Runningman, Triabolos, Roy Hinnen, MH-Sportsacademy, Got To Tri)",
+    "Hotels: Ist „Ferrer Janeiro“ (Ausdauerakademie) dasselbe Haus wie „Globales Janeiro“?"
+  ]
+}

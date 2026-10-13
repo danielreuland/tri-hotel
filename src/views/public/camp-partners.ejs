@@ -1,0 +1,36 @@
+<%- include('../partials/head') %>
+<nav class="crumbs" aria-label="Brotkrumen"><a href="/">Start</a> › <a href="/trainingscamp">Trainingscamp</a> › <span>Für Camp-Anbieter</span></nav>
+<h1>Für Camp-Anbieter</h1>
+<% if (sent) { %>
+  <div class="card"><p style="margin:0"><strong>Danke!</strong> Wir melden uns in der Regel innerhalb von zwei Werktagen per E-Mail.</p></div>
+<% } else { %>
+  <div class="grid grid-2 grid-content">
+    <div>
+      <p class="lead">Wir listen Trainingscamps neutral und kostenlos. Hier kannst du Angaben korrigieren lassen, dein Camp für die Übersicht vorschlagen oder Anfragen von Interessenten über uns erhalten.</p>
+      <ul>
+        <li><strong>Neutral:</strong> Aufnahme und Reihenfolge sind nicht käuflich; alle Anbieter erscheinen alphabetisch.</li>
+        <li><strong>Transparent:</strong> Partnerschaften (z. B. Vergütung für Anfragen) kennzeichnen wir als „Anzeige“.</li>
+        <li><strong>Hotels im Fokus:</strong> Wir bewerten die Hotels, in denen Camps stattfinden – nicht die Anbieter.</li>
+      </ul>
+    </div>
+    <div>
+      <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+      <form method="post" class="card" novalidate>
+        <label for="pa-company">Unternehmen bzw. Camp *</label><input id="pa-company" name="company" type="text" maxlength="160" required value="<%= form.company || '' %>">
+        <div class="form-row">
+          <div><label for="pa-name">Ansprechpartner</label><input id="pa-name" name="name" type="text" maxlength="120" value="<%= form.name || '' %>" autocomplete="name"></div>
+          <div><label for="pa-email">E-Mail *</label><input id="pa-email" name="email" type="email" maxlength="200" required value="<%= form.email || '' %>" autocomplete="email"></div>
+        </div>
+        <div class="form-row">
+          <div><label for="pa-req">Anliegen</label><select id="pa-req" name="request"><% Object.keys(REQUESTS).forEach(function (k) { %><option value="<%= k %>" <%= form.request === k ? 'selected' : '' %>><%= REQUESTS[k] %></option><% }) %></select></div>
+          <div><label for="pa-prov">Bereits gelistet als</label><select id="pa-prov" name="provider_id"><option value="">– noch nicht gelistet –</option><% providers.forEach(function (x) { %><option value="<%= x.id %>" <%= form.provider_id === x.id ? 'selected' : '' %>><%= x.name %></option><% }) %></select></div>
+        </div>
+        <label for="pa-msg">Nachricht *</label><textarea id="pa-msg" name="message" rows="6" maxlength="5000" required><%= form.message || '' %></textarea>
+        <div class="hp" aria-hidden="true"><label for="company_url">Bitte leer lassen</label><input id="company_url" name="company_url" type="text" tabindex="-1" autocomplete="off"></div>
+        <label class="inline"><input type="checkbox" name="privacy" required> <span>Ich habe die <a href="/datenschutz#kontakt" target="_blank">Hinweise zum Datenschutz</a> gelesen. *</span></label>
+        <p style="margin-bottom:0"><button class="btn" type="submit">Absenden</button></p>
+      </form>
+    </div>
+  </div>
+<% } %>
+<%- include('../partials/foot') %>

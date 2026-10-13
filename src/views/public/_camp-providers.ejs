@@ -1,0 +1,46 @@
+<%# Neutrale Anbieterliste mit Filtern. Erwartet: providers, regions, filters, MODELS, FLAGS, flag %>
+<%
+  var mark = function (v) { return v === true ? '<span class="yes" aria-label="ja">✓</span>' : v === false ? '<span class="no" aria-label="nein">–</span>' : '<span class="unk" aria-label="nicht erkennbar">?</span>'; };
+%>
+<form method="get" action="/trainingscamp#anbieter" class="camp-filter card">
+  <div class="form-row">
+    <div><label for="f-typ">Camp-Typ</label>
+      <select id="f-typ" name="typ" data-autosubmit><option value="">alle Typen</option><% Object.keys(MODELS).forEach(function (k) { %><option value="<%= k %>" <%= filters.model === k ? 'selected' : '' %>><%= MODELS[k] %></option><% }) %></select></div>
+    <div><label for="f-region">Region</label>
+      <select id="f-region" name="region" data-autosubmit><option value="">alle Regionen</option><% regions.forEach(function (r) { %><option value="<%= r %>" <%= filters.region === r ? 'selected' : '' %>><%= r %></option><% }) %></select></div>
+  </div>
+  <fieldset class="chips" style="border:0;padding:0;margin:8px 0 0">
+    <legend class="sr-only">Merkmale</legend>
+    <% Object.keys(FLAGS).forEach(function (k) { %>
+      <label class="chip"><input type="checkbox" name="merkmal" value="<%= k %>" <%= filters.flags.indexOf(k) >= 0 ? 'checked' : '' %> data-autosubmit-check> <%= FLAGS[k] %></label>
+    <% }) %>
+  </fieldset>
+  <div class="search-actions"><button class="btn small" type="submit">Anzeigen</button>
+    <span class="muted"><%= providers.length %> <%= providers.length === 1 ? 'Anbieter' : 'Anbieter' %></span>
+    <% if (filters.active) { %><a href="/trainingscamp#anbieter">Filter zurücksetzen</a><% } %></div>
+</form>
+
+<% if (!providers.length) { %>
+  <p class="card">Kein Anbieter passt zu allen Filtern. <a href="/trainingscamp#anbieter">Alle anzeigen</a></p>
+<% } %>
+<div class="camp-list">
+  <% providers.forEach(function (p) { var price = (p.prices || [])[0]; %>
+    <article class="camp-card card">
+      <header>
+        <span class="badge"><%= MODELS[p.model] %></span>
+        <% if (p.partner) { %><span class="badge ad-badge" title="Mit diesem Anbieter besteht eine Vereinbarung. Auf Reihenfolge und Darstellung hat das keinen Einfluss.">Anzeige · Partner</span><% } %>
+      </header>
+      <h3><a href="/trainingscamp/anbieter/<%= p.slug %>"><%= p.name %></a></h3>
+      <p class="muted where"><%= p.destinations.join(' · ') || 'Ziele nicht angegeben' %><%= p.seat ? ' — ' + p.seat : '' %></p>
+      <ul class="camp-flags">
+        <% Object.keys(FLAGS).forEach(function (k) { %><li><%- mark(flag(p, k)) %> <%= FLAGS[k] %></li><% }) %>
+      </ul>
+      <% if (price) { %><p class="camp-price"><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
+      <p class="camp-actions">
+        <a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels</a>
+        <a class="btn small secondary" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
+      </p>
+    </article>
+  <% }) %>
+</div>
+<p class="muted"><small>Alphabetisch sortiert. Anbieter zahlen nicht für ihre Aufnahme; Partnerschaften sind als „Anzeige“ gekennzeichnet und ändern weder Reihenfolge noch Darstellung. ✓ = angeboten, – = nicht angeboten, ? = auf der Website nicht erkennbar. Angaben ohne Gewähr, Stand siehe Profil. <a href="/trainingscamp/fuer-anbieter">Du bist Anbieter?</a></small></p>

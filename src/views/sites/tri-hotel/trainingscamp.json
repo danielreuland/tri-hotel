@@ -1,0 +1,12 @@
+{
+  "title": "Triathlon-Trainingscamp: Lohnt es sich – und welches passt zu dir?",
+  "description": "Ratgeber Triathlon-Trainingslager: was ein Camp bringt, wann es in die Saison passt, Checkliste vor der Buchung und alle Camp-Anbieter neutral im Vergleich – mit Preisen und Hotels.",
+  "breadcrumb": "Trainingscamp",
+  "faq": [
+    { "q": "Bin ich als Einsteiger im Camp richtig?", "a": "Ja, wenn du ein Einsteiger-Camp wählst. Viele Anbieter haben eigene Formate, in denen Kraulen keine Voraussetzung ist und Gruppenfahren am ersten Tag geübt wird." },
+    { "q": "Eine oder zwei Wochen?", "a": "Eine Woche reicht für Technik und Motivation. Für einen echten Grundlagenblock sind zwei Wochen besser, mit einem Ruhetag zur Halbzeit." },
+    { "q": "Mallorca oder Kanaren?", "a": "Bis Anfang März sind die Kanaren wärmer und wetterstabiler. Ab März bietet Mallorca die abwechslungsreicheren Radstrecken und kürzere Flüge." },
+    { "q": "Eigenes Rad oder Leihrad?", "a": "Das eigene Rad passt perfekt, kostet aber Transport und Montage. Ein gutes Carbon-Leihrad vor Ort ist bequemer; bring Pedale, Schuhe und Sattelmaße mit." },
+    { "q": "Kann ich mit Partner oder Familie anreisen?", "a": "Oft ja. Manche Camps bieten Kinderbetreuung, Jugendcamps oder Rabatte für Begleitpersonen ohne Sportpaket." }
+  ]
+}

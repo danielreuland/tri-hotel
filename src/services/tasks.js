@@ -16,6 +16,7 @@ const LABELS = {
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
   contact: 'Kontaktanfrage',
+  camp_partner: 'Camp-Anbieter',
   manual: 'Eigene Aufgabe',
 };
 // Punkte, die eine eigene Karte haben, erscheinen nicht noch einmal im Prüfbericht
@@ -83,8 +84,10 @@ async function collect() {
     }
   }
   // Kontaktformular: offene Nachrichten
-  for (const m of await db.many(`SELECT id, name, email, message FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`)) {
-    push({ source: 'contact', source_key: `contact:${m.id}`, title: m.name ? `${m.name} (${m.email})` : m.email,
+  for (const m of await db.many(`SELECT id, name, email, message, topic, company, request FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`)) {
+    const isPartner = m.topic === 'anbieter';
+    push({ source: isPartner ? 'camp_partner' : 'contact', source_key: `contact:${m.id}`,
+      title: isPartner ? `${m.company} – ${({ korrektur: 'Korrektur', aufnahme: 'Aufnahme', partner: 'Partnerschaft', sonstiges: 'Anfrage' })[m.request] || 'Anfrage'}` : (m.name ? `${m.name} (${m.email})` : m.email),
       detail: [{ level: 'todo', text: m.message.replace(/\s+/g, ' ').slice(0, 300) }], link: `/admin/kontakt#m-${m.id}`, entity_id: null });
   }
   return out;

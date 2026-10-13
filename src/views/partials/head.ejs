@@ -32,6 +32,7 @@
     <nav>
       <% if (locals.hostRanking) { %>
         <a href="/#ranking">Ranking</a>
+        <% if (locals.campGuide) { %><a href="/trainingscamp">Trainingscamps</a><% } %>
         <a href="<%= locals.scorePath %>">So funktioniert der <%= hostRanking.score_name %></a>
         <a class="nav-cta" href="/<%= hostRanking.entity_type %>-hinzufuegen"><%= hostRanking.entity_label_sg %> hinzufügen</a>
       <% } %>

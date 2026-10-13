@@ -1,0 +1,58 @@
+<%- include('../partials/admin-head') %>
+<% var f = p.features || {}; var tri = function (v) { return v === true ? 'yes' : v === false ? 'no' : ''; };
+   var triSel = function (name, v) { return '<select name="' + name + '"><option value="">nicht erkennbar</option><option value="yes"' + (tri(v) === 'yes' ? ' selected' : '') + '>ja</option><option value="no"' + (tri(v) === 'no' ? ' selected' : '') + '>nein</option></select>'; }; %>
+<p><a href="/admin/camps">← Camp-Anbieter</a><% if (p.id && p.status === 'active') { %> · <a href="/trainingscamp/anbieter/<%= p.slug %>" target="_blank">Öffentliche Seite ↗</a><% } %></p>
+<h1><%= p.id ? p.name : 'Neuer Anbieter' %></h1>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<form method="post" action="/admin/camps<%= p.id ? '/' + p.id : '' %>" class="card">
+  <div class="form-row">
+    <div><label>Name *</label><input name="name" type="text" required value="<%= p.name || '' %>"></div>
+    <div><label>Slug</label><input name="slug" type="text" value="<%= p.slug || '' %>"></div>
+    <div><label>Status</label><select name="status"><% ['active', 'draft', 'archived'].forEach(function (s) { %><option value="<%= s %>" <%= p.status === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+  </div>
+  <div class="form-row">
+    <div><label>Typ</label><select name="model"><% Object.keys(MODELS).forEach(function (k) { %><option value="<%= k %>" <%= p.model === k ? 'selected' : '' %>><%= MODELS[k] %></option><% }) %></select></div>
+    <div><label>Typ genauer</label><input name="model_label" type="text" value="<%= p.model_label || '' %>" placeholder="Coach (Ex-Profi)"></div>
+    <div><label>Sitz</label><input name="seat" type="text" value="<%= p.seat || '' %>"></div>
+  </div>
+  <label>Kurzprofil <small class="muted">in eigenen Worten, keine Werbetexte übernehmen</small></label><textarea name="summary" rows="3"><%= p.summary || '' %></textarea>
+  <div class="form-row">
+    <div><label>Website *</label><input name="website" type="url" required value="<%= p.website || '' %>"></div>
+    <div><label>Ziele <small class="muted">kommagetrennt</small></label><input name="destinations" type="text" value="<%= (p.destinations || []).join(', ') %>"></div>
+    <div><label>Regionen (Filter) <small class="muted">kommagetrennt</small></label><input name="regions" type="text" value="<%= (p.regions || []).join(', ') %>" placeholder="Kanaren, Mallorca, Alpen"></div>
+  </div>
+  <h3>Leistungen</h3>
+  <div class="form-row">
+    <div><label>Hotel</label><select name="f_hotel"><% Object.keys(HOTEL_VALUES).forEach(function (k) { %><option value="<%= k %>" <%= (f.hotel || 'unknown') === k ? 'selected' : '' %>><%= HOTEL_VALUES[k] %></option><% }) %></select></div>
+    <div><label>Hotel-Hinweis</label><input name="f_hotel_note" type="text" value="<%= f.hotel_note || '' %>"></div>
+    <div><label>Flug</label><select name="f_flight"><% Object.keys(FLIGHT_VALUES).forEach(function (k) { %><option value="<%= k %>" <%= (f.flight || 'unknown') === k ? 'selected' : '' %>><%= FLIGHT_VALUES[k] %></option><% }) %></select></div>
+    <div><label>Flug-Hinweis</label><input name="f_flight_note" type="text" value="<%= f.flight_note || '' %>"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Camp ohne Hotel</label><%- triSel('f_camp_only', f.camp_only) %></div>
+    <div><label>Einsteiger</label><%- triSel('f_beginner', f.beginner) %></div>
+    <div><label>Frauen-Camp</label><%- triSel('f_women', f.women) %></div>
+    <div><label>Schwimm-Camp</label><%- triSel('f_swim', f.swim) %></div>
+    <div><label>Familie / Kinder</label><%- triSel('f_family', f.family) %></div>
+  </div>
+  <div class="form-row">
+    <div><label>Hinweis Familie</label><input name="f_family_note" type="text" value="<%= f.family_note || '' %>"></div>
+    <div><label>Max. Gruppe</label><input name="f_max_group" type="text" value="<%= f.max_group || '' %>"></div>
+  </div>
+  <label>Preisbeispiele <small class="muted">eine Zeile je Beispiel: Bezeichnung | Dauer | Preis | enthalten | nicht enthalten</small></label>
+  <textarea name="prices" rows="3"><%= pricesText %></textarea>
+  <label>Hotels und Orte <small class="muted">eine Zeile je Hotel: Name | Ort | Region – ist der Name exakt wie im Ranking, wird das Hotel verknüpft</small></label>
+  <textarea name="hotels" rows="5"><%= hotelsText %></textarea>
+  <div class="form-row">
+    <div><label>Stand der Angaben</label><input name="as_of" type="date" value="<%= p.as_of ? new Date(p.as_of).toISOString().slice(0, 10) : '' %>"></div>
+    <div><label>Quelle</label><input name="source_url" type="url" value="<%= p.source_url || '' %>"></div>
+  </div>
+  <h3>Partnerschaft</h3>
+  <p class="muted" style="margin-top:0"><small>Nur mit Vereinbarung. Partner erscheinen mit „Anzeige · Partner“; Reihenfolge und Darstellung ändern sich nicht.</small></p>
+  <div class="form-row">
+    <div><label class="inline"><input type="checkbox" name="partner" <%= p.partner ? 'checked' : '' %>> Partner</label></div>
+    <div><label>Partner-Link</label><input name="partner_url" type="url" value="<%= p.partner_url || '' %>"></div>
+  </div>
+  <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button></p>
+</form>
+<%- include('../partials/admin-foot') %>

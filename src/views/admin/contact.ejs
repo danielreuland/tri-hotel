@@ -6,6 +6,7 @@
 <% if (!open.length) { %><p class="card">Keine offenen Nachrichten.</p><% } %>
 <% open.forEach(function (m) { %>
   <article class="card" id="m-<%= m.id %>" style="margin-bottom:10px">
+    <% if (m.topic === 'anbieter') { %><p style="margin:0 0 4px"><span class="badge lbl lbl-camp_partner">Camp-Anbieter</span> <strong><%= m.company %></strong> · <%= ({ korrektur: 'Angaben korrigieren', aufnahme: 'Aufnahme', partner: 'Partnerschaft', sonstiges: 'Sonstiges' })[m.request] || '' %></p><% } %>
     <p style="margin-top:0"><strong><%= m.name || 'ohne Namen' %></strong> · <a href="mailto:<%= m.email %>?subject=<%= encodeURIComponent('Deine Nachricht an uns') %>"><%= m.email %></a> <small class="muted">· <%= new Date(m.created_at).toLocaleString('de-DE') %></small></p>
     <p style="white-space:pre-wrap"><%= m.message %></p>
     <form method="post" action="/admin/kontakt/<%= m.id %>/erledigt"><button class="btn small" type="submit">Erledigt</button></form>

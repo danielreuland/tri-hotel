@@ -11,7 +11,8 @@
     "migrate": "node scripts/migrate.js",
     "create-admin": "node scripts/create-admin.js",
     "recompute": "node scripts/recompute.js",
-    "compare-models": "node scripts/compare-models.js"
+    "compare-models": "node scripts/compare-models.js",
+    "import-camps": "node scripts/import-camps.js"
   },
   "engines": {
     "node": ">=20"

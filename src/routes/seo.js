@@ -14,7 +14,7 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 router.get('/robots.txt', (req, res) => {
   const lines = config.noindex
     ? ['User-agent: *', 'Disallow: /']
-    : ['User-agent: *', 'Disallow: /admin', 'Disallow: /anfrage/', 'Disallow: /bestaetigen/', '', `Sitemap: ${res.locals.siteUrl}/sitemap.xml`];
+    : ['User-agent: *', 'Disallow: /admin', 'Disallow: /anfrage/', 'Disallow: /bestaetigen/', 'Disallow: /go/', '', `Sitemap: ${res.locals.siteUrl}/sitemap.xml`];
   res.type('text/plain').send(`${lines.join('\n')}\n`);
 });
 
@@ -50,6 +50,12 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
     const ov = await areas.overview(ranking, site.id);
     for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, priority: '0.9' });
     for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, priority: '0.7' });
+  }
+  // Trainingscamps (falls die Site die Seite hat)
+  if (res.locals.campGuide) {
+    urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });
+    const cps = await db.many(`SELECT slug, updated_at FROM camp_providers WHERE site_id = $1 AND status = 'active' ORDER BY slug`, [site.id]);
+    for (const c of cps) urls.push({ loc: `${base}/trainingscamp/anbieter/${c.slug}`, lastmod: c.updated_at, priority: '0.6' });
   }
   const body = urls.map((u) => `  <url><loc>${xmlEsc(u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}<priority>${u.priority}</priority></url>`).join('\n');
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);

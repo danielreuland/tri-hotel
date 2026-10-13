@@ -1,0 +1,66 @@
+<%- include('../partials/head') %>
+<%
+  var f = p.features || {};
+  var mark = function (v) { return v === true ? '✓ ja' : v === false ? '– nein' : '? nicht erkennbar'; };
+  var notes = { beginner: f.beginner_note, women: f.women_note, family: f.family_note, flight: f.flight_note };
+%>
+<nav class="crumbs" aria-label="Brotkrumen"><a href="/">Start</a> › <a href="/trainingscamp">Trainingscamp</a> › <a href="/trainingscamp#anbieter">Anbieter</a> › <span><%= p.name %></span></nav>
+
+<div class="camp-head">
+  <div>
+    <p class="eyebrow"><%= MODELS[p.model] %><%= p.model_label && p.model_label !== MODELS[p.model] ? ' · ' + p.model_label : '' %></p>
+    <h1><%= p.name %></h1>
+    <p class="muted"><%= p.destinations.join(' · ') %><%= p.seat ? ' — Sitz: ' + p.seat : '' %></p>
+  </div>
+  <div class="camp-head-cta">
+    <% if (p.partner) { %><span class="badge ad-badge">Anzeige · Partner</span><% } %>
+    <a class="btn large cta" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
+  </div>
+</div>
+
+<div class="grid grid-2 grid-content">
+  <section>
+    <% if (p.summary) { %><h2>Überblick</h2><p class="lead" style="font-size:1.05rem"><%= p.summary %></p><% } %>
+
+    <h2>Leistungen</h2>
+    <div class="fact"><span>Hotel</span><span class="val"><%= HOTEL_VALUES[f.hotel] || 'nicht erkennbar' %><%= f.hotel_note ? ' (' + f.hotel_note + ')' : '' %></span></div>
+    <div class="fact"><span>Flug</span><span class="val"><%= FLIGHT_VALUES[f.flight] || 'nicht erkennbar' %><%= f.flight_note ? ' (' + f.flight_note + ')' : '' %></span></div>
+    <% ['camp_only', 'beginner', 'women', 'swim', 'family'].forEach(function (k) { %>
+      <div class="fact"><span><%= FLAGS[k] %></span><span class="val <%= flag(p, k) === null ? 'unknown' : '' %>"><%= mark(flag(p, k)) %><%= notes[k] ? ' (' + notes[k] + ')' : '' %></span></div>
+    <% }) %>
+    <% if (f.max_group) { %><div class="fact"><span>Gruppengröße</span><span class="val">max. <%= f.max_group %></span></div><% } %>
+
+    <% if ((p.prices || []).length) { %>
+      <h2>Preisbeispiele</h2>
+      <div class="table-scroll"><table>
+        <tr><th>Camp</th><th>Dauer</th><th>Preis</th><th>Enthalten</th><th>Nicht enthalten</th></tr>
+        <% p.prices.forEach(function (x) { %><tr><td><%= x.label %></td><td><%= x.duration %></td><td><strong><%= x.price %></strong></td><td><small><%= x.included %></small></td><td><small><%= x.excluded %></small></td></tr><% }) %>
+      </table></div>
+      <p class="muted"><small>Pro Person im Doppelzimmer laut Anbieter. Aktuelle Preise und Termine beim Anbieter.</small></p>
+    <% } %>
+  </section>
+
+  <section>
+    <h2>Hotels und Orte</h2>
+    <% if (!hotels.length) { %><p class="muted">Der Anbieter nennt keine festen Hotels.</p><% } %>
+    <ul class="rank-list">
+      <% hotels.forEach(function (h) { var live = h.entity_slug && h.ranking_status === 'live'; %>
+        <li>
+          <% if (live) { %>
+            <a class="rank-item" href="/<%= hostRanking ? hostRanking.entity_type : 'hotel' %>/<%= h.entity_slug %>"><span class="info"><span class="name"><%= h.hotel_name %></span><br><small><%= h.place || '' %> · im Ranking</small></span><span class="score"><%= h.score === null ? '–' : h.score %></span></a>
+          <% } else { %>
+            <div class="rank-item static"><span class="info"><span class="name"><%= h.hotel_name %></span><br><small><%= h.place || '' %><%= h.region ? ' · ' + h.region : '' %></small></span><span class="score none" title="noch nicht im Ranking">–</span></div>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+    <% if (hotels.some(function (h) { return !(h.entity_slug && h.ranking_status === 'live'); })) { %>
+      <p class="muted"><small>Hotels ohne Score sind noch nicht im Ranking. <a href="/hotel-hinzufuegen">Hotel vorschlagen</a></small></p>
+    <% } %>
+  </section>
+</div>
+
+<p class="muted" style="margin-top:24px"><small>Angaben laut Website des Anbieters<% if (p.as_of) { %>, Stand <%= formatDate(p.as_of) %><% } %><% if (p.source_url) { %> (<a href="<%= p.source_url %>" rel="nofollow noopener" target="_blank">Quelle</a>)<% } %>. Ohne Gewähr – Termine, Preise und Leistungen bitte beim Anbieter prüfen. Anbieter bewerten wir nicht; einen Score gibt es nur für Hotels. Fehler entdeckt? <a href="/trainingscamp/fuer-anbieter?anbieter=<%= p.id %>">Korrektur melden</a></small></p>
+
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>
