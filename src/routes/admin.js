@@ -263,6 +263,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     review,
     placeSearch,
     placesEnabled: places.enabled(),
+    bestMonths: require('../lib/seo').bestMonths(d.ranking.formula, d.climate),
     placesMapsLink: places.mapsLink,
     title: d.sub.entity_name,
     ...d,

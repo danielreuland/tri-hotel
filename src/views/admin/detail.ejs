@@ -168,6 +168,21 @@
       <% } %>
     </section>
 
+    <section class="card" style="margin-top:16px" id="klima" data-tab="stammdaten">
+      <h2 style="margin-top:0">Klima je Monat</h2>
+      <% if (!climate.length) { %>
+        <p class="muted">Keine Klimadaten. Sie kommen aus den Koordinaten (Open-Meteo, Mittel mehrerer Jahre) – Koordinaten prüfen und die Auto-Prüfung erneut starten bzw. „Daten aktualisieren“.</p>
+      <% } else { var bt = (ranking.formula || {}).best_time || {}; %>
+        <p class="muted" style="margin-top:0"><small>Nur Information, zählt nicht im <%= ranking.score_name %>. Hervorgehoben: beste Reisezeit<%= bt.metric ? ' (' + (bt.metric === 'avg_high_c' ? 'Tageshöchstwert' : bt.metric) + (bt.min !== undefined ? ' ab ' + bt.min : '') + (bt.max !== undefined ? ' bis ' + bt.max : '') + ' °C)' : '' %>.</small></p>
+        <div class="table-scroll"><table>
+          <tr><th>Monat</th><% climate.forEach(function (c) { %><th style="<%= bestMonths.includes(Number(c.month)) ? 'color:var(--good)' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+          <tr><td>Max. °C</td><% climate.forEach(function (c) { %><td><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
+          <tr><td>Min. °C</td><% climate.forEach(function (c) { %><td><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
+          <tr><td>Regentage</td><% climate.forEach(function (c) { %><td><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+        </table></div>
+      <% } %>
+    </section>
+
     <section class="card" style="margin-top:16px" id="fakten" data-tab="pruefung">
       <h2 style="margin-top:0">Fakten</h2>
       <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Beim Ändern eines Werts springt die Vertrauensstufe auf 2 (Admin geprüft).</p>

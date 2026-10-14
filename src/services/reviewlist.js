@@ -30,7 +30,7 @@ function build(d, dismissals = []) {
   // Koordinaten und Klima
   if (entity.lat === null) add('block', 'Koordinaten fehlen – ohne sie keine Karte, kein Klima, keine Umgebung.', 'stammdaten', null, 'coords-missing');
   else if (/ungefähr/i.test((entity.attributes || {}).geo_source || '')) add('todo', 'Koordinaten sind nur ungefähr – Lage prüfen und genau eintragen.', 'stammdaten', entity.attributes.geo_source, 'coords-approx');
-  if (entity.lat !== null && !(climate || []).length) add('todo', 'Klimadaten fehlen – Auto-Prüfung erneut starten.', null, null, 'climate');
+  if (entity.lat !== null && !(climate || []).length) add('todo', 'Klimadaten fehlen – Auto-Prüfung erneut starten.', 'klima', null, 'climate');
 
   // Fakten: automatische Vorschläge, strittige, fehlende
   const auto = facts.filter((f) => f.trust_level === 4);
