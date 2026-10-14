@@ -48,7 +48,7 @@ async function gather(entityId, rankingId) {
     return { category: cat.label, points: pts, max, known, unknown };
   }).filter((c) => c.known.length || c.unknown.length);
 
-  const best = seo.bestMonths(criteria, climate);
+  const best = seo.bestMonths(ranking.formula, climate);
   const climateTable = climate
     .slice().sort((a, b) => a.month - b.month)
     .map((r) => ({ month: MONTHS[r.month - 1], max_c: r.avg_high_c === null ? null : Math.round(r.avg_high_c), rain_days: r.rain_days === null ? null : Math.round(r.rain_days) }));

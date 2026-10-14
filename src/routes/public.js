@@ -134,7 +134,7 @@ async function renderEntity(req, res, ranking, slug) {
   const er = await db.one(`SELECT * FROM entity_rankings WHERE entity_id = $1 AND ranking_id = $2 AND status = 'live'`, [entity.id, ranking.id]);
   if (!er) return null;
 
-  const month = parseMonth(req.query.monat);
+  const month = null; // Klima zählt nicht im Score – kein Reisemonat mehr
   const [categories, criteria, facts, climate] = await Promise.all([
     rankings.getCategories(ranking.id),
     rankings.getCriteria(ranking.id),
@@ -200,7 +200,7 @@ async function renderEntity(req, res, ranking, slug) {
     description: text && text.summary ? text.summary : (result.eligible
       ? `${ranking.score_name} ${result.score}/100 (${result.label}) für ${entity.name}${entity.city ? ` in ${entity.city}` : ''}. `
       : `${entity.name}${entity.city ? ` in ${entity.city}` : ''} im ${ranking.name}-Ranking. `)
-      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle, Klima je Monat und Lage.',
+      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle, beste Reisezeit und Lage.',
     canonical,
     ogImage,
     ogType: 'article',
@@ -222,6 +222,8 @@ async function renderEntity(req, res, ranking, slug) {
     month,
     images,
     textBlocks: text ? describer.parseBody(text.body) : [],
+    bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
+    bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
     textDate: text && text.published_at,
     base: rankingBase(ranking),
@@ -349,7 +351,7 @@ async function renderArea(req, res, ranking, area) {
     description: (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
-      + (best ? ` Beste Reisemonate: ${best}.` : '') + ' Jeder Wert mit Quelle.',
+      + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Jeder Wert mit Quelle.',
     canonical: `${siteUrl}${path}`,
     ogImage: `${siteUrl}/og/${area.type === 'region' ? 'region' : 'land'}/${area.slug}.png`,
     // Seiten mit zu wenigen Einträgen und Monatsansichten nicht indexieren

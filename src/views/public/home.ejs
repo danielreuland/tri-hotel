@@ -76,9 +76,9 @@
           </select>
         </div>
         <div class="search-field">
-          <label for="monat">Reisemonat</label>
+          <label for="monat">Gute Reisezeit im</label>
           <select id="monat" name="monat">
-            <option value="">bester Monat</option>
+            <option value="">beliebigen Monat</option>
             <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
           </select>
         </div>
@@ -117,11 +117,11 @@
       <ol class="rank-list">
         <% ranked.forEach(function (e) { %>
           <li>
-            <a class="rank-item" href="<%= entityPath(e) %><%= month ? '?monat=' + month : '' %>">
+            <a class="rank-item" href="<%= entityPath(e) %>">
               <span class="pos"><%= e.rank %></span>
               <span class="info">
                 <span class="name"><%= e.name %></span><br>
-                <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %></small>
+                <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %><% if (e.bestMonths && e.bestMonths.length) { %> · beste Reisezeit <%= monthRanges(e.bestMonths, MONTHS) %><% } %></small>
                 <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
                 <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
               </span>

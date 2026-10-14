@@ -82,7 +82,8 @@ async function recomputeRanking(rankingId) {
   return rows.length;
 }
 
-// Live-Objekte eines Rankings. Mit Monat wird der Score für diesen Monat neu berechnet.
+// Live-Objekte eines Rankings mit fester Bewertung und „bester Reisezeit“ (nur Info).
+// Mit Monat: nur Objekte, deren beste Reisezeit diesen Monat enthält – der Score ändert sich nicht.
 async function listLive(ranking, { month } = {}) {
   const rows = await db.many(
     `SELECT e.*, er.score, er.fact_score, er.completeness, er.is_provisional, er.ko_reason, er.published_at
@@ -91,21 +92,18 @@ async function listLive(ranking, { month } = {}) {
     [ranking.id]
   );
   const formula = scoring.withDefaults(ranking.formula);
-  let criteria = null;
+  const seo = require('../lib/seo');
+  const climateRows = rows.length
+    ? await db.many(`SELECT * FROM climate_monthly WHERE entity_id = ANY($1::uuid[])`, [rows.map((r) => r.id)])
+    : [];
   const list = [];
   for (const row of rows) {
-    let { score } = row;
-    let completeness = Number(row.completeness);
-    if (month) {
-      criteria = criteria || (await getCriteria(ranking.id));
-      const facts = await getFacts(row.id, ranking.id);
-      const climate = await getClimate(row.id);
-      const r = scoring.computeScore(criteria, factMap(facts), climate, { month, formula: ranking.formula, labels: ranking.labels });
-      score = r.score;
-      completeness = r.completeness;
-    }
+    const { score } = row;
+    const completeness = Number(row.completeness);
+    const best = seo.bestMonths(ranking.formula, climateRows.filter((c) => c.entity_id === row.id));
+    if (month && !best.includes(month)) continue;
     const eligible = !row.ko_reason && score !== null && completeness >= formula.min_completeness;
-    list.push({ ...row, score, completeness, eligible, label: scoring.labelFor(score, ranking.labels) });
+    list.push({ ...row, score, completeness, eligible, bestMonths: best, label: scoring.labelFor(score, ranking.labels) });
   }
   // Sortierung ausschließlich nach Score – Partner-Status spielt keine Rolle.
   list.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.name.localeCompare(b.name, 'de'));

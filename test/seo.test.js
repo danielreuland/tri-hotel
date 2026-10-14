@@ -22,10 +22,7 @@ test('Regionen: Zuordnung über Mittelpunkt und Radius', () => {
 });
 
 test('Beste Reisemonate folgen den Klima-Kriterien des Rankings', () => {
-  const criteria = [
-    { code: 'temp', max_points: 4, scoring: { type: 'climate', metric: 'avg_high_c', bands: [{ min: 15, max: 30, points: 4 }] } },
-    { code: 'rain', max_points: 1, scoring: { type: 'climate', metric: 'rain_days', bands: [{ min: 0, max: 4.9, points: 1 }] } },
-  ];
+  const formula = { best_time: { metric: 'avg_high_c', min: 16, max: 28 } };
   const climate = seo.averageClimate([
     { month: 3, avg_high_c: 17, rain_days: 4 }, { month: 3, avg_high_c: 19, rain_days: 5 }, // Ø 18 °C, 4,5 Tage
     { month: 4, avg_high_c: 21, rain_days: 3 },
@@ -33,10 +30,16 @@ test('Beste Reisemonate folgen den Klima-Kriterien des Rankings', () => {
     { month: 10, avg_high_c: 24, rain_days: 4 },
   ]);
   assert.deepEqual(climate.find((c) => c.month === 3), { month: 3, avg_high_c: 18, avg_low_c: null, rain_days: 4.5 });
-  const best = seo.bestMonths(criteria, climate);
+  const best = seo.bestMonths(formula, climate);
   assert.deepEqual(best, [3, 4, 10]);
   assert.equal(seo.monthRanges(best, MONTHS), 'März–April, Oktober');
-  assert.deepEqual(seo.bestMonths([], climate), [], 'ohne Klima-Kriterien keine Aussage');
+  assert.deepEqual(seo.bestMonths({}, climate), [], 'ohne Regel keine Aussage');
+});
+
+test('monthRanges: Spanne über den Jahreswechsel und ganzjährig', () => {
+  assert.equal(seo.monthRanges([1, 2, 3, 4, 5, 6, 10, 11, 12], MONTHS), 'Oktober–Juni');
+  assert.equal(seo.monthRanges([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], MONTHS), 'ganzjährig');
+  assert.equal(seo.monthRanges([5, 6, 7, 8, 9], MONTHS), 'Mai–September');
 });
 
 test('Ausstattung je Bereich: häufigste filterbare Leistungen', () => {

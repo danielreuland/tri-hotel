@@ -58,25 +58,36 @@ function averageClimate(rows) {
 }
 
 // Beste Reisemonate: alle Klima-Kriterien des Rankings erreichen die volle Punktzahl (keine festen Grenzwerte im Code)
-function bestMonths(criteria, climate) {
-  const climateCriteria = criteria.filter((c) => c.scoring && c.scoring.type === 'climate');
-  if (!climateCriteria.length) return [];
-  return climate
-    .filter((row) => climateCriteria.every((c) => {
-      const r = scoring.pointsFor(c, null, row);
-      return r.known && r.points >= Number(c.max_points);
-    }))
-    .map((row) => row.month);
+// Beste Reisezeit (nur Information, nicht im Score): Monate, deren Klimawert im Bereich formula.best_time liegt.
+// formula.best_time = { metric: 'avg_high_c', min: 16, max: 28 }; ohne Angabe gibt es keine Empfehlung.
+function bestMonths(formula, climate) {
+  const bt = (formula || {}).best_time;
+  if (!bt || !bt.metric) return [];
+  return (climate || [])
+    .filter((row) => {
+      const v = row[bt.metric];
+      if (v === null || v === undefined) return false;
+      const n = Number(v);
+      return (bt.min === undefined || n >= Number(bt.min)) && (bt.max === undefined || n <= Number(bt.max));
+    })
+    .map((row) => Number(row.month))
+    .sort((a, b) => a - b);
 }
 
 // Monate zu lesbaren Spannen zusammenfassen: [3,4,5,10] -> "März–Mai, Oktober"
 function monthRanges(months, names) {
   const sorted = [...new Set(months)].sort((a, b) => a - b);
+  if (sorted.length === 12) return 'ganzjährig';
   const ranges = [];
   for (const m of sorted) {
     const last = ranges[ranges.length - 1];
     if (last && m === last[1] + 1) last[1] = m;
     else ranges.push([m, m]);
+  }
+  // Spanne über den Jahreswechsel zusammenführen (Dezember + Januar)
+  if (ranges.length > 1 && ranges[0][0] === 1 && ranges[ranges.length - 1][1] === 12) {
+    const first = ranges.shift();
+    ranges[ranges.length - 1][1] = first[1];
   }
   return ranges.map(([a, b]) => (a === b ? names[a - 1] : `${names[a - 1]}–${names[b - 1]}`)).join(', ');
 }

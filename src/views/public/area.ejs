@@ -22,7 +22,7 @@
   <div class="area-facts">
     <div><strong><%= d.count %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
     <% if (d.topScore !== null) { %><div><strong><%= d.topScore %></strong><span>bester <%= ranking.score_name %></span></div><% } %>
-    <% if (best) { %><div><strong class="months"><%= best %></strong><span>beste Reisemonate laut Klimadaten</span></div><% } %>
+    <% if (best) { %><div><strong class="months"><%= best %></strong><span>beste Reisezeit laut Klimadaten</span></div><% } %>
   </div>
 </section>
 
@@ -83,7 +83,7 @@
           <tr><th>Regentage</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
         </table>
       </div>
-      <p class="muted"><small>Mittel der <%= ranking.entity_label_pl %> <%= area.nameIn %> (Open-Meteo, letzte drei Jahre). Markiert: Monate, in denen das Klima im <%= ranking.score_name %> die volle Punktzahl erreicht. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
+      <p class="muted"><small>Mittel der <%= ranking.entity_label_pl %> <%= area.nameIn %> (Open-Meteo, letzte drei Jahre). Markiert: beste Reisezeit. Das Klima ist nur Information und fließt nicht in den <%= ranking.score_name %> ein. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
     </section>
   <% } %>
 </div>
