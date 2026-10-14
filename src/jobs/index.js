@@ -48,6 +48,9 @@ async function start() {
   // Löschfristen (täglich 3:30 Uhr)
   await boss.work('retention', async () => {
     const r = await require('../services/retention').run();
+    // Bewertungen altern (Gewichte nach Monaten) – Scores täglich neu berechnen
+    const rankingsService = require('../services/rankings');
+    for (const rk of await require('../db').many(`SELECT id FROM rankings WHERE status = 'active'`)) await rankingsService.recomputeRanking(rk.id);
     const n = Object.values(r).reduce((a, b) => a + b, 0);
     if (n) console.log('[jobs] Löschfristen:', JSON.stringify(r));
   });

@@ -28,7 +28,7 @@
     Fakten-Score <strong><%= result.factScore === null ? '–' : Math.round(result.factScore) %></strong> ·
     Vollständigkeit <strong><%= Math.round(result.completeness) %> %</strong>
     <small>(ins Ranking ab <%= minCompleteness %> %)</small> ·
-    Athleten-Score <strong>folgt</strong> <small>(Bewertungen ab Version 2)</small>
+    <% if (athleteUsed) { %>Athleten-Score <strong><%= Math.round(result.athleteScore) %></strong> <small>(aus <%= reviewList.length %> Bewertungen)</small><% } else if (reviewList.length) { %><a href="#bewertungen">★ <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></a> <small>(nicht im <%= ranking.score_name %>)</small><% } else { %><a href="#bewertungen">Noch keine Bewertungen</a><% } %>
   </p>
   <% if (result.provisional) { %>
     <p class="muted" style="margin:.5em 0 0">Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p>
@@ -167,6 +167,32 @@
     <% } %>
   </section>
 </div>
+
+<% if (reviewCfg.enabled) { var starStr = function (v) { var n = Math.round(v || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }; %>
+  <section id="bewertungen" style="margin-top:24px">
+    <div class="facts-head">
+      <h2>Athleten-Bewertungen<% if (reviewList.length) { %> <small class="muted">· <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> von 5 aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></small><% } %></h2>
+      <a class="btn small cta" href="/<%= ranking.entity_type %>/<%= entity.slug %>/bewerten">Bewertung schreiben</a>
+    </div>
+    <% if (!reviewList.length) { %>
+      <p class="muted">Noch keine Bewertungen. Warst du zum Training hier? Erzähl anderen, wie es war.</p>
+    <% } else { %>
+      <div class="review-summary">
+        <% reviewDims.filter(function (d) { return d.avg !== null }).forEach(function (d) { %><div><span><%= d.label %></span><span><span class="star-line" aria-hidden="true"><%= starStr(d.avg) %></span> <%= String(d.avg).replace('.', ',') %></span></div><% }) %>
+      </div>
+      <% reviewList.forEach(function (r) { var vals = Object.values(r.ratings || {}); var avg = vals.reduce(function (a, b) { return a + Number(b) }, 0) / (vals.length || 1); %>
+        <article class="review">
+          <div class="meta"><span class="star-line" aria-label="<%= String(avg.toFixed(1)).replace('.', ',') %> von 5"><%= starStr(avg) %></span> · <strong><%= r.author_name %></strong> · Aufenthalt <%= new Date(r.stay_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) %><% if (r.camp_name) { %> · mit <a href="/trainingscamp/anbieter/<%= r.camp_slug %>"><%= r.camp_name %></a><% } %></div>
+          <% if (r.title) { %><h3><%= r.title %></h3><% } %>
+          <p style="margin:6px 0 0;white-space:pre-line"><%= r.body %></p>
+          <% if (r.images.length) { %><div class="review-photos"><% r.images.forEach(function (i) { var w = i.variants.includes(640) ? 640 : i.variants[0]; var big = i.variants[i.variants.length - 1]; %><a href="/media/review/<%= i.id %>-<%= big %>.webp" target="_blank" rel="noopener"><img src="/media/review/<%= i.id %>-<%= w %>.webp" alt="Foto von <%= r.author_name %>" loading="lazy" width="120" height="90"></a><% }) %></div><% } %>
+          <% if (r.hotel_reply) { %><div class="reply"><strong>Antwort des <%= ranking.entity_label_sg %>s:</strong> <%= r.hotel_reply %></div><% } %>
+        </article>
+      <% }) %>
+    <% } %>
+    <p class="muted"><small>So prüfen wir Bewertungen: Jede Bewertung braucht eine bestätigte E-Mail-Adresse und den Monat des Aufenthalts; wir lesen jede Bewertung vor der Freigabe und veröffentlichen nur Erfahrungen, die von Gästen stammen. Bewertungen gegen Gegenleistung oder von Mitarbeitenden sind ausgeschlossen. <% if (athleteEnabled) { %>Ab <%= minReviews %> Bewertungen fließen sie mit <%= Math.round(athleteWeight * 100) %> % in den <%= ranking.score_name %> ein<%= athleteUsed ? ' – hier bereits der Fall' : '' %>.<% } else { %>Bewertungen fließen derzeit nicht in den <%= ranking.score_name %> ein.<% } %> <a href="<%= scorePath %>">Methodik</a></small></p>
+  </section>
+<% } %>
 
 <% if (nearby.length) { %>
   <section>

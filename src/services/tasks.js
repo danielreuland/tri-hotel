@@ -15,6 +15,7 @@ const LABELS = {
   image_rights: 'Bildrechte',
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
+  user_review: 'Bewertung',
   contact: 'Kontaktanfrage',
   camp_partner: 'Camp-Anbieter',
   manual: 'Eigene Aufgabe',
@@ -82,6 +83,14 @@ async function collect() {
     } else if (new Date(s.updated_at) < new Date(Date.now() - 3600 * 1000)) {
       push({ source: 'stuck', source_key: `stuck:${s.id}`, title: s.entity_name, detail: [{ level: 'block', text: 'Auto-Prüfung seit über einer Stunde ohne Ergebnis – erneut starten' }], link: detailLink(s.id), entity_id: null });
     }
+  }
+  // Bewertungen: zur Freigabe (bestätigt) bzw. E-Mail unbestätigt
+  for (const r of await db.many(
+    `SELECT r.id, r.status, r.author_name, r.title, r.body, r.entity_id, e.name FROM reviews r JOIN entities e ON e.id = r.entity_id
+      WHERE r.status IN ('pending', 'received') ORDER BY r.created_at`)) {
+    push({ source: 'user_review', source_key: `review-item:${r.id}`, title: r.name,
+      detail: [{ level: 'todo', text: `${r.status === 'pending' ? 'Freigeben oder ablehnen' : 'E-Mail unbestätigt'} – ${r.author_name}: ${(r.title || r.body).replace(/\s+/g, ' ').slice(0, 140)}` }],
+      link: `/admin/bewertungen#r-${r.id}`, entity_id: r.entity_id });
   }
   // Kontaktformular: offene Nachrichten
   for (const m of await db.many(`SELECT id, name, email, message, topic, company, request FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`)) {

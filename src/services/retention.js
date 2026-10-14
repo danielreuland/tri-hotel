@@ -9,6 +9,8 @@ const RETENTION = {
   contactMonths: 12,          // Kontaktnachrichten nach Erledigung
   inquiryMonths: 24,          // Name und Nachricht aus Betreiber-Antworten nach Abschluss der Anfrage
   consentYearsAfterEnd: 3,    // Einwilligungsnachweise nach Widerruf
+  reviewEmailMonths: 6,       // E-Mail aus Bewertungen nach Freigabe/Ablehnung
+  reviewUnconfirmedDays: 7,   // unbestätigte Bewertungen (mit Fotos) löschen
 };
 
 async function run() {
@@ -26,6 +28,14 @@ async function run() {
     `UPDATE inquiries SET reply_name = NULL, reply_note = NULL, anonymized_at = now()
       WHERE anonymized_at IS NULL AND status IN ('answered','expired','closed','failed')
         AND updated_at < now() - make_interval(months => $1)`, [RETENTION.inquiryMonths]);
+  await q('reviewEmails',
+    `UPDATE reviews SET email = NULL, updated_at = now() WHERE email IS NOT NULL AND status IN ('published', 'rejected')
+        AND updated_at < now() - make_interval(months => $1)`, [RETENTION.reviewEmailMonths]);
+  await q('reviewIpHashes', `UPDATE reviews SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
+  // Unbestätigte Bewertungen samt Fotos entfernen (nicht die vom Admin freigeschalteten)
+  const stale = await db.many(`SELECT id FROM reviews WHERE status = 'received' AND verified_by IS NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.reviewUnconfirmedDays]);
+  for (const s of stale) await require('./reviews').remove(s.id, null);
+  r.reviewsUnconfirmed = stale.length;
   await q('consents', `DELETE FROM consents WHERE withdrawn_at IS NOT NULL AND withdrawn_at < now() - make_interval(years => $1)`, [RETENTION.consentYearsAfterEnd]);
   return r;
 }

@@ -12,6 +12,7 @@ const seo = require('../lib/seo');
 const media = require('../services/media');
 const describer = require('../services/describer');
 const camps = require('../services/camps');
+const reviewsService = require('../services/reviews');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -142,7 +143,12 @@ async function renderEntity(req, res, ranking, slug) {
     rankings.getFacts(entity.id, ranking.id),
     rankings.getClimate(entity.id),
   ]);
-  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
+  // gleiche Rechnung wie beim Speichern: Athleten-Score aus freigegebenen Bewertungen (nur wirksam, wenn eingeschaltet)
+  const athlete = scoring.athleteScore(
+    await db.many(`SELECT ratings, stay_month FROM reviews WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]),
+    ranking.formula);
+  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate,
+    await rankings.scoreOptions(ranking, { athleteScore: athlete.score, reviewCount: athlete.count }));
   const climateRow = climate.find((c) => c.month === result.month) || null;
   const factByCrit = new Map(facts.map((f) => [f.criterion_id, f]));
   const detailByCrit = new Map(result.details.map((d) => [d.criterionId, d]));
@@ -192,6 +198,8 @@ async function renderEntity(req, res, ranking, slug) {
   const formula = scoring.withDefaults(ranking.formula);
   // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
+  const reviewCfg = reviewsService.config(ranking);
+  const reviewList = reviewCfg.enabled ? await reviewsService.published(entity.id, ranking.id) : [];
   const text = await db.one(`SELECT summary, body, published_at FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
@@ -227,6 +235,9 @@ async function renderEntity(req, res, ranking, slug) {
     bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
+    reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),
+    reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
+    athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,
     textDate: text && text.published_at,
     base: rankingBase(ranking),
   });

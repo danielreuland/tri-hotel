@@ -70,6 +70,21 @@ Hier ist die Seite: [{{link}}]({{link}})
 
 {{in_pruefung}}`,
   },
+  'review-verify': {
+    label: 'Bewertung bestätigen',
+    recipient: 'Gast, der eine Bewertung schreibt',
+    trigger: 'direkt nach dem Absenden der Bewertung',
+    subject: 'Bitte bestätige deine Bewertung: {{hotel}}',
+    body: `Hallo {{name}},
+
+danke für deine Bewertung von **{{hotel}}**!
+
+Bitte bestätige sie mit einem Klick – erst dann prüfen wir sie und schalten sie frei:
+
+[Bewertung bestätigen]({{link}})
+
+Der Link ist {{stunden}} Stunden gültig. Du hast keine Bewertung geschrieben? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.`,
+  },
   'inquiry-answered': {
     label: 'Antwort eines Betreibers (an Admin)',
     recipient: 'Admin (ADMIN_NOTIFY_EMAIL)',
@@ -90,6 +105,7 @@ const VARS = {
   live: { link: 'Link zur Profilseite', score: 'Score (leer, wenn noch unbekannt)', vorlaeufig: '„ (vorläufig …)“, solange keine Bewertungen vorliegen' },
   rejected: { begruendung: 'Begründung aus dem Admin' },
   duplicate: { link: 'Link zur bestehenden Seite (leer, solange sie nicht online ist)', in_pruefung: 'Hinweis „gerade in Prüfung“, wenn noch nicht online' },
+  'review-verify': { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden', name: 'Name des Gastes' },
   'inquiry-answered': { link: 'Link zur Prüfansicht', antworten: 'Anzahl Antworten', fotos: '„, 2 Foto(s)“ oder leer', einwilligungen: 'neue Einwilligungen (leer, wenn keine)' },
 };
 
@@ -103,6 +119,7 @@ function sampleData(key, site) {
     live: { ...base, link: `${url}/hotel/beispielhotel-mar-azul`, score: 82, provisional: true },
     rejected: { ...base, reason: 'Im Umkreis von 5 km gibt es kein Becken mit mindestens 25 m.' },
     duplicate: { ...base, link: `${url}/hotel/beispielhotel-mar-azul` },
+    'review-verify': { ...base, link: `${url}/bewertung-bestaetigen/beispiel`, hours: 72, name: 'Anna K.' },
     'inquiry-answered': { ...base, answers: 3, photos: 2, consents: ['Fotos im Profil'], link: `${url}/admin/meldungen/beispiel#anfragen` },
   }[key] || base;
 }
@@ -123,6 +140,7 @@ function varsFor(key, data, site, baseUrl) {
   if (key === 'duplicate') {
     Object.assign(v, { link: d.link || '', in_pruefung: d.link ? '' : `Der Eintrag ist gerade in Prüfung. Sobald er online ist, findest du ihn auf ${baseUrl || ''}.` });
   }
+  if (key === 'review-verify') Object.assign(v, { link: d.link || '', stunden: String(d.hours || ''), name: d.name || '' });
   if (key === 'inquiry-answered') {
     Object.assign(v, {
       link: d.link || '', antworten: String(d.answers ?? ''), fotos: d.photos ? `, ${d.photos} Foto(s)` : '',

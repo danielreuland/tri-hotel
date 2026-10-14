@@ -19,7 +19,7 @@
   <div>
     <label>Formel (JSON)</label>
     <textarea class="code" name="formula"><%= r.formulaText %></textarea>
-    <small class="muted">fact_weight + athlete_weight = 1 · bayes_c, bayes_m · min_completeness (%) · min_reviews · recheck_months</small>
+    <small class="muted">fact_weight + athlete_weight = 1 · athlete_enabled (true = Bewertungen zählen im Score) · bayes_c, bayes_m · min_completeness (%) · min_reviews · recheck_months · unknown_policy (average/half/ignore) · best_time</small>
   </div>
   <div>
     <label>Score-Stufen (JSON)</label>

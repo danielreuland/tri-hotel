@@ -26,6 +26,8 @@ const DEFAULT_FORMULA = {
   min_reviews: 3,
   recheck_months: 18,
   unknown_policy: 'ignore',
+  athlete_enabled: false,      // Bewertungen fließen erst ein, wenn eingeschaltet
+  review_age_weights: [[12, 1], [24, 0.7], [36, 0.4]], // [Monate, Gewicht]; älter = 0
   unknown_default_share: 0.5, // Ersatz, wenn für ein Kriterium noch kein Durchschnitt vorliegt
 };
 
@@ -269,8 +271,10 @@ function computeScore(criteria, facts, climate, opts = {}) {
   // Fakten-Score: bekannte Punkte plus Ersatzwerte für unbekannte (Fehlende Angaben sollen weder schaden noch nützen)
   const factScore = maxKnown > 0 ? ((pointsKnown + pointsImputed) / (maxKnown + maxImputed)) * 100 : null;
   const completeness = maxAll > 0 ? (maxKnown / maxAll) * 100 : 0;
-  const athleteScore = toNumber(opts.athleteScore);
   const reviewCount = Number(opts.reviewCount) || 0;
+  // Athleten-Score nur, wenn eingeschaltet und genug Bewertungen vorliegen
+  const athleteUsed = Boolean(formula.athlete_enabled) && reviewCount >= formula.min_reviews;
+  const athleteScore = athleteUsed ? toNumber(opts.athleteScore) : null;
 
   let score = null;
   if (!koCriterion && factScore !== null) {
@@ -292,7 +296,8 @@ function computeScore(criteria, facts, climate, opts = {}) {
     completeness: round2(completeness),
     score,
     label: labelFor(score, opts.labels),
-    provisional: athleteScore === null || reviewCount < formula.min_reviews,
+    provisional: athleteScore === null,
+    athleteUsed: athleteScore !== null,
     eligible: !koCriterion && score !== null && completeness >= formula.min_completeness,
     ko: Boolean(koCriterion),
     koReason,
@@ -358,7 +363,43 @@ function validateCriterion({ value_type, scoring, max_points }) {
   return { errors, warnings };
 }
 
+// Athleten-Score A (0–100) aus Bewertungen: Sterne 1–5 -> 0–100 (Mittel der Dimensionen je Bewertung),
+// Gewicht nach Alter des Aufenthalts, Bayes-Mittel mit C (bayes_c) und Startwert m (bayes_m).
+// reviews: [{ ratings: {dim: 1..5}, stay_month: Date|string }]; Ergebnis { score, count, weightSum, avgStars }
+function athleteScore(reviews, formulaIn, now = new Date()) {
+  const f = withDefaults(formulaIn);
+  let sumW = 0;
+  let sumWV = 0;
+  let count = 0;
+  let starSum = 0;
+  let starN = 0;
+  for (const r of reviews || []) {
+    const vals = Object.values(r.ratings || {}).map(Number).filter((v) => v >= 1 && v <= 5);
+    if (!vals.length) continue;
+    const stars = vals.reduce((s, v) => s + v, 0) / vals.length;
+    starSum += stars;
+    starN += 1;
+    const stay = new Date(r.stay_month);
+    const months = (now.getFullYear() - stay.getFullYear()) * 12 + (now.getMonth() - stay.getMonth());
+    const band = (f.review_age_weights || []).find(([m]) => months < m);
+    const w = band ? Number(band[1]) : 0;
+    if (w <= 0) continue;
+    count += 1;
+    sumW += w;
+    sumWV += w * ((stars - 1) / 4) * 100;
+  }
+  const C = Number(f.bayes_c);
+  const m = Number(f.bayes_m);
+  return {
+    score: count ? round2((C * m + sumWV) / (C + sumW)) : null,
+    count,
+    weightSum: round2(sumW),
+    avgStars: starN ? round2(starSum / starN) : null,
+  };
+}
+
 module.exports = {
+  athleteScore,
   DEFAULT_FORMULA,
   withDefaults,
   pointsFor,

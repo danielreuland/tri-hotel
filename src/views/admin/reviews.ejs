@@ -1,0 +1,44 @@
+<%- include('../partials/admin-head') %>
+<h1>Bewertungen</h1>
+<p class="muted">Erst bestätigte Bewertungen freigeben. Prüfen: echte Aufenthaltserfahrung, keine Beleidigungen oder Tatsachenbehauptungen ohne Grundlage, keine personenbezogenen Daten Dritter, Fotos ohne erkennbare fremde Personen. Freigegebene Fotos erscheinen einzeln.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<div class="pill-row"><% Object.keys(FILTERS).forEach(function (k) { %><a class="badge <%= k === status ? 'good' : '' %>" href="/admin/bewertungen?status=<%= k %>"><%= FILTERS[k].label %> (<%= counts[k] %>)</a><% }) %></div>
+<% if (!rows.length) { %><p class="card">Keine Bewertungen in dieser Ansicht.</p><% } %>
+<% rows.forEach(function (r) { var dims = (r.review_config && r.review_config.dimensions) || []; %>
+  <article class="card" id="r-<%= r.id %>" style="margin-bottom:12px">
+    <p style="margin-top:0"><span class="badge <%= r.status === 'published' ? 'good' : r.status === 'rejected' ? 'bad' : 'warn' %>"><%= STATUS[r.status] %></span>
+      <strong><a href="/<%= r.entity_type %>/<%= r.entity_slug %>#bewertungen" target="_blank"><%= r.entity_name %></a></strong>
+      · <%= r.author_name %> · <small class="muted"><%= r.email || 'E-Mail gelöscht' %> · Aufenthalt <%= new Date(r.stay_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) %> · eingegangen <%= new Date(r.created_at).toLocaleString('de-DE') %><%= r.verified_by ? ' · ohne E-Mail-Bestätigung freigeschaltet' : '' %><%= r.camp_name ? ' · Camp: ' + r.camp_name : '' %></small></p>
+    <p style="margin:0"><% dims.forEach(function (d) { var v = (r.ratings || {})[d.code]; if (!v) return; %><span class="badge"><%= d.label %>: <%= v %>★</span> <% }) %></p>
+    <% if (r.title) { %><h3 style="margin:10px 0 4px"><%= r.title %></h3><% } %>
+    <p style="white-space:pre-line"><%= r.body %></p>
+    <% var ans = Object.keys(r.answers || {}); if (ans.length) { %><p class="muted"><small>Faktencheck: <%= ans.map(function (k) { return k + ' = ' + r.answers[k]; }).join(' · ') %></small></p><% } %>
+    <% if (r.images.length) { %>
+      <div class="review-photos">
+        <% r.images.forEach(function (i) { var w = i.variants.includes(640) ? 640 : i.variants[0]; %>
+          <div><a href="/admin/bewertungen/bild/<%= i.id %>-<%= i.variants[i.variants.length - 1] %>.webp" target="_blank"><img src="/admin/bewertungen/bild/<%= i.id %>-<%= w %>.webp" alt=""></a>
+            <form method="post" action="/admin/bewertungen/bild/<%= i.id %>/<%= i.approved_at ? 'loeschen' : 'freigeben' %>" style="margin-top:4px"><input type="hidden" name="status" value="<%= status %>">
+              <% if (!i.approved_at) { %><button class="btn small" type="submit">Foto freigeben</button><% } else { %><span class="badge good">frei</span> <button class="linklike" type="submit"><small>löschen</small></button><% } %></form>
+            <% if (!i.approved_at) { %><form method="post" action="/admin/bewertungen/bild/<%= i.id %>/loeschen"><input type="hidden" name="status" value="<%= status %>"><button class="linklike" type="submit"><small>löschen</small></button></form><% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+    <% if (r.rejection_reason) { %><p><small>Ablehnungsgrund: <%= r.rejection_reason %></small></p><% } %>
+    <div class="filters" style="margin:10px 0 0">
+      <% if (r.status === 'received') { %><form method="post" action="/admin/bewertungen/<%= r.id %>/aktion"><input type="hidden" name="status" value="<%= status %>"><button class="btn small secondary" name="action" value="verify">Ohne Bestätigung prüfen</button></form><% } %>
+      <% if (r.status === 'pending' || r.status === 'rejected' || (r.status === 'received' && r.verified_by)) { %><form method="post" action="/admin/bewertungen/<%= r.id %>/aktion"><input type="hidden" name="status" value="<%= status %>"><button class="btn small" name="action" value="publish">Freigeben</button></form><% } %>
+      <% if (r.status !== 'rejected') { %>
+        <details><summary class="btn small secondary">Ablehnen</summary>
+          <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion" style="margin-top:6px"><input type="hidden" name="status" value="<%= status %>"><input type="text" name="reason" placeholder="Grund (intern)"><button class="btn small danger" name="action" value="reject">Ablehnen</button></form></details>
+      <% } %>
+      <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion" onsubmit="return confirm('Bewertung mit Fotos endgültig löschen?')"><input type="hidden" name="status" value="<%= status %>"><button class="btn small secondary" name="action" value="delete">Löschen</button></form>
+    </div>
+    <% if (r.status === 'published') { %>
+      <details style="margin-top:8px" <%= r.hotel_reply ? 'open' : '' %>><summary><small>Antwort des Hotels <%= r.hotel_reply ? '(veröffentlicht)' : '' %></small></summary>
+        <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion"><input type="hidden" name="status" value="<%= status %>"><textarea name="reply" rows="3" placeholder="Antwort des Betreibers (nur mit dessen Zustimmung veröffentlichen)"><%= r.hotel_reply || '' %></textarea><button class="btn small secondary" name="action" value="reply">Antwort speichern</button></form></details>
+    <% } %>
+  </article>
+<% }) %>
+<%- include('../partials/admin-foot') %>

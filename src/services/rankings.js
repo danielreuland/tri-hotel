@@ -90,19 +90,27 @@ async function recomputeEntity(entityId, rankingId, client = db) {
   const criteria = await getCriteria(rankingId);
   const facts = await getFacts(entityId, rankingId);
   const climate = await getClimate(entityId);
-  const result = scoring.computeScore(criteria, factMap(facts), climate, await scoreOptions(ranking));
+  // Athleten-Score aus freigegebenen Bewertungen (fließt nur ein, wenn formula.athlete_enabled)
+  const reviews = await client.query(
+    `SELECT ratings, stay_month FROM reviews WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entityId, rankingId]);
+  const athlete = scoring.athleteScore(reviews.rows, ranking.formula);
+  const result = scoring.computeScore(criteria, factMap(facts), climate,
+    await scoreOptions(ranking, { athleteScore: athlete.score, reviewCount: athlete.count }));
 
   for (const d of result.details) {
     const fact = facts.find((f) => f.criterion_id === d.criterionId);
     if (fact) await client.query('UPDATE entity_facts SET points = $1 WHERE id = $2', [d.points, fact.id]);
   }
   await client.query(
-    `INSERT INTO entity_rankings (entity_id, ranking_id, fact_score, score, completeness, is_provisional, ko_reason, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+    `INSERT INTO entity_rankings (entity_id, ranking_id, fact_score, score, completeness, is_provisional, ko_reason,
+       athlete_score, review_count, review_avg, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
      ON CONFLICT (entity_id, ranking_id) DO UPDATE SET
        fact_score = EXCLUDED.fact_score, score = EXCLUDED.score, completeness = EXCLUDED.completeness,
-       is_provisional = EXCLUDED.is_provisional, ko_reason = EXCLUDED.ko_reason, updated_at = now()`,
-    [entityId, rankingId, result.factScore, result.score, result.completeness, result.provisional, result.koReason]
+       is_provisional = EXCLUDED.is_provisional, ko_reason = EXCLUDED.ko_reason, athlete_score = EXCLUDED.athlete_score,
+       review_count = EXCLUDED.review_count, review_avg = EXCLUDED.review_avg, updated_at = now()`,
+    [entityId, rankingId, result.factScore, result.score, result.completeness, result.provisional, result.koReason,
+      athlete.score, reviews.rows.length, athlete.avgStars]
   );
   return result;
 }

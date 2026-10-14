@@ -199,3 +199,26 @@ test('unbekannte Kriterien: Durchschnitt statt Vorteil (auch für ein zweites Ra
   assert.equal(noAvg.score, 83, 'ohne Durchschnitt: Ersatzwert 0,5');
   assert.equal(s.computeScore(crit, gap, [], { formula: { unknown_policy: 'half', min_completeness: 50 } }).score, 83);
 });
+
+test('Athleten-Score: Bayes-Mittel, Altersgewichte, Schalter und Mindestzahl', () => {
+  const now = new Date('2026-10-15');
+  const f = { bayes_c: 5, bayes_m: 70, min_reviews: 3 };
+  const all5 = { swim: 5, bike: 5 };
+  const r = s.athleteScore([{ ratings: all5, stay_month: '2026-05-01' }], f, now);
+  assert.equal(r.score, 75); // (5*70 + 1*100) / 6
+  const old = s.athleteScore([{ ratings: all5, stay_month: '2024-03-01' }], f, now); // 31 Monate -> 0,4
+  assert.equal(old.score, 72.22);
+  assert.equal(s.athleteScore([{ ratings: all5, stay_month: '2022-01-01' }], f, now).score, null, 'älter als 36 Monate zählt nicht');
+  assert.equal(s.athleteScore([], f, now).score, null);
+
+  const crit = [{ id: 'a', code: 'x', max_points: 10, scoring: { type: 'bool', points_true: 10 } }];
+  const facts = { a: { bool: true } };
+  const off = s.computeScore(crit, facts, [], { formula: { min_completeness: 50 }, athleteScore: 0, reviewCount: 10 });
+  assert.equal(off.score, 100, 'ausgeschaltet: nur Fakten');
+  assert.equal(off.provisional, true);
+  const few = s.computeScore(crit, facts, [], { formula: { min_completeness: 50, athlete_enabled: true, min_reviews: 3 }, athleteScore: 0, reviewCount: 2 });
+  assert.equal(few.score, 100, 'zu wenige Bewertungen: nur Fakten');
+  const on = s.computeScore(crit, facts, [], { formula: { min_completeness: 50, athlete_enabled: true, min_reviews: 3 }, athleteScore: 50, reviewCount: 3 });
+  assert.equal(on.score, 80); // 0,6*100 + 0,4*50
+  assert.equal(on.provisional, false);
+});
