@@ -298,7 +298,24 @@ a.chip:hover { border-color: var(--primary); }
   border-bottom: 2px solid var(--accent-strong); transform: rotate(-45deg); }
 
 /* ---------- Admin ---------- */
-.admin-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.admin-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.admin-nav a { color: var(--header-text); text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; opacity: .8; }
+.admin-nav a:hover { opacity: 1; background: rgba(255, 255, 255, .08); }
+.admin-nav a.on { opacity: 1; background: rgba(255, 255, 255, .14); }
+.nav-count { display: inline-block; min-width: 1.4em; padding: 0 6px; margin-left: 2px; border-radius: 999px; background: var(--accent); color: #062b27; font-size: .72rem; font-weight: 800; text-align: center; }
+.admin-tools { display: flex; align-items: center; gap: 12px; }
+.admin-tools > a { color: var(--header-text); text-decoration: none; font-size: .88rem; opacity: .8; }
+.admin-user { position: relative; }
+.admin-user summary { list-style: none; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .14); color: var(--header-text); font-weight: 800; }
+.admin-user summary::-webkit-details-marker { display: none; }
+.admin-user-menu { position: absolute; right: 0; top: 40px; z-index: 20; display: grid; gap: 8px; min-width: 200px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+.admin-subnav { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 18px; border-bottom: 1px solid var(--border); }
+.admin-subnav a, .detail-tabs a { padding: 8px 14px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 600; }
+.admin-subnav a:hover, .detail-tabs a:hover { color: var(--text); }
+.admin-subnav a.on, .detail-tabs a.on { color: var(--text); border-bottom-color: var(--accent); }
+.detail-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 16px; border-bottom: 1px solid var(--border); }
+.detail-tabs .nav-count { color: #062b27; }
+.tab-hidden { display: none !important; }
 .admin-detail { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
 .admin-detail aside { position: sticky; top: 76px; }
 .crit-row td { font-size: .9rem; }
@@ -523,3 +540,5 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .review-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .review-photos img { width: 120px; height: 90px; object-fit: cover; border-radius: 8px; display: block; }
 .review .reply { margin-top: 10px; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; font-size: .92rem; }
+
+[data-tab], .detail-tabs { scroll-margin-top: 80px; }

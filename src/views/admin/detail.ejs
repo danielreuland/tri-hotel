@@ -11,7 +11,7 @@
   var climateRow = climate.find(function (c) { return c.month === result.month }) || null;
 %>
 
-<p><a href="/admin">← Warteschlange</a></p>
+<p><a href="/admin">← <%= adminNav.objectsLabel %></a></p>
 <h1><%= sub.entity_name %></h1>
 <p>
   <span class="badge accent"><%= STATUS_LABELS[sub.status] %></span>
@@ -31,8 +31,23 @@
   </div>
 <% } %>
 
+<% if (entity) {
+  var pendingAnswerCount = (inquiryList || []).reduce(function (n, i) { return n + (i.answers || []).filter(function (a) { return a.status === 'pending'; }).length; }, 0);
+  var draftCount = (inquiryList || []).filter(function (i) { return i.status === 'draft'; }).length;
+  var pendingImageCount = (images || []).filter(function (i) { return !i.approved_at; }).length + (text && text.status !== 'published' ? 1 : 0);
+  var detailTabs = [
+    { key: 'pruefung', label: 'Prüfung', anchor: 'pruefliste', n: review.open },
+    { key: 'stammdaten', label: 'Stammdaten', anchor: 'stammdaten', n: 0 },
+    { key: 'inhalte', label: 'Inhalte', anchor: 'text', n: pendingImageCount },
+    { key: 'kommunikation', label: 'Kommunikation', anchor: 'anfragen', n: pendingAnswerCount + draftCount },
+    { key: 'verlauf', label: 'Verlauf', anchor: 'meldung', n: 0 },
+  ]; %>
+  <nav class="detail-tabs" data-tabs aria-label="Bereiche dieser Seite">
+    <% detailTabs.forEach(function (t) { %><a href="#<%= t.anchor %>" data-tab-link="<%= t.key %>"><%= t.label %><% if (t.n) { %> <span class="nav-count"><%= t.n %></span><% } %></a><% }) %>
+  </nav>
+<% } %>
 <% if (entity) { %>
-  <section class="card review-list" id="pruefliste">
+  <section class="card review-list" id="pruefliste" data-tab="pruefung">
     <% if (review.items.length) { %>
       <h2 style="margin:0 0 4px">Zu prüfen <small class="muted"><%= review.open ? review.open + ' offen' : 'nur Empfehlungen' %><%= review.blockers ? ' · ' + review.blockers + ' blockierend' : '' %></small></h2>
       <%- include('../partials/review-items', { items: review.items, entityId: entity.id, rankingId: ranking.id, linkBase: '', back: '/admin/meldungen/' + sub.id + '#pruefliste' }) %>
@@ -48,12 +63,12 @@
     <% } %>
   </section>
 <% } else if (review.items.length) { %>
-  <section class="card review-list" id="pruefliste"><strong><%= review.items[0].text %></strong></section>
+  <section class="card review-list" id="pruefliste" data-tab="pruefung"><strong><%= review.items[0].text %></strong></section>
 <% } %>
 
 <div class="admin-detail">
   <div>
-    <section class="card">
+    <section class="card" id="meldung" data-tab="verlauf">
       <h2 style="margin-top:0">Meldung</h2>
       <div class="form-row">
         <div><strong>Ort:</strong> <%= sub.city %>, <%= sub.country %></div>
@@ -86,7 +101,7 @@
       <div class="card" style="margin-top:16px"><p>Noch kein Objekt angelegt – die Auto-Prüfung ist noch nicht gelaufen.</p></div>
     <% } else { %>
 
-    <section class="card" style="margin-top:16px" id="stammdaten">
+    <section class="card" style="margin-top:16px" id="stammdaten" data-tab="stammdaten">
       <h2 style="margin-top:0">Stammdaten</h2>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/objekt">
         <div class="form-row">
@@ -153,7 +168,7 @@
       <% } %>
     </section>
 
-    <section class="card" style="margin-top:16px" id="fakten">
+    <section class="card" style="margin-top:16px" id="fakten" data-tab="pruefung">
       <h2 style="margin-top:0">Fakten</h2>
       <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Beim Ändern eines Werts springt die Vertrauensstufe auf 2 (Admin geprüft).</p>
       <% var autoWithEvidence = facts.filter(function (f) { return f.trust_level === 4 && f.evidence_url && !f.disputed }).length; %>
@@ -225,7 +240,7 @@
       </form>
     </section>
 
-    <section class="card" style="margin-top:16px" id="leistungen">
+    <section class="card" style="margin-top:16px" id="leistungen" data-tab="pruefung">
       <h2 style="margin-top:0">Leistungen</h2>
       <p class="muted" style="margin-top:0">Einheitliche Namen aus dem <a href="/admin/leistungen">Leistungskatalog</a>. Abgeleitete Leistungen ergeben sich aus den Fakten oben; die übrigen hier anhaken.</p>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/leistungen">
@@ -256,7 +271,7 @@
       </form>
     </section>
 
-    <section class="card" style="margin-top:16px" id="text">
+    <section class="card" style="margin-top:16px" id="text" data-tab="inhalte">
       <h2 style="margin-top:0">Beschreibungstext</h2>
       <p class="muted" style="margin-top:0"><small>Steht auf der Profilseite über den Fakten; die Kurzbeschreibung ist zugleich die Meta-Beschreibung für Google. Der KI-Entwurf beruht nur auf den geprüften Daten dieser Seite. Öffentlich erst nach Freigabe.</small></p>
       <p>
@@ -285,7 +300,7 @@
       </form>
     </section>
 
-    <section class="card" style="margin-top:16px" id="anfragen">
+    <section class="card" style="margin-top:16px" id="anfragen" data-tab="kommunikation">
       <h2 style="margin-top:0">Anfragen an den Betreiber</h2>
       <% var draftInq = inquiryList.find(function (i) { return i.status === 'draft' });
          var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
@@ -382,7 +397,7 @@
       <% }) %>
     </section>
 
-    <section class="card" style="margin-top:16px" id="einwilligungen">
+    <section class="card" style="margin-top:16px" id="einwilligungen" data-tab="stammdaten">
       <h2 style="margin-top:0">Einwilligungen des Betreibers</h2>
       <p class="muted" style="margin-top:0">Grundlage für automatisierte Abläufe: Ohne gültige Einwilligung werden keine Fotos in Social Media gepostet und keine Kooperationsmails verschickt.</p>
       <% Object.keys(CONSENT_TYPES).forEach(function (type) { var active = consents.find(function (c) { return c.type === type && !c.withdrawn_at }); %>
@@ -424,7 +439,7 @@
       </details>
     </section>
 
-    <section class="card" style="margin-top:16px" id="bilder">
+    <section class="card" style="margin-top:16px" id="bilder" data-tab="inhalte">
       <h2 style="margin-top:0">Bilder</h2>
       <p class="muted">Nur mit dokumentierter Berechtigung. Keine Fotos von fremden Websites übernehmen. Öffentlich erst nach Freigabe und solange die Rechte gültig sind.</p>
       <% images.forEach(function (img) { %>
@@ -470,7 +485,7 @@
     </section>
     <% } %>
 
-    <section class="card" style="margin-top:16px" id="ki-kosten">
+    <section class="card" style="margin-top:16px" id="ki-kosten" data-tab="verlauf">
       <h2 style="margin-top:0">KI-Verbrauch</h2>
       <%
         var PURPOSES = { extraction: 'Website-Auswertung', inquiry: 'Anfrage-Entwurf', description: 'Beschreibungstext', compare: 'Modellvergleich' };
@@ -502,7 +517,7 @@
     </section>
 
     <% if (emails.length) { %>
-      <section class="card" style="margin-top:16px">
+      <section class="card" style="margin-top:16px" id="mails" data-tab="kommunikation">
         <h2 style="margin-top:0">Mails</h2>
         <ul class="log-list"><% emails.forEach(function (m) { %><li><%= new Date(m.created_at).toLocaleString('de-DE') %> · <%= m.template %> an <%= m.recipient %> · <span class="badge <%= m.status === 'sent' ? 'good' : 'bad' %>"><%= m.status %></span></li><% }) %></ul>
       </section>

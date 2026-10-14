@@ -11,29 +11,24 @@
 <body>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/admin">RANKING<span>-</span>ADMIN</a>
-    <% if (locals.admin) { %>
-      <nav class="admin-nav">
-        <a href="/admin">Warteschlange</a>
-        <a href="/admin/neu">Objekt anlegen</a>
-        <a href="/admin/aufgaben">Aufgaben</a>
-        <a href="/admin/anfragen">Anfragen</a>
-        <a href="/admin/bewertungen">Bewertungen</a>
-        <a href="/admin/rankings">Rankings</a>
-        <a href="/admin/leistungen">Leistungen</a>
-        <a href="/admin/regionen">Regionen</a>
-        <a href="/admin/camps">Camps</a>
-        <a href="/admin/bilder">Bilder</a>
-        <a href="/admin/medien">Medien</a>
-        <a href="/admin/google-orte">Google-IDs</a>
-        <a href="/admin/sites">Sites</a>
-        <a href="/admin/emails">E-Mails</a>
-        <a href="/admin/team">Team</a>
-        <a href="/admin/log">Log</a>
-        <a href="/" target="_blank">Website ↗</a>
-        <form method="post" action="/admin/logout" style="display:inline"><button class="btn small secondary" type="submit">Abmelden</button></form>
-        <%- include('theme-toggle') %>
+    <a class="logo" href="/admin/aufgaben">RANKING<span>-</span>ADMIN</a>
+    <% if (locals.admin) { var nav = locals.adminNav || { sections: [], counts: {} }; %>
+      <nav class="admin-nav" aria-label="Bereiche">
+        <% nav.sections.forEach(function (s) { var n = nav.counts[s.key]; %>
+          <a href="<%= s.tabs[0].href %>" class="<%= nav.section === s.key ? 'on' : '' %>" <%= nav.section === s.key ? 'aria-current=page' : '' %>><%= s.label || nav.objectsLabel %><% if (n) { %> <span class="nav-count"><%= n %></span><% } %></a>
+        <% }) %>
       </nav>
+      <div class="admin-tools">
+        <a href="/" target="_blank" title="Website öffnen" aria-label="Website öffnen">Website ↗</a>
+        <%- include('theme-toggle') %>
+        <details class="admin-user">
+          <summary title="<%= admin.email %>"><%= (admin.email || '?').slice(0, 1).toUpperCase() %></summary>
+          <div class="admin-user-menu">
+            <small class="muted"><%= admin.email %></small>
+            <form method="post" action="/admin/logout"><button class="btn small secondary" type="submit">Abmelden</button></form>
+          </div>
+        </details>
+      </div>
     <% } else { %>
       <%- include('theme-toggle') %>
     <% } %>
@@ -41,5 +36,10 @@
 </header>
 <main>
 <div class="wrap">
+<% if (locals.admin && locals.adminNav && adminNav.section) { var cur = adminNav.sections.find(function (s) { return s.key === adminNav.section; }); if (cur.tabs.length > 1) { %>
+  <nav class="admin-subnav" aria-label="<%= cur.label || adminNav.objectsLabel %>">
+    <% cur.tabs.forEach(function (t) { %><a href="<%= t.href %>" class="<%= adminNav.tab === t.href ? 'on' : '' %>"><%= t.label %></a><% }) %>
+  </nav>
+<% } } %>
 <% if (locals.flash) { %><div class="flash"><%= flash %></div><% } %>
 <% if (locals.error) { %><div class="errors"><%= error %></div><% } %>

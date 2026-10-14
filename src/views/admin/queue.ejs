@@ -1,5 +1,5 @@
 <%- include('../partials/admin-head') %>
-<h1>Warteschlange</h1>
+<h1><%= adminNav.objectsLabel %></h1>
 <% var countOf = function (s) { var c = counts.find(function (x) { return x.status === s }); return c ? c.n : 0 };
    var total = counts.reduce(function (sum, x) { return sum + x.n }, 0);
    var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' })); %>

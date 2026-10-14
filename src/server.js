@@ -85,6 +85,7 @@ if (config.noindex) {
 app.use(sameOrigin);
 app.use(rankingContext);
 
+app.use('/admin', require('./lib/adminnav').middleware);
 app.use('/admin', require('./routes/admin'));
 app.use('/admin/rankings', require('./routes/admin-rankings'));
 app.use('/admin/sites', require('./routes/admin-sites'));

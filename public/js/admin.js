@@ -174,3 +174,40 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
     });
   });
 })();
+
+// Detailseite: Abschnitte als Reiter. Ohne JavaScript bleiben alle Abschnitte untereinander sichtbar.
+(function () {
+  var bar = document.querySelector('[data-tabs]');
+  if (!bar) return;
+  var panels = document.querySelectorAll('[data-tab]');
+  var links = bar.querySelectorAll('[data-tab-link]');
+  var keys = Array.prototype.map.call(links, function (a) { return a.getAttribute('data-tab-link'); });
+  function show(key) {
+    if (keys.indexOf(key) < 0) key = keys[0];
+    panels.forEach(function (p) { p.classList.toggle('tab-hidden', p.getAttribute('data-tab') !== key); });
+    links.forEach(function (a) {
+      var on = a.getAttribute('data-tab-link') === key;
+      a.classList.toggle('on', on);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+  // Anker (aus Prüfliste, Board oder Rücksprung nach dem Speichern) öffnet den passenden Reiter
+  function fromHash(scroll) {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var el = id && document.getElementById(id);
+    var panel = el && el.closest('[data-tab]');
+    var key = panel ? panel.getAttribute('data-tab') : keys[0];
+    show(key);
+    if (scroll && el) el.scrollIntoView({ block: 'start' });
+  }
+  links.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      show(a.getAttribute('data-tab-link'));
+      history.replaceState(null, '', a.getAttribute('href'));
+      bar.scrollIntoView({ block: 'nearest' });
+    });
+  });
+  window.addEventListener('hashchange', function () { fromHash(true); });
+  fromHash(true);
+})();
