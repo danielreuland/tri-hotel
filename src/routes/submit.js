@@ -34,6 +34,7 @@ async function formRanking(req, res, next) {
 function render(req, res, form = { hints: {} }, errors = []) {
   res.status(errors.length ? 422 : 200).render('public/submit', {
     title: `${req.ranking.entity_label_sg} hinzufügen`,
+    description: `Du kennst ein ${req.ranking.entity_label_sg}, das in den Vergleich gehört? Schlag es vor – wir prüfen jeden Eintrag, bevor er online geht.`,
     ranking: req.ranking,
     askCriteria: req.askCriteria,
     form,

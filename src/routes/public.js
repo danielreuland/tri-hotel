@@ -85,10 +85,11 @@ async function renderList(req, res, ranking) {
   const base = rankingBase(ranking);
   const searchActive = featureLib.isActive(search) || Boolean(month);
   const overview = await areas.overview(ranking, req.site.id);
-  const homeTitle = content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name;
+  const homeTitle = content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name);
   res.render('public/home', {
     title: homeTitle,
-    description: `${ranking.score_name} 0–100: ${allRanked.length} ${ranking.entity_label_pl} nach geprüften Fakten bewertet – ${(content.hero_text || ranking.description || '').split('. ')[0]}.`.slice(0, 160),
+    description: content.meta_description
+      || `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`,
     canonical: `${siteUrl}${base || '/'}`,
     // Suchergebnis- und Filterseiten nicht indexieren (doppelte Inhalte)
     noindex: searchActive,
@@ -199,13 +200,13 @@ async function renderEntity(req, res, ranking, slug) {
   res.render('public/entity', {
     title: `${entity.name} (${entity.city || seo.countryName(entity.country)}) – ${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`,
     description: text && text.summary ? text.summary : (result.eligible
-      ? `${ranking.score_name} ${result.score}/100 (${result.label}) für ${entity.name}${entity.city ? ` in ${entity.city}` : ''}. `
-      : `${entity.name}${entity.city ? ` in ${entity.city}` : ''} im ${ranking.name}-Ranking. `)
-      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle, beste Reisezeit und Lage.',
+      ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}. `
+      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich. `)
+      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle.',
     canonical,
     ogImage,
     ogType: 'article',
-    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary }), seo.breadcrumbLd(crumbs)],
+    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary, features: entityFeatureList }), seo.breadcrumbLd(crumbs)],
     crumbs,
     region,
     nearby,

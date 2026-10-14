@@ -143,7 +143,7 @@ function breadcrumbLd(items) {
 }
 
 // Objekt mit redaktioneller Bewertung (nur wenn ein aussagekräftiger Score vorliegt)
-function entityLd({ entity, ranking, site, url, result, image, description }) {
+function entityLd({ entity, ranking, site, url, result, image, description, features }) {
   const type = ranking.entity_type === 'hotel' ? 'Hotel' : 'LocalBusiness';
   const ld = {
     '@context': 'https://schema.org',
@@ -155,6 +155,10 @@ function entityLd({ entity, ranking, site, url, result, image, description }) {
   if (entity.lat && entity.lng) ld.geo = { '@type': 'GeoCoordinates', latitude: Number(entity.lat), longitude: Number(entity.lng) };
   if (image) ld.image = image;
   if (description) ld.description = description;
+  // Ausstattung als schema.org-Merkmale (nur vorhandene Leistungen)
+  if (features && features.length) {
+    ld.amenityFeature = features.map((f) => ({ '@type': 'LocationFeatureSpecification', name: f.label, value: true }));
+  }
   if (result && result.eligible && result.score !== null) {
     ld.review = {
       '@type': 'Review',
@@ -188,7 +192,28 @@ function googleMapsEmbedUrl(entity, key) {
   return `https://www.google.com/maps/embed/v1/place?${new URLSearchParams({ key, q, language: 'de' })}`;
 }
 
+// Suchergebnis-Längen: Titel ~60 Zeichen (Marke nur anhängen, wenn sie noch passt), Beschreibung ~155 am Wortende gekürzt
+const TITLE_MAX = 60;
+const DESC_MAX = 155;
+
+function fitTitle(title, brand) {
+  const t = String(title || '').trim();
+  const withBrand = brand ? `${t} · ${brand}` : t;
+  return withBrand.length <= TITLE_MAX || !brand ? withBrand : t;
+}
+
+function fitDescription(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= DESC_MAX) return t;
+  const cut = t.slice(0, DESC_MAX - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), DESC_MAX - 30)).replace(/[\s,;:–-]+$/, '')}…`;
+}
+
 module.exports = {
+  fitTitle,
+  fitDescription,
+  TITLE_MAX,
+  DESC_MAX,
   googleMapsUrl,
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,

@@ -61,6 +61,8 @@ app.locals.plausibleSrc = config.plausibleSrc;
 // Cache-Busting: neue Kennung je Start (Deploy), damit Browser geänderte CSS/JS sofort laden
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
+app.locals.fitTitle = require('./lib/seo').fitTitle;
+app.locals.fitDescription = require('./lib/seo').fitDescription;
 app.locals.googleMapsUrl = require('./lib/seo').googleMapsUrl;
 app.locals.googleMapsEmbedUrl = (e) => require('./lib/seo').googleMapsEmbedUrl(e, config.googleMapsEmbedKey);
 app.locals.monthRanges = require('./lib/seo').monthRanges;

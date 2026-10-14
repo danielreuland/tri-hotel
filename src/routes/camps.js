@@ -57,8 +57,8 @@ router.get('/trainingscamp/anbieter/:slug', wrap(async (req, res, next) => {
   const siteUrl = res.locals.siteUrl;
   const canonical = `${siteUrl}/trainingscamp/anbieter/${p.slug}`;
   res.render('public/camp-provider', {
-    title: `${p.name}: Trainingscamps ${p.destinations.slice(0, 3).join(', ')}`.replace(/: Trainingscamps $/, ': Trainingscamps'),
-    description: `${p.name} (${p.model_label || camps.MODELS[p.model]}): Camps${p.destinations.length ? ` in ${p.destinations.join(', ')}` : ''}, Leistungen, Preisbeispiele und Hotels im Überblick – neutral und ohne bezahlte Platzierung.`,
+    title: `${p.name}: Camps, Preise und Hotels`,
+    description: `${p.name}${p.destinations.length ? ` – Camps in ${p.destinations.slice(0, 4).join(', ')}` : ''}: Leistungen, Preisbeispiele und Hotels im Überblick. Neutral, ohne bezahlte Platzierung.`,
     canonical,
     jsonLd: [seo.breadcrumbLd([
       { name: req.site.name, url: `${siteUrl}/` }, { name: 'Trainingscamp', url: `${siteUrl}/trainingscamp` }, { name: p.name, url: canonical },

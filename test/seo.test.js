@@ -89,3 +89,13 @@ test('seo.googleMapsEmbedUrl: nur mit Schlüssel, Place ID bevorzugt', () => {
   assert.equal(u.searchParams.get('q'), 'Hotel Jakob, Fuschl am See, Österreich');
   assert.equal(new URL(seo.googleMapsEmbedUrl({ ...e, attributes: { google_place_id: 'ChIJxyz123abc' } }, 'KEY')).searchParams.get('q'), 'place_id:ChIJxyz123abc');
 });
+
+test('seo.fitTitle / fitDescription: Längen für Suchergebnisse', () => {
+  const seo = require('../src/lib/seo');
+  assert.equal(seo.fitTitle('Kontakt', 'tri-hotel.de'), 'Kontakt · tri-hotel.de');
+  const long = 'Triathlon-Trainingscamp: Ratgeber und Anbieter im Vergleich';
+  assert.equal(seo.fitTitle(long, 'tri-hotel.de'), long, 'Marke entfällt, wenn sie nicht mehr passt');
+  const d = seo.fitDescription('Wort '.repeat(50));
+  assert.ok(d.length <= seo.DESC_MAX && d.endsWith('…'));
+  assert.equal(seo.fitDescription('Kurz.'), 'Kurz.');
+});
