@@ -52,9 +52,9 @@ for (const p of ['id', 'entityId', 'answerId', 'inquiryId', 'consentId']) {
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false });
 
-const safeNext = (next) => (/^\/admin(\/|$|\?)/.test(String(next || '')) ? String(next) : '/admin');
+const safeNext = (next) => (/^\/admin(\/|$|\?)/.test(String(next || '')) ? String(next) : '/admin/aufgaben');
 
-function renderLogin(res, { error = null, next = '/admin', status = 200 } = {}) {
+function renderLogin(res, { error = null, next = '/admin/aufgaben', status = 200 } = {}) {
   res.status(status).render('admin/login', {
     title: 'Admin-Login', error, next,
     googleEnabled: Boolean(config.google.clientId && config.google.clientSecret),
@@ -112,7 +112,7 @@ router.get('/auth/google', loginLimiter, (req, res) => {
 router.get('/auth/google/callback', loginLimiter, wrap(async (req, res) => {
   const o = req.session.oauth;
   delete req.session.oauth;
-  const fail = (msg) => renderLogin(res, { error: msg, status: 401, next: (o && o.next) || '/admin' });
+  const fail = (msg) => renderLogin(res, { error: msg, status: 401, next: (o && o.next) || '/admin/aufgaben' });
   if (!o || !req.query.state || req.query.state !== o.state || Date.now() - o.at > 10 * 60 * 1000) {
     return fail('Die Anmeldung ist abgelaufen. Bitte erneut versuchen.');
   }
@@ -461,7 +461,7 @@ router.get('/google-orte', wrap(async (req, res) => {
   const list = await db.many(
     `SELECT e.id, e.name, e.city, e.country, e.lat, e.attributes,
             (SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1) AS sub_id,
-            (SELECT string_agg(DISTINCT er.status, ', ') FROM entity_rankings er WHERE er.entity_id = e.id) AS statuses
+            (SELECT string_agg(DISTINCT er.status::text, ', ') FROM entity_rankings er WHERE er.entity_id = e.id) AS statuses
        FROM entities e
       WHERE EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.status IN ('in_review', 'live'))
       ORDER BY lower(e.name)`);
