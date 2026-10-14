@@ -79,3 +79,13 @@ test('seo.googleMapsUrl: Suche nach Name und Anschrift, mit Place ID exakt', () 
   assert.equal(u.searchParams.get('query_place_id'), null);
   assert.equal(new URL(seo.googleMapsUrl({ ...e, attributes: { google_place_id: 'ChIJabc123def' } })).searchParams.get('query_place_id'), 'ChIJabc123def');
 });
+
+test('seo.googleMapsEmbedUrl: nur mit Schlüssel, Place ID bevorzugt', () => {
+  const seo = require('../src/lib/seo');
+  const e = { name: 'Hotel Jakob', city: 'Fuschl am See', country: 'AT', attributes: {} };
+  assert.equal(seo.googleMapsEmbedUrl(e, null), null);
+  const u = new URL(seo.googleMapsEmbedUrl(e, 'KEY'));
+  assert.equal(u.origin + u.pathname, 'https://www.google.com/maps/embed/v1/place');
+  assert.equal(u.searchParams.get('q'), 'Hotel Jakob, Fuschl am See, Österreich');
+  assert.equal(new URL(seo.googleMapsEmbedUrl({ ...e, attributes: { google_place_id: 'ChIJxyz123abc' } }, 'KEY')).searchParams.get('q'), 'place_id:ChIJxyz123abc');
+});

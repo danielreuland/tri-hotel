@@ -179,8 +179,18 @@ function googleMapsUrl(entity) {
   return `https://www.google.com/maps/search/?${params}`;
 }
 
+// Einbettung (Maps Embed API, Modus „place“): Ort mit Infokarte inkl. Google-Bewertung
+function googleMapsEmbedUrl(entity, key) {
+  if (!key) return null;
+  const placeId = (entity.attributes || {}).google_place_id;
+  const a = (entity.attributes || {}).address || {};
+  const q = placeId ? `place_id:${placeId}` : [entity.name, a.street, a.postal_code, a.city || entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ');
+  return `https://www.google.com/maps/embed/v1/place?${new URLSearchParams({ key, q, language: 'de' })}`;
+}
+
 module.exports = {
   googleMapsUrl,
+  googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
   averageClimate, bestMonths, monthRanges, featureShares,
   ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd,

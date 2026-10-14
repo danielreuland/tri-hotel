@@ -50,3 +50,19 @@ document.querySelectorAll('[data-toggle-all]').forEach(function (btn) {
   });
   items.forEach(function (d) { d.addEventListener('toggle', sync); });
 });
+
+// Google-Bewertungen: Einbettung erst nach Klick (Zwei-Klick-Lösung)
+document.querySelectorAll('[data-load-google]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var box = btn.closest('.g-embed');
+    var frame = document.createElement('iframe');
+    frame.src = box.getAttribute('data-src');
+    frame.title = 'Google Maps mit Bewertungen';
+    frame.loading = 'lazy';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.setAttribute('allowfullscreen', '');
+    box.innerHTML = '';
+    box.classList.add('loaded');
+    box.appendChild(frame);
+  });
+});

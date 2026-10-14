@@ -56,6 +56,8 @@ module.exports = {
   // Plausible (ohne Cookies), z. B. https://analytics.triprep.de/js/script.outbound-links.tagged-events.js
   plausibleSrc: process.env.PLAUSIBLE_SRC || null,
   // Admin-Login: Google (empfohlen) und optional Passwort
+  // Maps Embed API (Zwei-Klick-Karte mit Google-Bewertungen); Schlüssel auf die eigenen Domains beschränken
+  googleMapsEmbedKey: process.env.GOOGLE_MAPS_EMBED_KEY || null,
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || null,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,

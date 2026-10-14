@@ -27,6 +27,8 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
         connectSrc: ["'self'", ...(plausibleOrigin ? [plausibleOrigin] : [])],
+        // Google-Bewertungen: Einbettung erst nach Klick (Zwei-Klick-Lösung)
+        frameSrc: ["'self'", ...(config.googleMapsEmbedKey ? ['https://www.google.com'] : [])],
       },
     },
     // Standard der Browser; mit "no-referrer" senden Formulare die Herkunft als "null"
@@ -60,11 +62,13 @@ app.locals.plausibleSrc = config.plausibleSrc;
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
 app.locals.googleMapsUrl = require('./lib/seo').googleMapsUrl;
+app.locals.googleMapsEmbedUrl = (e) => require('./lib/seo').googleMapsEmbedUrl(e, config.googleMapsEmbedKey);
 app.locals.monthRanges = require('./lib/seo').monthRanges;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
 // Rechtstexte: Löschfristen direkt aus der Konfiguration, Stand der Texte
 app.locals.retention = require('./services/retention').RETENTION;
 app.locals.legalDate = '12. Oktober 2026';
+app.locals.googleMapsEnabled = Boolean(config.googleMapsEmbedKey);
 app.locals.entityImgAttrs = require('./services/media').entityImgAttrs;
 
 // Vorab-Phase: nichts indexieren

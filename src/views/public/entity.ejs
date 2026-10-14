@@ -47,7 +47,8 @@
   </section>
 <% } %>
 
-<p class="other-opinions muted"><small>Allgemeine Gästemeinungen (nicht Teil des <%= ranking.score_name %>): <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Bewertungen bei Google ansehen ↗</a></small></p>
+<% var gEmbed = googleMapsEmbedUrl(entity); %>
+<% if (!gEmbed) { %><p class="other-opinions muted"><small>Allgemeine Gästemeinungen (nicht Teil des <%= ranking.score_name %>): <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Bewertungen bei Google ansehen ↗</a></small></p><% } %>
 
 <% if (campProviders.length) { %>
   <section class="camp-box card" style="margin-top:20px">
@@ -149,6 +150,18 @@
           <p>Die Karte wird von OpenStreetMap geladen. Dabei wird deine IP-Adresse an deren Server übertragen.</p>
           <button class="btn small" type="button" id="load-map">Karte laden</button>
           <p><a href="https://www.openstreetmap.org/?mlat=<%= entity.lat %>&mlon=<%= entity.lng %>#map=13/<%= entity.lat %>/<%= entity.lng %>" target="_blank" rel="noopener">Auf OpenStreetMap öffnen</a></p>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (gEmbed) { %>
+      <h2 id="google">Google-Bewertungen</h2>
+      <p class="muted" style="margin-top:0"><small>Allgemeine Gästemeinungen – nicht Teil des <%= ranking.score_name %>.</small></p>
+      <div class="map-box g-embed" data-src="<%= gEmbed %>">
+        <div>
+          <p>Bewertungen und Karte werden von Google geladen. Dabei werden deine IP-Adresse an Google übertragen und Cookies gesetzt.</p>
+          <button class="btn small" type="button" data-load-google>Google-Bewertungen laden</button>
+          <p><a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Direkt bei Google ansehen ↗</a> · <a href="/datenschutz#google">Datenschutz</a></p>
         </div>
       </div>
     <% } %>

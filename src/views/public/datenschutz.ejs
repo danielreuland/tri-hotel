@@ -50,6 +50,11 @@
   <h2 id="camps">Trainingscamps: Weiterleitung zu Anbietern und Formular für Anbieter</h2>
   <p>Klickst du bei einem Camp-Anbieter auf „Zum Anbieter“, leiten wir dich über eine eigene Adresse weiter und zählen dabei nur, <em>wie oft</em> pro Tag zu welchem Anbieter weitergeleitet wurde – ohne IP-Adresse, Cookie oder andere Daten über dich. An die Zieladresse hängen wir eine Kennung an (z. B. „utm_source=<%= site.primary_domain %>“), damit der Anbieter sieht, dass du von uns kommst; ab dann gelten seine Datenschutzhinweise. Nachrichten über das Formular „Für Camp-Anbieter“ behandeln wir wie Kontaktnachrichten (siehe oben).</p>
 
+  <% if (locals.googleMapsEnabled) { %>
+  <h2 id="google">Google-Bewertungen (Google Maps)</h2>
+  <p>Auf Profilseiten kannst du per Klick auf „Google-Bewertungen laden“ eine Karte von Google Maps mit der Google-Bewertung der Unterkunft einblenden. Erst nach diesem Klick stellt dein Browser eine Verbindung zu Google her; dabei werden deine IP-Adresse und technische Daten an die Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) übertragen, und Google kann Cookies setzen. Eine Übermittlung an Google LLC in den USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert. Rechtsgrundlage ist deine Einwilligung durch den Klick (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Die Google-Bewertung ist nicht Teil unseres Scores. Weitere Informationen: <a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Datenschutzerklärung von Google</a>.</p>
+  <% } %>
+
   <h2>Links zu Buchungsportalen</h2>
   <p>Als „Anzeige“ gekennzeichnete Links führen zu Buchungsportalen. Erst wenn du einen solchen Link anklickst, verlässt du unsere Seite; ab dann gelten die Datenschutzhinweise des jeweiligen Anbieters.</p>
 
@@ -58,6 +63,7 @@
     <li>IONOS SE (Hosting, Datenbank, E-Mail) – Auftragsverarbeiter, Deutschland</li>
     <li>Anthropic PBC (KI-Auswertung öffentlicher Hotel-Inhalte, Textentwürfe) – Auftragsverarbeiter, USA, Standardvertragsklauseln</li>
     <li>OpenStreetMap Foundation (Kartenkacheln, nur nach Klick auf „Karte laden“) – Vereinigtes Königreich</li>
+    <% if (locals.googleMapsEnabled) { %><li>Google Ireland Limited / Google LLC (Google-Bewertungen, nur nach Klick) – Irland/USA, Data Privacy Framework</li><% } %>
     <li>Google Ireland Limited (Anmeldung im internen Adminbereich, nur unser Team)</li>
   </ul>
 
