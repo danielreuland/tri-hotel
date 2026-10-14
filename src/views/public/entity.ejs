@@ -34,12 +34,7 @@
     <p class="muted" style="margin:.5em 0 0">Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p>
   <% } %>
 </div>
-
-<% if (climate.length) { %>
-  <div class="best-time card">
-    <span class="bt-label">Beste Reisezeit</span>
-    <strong><%= bestTime || 'keine Monate mit idealem Trainingsklima' %></strong>
-    <small class="muted"><% if (bestTimeRule) { %>Monate mit Ø <%= bestTimeRule.min %>–<%= bestTimeRule.max %> °C Tageshöchstwert<% } %> · nur Information, nicht Teil des <%= ranking.score_name %> · <a href="#klima">Klima je Monat</a></small>
+ · nur Information, nicht Teil des <%= ranking.score_name %> · <a href="#klima">Klima je Monat</a></small>
   </div>
 <% } %>
 
@@ -138,6 +133,7 @@
 
     <% if (climate.length) { %>
       <h2 id="klima">Klima je Monat</h2>
+      <p class="best-time-line"><span class="bt-label">Beste Reisezeit</span> <strong><%= bestTime || 'keine Monate mit idealem Trainingsklima' %></strong><% if (bestTimeRule) { %> <small class="muted">· Ø <%= bestTimeRule.min %>–<%= bestTimeRule.max %> °C Tageshöchstwert</small><% } %></p>
       <div class="table-scroll">
         <table class="climate">
           <tr><th></th><% climate.forEach(function (c) { %><th class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>

@@ -500,6 +500,6 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .other-opinions { margin: 12px 0 0; }
 
 /* Hotelseite: beste Reisezeit (Info, nicht im Score) */
-.best-time { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
-.best-time .bt-label { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--accent-strong); }
-.best-time strong { font-size: 1.15rem; }
+.best-time-line { margin: 0 0 10px; }
+.best-time-line .bt-label { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--accent-strong); }
+.best-time-line strong { font-size: 1.1rem; margin-left: 6px; }
