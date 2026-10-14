@@ -423,7 +423,7 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .badge.lbl { border-color: transparent; color: #fff; }
 .lbl-review { background: #2563eb; } .lbl-answers { background: #0f766e; } .lbl-draft { background: #7c3aed; }
 .lbl-inquiry_failed { background: #cf222e; } .lbl-recheck { background: #b45309; } .lbl-image_rights { background: #be185d; }
-.lbl-stuck { background: #57606a; } .lbl-contact { background: #15803d; } .lbl-user_review { background: #ca8a04; } .lbl-camp_partner { background: #c2410c; } .lbl-unconfirmed { background: #0369a1; } .lbl-manual { background: #374151; }
+.lbl-stuck { background: #57606a; } .lbl-contact { background: #15803d; } .lbl-user_review { background: #ca8a04; } .lbl-camp_partner { background: #c2410c; } .lbl-unconfirmed { background: #0369a1; } .lbl-manual { background: #374151; } .lbl-google_place { background: #4285f4; }
 .pill-row .badge.lbl:not(.on) { opacity: .55; }
 .task-card li { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 

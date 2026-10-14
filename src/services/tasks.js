@@ -16,12 +16,13 @@ const LABELS = {
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
   user_review: 'Bewertung',
+  google_place: 'Google Place ID',
   contact: 'Kontaktanfrage',
   camp_partner: 'Camp-Anbieter',
   manual: 'Eigene Aufgabe',
 };
 // Punkte, die eine eigene Karte haben, erscheinen nicht noch einmal im Prüfbericht
-const OWN_CARD_KEYS = new Set(['inquiry-draft', 'answers']);
+const OWN_CARD_KEYS = new Set(['inquiry-draft', 'answers', 'place-suggestion']);
 const DONE_DAYS = 30;
 
 const fp = (lines) => lines.map((l) => `${l.level}:${l.text}`).join('|');
@@ -91,6 +92,18 @@ async function collect() {
     push({ source: 'user_review', source_key: `review-item:${r.id}`, title: r.name,
       detail: [{ level: 'todo', text: `${r.status === 'pending' ? 'Freigeben oder ablehnen' : 'E-Mail unbestätigt'} – ${r.author_name}: ${(r.title || r.body).replace(/\s+/g, ' ').slice(0, 140)}` }],
       link: `/admin/bewertungen#r-${r.id}`, entity_id: r.entity_id });
+  }
+  // Google Place IDs: eine Sammelkarte für alle offenen Vorschläge
+  const places = await db.many(
+    `SELECT e.name FROM entities e
+      WHERE NOT (e.attributes ? 'google_place_id') AND e.attributes->'google_place_suggestion'->>'status' = 'found'
+        AND EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.status IN ('in_review', 'live'))
+      ORDER BY lower(e.name)`);
+  if (places.length) {
+    push({ source: 'google_place', source_key: 'google-place-suggestions', title: `${places.length} ${places.length === 1 ? 'Vorschlag' : 'Vorschläge'} für Google Place IDs`,
+      detail: [{ level: 'todo', text: `In Maps prüfen und übernehmen: ${places.map((p) => p.name).join(', ')}` }],
+      // nur bei neuen Vorschlägen wieder öffnen, nicht bei jeder übernommenen ID
+      fingerprint: 'google-place', link: '/admin/google-orte', entity_id: null });
   }
   // Kontaktformular: offene Nachrichten
   for (const m of await db.many(`SELECT id, name, email, message, topic, company, request FROM contact_messages WHERE handled_at IS NULL ORDER BY created_at`)) {
