@@ -104,12 +104,13 @@ test('Nicht-K.O.-Kriterium mit 0 Punkten löst kein K.O. aus', () => {
 
 test('Gesamtscore mit Athleten-Score nutzt die Gewichte aus der Formel', () => {
   const facts = { pool: { option: 'pool_50_hotel' }, heated: { bool: true }, terrain: { number: 6 }, storage: { option: 'lockable_cctv' } };
-  const r = s.computeScore(tri, facts, climate, { formula: triFormula, athleteScore: 50, reviewCount: 4 });
+  const on = { ...triFormula, athlete_enabled: true };
+  const r = s.computeScore(tri, facts, climate, { formula: on, athleteScore: 50, reviewCount: 4 });
   assert.equal(r.score, 80); // 0,6*100 + 0,4*50
   assert.equal(r.provisional, false);
-  const other = s.computeScore(tri, facts, climate, { formula: { ...triFormula, fact_weight: 0.5, athlete_weight: 0.5 }, athleteScore: 50, reviewCount: 4 });
+  const other = s.computeScore(tri, facts, climate, { formula: { ...on, fact_weight: 0.5, athlete_weight: 0.5 }, athleteScore: 50, reviewCount: 4 });
   assert.equal(other.score, 75);
-  const few = s.computeScore(tri, facts, climate, { formula: triFormula, athleteScore: 50, reviewCount: 2 });
+  const few = s.computeScore(tri, facts, climate, { formula: on, athleteScore: 50, reviewCount: 2 });
   assert.equal(few.provisional, true, 'unter 3 Bewertungen vorläufig');
 });
 
