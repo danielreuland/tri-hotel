@@ -1002,8 +1002,8 @@ router.post('/aufgaben/:id/verschieben', wrap(async (req, res) => {
   if (!UUID_RE.test(req.params.id)) return res.status(404).end();
   const order = Array.isArray(req.body.order) ? req.body.order.filter((x) => UUID_RE.test(x)) : null;
   try {
-    await tasks.move(req.params.id, req.body.status, order, req.session.admin.id);
-    if (req.is('json')) return res.json({ ok: true });
+    const assignee = await tasks.move(req.params.id, req.body.status, order, req.session.admin.id);
+    if (req.is('json')) return res.json({ ok: true, assignee });
     res.redirect(backOrNull(req.body.back) || '/admin/aufgaben');
   } catch (err) {
     if (req.is('json')) return res.status(400).json({ error: err.message });

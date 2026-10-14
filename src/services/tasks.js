@@ -165,7 +165,8 @@ async function board({ assignee = null, label = null, me = null } = {}) {
   return columns;
 }
 
-// Karte verschieben: Status setzen und Reihenfolge der Zielspalte übernehmen
+// Karte verschieben: Status setzen und Reihenfolge der Zielspalte übernehmen.
+// Wer eine Karte ohne Zuständigen nach „In Arbeit“ zieht, wird zuständig. Rückgabe: Zuständiger danach
 async function move(id, status, order, adminId) {
   if (!STATUSES[status]) throw new Error('Unbekannte Spalte.');
   const t = await db.one('SELECT * FROM admin_tasks WHERE id = $1', [id]);
@@ -182,7 +183,12 @@ async function move(id, status, order, adminId) {
     const ids = (order || []).filter((x) => typeof x === 'string');
     for (let i = 0; i < ids.length; i++) await c.query('UPDATE admin_tasks SET position = $2 WHERE id = $1 AND status = $3', [ids[i], i + 1, status]);
     if (t.status !== status) await logAction(adminId, 'task', id, 'move_task', { from: t.status, to: status, title: t.title }, c);
+    if (status === 'in_progress' && !t.assignee_id && adminId) {
+      await c.query('UPDATE admin_tasks SET assignee_id = $2 WHERE id = $1', [id, adminId]);
+      await logAction(adminId, 'task', id, 'assign_task', { assignee: adminId, auto: true }, c);
+    }
   });
+  return status === 'in_progress' && !t.assignee_id && adminId ? adminId : t.assignee_id;
 }
 
 async function assign(id, assigneeId, adminId) {

@@ -102,7 +102,19 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
     if (sel) sel.value = status;
     counts();
     return post('/admin/aufgaben/' + card.getAttribute('data-id') + '/verschieben', { status: status, order: order })
+      .then(function (r) {
+        // „In Arbeit“ ohne Zuständigen: der Server trägt den angemeldeten Admin ein
+        var who = card.querySelector('[data-assign]');
+        if (who && r && r.assignee && who.value !== r.assignee) { who.value = r.assignee; showAssignee(card, who); }
+      })
       .catch(function (e) { alert(e.message); location.reload(); });
+  }
+  function showAssignee(card, sel) {
+    var av = card.querySelector('.avatar');
+    var name = sel.options[sel.selectedIndex].text;
+    av.classList.toggle('none', !sel.value);
+    av.textContent = sel.value ? name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join('') : '?';
+    av.title = sel.value ? name : 'niemand zugewiesen';
   }
   function afterElement(list, y) {
     var cards = Array.prototype.filter.call(list.querySelectorAll('.task-card'), function (c) { return c !== dragged; });
@@ -157,13 +169,7 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
     sel.addEventListener('change', function () {
       var card = sel.closest('.task-card');
       post('/admin/aufgaben/' + card.getAttribute('data-id') + '/zuweisen', { assignee_id: sel.value })
-        .then(function () {
-          var av = card.querySelector('.avatar');
-          var name = sel.options[sel.selectedIndex].text;
-          av.classList.toggle('none', !sel.value);
-          av.textContent = sel.value ? name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join('') : '?';
-          av.title = sel.value ? name : 'niemand zugewiesen';
-        })
+        .then(function () { showAssignee(card, sel); })
         .catch(function (e) { alert(e.message); });
     });
   });
