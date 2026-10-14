@@ -191,7 +191,7 @@ test('unbekannte Kriterien: Durchschnitt statt Vorteil (auch für ein zweites Ra
 
   const avg = { formula: { unknown_policy: 'average', min_completeness: 50 }, unknownShares: { c: 0.25 } };
   const r = s.computeScore(crit, gap, [], avg);
-  assert.equal(r.score, 92); // (10 + 10 + 2,5) / 30
+  assert.equal(r.score, 75); // (10 + 10 + 2,5) / 30
   assert.equal(Math.round(r.completeness), 67, 'Vollständigkeit zählt nur bekannte Werte');
   assert.equal(r.details.find((d) => d.code === 'sauna').imputed, 2.5);
 
