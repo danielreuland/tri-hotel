@@ -65,7 +65,7 @@ test('F wird auf die bekannten Kriterien normiert', () => {
   assert.equal(r.maxAll, 35);
   assert.equal(r.completeness, 51.43);
   assert.equal(r.eligible, false, 'unter 70 % Vollständigkeit nicht im Ranking');
-  assert.equal(r.provisional, true, 'ohne Bewertungen vorläufig');
+  assert.equal(r.provisional, false, 'Bewertungen ausgeschaltet: nicht vorläufig');
   assert.equal(r.label, 'Sehr gut geeignet');
 });
 
@@ -216,9 +216,10 @@ test('Athleten-Score: Bayes-Mittel, Altersgewichte, Schalter und Mindestzahl', (
   const facts = { a: { bool: true } };
   const off = s.computeScore(crit, facts, [], { formula: { min_completeness: 50 }, athleteScore: 0, reviewCount: 10 });
   assert.equal(off.score, 100, 'ausgeschaltet: nur Fakten');
-  assert.equal(off.provisional, true);
+  assert.equal(off.provisional, false, 'ausgeschaltet: reiner Fakten-Score, nicht vorläufig');
   const few = s.computeScore(crit, facts, [], { formula: { min_completeness: 50, athlete_enabled: true, min_reviews: 3 }, athleteScore: 0, reviewCount: 2 });
   assert.equal(few.score, 100, 'zu wenige Bewertungen: nur Fakten');
+  assert.equal(few.provisional, true, 'eingeschaltet, aber zu wenige Bewertungen: vorläufig');
   const on = s.computeScore(crit, facts, [], { formula: { min_completeness: 50, athlete_enabled: true, min_reviews: 3 }, athleteScore: 50, reviewCount: 3 });
   assert.equal(on.score, 80); // 0,6*100 + 0,4*50
   assert.equal(on.provisional, false);

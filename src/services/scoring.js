@@ -296,7 +296,8 @@ function computeScore(criteria, facts, climate, opts = {}) {
     completeness: round2(completeness),
     score,
     label: labelFor(score, opts.labels),
-    provisional: athleteScore === null,
+    // Vorläufig nur, solange Bewertungen zählen sollen, aber noch zu wenige vorliegen
+    provisional: Boolean(formula.athlete_enabled) && athleteScore === null,
     athleteUsed: athleteScore !== null,
     eligible: !koCriterion && score !== null && completeness >= formula.min_completeness,
     ko: Boolean(koCriterion),
