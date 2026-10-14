@@ -26,6 +26,8 @@ function nameMatch(ours, theirs) {
   const a = new Set(tokens(ours));
   const b = new Set(tokens(theirs));
   if (!a.size || !b.size) return 0;
+  // gleiche Wörter, nur anders zusammengeschrieben („SantaLucia“)
+  if ([...a].join('') === [...b].join('')) return 2;
   const common = [...a].filter((t) => b.has(t)).length;
   if (common === a.size && common === b.size) return 2;
   return common / a.size >= 0.5 ? 1 : 0;

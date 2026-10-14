@@ -9,6 +9,7 @@ test('Namensabgleich ignoriert Allerweltswörter und Akzente', () => {
   assert.equal(places.nameMatch('Playitas Hotel', 'Playitas Hotel'), 2);
   assert.equal(places.nameMatch('Playitas Hotel', 'Hotel Playitas'), 2);
   assert.equal(places.nameMatch('Playitas Hotel', 'Playitas Aparthotel'), 1);
+  assert.equal(places.nameMatch('Aktivhotel Santa Lucia', 'AktivHotel SantaLucia'), 2, 'zusammengeschrieben');
   assert.equal(places.nameMatch('Playitas Hotel', 'Mercadona'), 0);
 });
 
