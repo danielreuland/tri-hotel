@@ -58,6 +58,8 @@ module.exports = {
   // Admin-Login: Google (empfohlen) und optional Passwort
   // Maps Embed API (Zwei-Klick-Karte mit Google-Bewertungen); Schlüssel auf die eigenen Domains beschränken
   googleMapsEmbedKey: process.env.GOOGLE_MAPS_EMBED_KEY || null,
+  // Places API (New) nur serverseitig für die Suche nach der Place ID; Schlüssel auf die Server-IP beschränken
+  googlePlacesKey: process.env.GOOGLE_PLACES_KEY || null,
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || null,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,

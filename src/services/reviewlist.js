@@ -57,6 +57,10 @@ function build(d, dismissals = []) {
   if (pendingAnswers) add('todo', `${pendingAnswers} ${pendingAnswers === 1 ? 'Antwort' : 'Antworten'} des Betreibers übernehmen oder verwerfen.`, 'anfragen', null, 'answers');
   const draft = (inquiryList || []).find((i) => i.status === 'draft');
   if (draft) add('todo', `Anfrage-Entwurf an ${draft.recipient} (${draft.criteria_ids.length} Fragen) freigeben oder verwerfen.`, 'anfragen', null, 'inquiry-draft', false);
+  const placeSug = (entity.attributes || {}).google_place_suggestion;
+  if (!(entity.attributes || {}).google_place_id && placeSug && placeSug.status === 'found') {
+    add('todo', 'Vorgeschlagene Google Place ID prüfen und übernehmen.', 'stammdaten', `${placeSug.distance_m} m von unseren Koordinaten`, 'place-suggestion');
+  }
   if (!entity.contact_email) add('hint', `Keine Kontakt-E-Mail – ohne sie keine Anfragen an das ${entityLabel}.`, 'stammdaten', null, 'contact');
 
   // Bilder und Text

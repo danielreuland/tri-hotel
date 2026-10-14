@@ -15,6 +15,7 @@ const featureService = require('../services/features');
 const llm = require('../lib/llm');
 const config = require('../config');
 const sitedata = require('../services/sitedata');
+const places = require('../services/places');
 
 // Zweiter Durchgang nur, wenn danach noch mehrere auslesbare Kriterien fehlen
 const MIN_MISSING_FOR_SECOND_PASS = 3;
@@ -187,6 +188,18 @@ async function run(submissionId, { refresh = false } = {}) {
       entity.lng = hit.lng;
       return `${hit.lat.toFixed(5)}, ${hit.lng.toFixed(5)} – ${hit.source}: ${hit.detail}`;
     });
+  }
+
+  // 3b. Google Place ID als Vorschlag (nur ID; übernommen wird sie erst im Admin)
+  if (entity.lat !== null && places.enabled()) {
+    const fresh = await db.one('SELECT * FROM entities WHERE id = $1', [entity.id]);
+    if (!(fresh.attributes || {}).google_place_id) {
+      await step(sub.id, 'Google Place ID', async () => {
+        const s = await places.suggest(fresh);
+        if (s.status === 'found') return `Vorschlag ${s.id} (${s.distance_m} m, Name ${s.match === 2 ? 'gleich' : 'teilweise'}) – bitte in den Stammdaten prüfen.`;
+        return s.status === 'unclear' ? `${s.count} Treffer, keiner eindeutig – bei Bedarf in den Stammdaten suchen.` : 'Kein Treffer bei Google.';
+      });
+    }
   }
 
   // 4. Klima je Monat

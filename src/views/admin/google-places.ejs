@@ -1,0 +1,40 @@
+<%- include('../partials/admin-head') %>
+<h1>Google Place IDs</h1>
+<p class="muted">Mit der Place ID zeigen Karte und Link „Bei Google ansehen“ genau dieses Objekt. Die Sammelsuche merkt eindeutige Treffer nur vor (höchstens <%= MAX_DISTANCE_M %> m von unseren Koordinaten, passender Name) – übernommen wird erst nach deiner Prüfung. Gespeichert wird nur die ID.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% if (!placesEnabled) { %>
+  <div class="errors">Die Suche ist ausgeschaltet: <code>GOOGLE_PLACES_KEY</code> ist nicht gesetzt. Place IDs lassen sich weiterhin in den Stammdaten von Hand eintragen.</div>
+<% } else { %>
+  <div class="filters">
+    <form method="post" action="/admin/google-orte/suchen"><button class="btn small" type="submit">Für alle ohne ID suchen</button></form>
+    <form method="post" action="/admin/google-orte/suchen"><input type="hidden" name="alle" value="1"><button class="btn small secondary" type="submit">Unklare und verworfene erneut suchen</button></form>
+  </div>
+<% } %>
+<% var STATE = { set: ['good', 'gesetzt'], found: ['warn', 'Vorschlag prüfen'], unclear: ['', 'unklar – einzeln suchen'], none: ['', 'kein Treffer'], dismissed: ['', 'verworfen'], open: ['', 'noch nicht gesucht'] }; %>
+<% var counts = {}; list.forEach(function (e) { counts[e.state] = (counts[e.state] || 0) + 1; }); %>
+<p class="pill-row"><% Object.keys(STATE).forEach(function (k) { if (counts[k]) { %><span class="badge <%= STATE[k][0] %>"><%= STATE[k][1] %>: <%= counts[k] %></span> <% } }) %></p>
+<div class="table-scroll"><table>
+  <tr><th>Objekt</th><th>Status</th><th>Place ID / Vorschlag</th><th></th></tr>
+  <% list.forEach(function (e) { var a = e.attributes || {}; var s = a.google_place_suggestion || {}; var st = STATE[e.state] || STATE.open; %>
+    <tr id="e-<%= e.id %>">
+      <td><% if (e.sub_id) { %><a href="/admin/meldungen/<%= e.sub_id %>#stammdaten"><%= e.name %></a><% } else { %><%= e.name %><% } %><br><small class="muted"><%= [e.city, e.country].filter(Boolean).join(', ') %> · <%= e.statuses %><%= e.lat === null ? ' · ohne Koordinaten' : '' %></small></td>
+      <td><span class="badge <%= st[0] %>"><%= st[1] %></span></td>
+      <td><small>
+        <% if (e.state === 'set') { %><code><%= a.google_place_id %></code> · <a href="<%= mapsLink(a.google_place_id) %>" target="_blank" rel="noopener">Maps ↗</a>
+        <% } else if (e.state === 'found') { %><code><%= s.id %></code> · <%= s.distance_m %> m · Name <%= s.match === 2 ? 'gleich' : 'teilweise' %> · <a href="<%= mapsLink(s.id) %>" target="_blank" rel="noopener">in Maps prüfen ↗</a>
+        <% } else if (e.state === 'unclear') { %><%= s.count %> Treffer, keiner eindeutig
+        <% } else { %>–<% } %>
+      </small></td>
+      <td>
+        <% if (e.state === 'found') { %>
+          <div class="filters" style="margin:0">
+            <form method="post" action="/admin/google-orte/<%= e.id %>/uebernehmen"><button class="btn small" type="submit">Übernehmen</button></form>
+            <form method="post" action="/admin/google-orte/<%= e.id %>/verwerfen"><button class="btn small secondary" type="submit">Verwerfen</button></form>
+          </div>
+        <% } else if (e.state !== 'set' && e.sub_id && placesEnabled) { %><a href="/admin/meldungen/<%= e.sub_id %>#stammdaten"><small>einzeln suchen</small></a><% } %>
+      </td>
+    </tr>
+  <% }) %>
+</table></div>
+<%- include('../partials/admin-foot') %>

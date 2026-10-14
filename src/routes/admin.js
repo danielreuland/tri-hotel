@@ -21,6 +21,7 @@ const describer = require('../services/describer');
 const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
 const tasks = require('../services/tasks');
+const places = require('../services/places');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -254,8 +255,15 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
   const criteriaByCode = Object.fromEntries(d.criteria.map((c) => [c.code, c]));
   const dismissals = d.entity ? await db.many('SELECT * FROM review_dismissals WHERE entity_id = $1 AND ranking_id = $2', [d.entity.id, d.ranking.id]) : [];
   const review = reviewlist.build(d, dismissals);
+  // Ergebnis der Google-Suche nur einmal anzeigen (wird nicht gespeichert)
+  const ps = req.session.placeSearch;
+  const placeSearch = ps && ps.sub === req.params.id ? ps : null;
+  if (ps) delete req.session.placeSearch;
   res.render('admin/detail', {
     review,
+    placeSearch,
+    placesEnabled: places.enabled(),
+    placesMapsLink: places.mapsLink,
     title: d.sub.entity_name,
     ...d,
     factByCrit,
@@ -408,6 +416,107 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
   res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);
+}));
+
+// ---------- Google Place ID (Suche über die Places API, Übernahme nur durch den Admin) ----------
+
+const PLACE_ID_RE = /^[A-Za-z0-9_-]{10,300}$/;
+const subEntity = async (subId) => {
+  const sub = UUID_RE.test(subId) ? await db.one('SELECT id, entity_id FROM submissions WHERE id = $1', [subId]) : null;
+  return sub && sub.entity_id ? { sub, entity: await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]) } : null;
+};
+const backTo = (subId, key, msg) => `/admin/meldungen/${subId}?${key}=${encodeURIComponent(msg)}#stammdaten`;
+
+router.post('/meldungen/:id/google-suche', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  try {
+    const r = await places.search(t.entity);
+    req.session.placeSearch = { sub: t.sub.id, query: places.query(t.entity), candidates: r.candidates, pick: r.pick && r.pick.id };
+    req.session.save(() => res.redirect(`/admin/meldungen/${t.sub.id}#stammdaten`));
+  } catch (err) {
+    res.redirect(backTo(t.sub.id, 'fehler', err.message));
+  }
+}));
+
+router.post('/meldungen/:id/google-place', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const placeId = String(req.body.place_id || '').trim();
+  if (!PLACE_ID_RE.test(placeId)) return res.redirect(backTo(t.sub.id, 'fehler', 'Google Place ID ungültig.'));
+  await places.accept(t.entity.id, placeId);
+  await logAction(req.session.admin.id, 'entity', t.entity.id, 'edit_google_place_id', { new: placeId, via: 'google_search' });
+  res.redirect(backTo(t.sub.id, 'ok', 'Google Place ID übernommen'));
+}));
+
+router.post('/meldungen/:id/google-verwerfen', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  await places.dismiss(t.entity.id);
+  res.redirect(backTo(t.sub.id, 'ok', 'Vorschlag verworfen'));
+}));
+
+// Übersicht aller Objekte: Place ID vorhanden, vorgeschlagen, unklar oder noch nicht gesucht
+router.get('/google-orte', wrap(async (req, res) => {
+  const list = await db.many(
+    `SELECT e.id, e.name, e.city, e.country, e.lat, e.attributes,
+            (SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1) AS sub_id,
+            (SELECT string_agg(DISTINCT er.status, ', ') FROM entity_rankings er WHERE er.entity_id = e.id) AS statuses
+       FROM entities e
+      WHERE EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.status IN ('in_review', 'live'))
+      ORDER BY lower(e.name)`);
+  const state = (e) => {
+    const a = e.attributes || {};
+    if (a.google_place_id) return 'set';
+    return (a.google_place_suggestion || {}).status || 'open';
+  };
+  for (const e of list) e.state = state(e);
+  res.render('admin/google-places', {
+    title: 'Google Place IDs', list, placesEnabled: places.enabled(), mapsLink: places.mapsLink, MAX_DISTANCE_M: places.MAX_DISTANCE_M,
+    flash: req.query.ok || null, error: req.query.fehler || null,
+  });
+}));
+
+// Sammelsuche: alle Objekte ohne Place ID und ohne bisherigen Vorschlag (mit alle=1 auch unklare/verworfene erneut)
+router.post('/google-orte/suchen', wrap(async (req, res) => {
+  if (!places.enabled()) return res.redirect('/admin/google-orte?fehler=GOOGLE_PLACES_KEY+fehlt');
+  const again = req.body.alle === '1';
+  const list = await db.many(
+    `SELECT e.* FROM entities e
+      WHERE NOT (e.attributes ? 'google_place_id')
+        AND ($1 OR NOT (e.attributes ? 'google_place_suggestion') OR e.attributes->'google_place_suggestion'->>'status' = 'error')
+        AND EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.status IN ('in_review', 'live'))
+      ORDER BY lower(e.name) LIMIT 60`, [again]);
+  const count = { found: 0, unclear: 0, none: 0, error: 0 };
+  let lastError = null;
+  for (const e of list) {
+    try {
+      count[(await places.suggest(e)).status] += 1;
+    } catch (err) {
+      count.error += 1;
+      lastError = err.message;
+      if (/API key|PERMISSION|403|401/i.test(err.message)) break; // Schlüsselproblem: nicht weiter versuchen
+    }
+  }
+  await logAction(req.session.admin.id, 'admin_user', req.session.admin.id, 'google_place_bulk_search', count);
+  const msg = `${list.length} gesucht: ${count.found} eindeutig, ${count.unclear} unklar, ${count.none} ohne Treffer${count.error ? `, ${count.error} Fehler` : ''}`;
+  res.redirect(`/admin/google-orte?${lastError ? `fehler=${encodeURIComponent(`${msg} – ${lastError}`)}` : `ok=${encodeURIComponent(msg)}`}`);
+}));
+
+router.post('/google-orte/:entityId/uebernehmen', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId)) return next();
+  const e = await db.one('SELECT id, attributes FROM entities WHERE id = $1', [req.params.entityId]);
+  const s = e && (e.attributes || {}).google_place_suggestion;
+  if (!s || s.status !== 'found' || !PLACE_ID_RE.test(s.id || '')) return res.redirect('/admin/google-orte?fehler=Kein+Vorschlag+vorhanden');
+  await places.accept(e.id, s.id);
+  await logAction(req.session.admin.id, 'entity', e.id, 'edit_google_place_id', { new: s.id, via: 'google_suggestion' });
+  res.redirect(`/admin/google-orte?ok=Place+ID+%C3%BCbernommen#e-${e.id}`);
+}));
+
+router.post('/google-orte/:entityId/verwerfen', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId)) return next();
+  await places.dismiss(req.params.entityId);
+  res.redirect(`/admin/google-orte?ok=Vorschlag+verworfen#e-${req.params.entityId}`);
 }));
 
 router.post('/meldungen/:id/freigeben', wrap(async (req, res) => {

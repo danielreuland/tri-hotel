@@ -113,10 +113,44 @@
         <div class="form-row">
           <div><label>Google Place ID <small class="muted">optional – macht den Link „Bewertungen bei Google“ exakt</small></label>
             <input name="google_place_id" type="text" value="<%= (entity.attributes || {}).google_place_id || '' %>" placeholder="ChIJ…">
-            <small class="muted"><a href="https://developers.google.com/maps/documentation/places/web-service/place-id#find-id" target="_blank" rel="noopener">Place ID finden ↗</a> · ohne ID sucht der Link nach Name und Anschrift · <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="noopener">Link testen ↗</a></small></div>
+            <small class="muted"><% if (placesEnabled) { %>Suche bei Google unten<% } else { %><a href="https://developers.google.com/maps/documentation/places/web-service/place-id#find-id" target="_blank" rel="noopener">Place ID finden ↗</a><% } %> · ohne ID sucht der Link nach Name und Anschrift · <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="noopener">Link testen ↗</a></small></div>
         </div>
         <p><button class="btn small" type="submit">Stammdaten speichern</button> <small class="muted">Slug: <%= entity.slug %></small></p>
       </form>
+      <% var ea = entity.attributes || {}; var sug = ea.google_place_suggestion; %>
+      <% if (sug && sug.status === 'found' && !ea.google_place_id) { %>
+        <div class="flash" style="margin-top:12px">
+          <strong>Vorschlag für die Google Place ID</strong> (automatisch gesucht <%= new Date(sug.searched_at).toLocaleDateString('de-DE') %>):
+          <code><%= sug.id %></code> · <%= sug.distance_m %> m von unseren Koordinaten · Name <%= sug.match === 2 ? 'stimmt überein' : 'passt teilweise' %>
+          · <a href="<%= placesMapsLink(sug.id) %>" target="_blank" rel="noopener">in Google Maps prüfen ↗</a>
+          <div class="filters" style="margin:8px 0 0">
+            <form method="post" action="/admin/meldungen/<%= sub.id %>/google-place"><input type="hidden" name="place_id" value="<%= sug.id %>"><button class="btn small" type="submit">Übernehmen</button></form>
+            <form method="post" action="/admin/meldungen/<%= sub.id %>/google-verwerfen"><button class="btn small secondary" type="submit">Verwerfen</button></form>
+          </div>
+        </div>
+      <% } %>
+      <% if (placesEnabled) { %>
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/google-suche" style="margin-top:12px">
+          <button class="btn small secondary" type="submit">Place ID bei Google suchen</button>
+          <small class="muted">sucht nach Name und Anschrift in der Nähe unserer Koordinaten<% if (sug && sug.status === 'unclear') { %> · automatische Suche war nicht eindeutig<% } else if (sug && sug.status === 'none') { %> · automatische Suche ohne Treffer<% } %></small>
+        </form>
+      <% } %>
+      <% if (placeSearch) { %>
+        <div class="card" style="margin-top:12px">
+          <p style="margin-top:0"><strong>Treffer bei Google</strong> <small class="muted">für „<%= placeSearch.query %>“ – Angaben von Google, werden nicht gespeichert</small></p>
+          <% if (!placeSearch.candidates.length) { %><p class="muted">Keine Treffer. Name oder Anschrift in den Stammdaten anpassen und erneut suchen.</p><% } %>
+          <div class="table-scroll"><table>
+            <% placeSearch.candidates.forEach(function (c) { %>
+              <tr>
+                <td><strong><%= c.name %></strong><% if (c.id === placeSearch.pick) { %> <span class="badge good">passt eindeutig</span><% } %><br><small class="muted"><%= c.address %></small></td>
+                <td><small><%= c.distanceM === null ? 'Entfernung unbekannt' : c.distanceM.toLocaleString('de-DE') + ' m entfernt' %><br><%= ['Name passt nicht', 'Name passt teilweise', 'Name stimmt überein'][c.match] %></small></td>
+                <td><a href="<%= placesMapsLink(c.id) %>" target="_blank" rel="noopener"><small>Maps ↗</small></a></td>
+                <td><% if (c.id === ea.google_place_id) { %><span class="badge good">gesetzt</span><% } else { %><form method="post" action="/admin/meldungen/<%= sub.id %>/google-place"><input type="hidden" name="place_id" value="<%= c.id %>"><button class="btn small" type="submit">Übernehmen</button></form><% } %></td>
+              </tr>
+            <% }) %>
+          </table></div>
+        </div>
+      <% } %>
     </section>
 
     <section class="card" style="margin-top:16px" id="fakten">
