@@ -10,6 +10,12 @@
 //   rating  {"min":0,"max":n}                                                     Wert {"number":x}
 //   bands   {"bands":[{"min":a,"max":b,"points":n}]}                              Wert {"number":x}
 //   climate {"metric":"avg_high_c"|"avg_low_c"|"rain_days","bands":[...]}         Wert aus climate_monthly
+//
+// Unbekannte Kriterien (formula.unknown_policy):
+//   'ignore'  – zählen nicht (Score über die bekannten Punkte; belohnt Lücken – nur als Altverhalten)
+//   'average' – zählen mit dem Durchschnittsanteil aller geprüften Objekte (opts.unknownShares[criterionId], 0–1)
+//   'half'    – zählen mit der Hälfte der Punkte
+// Die Vollständigkeit misst weiterhin nur die bekannten Werte.
 
 const DEFAULT_FORMULA = {
   fact_weight: 0.6,
@@ -19,6 +25,8 @@ const DEFAULT_FORMULA = {
   min_completeness: 70,
   min_reviews: 3,
   recheck_months: 18,
+  unknown_policy: 'ignore',
+  unknown_default_share: 0.5, // Ersatz, wenn für ein Kriterium noch kein Durchschnitt vorliegt
 };
 
 const CLIMATE_METRICS = ['avg_high_c', 'avg_low_c', 'rain_days'];
@@ -219,8 +227,12 @@ function computeScore(criteria, facts, climate, opts = {}) {
   let maxAll = 0;
   let maxKnown = 0;
   let pointsKnown = 0;
+  let maxImputed = 0;
+  let pointsImputed = 0;
   let koCriterion = null;
   const details = [];
+  const policy = ['average', 'half'].includes(formula.unknown_policy) ? formula.unknown_policy : 'ignore';
+  const shares = opts.unknownShares || {};
 
   for (const c of active) {
     const max = Number(c.max_points) || 0;
@@ -231,6 +243,15 @@ function computeScore(criteria, facts, climate, opts = {}) {
       maxKnown += max;
       pointsKnown += r.points;
     }
+    // Unbekannt: je nach Formel mit Ersatzwert ansetzen (nicht für Klima – das hängt am Reisemonat)
+    let imputed = null;
+    if (!r.known && policy !== 'ignore' && c.scoring && c.scoring.type !== 'climate' && max > 0) {
+      const raw = policy === 'half' ? 0.5 : toNumber(shares[c.id]);
+      const share = Math.min(1, Math.max(0, raw === null ? Number(formula.unknown_default_share) || 0 : raw));
+      imputed = round2(share * max);
+      maxImputed += max;
+      pointsImputed += imputed;
+    }
     if (r.ko && !koCriterion) koCriterion = { criterion: c, value };
     details.push({
       criterionId: c.id,
@@ -239,12 +260,14 @@ function computeScore(criteria, facts, climate, opts = {}) {
       known: r.known,
       invalid: r.invalid,
       points: r.points,
+      imputed,
       max,
       ko: r.ko,
     });
   }
 
-  const factScore = maxKnown > 0 ? (pointsKnown / maxKnown) * 100 : null;
+  // Fakten-Score: bekannte Punkte plus Ersatzwerte für unbekannte (Fehlende Angaben sollen weder schaden noch nützen)
+  const factScore = maxKnown > 0 ? ((pointsKnown + pointsImputed) / (maxKnown + maxImputed)) * 100 : null;
   const completeness = maxAll > 0 ? (maxKnown / maxAll) * 100 : 0;
   const athleteScore = toNumber(opts.athleteScore);
   const reviewCount = Number(opts.reviewCount) || 0;
@@ -275,6 +298,9 @@ function computeScore(criteria, facts, climate, opts = {}) {
     koReason,
     month,
     pointsKnown: round2(pointsKnown),
+    pointsImputed: round2(pointsImputed),
+    maxImputed,
+    unknownPolicy: policy,
     maxKnown,
     maxAll,
     details,

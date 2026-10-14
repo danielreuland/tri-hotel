@@ -175,3 +175,27 @@ test('describeValue liefert lesbare Werte', () => {
   assert.equal(s.describeValue(tri[5], null, { rain_days: 3 }), '3 Regentage');
   assert.equal(s.describeValue(hyrox[2], { number: 250 }), '250 m²');
 });
+
+test('unbekannte Kriterien: Durchschnitt statt Vorteil (auch für ein zweites Ranking)', () => {
+  // Hyrox-artiges Test-Ranking: nichts Triathlon-spezifisches
+  const crit = [
+    { id: 'a', code: 'sled', max_points: 10, scoring: { type: 'bool', points_true: 10 } },
+    { id: 'b', code: 'rower', max_points: 10, scoring: { type: 'bool', points_true: 10 } },
+    { id: 'c', code: 'sauna', max_points: 10, scoring: { type: 'bool', points_true: 10 } },
+  ];
+  const full = { a: { bool: true }, b: { bool: true }, c: { bool: false } }; // ehrlich: 20/30
+  const gap = { a: { bool: true }, b: { bool: true } };                      // Sauna unbekannt
+  const ignore = { formula: { unknown_policy: 'ignore', min_completeness: 50 } };
+  assert.equal(s.computeScore(crit, full, [], ignore).score, 67);
+  assert.equal(s.computeScore(crit, gap, [], ignore).score, 100, 'Altverhalten belohnt die Lücke');
+
+  const avg = { formula: { unknown_policy: 'average', min_completeness: 50 }, unknownShares: { c: 0.25 } };
+  const r = s.computeScore(crit, gap, [], avg);
+  assert.equal(r.score, 92); // (10 + 10 + 2,5) / 30
+  assert.equal(Math.round(r.completeness), 67, 'Vollständigkeit zählt nur bekannte Werte');
+  assert.equal(r.details.find((d) => d.code === 'sauna').imputed, 2.5);
+
+  const noAvg = s.computeScore(crit, gap, [], { formula: { unknown_policy: 'average', unknown_default_share: 0.5, min_completeness: 50 } });
+  assert.equal(noAvg.score, 83, 'ohne Durchschnitt: Ersatzwert 0,5');
+  assert.equal(s.computeScore(crit, gap, [], { formula: { unknown_policy: 'half', min_completeness: 50 } }).score, 83);
+});

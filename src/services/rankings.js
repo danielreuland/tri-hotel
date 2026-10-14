@@ -50,16 +50,47 @@ function factMap(facts) {
   return map;
 }
 
+// Durchschnittlicher Punkteanteil (0–1) je Kriterium über alle geprüften Objekte (Admin-Prüfung und live).
+// Ersatzwert für unbekannte Kriterien bei formula.unknown_policy = 'average'. Kurz zwischengespeichert.
+const sharesCache = new Map();
+const SHARES_TTL_MS = 60 * 1000;
+
+async function unknownShares(rankingId) {
+  const hit = sharesCache.get(rankingId);
+  if (hit && hit.at > Date.now() - SHARES_TTL_MS) return hit.shares;
+  const criteria = await getCriteria(rankingId);
+  const rows = await db.many(
+    `SELECT f.criterion_id, f.value FROM entity_facts f
+       JOIN entity_rankings er ON er.entity_id = f.entity_id AND er.ranking_id = $1 AND er.status IN ('in_review', 'live')`,
+    [rankingId]
+  );
+  const shares = {};
+  for (const c of criteria) {
+    const max = Number(c.max_points) || 0;
+    if (!max || c.scoring.type === 'climate') continue;
+    const vals = rows.filter((r) => r.criterion_id === c.id).map((r) => scoring.pointsFor(c, r.value, null)).filter((p) => p.known);
+    if (vals.length) shares[c.id] = vals.reduce((s, p) => s + p.points / max, 0) / vals.length;
+  }
+  sharesCache.set(rankingId, { at: Date.now(), shares });
+  return shares;
+}
+
+function clearShares() {
+  sharesCache.clear();
+}
+
+// Score-Optionen eines Rankings (Formel, Labels, Ersatzwerte) – für alle Stellen, die einen Score berechnen
+async function scoreOptions(ranking, extra = {}) {
+  return { formula: ranking.formula, labels: ranking.labels, unknownShares: await unknownShares(ranking.id), ...extra };
+}
+
 // Rechnet Score eines Objekts in einem Ranking neu und speichert ihn (inkl. Punkte je Fakt).
 async function recomputeEntity(entityId, rankingId, client = db) {
   const ranking = await getRanking(rankingId);
   const criteria = await getCriteria(rankingId);
   const facts = await getFacts(entityId, rankingId);
   const climate = await getClimate(entityId);
-  const result = scoring.computeScore(criteria, factMap(facts), climate, {
-    formula: ranking.formula,
-    labels: ranking.labels,
-  });
+  const result = scoring.computeScore(criteria, factMap(facts), climate, await scoreOptions(ranking));
 
   for (const d of result.details) {
     const fact = facts.find((f) => f.criterion_id === d.criterionId);
@@ -77,6 +108,7 @@ async function recomputeEntity(entityId, rankingId, client = db) {
 }
 
 async function recomputeRanking(rankingId) {
+  clearShares();
   const rows = await db.many('SELECT entity_id FROM entity_rankings WHERE ranking_id = $1', [rankingId]);
   for (const r of rows) await recomputeEntity(r.entity_id, rankingId);
   return rows.length;
@@ -111,6 +143,9 @@ async function listLive(ranking, { month } = {}) {
 }
 
 module.exports = {
+  unknownShares,
+  clearShares,
+  scoreOptions,
   getDefaultRanking,
   getRankingBySlug,
   getRankingBySubdomain,

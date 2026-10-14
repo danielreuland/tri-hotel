@@ -26,7 +26,7 @@ async function gather(entityId, rankingId) {
     featureService.forEntity(ranking.entity_type, entity.id),
     areas.regionsOf(ranking.site_id, entity),
   ]);
-  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, { formula: ranking.formula, labels: ranking.labels });
+  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
   const factBy = new Map(facts.map((f) => [f.criterion_id, f]));
   const detailBy = new Map(result.details.map((d) => [d.criterionId, d]));
 

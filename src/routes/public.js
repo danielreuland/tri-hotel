@@ -76,7 +76,7 @@ async function renderList(req, res, ranking) {
   if (allRanked.length) {
     const top = allRanked[0];
     const [facts, climate] = await Promise.all([rankings.getFacts(top.id, ranking.id), rankings.getClimate(top.id)]);
-    const r = scoring.computeScore(criteria, rankings.factMap(facts), climate, { month, formula: ranking.formula, labels: ranking.labels });
+    const r = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
     topCard = { entity: top, score: r.score, label: r.label, provisional: r.provisional, bars: categoryBars(categories, criteria, r.details) };
   }
 
@@ -141,7 +141,7 @@ async function renderEntity(req, res, ranking, slug) {
     rankings.getFacts(entity.id, ranking.id),
     rankings.getClimate(entity.id),
   ]);
-  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, { month, formula: ranking.formula, labels: ranking.labels });
+  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
   const climateRow = climate.find((c) => c.month === result.month) || null;
   const factByCrit = new Map(facts.map((f) => [f.criterion_id, f]));
   const detailByCrit = new Map(result.details.map((d) => [d.criterionId, d]));
@@ -155,6 +155,7 @@ async function renderEntity(req, res, ranking, slug) {
         label: c.label,
         value: scoring.describeValue(c, fact && fact.value, climateRow),
         points: d.known ? d.points : null,
+        imputed: d.known ? null : d.imputed,
         max: d.max,
         source: isClimate ? (climateRow ? 'Open-Meteo, Mittel der letzten 3 Jahre' : null) : fact ? trustText(fact, ranking) : null,
         evidenceUrl: fact && fact.evidence_url,

@@ -177,7 +177,7 @@
     <ol class="process">
       <li><strong>Fakten sammeln</strong><p>Aus der Website des <%= ranking.entity_label_sg %>s, OpenStreetMap, Klimadaten und Hinweisen aus der Community.</p></li>
       <li><strong>Von Hand prüfen</strong><p>Jeder Wert bekommt Quelle und Prüfdatum. Kein Eintrag geht ohne Freigabe online.</p></li>
-      <li><strong>Score berechnen</strong><p><%= totalPoints %> Punkte in <%= weights.length %> Kategorien, umgerechnet auf 0–100. Fehlende Werte zählen nicht gegen ein <%= ranking.entity_label_sg %>.</p></li>
+      <li><strong>Score berechnen</strong><p><%= totalPoints %> Punkte in <%= weights.length %> Kategorien, umgerechnet auf 0–100. Fehlende Werte zählen mit dem Durchschnitt aller geprüften <%= ranking.entity_label_pl %> – Lücken bringen keinen Vorteil.</p></li>
     </ol>
     <p style="margin-top:16px"><a href="<%= methodHref %>">Formel, Gewichte und alle <%= criteriaCount %> Kriterien ansehen →</a></p>
   </div>

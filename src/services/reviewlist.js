@@ -100,7 +100,7 @@ async function load(submissionId) {
     rankings.getCriteria(ranking.id), db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]),
     rankings.getFacts(sub.entity_id, ranking.id), rankings.getClimate(sub.entity_id),
   ]);
-  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, { formula: ranking.formula, labels: ranking.labels });
+  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
   const [images, text, manualFeatures, inquiryList, dismissals] = await Promise.all([
     db.many('SELECT id, approved_at FROM entity_images WHERE entity_id = $1', [entity.id]),
     db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]),

@@ -202,7 +202,7 @@ async function loadDetail(id) {
     climate = await rankings.getClimate(entity.id);
     images = await db.many('SELECT * FROM entity_images WHERE entity_id = $1 ORDER BY sort_order, created_at', [entity.id]);
   }
-  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, { formula: ranking.formula, labels: ranking.labels });
+  const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
   const emails = await db.many('SELECT * FROM email_log WHERE submission_id = $1 ORDER BY created_at', [sub.id]);
   // Mögliche Dublette (oder bereits als Dublette abgeschlossen): Vergleichsobjekt laden
   const dupId = sub.possible_duplicate_of || (sub.status === 'duplicate' ? sub.entity_id : null);
@@ -361,7 +361,7 @@ router.post('/api/score-preview', wrap(async (req, res) => {
     if (v) facts[c.id] = v;
   }
   const climate = sub.entity_id ? await rankings.getClimate(sub.entity_id) : [];
-  const r = scoring.computeScore(criteria, facts, climate, { month: req.body.month, formula: ranking.formula, labels: ranking.labels });
+  const r = scoring.computeScore(criteria, facts, climate, await rankings.scoreOptions(ranking));
   res.json({
     score: r.score, factScore: r.factScore, completeness: r.completeness, label: r.label, ko: r.ko, koReason: r.koReason,
     eligible: r.eligible, month: r.month, details: r.details.map((d) => ({ id: d.criterionId, points: d.points, known: d.known, invalid: d.invalid })),
