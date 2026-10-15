@@ -1,0 +1,42 @@
+<%- include('../partials/admin-head') %>
+<h1>Camp-Anfragen</h1>
+<p class="muted">Anfragen von Interessenten an Camp-Anbieter mit Vereinbarung. Weiterleiten erst, wenn die E-Mail bestätigt ist; prüfen auf Spam und ernsthaftes Interesse. Die Mail an den Anbieter enthält alle Angaben, Antworten gehen direkt an den Interessenten.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% if (!active.length) { %><div class="flash">Noch kein Anbieter mit aktivem Anfrageformular. Vereinbarung eintragen unter <a href="/admin/camps">Inhalte → Camps</a> → Anbieter → „Anfragen (Leads)“.</div><% } else { %>
+  <p class="muted"><small>Aktiv: <% active.forEach(function (a, i) { %><%= i ? ' · ' : '' %><a href="/trainingscamp/anbieter/<%= a.slug %>#anfrage" target="_blank"><%= a.name %></a> (<%= a.lead_model === 'per_lead' ? Number(a.lead_fee).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) + ' je Anfrage' : a.lead_model === 'commission' ? (a.lead_commission || '?') + ' % Provision' : 'ohne Vergütung' %>)<% }) %></small></p>
+<% } %>
+<div class="pill-row">
+  <a class="badge <%= filter === 'offen' ? 'good' : '' %>" href="?status=offen">offen (<%= (counts.received || 0) + (counts.confirmed || 0) %>)</a>
+  <a class="badge <%= filter === 'forwarded' ? 'good' : '' %>" href="?status=forwarded">weitergeleitet (<%= counts.forwarded || 0 %>)</a>
+  <a class="badge <%= filter === 'rejected' ? 'good' : '' %>" href="?status=rejected">abgelehnt (<%= counts.rejected || 0 %>)</a>
+  <a class="badge <%= filter === 'alle' ? 'good' : '' %>" href="?status=alle">alle</a>
+</div>
+<% if (!rows.length) { %><p class="card">Keine Anfragen in dieser Ansicht.</p><% } %>
+<% rows.forEach(function (l) { %>
+  <article class="card" id="l-<%= l.id %>" style="margin-bottom:12px">
+    <p style="margin-top:0"><span class="badge <%= l.status === 'forwarded' ? 'good' : l.status === 'rejected' ? 'bad' : 'warn' %>"><%= STATUS[l.status] %></span>
+      <strong><%= l.provider_name %></strong> · <%= l.name || 'anonymisiert' %> <small class="muted">· <%= l.email || '' %><%= l.phone ? ' · ' + l.phone : '' %> · eingegangen <%= new Date(l.created_at).toLocaleString('de-DE') %><%= l.verified_by ? ' · ohne E-Mail-Bestätigung freigeschaltet' : '' %></small></p>
+    <p style="margin:0"><%= l.period_month ? new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '' %><%= l.period_note ? ' – ' + l.period_note : '' %> · <%= l.persons %> Person(en)<%= l.level ? ' · ' + LEVELS[l.level] : '' %><%= l.entity_name || l.hotel_text ? ' · Hotel: ' + (l.entity_name || l.hotel_text) : '' %></p>
+    <% if (l.message) { %><p style="white-space:pre-line;margin:6px 0"><%= l.message %></p><% } %>
+    <% if (l.status === 'forwarded') { %><p class="muted" style="margin:6px 0 0"><small>Weitergeleitet am <%= new Date(l.forwarded_at).toLocaleString('de-DE') %> an <%= l.lead_email || 'Anbieter' %> · abgerechnet als <%= MODELS[l.billed_model] || '–' %><%= l.billed_fee !== null ? ' (' + Number(l.billed_fee).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) + ')' : '' %></small></p><% } %>
+    <% if (l.rejection_reason) { %><p class="muted" style="margin:6px 0 0"><small>Grund: <%= l.rejection_reason %></small></p><% } %>
+    <% if (['received', 'confirmed'].includes(l.status)) { %>
+      <div class="filters" style="margin:10px 0 0">
+        <% if (l.status === 'received') { %><form method="post" action="/admin/camp-anfragen/<%= l.id %>/aktion"><input type="hidden" name="status" value="<%= filter %>"><button class="btn small secondary" name="action" value="verify">Ohne Bestätigung freischalten</button></form><% } %>
+        <% if (l.status === 'confirmed') { %><form method="post" action="/admin/camp-anfragen/<%= l.id %>/aktion" data-confirm="Anfrage jetzt an <%= l.provider_name %> (<%= l.lead_email || 'keine Adresse!' %>) weiterleiten?"><input type="hidden" name="status" value="<%= filter %>"><button class="btn small" name="action" value="forward">An <%= l.provider_name %> weiterleiten</button></form><% } %>
+        <form method="post" action="/admin/camp-anfragen/<%= l.id %>/aktion" class="filters" style="margin:0"><input type="hidden" name="status" value="<%= filter %>"><input name="reason" type="text" placeholder="Grund (intern), z. B. Spam" style="max-width:220px"><button class="btn small secondary" name="action" value="reject">Ablehnen</button></form>
+      </div>
+    <% } %>
+  </article>
+<% }) %>
+
+<h2>Abrechnung</h2>
+<p class="muted" style="margin-top:0"><small>Weitergeleitete Anfragen je Monat und Anbieter, zu den Konditionen bei der Weitergabe. Provisionen auf Buchungen meldet der Anbieter selbst.</small></p>
+<% if (!billing.length) { %><p class="muted">Noch keine weitergeleiteten Anfragen.</p><% } else { %>
+  <div class="table-scroll"><table>
+    <tr><th>Monat</th><th>Anbieter</th><th>Modell</th><th>Anfragen</th><th>Betrag</th></tr>
+    <% billing.forEach(function (b) { %><tr><td><%= new Date(b.month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) %></td><td><%= b.provider %></td><td><%= MODELS[b.model] || '–' %></td><td><%= b.leads %></td><td><strong><%= Number(b.amount).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) %></strong></td></tr><% }) %>
+  </table></div>
+<% } %>
+<%- include('../partials/admin-foot') %>

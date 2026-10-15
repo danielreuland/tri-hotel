@@ -53,6 +53,22 @@
     <div><label class="inline"><input type="checkbox" name="partner" <%= p.partner ? 'checked' : '' %>> Partner</label></div>
     <div><label>Partner-Link</label><input name="partner_url" type="url" value="<%= p.partner_url || '' %>"></div>
   </div>
+  <h3>Anfragen (Leads)</h3>
+  <p class="muted" style="margin-top:0"><small>Nur mit Vereinbarung. Dann erscheint auf dem Anbieterprofil das Formular „Unverbindlich anfragen“ und auf Hotelseiten „Camp hier anfragen“. Bestätigte Anfragen leitest du unter Kommunikation → Camp-Anfragen weiter; abgerechnet wird zu den Konditionen, die bei der Weitergabe gelten.</small></p>
+  <div class="form-row">
+    <div><label class="inline"><input type="checkbox" name="lead_active" <%= p.lead_active ? 'checked' : '' %>> Anfrageformular aktiv</label></div>
+    <div><label>Empfänger der Anfragen</label><input name="lead_email" type="email" value="<%= p.lead_email || '' %>" placeholder="anfragen@anbieter.de"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Vergütung</label><select name="lead_model"><option value="">– wählen –</option>
+      <% [['per_lead', 'je Anfrage (€)'], ['commission', 'Provision je Buchung (%)'], ['free', 'ohne Vergütung (Test)']].forEach(function (m) { %><option value="<%= m[0] %>" <%= p.lead_model === m[0] ? 'selected' : '' %>><%= m[1] %></option><% }) %></select></div>
+    <div><label>€ je Anfrage</label><input name="lead_fee" type="text" inputmode="decimal" value="<%= p.lead_fee === null || p.lead_fee === undefined ? '' : p.lead_fee %>"></div>
+    <div><label>Provision %</label><input name="lead_commission" type="text" inputmode="decimal" value="<%= p.lead_commission === null || p.lead_commission === undefined ? '' : p.lead_commission %>"></div>
+  </div>
+  <div class="form-row">
+    <div><label>Vereinbart seit</label><input name="lead_since" type="date" value="<%= p.lead_since ? new Date(p.lead_since).toISOString().slice(0, 10) : '' %>"></div>
+    <div><label>Notiz zur Vereinbarung</label><input name="lead_notes" type="text" value="<%= p.lead_notes || '' %>" placeholder="z. B. per Mail vom …, Rechnung quartalsweise"></div>
+  </div>
   <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button></p>
 </form>
 <%- include('../partials/admin-foot') %>

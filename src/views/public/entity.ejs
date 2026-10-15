@@ -87,7 +87,7 @@
     <h2 style="margin-top:0">Trainingscamps in diesem <%= ranking.entity_label_sg %></h2>
     <p class="muted" style="margin-top:0">Diese Anbieter führen hier laut eigener Website Camps durch:</p>
     <ul class="chips">
-      <% campProviders.forEach(function (c) { %><li style="list-style:none"><a class="chip" href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %> <span class="muted">· <%= CAMP_MODELS[c.model] %></span></a></li><% }) %>
+      <% campProviders.forEach(function (c) { %><li style="list-style:none"><a class="chip" href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %> <span class="muted">· <%= CAMP_MODELS[c.model] %></span></a><% if (c.lead_active) { %> <a class="chip chip-cta" href="/trainingscamp/anbieter/<%= c.slug %>?hotel=<%= entity.id %>#anfrage">Camp hier anfragen</a><% } %></li><% }) %>
     </ul>
     <p style="margin-bottom:0"><small><a href="/trainingscamp#anbieter">Alle Camp-Anbieter vergleichen →</a></small></p>
   </section>

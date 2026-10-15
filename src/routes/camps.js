@@ -6,6 +6,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const camps = require('../services/camps');
+const leads = require('../services/leads');
 const seo = require('../lib/seo');
 const { ipHash, isEmail } = require('../lib/util');
 
@@ -49,14 +50,15 @@ router.get('/trainingscamp', wrap(async (req, res, next) => {
   });
 }));
 
-router.get('/trainingscamp/anbieter/:slug', wrap(async (req, res, next) => {
-  if (!guideFor(req.site)) return next();
-  const p = await camps.bySlug(req.site.id, req.params.slug);
-  if (!p) return next();
+async function renderProvider(req, res, p, extra = {}) {
   const hotels = await camps.hotelsOf(p.id, req.hostRanking ? req.hostRanking.id : null);
   const siteUrl = res.locals.siteUrl;
   const canonical = `${siteUrl}/trainingscamp/anbieter/${p.slug}`;
-  res.render('public/camp-provider', {
+  // Anfrageformular nur bei Anbietern mit Vereinbarung; Hotel aus ?hotel=<entity-id> vorauswählen
+  const pre = /^[0-9a-f-]{36}$/.test(req.query.hotel || '') ? req.query.hotel : '';
+  res.status(extra.leadErrors && extra.leadErrors.length ? 422 : 200).render('public/camp-provider', {
+    leadForm: p.lead_active ? { months: leads.months(), LEVELS: leads.LEVELS, consent: leads.consentText(p), form: { entity_id: pre }, errors: [], ...(extra.lead || {}) } : null,
+    leadErrors: extra.leadErrors || [],
     title: `${p.name}: Camps, Preise und Hotels`,
     description: `${p.name}${p.destinations.length ? ` – Camps in ${p.destinations.slice(0, 4).join(', ')}` : ''}: Leistungen, Preisbeispiele und Hotels im Überblick. Neutral, ohne bezahlte Platzierung.`,
     canonical,
@@ -65,6 +67,43 @@ router.get('/trainingscamp/anbieter/:slug', wrap(async (req, res, next) => {
     ])],
     p, hotels, MODELS: camps.MODELS, FLAGS: camps.FLAGS, HOTEL_VALUES: camps.HOTEL_VALUES, FLIGHT_VALUES: camps.FLIGHT_VALUES, flag: camps.flag,
   });
+}
+
+router.get('/trainingscamp/anbieter/:slug', wrap(async (req, res, next) => {
+  if (!guideFor(req.site)) return next();
+  const p = await camps.bySlug(req.site.id, req.params.slug);
+  if (!p) return next();
+  await renderProvider(req, res, p);
+}));
+
+// ---------- Anfrage an einen Camp-Anbieter (Baustein B) ----------
+
+const leadLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false });
+
+router.post('/trainingscamp/anbieter/:slug/anfrage', leadLimiter, wrap(async (req, res, next) => {
+  if (!guideFor(req.site)) return next();
+  const p = await camps.bySlug(req.site.id, req.params.slug);
+  if (!p || !p.lead_active) return next();
+  const done = `/trainingscamp/anbieter/${p.slug}/anfrage/danke`;
+  if (req.body.company_url) return res.redirect(303, done); // Honeypot
+  const hotels = await camps.hotelsOf(p.id, req.hostRanking ? req.hostRanking.id : null);
+  const { errors, data } = leads.validate(req.body, p, hotels);
+  if (!errors.length && (await leads.recentCountByIp(req.ip)) >= 5) errors.push('Zu viele Anfragen in kurzer Zeit. Bitte versuch es morgen noch einmal.');
+  if (errors.length) return renderProvider(req, res, p, { leadErrors: errors, lead: { form: req.body } });
+  if (!(await leads.isDuplicate(p.id, data.email))) await leads.create({ provider: p, site: req.site, data, ip: req.ip });
+  res.redirect(303, done);
+}));
+
+router.get('/trainingscamp/anbieter/:slug/anfrage/danke', wrap(async (req, res, next) => {
+  const p = req.site && (await camps.bySlug(req.site.id, req.params.slug));
+  if (!p) return next();
+  res.render('public/lead-done', { title: 'Anfrage gesendet', noindex: true, provider: p, status: 'sent' });
+}));
+
+router.get('/anfrage-bestaetigen/:token', wrap(async (req, res) => {
+  const r = await leads.verify(req.params.token);
+  const provider = r.lead ? await db.one('SELECT name, slug FROM camp_providers WHERE id = $1', [r.lead.provider_id]) : null;
+  res.render('public/lead-done', { title: 'Anfrage bestätigt', noindex: true, provider, status: r.status });
 }));
 
 // Gezählte Weiterleitung zum Anbieter (nur Anzahl je Tag, keine personenbezogenen Daten)

@@ -6,6 +6,7 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { slugify, normalizeUrl } = require('../lib/util');
 
+const { isEmail } = require('../lib/util');
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -42,10 +43,23 @@ function readForm(b) {
     partner: b.partner === 'on',
     partner_url: normalizeUrl(b.partner_url, { keepTracking: true }),
     status: ['draft', 'active', 'archived'].includes(b.status) ? b.status : 'draft',
+    // Vereinbarung für Anfragen (Baustein B)
+    lead_active: b.lead_active === 'on',
+    lead_email: String(b.lead_email || '').trim().toLowerCase().slice(0, 200) || null,
+    lead_model: ['per_lead', 'commission', 'free'].includes(b.lead_model) ? b.lead_model : null,
+    lead_fee: b.lead_fee !== undefined && String(b.lead_fee).trim() !== '' ? Number(String(b.lead_fee).replace(',', '.')) : null,
+    lead_commission: b.lead_commission !== undefined && String(b.lead_commission).trim() !== '' ? Number(String(b.lead_commission).replace(',', '.')) : null,
+    lead_since: /^\d{4}-\d{2}-\d{2}$/.test(b.lead_since || '') ? b.lead_since : null,
+    lead_notes: String(b.lead_notes || '').trim().slice(0, 2000) || null,
   };
   if (!f.name || !f.slug) errors.push('Name ist Pflicht.');
   if (!f.website) errors.push('Website ist Pflicht (https://…).');
-  if (f.partner && !f.partner_url) errors.push('Für Partner bitte den Partner-Link angeben.');
+  if (f.partner && !f.partner_url && !f.lead_active) errors.push('Für Partner bitte den Partner-Link angeben oder Anfragen aktivieren.');
+  if (f.lead_active && !isEmail(f.lead_email || '')) errors.push('Für Anfragen bitte eine gültige Empfänger-Adresse angeben.');
+  if (f.lead_active && !f.lead_model) errors.push('Für Anfragen bitte das Vergütungsmodell wählen.');
+  if (f.lead_model === 'per_lead' && !(f.lead_fee >= 0)) errors.push('Vergütung je Anfrage in Euro angeben.');
+  if (f.lead_fee !== null && !Number.isFinite(f.lead_fee)) errors.push('Vergütung je Anfrage: bitte eine Zahl.');
+  if (f.lead_commission !== null && !Number.isFinite(f.lead_commission)) errors.push('Provision: bitte eine Zahl in Prozent.');
   return { f, errors };
 }
 
@@ -84,14 +98,17 @@ router.post('/:id?', wrap(async (req, res) => {
   try {
     const id = await db.tx(async (c) => {
       const vals = [f.slug, f.name, f.model, f.model_label, f.seat, f.summary, f.website, f.destinations, f.regions, JSON.stringify(f.features),
-        JSON.stringify(f.prices), f.as_of, f.source_url, f.partner, f.partner_url, f.status];
+        JSON.stringify(f.prices), f.as_of, f.source_url, f.partner, f.partner_url, f.status,
+        f.lead_active, f.lead_email, f.lead_model, f.lead_fee, f.lead_commission, f.lead_since, f.lead_notes];
       let pid = req.params.id;
       if (pid) {
         await c.query(`UPDATE camp_providers SET slug=$2, name=$3, model=$4, model_label=$5, seat=$6, summary=$7, website=$8, destinations=$9, regions=$10,
-          features=$11, prices=$12, as_of=$13, source_url=$14, partner=$15, partner_url=$16, status=$17, updated_at=now() WHERE id=$1`, [pid, ...vals]);
+          features=$11, prices=$12, as_of=$13, source_url=$14, partner=$15, partner_url=$16, status=$17,
+          lead_active=$18, lead_email=$19, lead_model=$20, lead_fee=$21, lead_commission=$22, lead_since=$23, lead_notes=$24, updated_at=now() WHERE id=$1`, [pid, ...vals]);
       } else {
-        pid = (await c.query(`INSERT INTO camp_providers (site_id, slug, name, model, model_label, seat, summary, website, destinations, regions, features, prices, as_of, source_url, partner, partner_url, status)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id`, [sid, ...vals])).rows[0].id;
+        pid = (await c.query(`INSERT INTO camp_providers (site_id, slug, name, model, model_label, seat, summary, website, destinations, regions, features, prices, as_of, source_url, partner, partner_url, status,
+            lead_active, lead_email, lead_model, lead_fee, lead_commission, lead_since, lead_notes)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING id`, [sid, ...vals])).rows[0].id;
       }
       // Hotels neu schreiben; Verknüpfung über gleichen Namen (ohne „Hotel“, Akzente egal, nur eindeutig) (bestehende Verknüpfungen bleiben erhalten)
       const old = await c.query('SELECT hotel_name, entity_id FROM camp_provider_hotels WHERE provider_id = $1', [pid]);
@@ -104,7 +121,7 @@ router.post('/:id?', wrap(async (req, res) => {
         await c.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, region, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
           [pid, match, h.hotel_name, h.place || null, h.region || null, i++]);
       }
-      await logAction(req.session.admin.id, 'camp_provider', pid, req.params.id ? 'edit_camp_provider' : 'create_camp_provider', { name: f.name, partner: f.partner, status: f.status }, c);
+      await logAction(req.session.admin.id, 'camp_provider', pid, req.params.id ? 'edit_camp_provider' : 'create_camp_provider', { name: f.name, partner: f.partner, status: f.status, lead_active: f.lead_active, lead_model: f.lead_model, lead_fee: f.lead_fee }, c);
       return pid;
     });
     res.redirect(`/admin/camps/${id}?ok=Gespeichert`);

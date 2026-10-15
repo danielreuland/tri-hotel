@@ -85,6 +85,34 @@ Bitte bestätige sie mit einem Klick – erst dann prüfen wir sie und schalten 
 
 Der Link ist {{stunden}} Stunden gültig. Du hast keine Bewertung geschrieben? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.`,
   },
+  'lead-verify': {
+    label: 'Camp-Anfrage bestätigen',
+    recipient: 'Interessent (Anfrage an einen Camp-Anbieter)',
+    trigger: 'direkt nach dem Absenden der Anfrage',
+    subject: 'Bitte bestätige deine Anfrage an {{anbieter}}',
+    body: `Hallo {{name}},
+
+danke für deine Anfrage an **{{anbieter}}**.
+
+Bitte bestätige sie mit einem Klick – erst dann geben wir sie an den Anbieter weiter:
+
+[Anfrage bestätigen]({{link}})
+
+Der Link ist {{stunden}} Stunden gültig. Du hast nichts angefragt? Dann ignoriere diese Mail einfach – ohne Bestätigung geben wir nichts weiter.`,
+  },
+  'lead-forward': {
+    label: 'Camp-Anfrage an Anbieter',
+    recipient: 'Camp-Anbieter (Empfänger aus dem Anbieterprofil)',
+    trigger: 'wenn eine bestätigte Anfrage im Admin weitergeleitet wird',
+    subject: 'Neue Anfrage über {{site}}: {{name}}',
+    body: `Hallo {{anbieter}},
+
+über {{site}} hat sich jemand für ein Camp bei euch interessiert und der Weitergabe seiner Anfrage zugestimmt. Antwortet einfach auf diese Mail – sie geht direkt an den Interessenten.
+
+{{anfrage}}
+
+Bitte verwendet die Daten nur für diese Anfrage.`,
+  },
   'inquiry-answered': {
     label: 'Antwort eines Betreibers (an Admin)',
     recipient: 'Admin (ADMIN_NOTIFY_EMAIL)',
@@ -106,6 +134,8 @@ const VARS = {
   rejected: { begruendung: 'Begründung aus dem Admin' },
   duplicate: { link: 'Link zur bestehenden Seite (leer, solange sie nicht online ist)', in_pruefung: 'Hinweis „gerade in Prüfung“, wenn noch nicht online' },
   'review-verify': { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden', name: 'Name des Gastes' },
+  'lead-verify': { anbieter: 'Name des Camp-Anbieters', name: 'Name des Interessenten', link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden' },
+  'lead-forward': { anbieter: 'Name des Camp-Anbieters', name: 'Name des Interessenten', anfrage: 'alle Angaben der Anfrage (Zeitraum, Personen, Niveau, Hotel, Kontakt, Nachricht)' },
   'inquiry-answered': { link: 'Link zur Prüfansicht', antworten: 'Anzahl Antworten', fotos: '„, 2 Foto(s)“ oder leer', einwilligungen: 'neue Einwilligungen (leer, wenn keine)' },
 };
 
@@ -120,6 +150,8 @@ function sampleData(key, site) {
     rejected: { ...base, reason: 'Im Umkreis von 5 km gibt es kein Becken mit mindestens 25 m.' },
     duplicate: { ...base, link: `${url}/hotel/beispielhotel-mar-azul` },
     'review-verify': { ...base, link: `${url}/bewertung-bestaetigen/beispiel`, hours: 72, name: 'Anna K.' },
+    'lead-verify': { ...base, entityName: 'Beispiel-Camps', name: 'Anna', link: `${url}/anfrage-bestaetigen/beispiel`, hours: 72 },
+    'lead-forward': { ...base, entityName: 'Beispiel-Camps', lead: { name: 'Anna K.', email: 'anna@example.com', phone: '+49 170 1234567', period_month: '2027-03-01', period_note: 'Osterferien', persons: 2, hotel_text: 'Beispielhotel Mar Azul', message: 'Wir suchen ein Camp mit Schwimmtechnik.' }, levelLabel: 'Fortgeschritten' },
     'inquiry-answered': { ...base, answers: 3, photos: 2, consents: ['Fotos im Profil'], link: `${url}/admin/meldungen/beispiel#anfragen` },
   }[key] || base;
 }
@@ -146,6 +178,24 @@ function varsFor(key, data, site, baseUrl) {
     Object.assign(v, { link: d.link || '', in_pruefung: d.link ? '' : `Der Eintrag ist gerade in Prüfung. Sobald er online ist, findest du ihn auf ${baseUrl || ''}.` });
   }
   if (key === 'review-verify') Object.assign(v, { link: d.link || '', stunden: String(d.hours || ''), name: d.name || '' });
+  if (key === 'lead-verify') Object.assign(v, { anbieter: d.entityName || '', name: d.name || '', link: d.link || '', stunden: String(d.hours || '') });
+  if (key === 'lead-forward') {
+    const l = d.lead || {};
+    // Eingaben des Interessenten: keine Formatierungszeichen durchlassen (kein **fett**, keine [Links](…))
+    const clean = (t) => String(t || '').replace(/[*[\]]/g, '').trim();
+    const month = l.period_month ? new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+    const lines = [
+      `Name: ${clean(l.name)}`,
+      `E-Mail: ${clean(l.email)}`,
+      l.phone ? `Telefon: ${clean(l.phone)}` : null,
+      `Zeitraum: ${[month, clean(l.period_note)].filter(Boolean).join(' – ') || 'offen'}`,
+      `Personen: ${l.persons || 'k. A.'}`,
+      d.levelLabel ? `Niveau: ${d.levelLabel}` : null,
+      l.hotel_text ? `Hotelwunsch: ${clean(l.hotel_text)}` : null,
+      l.message ? `Nachricht: ${clean(l.message)}` : null,
+    ].filter(Boolean);
+    Object.assign(v, { anbieter: d.entityName || '', name: clean(l.name), anfrage: lines.join('\n') });
+  }
   if (key === 'inquiry-answered') {
     Object.assign(v, {
       link: d.link || '', antworten: String(d.answers ?? ''), fotos: d.photos ? `, ${d.photos} Foto(s)` : '',

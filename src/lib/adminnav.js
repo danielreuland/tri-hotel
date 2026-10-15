@@ -18,6 +18,7 @@ const SECTIONS = [
       { href: '/admin/anfragen', label: 'Anfragen' },
       { href: '/admin/bewertungen', label: 'Bewertungen' },
       { href: '/admin/kontakt', label: 'Kontakt' },
+      { href: '/admin/camp-anfragen', label: 'Camp-Anfragen' },
     ],
   },
   {
@@ -65,7 +66,8 @@ async function middleware(req, res, next) {
                 (SELECT count(*)::int FROM admin_tasks WHERE status = 'open') AS aufgaben,
                 (SELECT count(*)::int FROM reviews WHERE status = 'pending')
                   + (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL)
-                  + (SELECT count(*)::int FROM inquiry_answers WHERE status = 'pending') AS kommunikation`);
+                  + (SELECT count(*)::int FROM inquiry_answers WHERE status = 'pending')
+                  + (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed') AS kommunikation`);
       res.locals.adminNav.counts = { aufgaben: r.aufgaben, kommunikation: r.kommunikation };
       if (r.label) res.locals.adminNav.objectsLabel = r.label;
     }

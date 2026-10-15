@@ -98,7 +98,7 @@ async function autoLink() {
 
 async function forEntity(entityId) {
   return db.many(
-    `SELECT DISTINCT p.id, p.slug, p.name, p.model, p.model_label, p.partner
+    `SELECT DISTINCT p.id, p.slug, p.name, p.model, p.model_label, p.partner, p.lead_active
        FROM camp_provider_hotels h JOIN camp_providers p ON p.id = h.provider_id
       WHERE h.entity_id = $1 AND p.status = 'active' ORDER BY p.name`,
     [entityId]

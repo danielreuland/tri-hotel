@@ -14,6 +14,7 @@
   </div>
   <div class="camp-head-cta">
     <% if (p.partner) { %><span class="badge ad-badge">Anzeige · Partner</span><% } %>
+    <% if (leadForm) { %><a class="btn large secondary" href="#anfrage">Unverbindlich anfragen</a><% } %>
     <a class="btn large cta" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
   </div>
 </div>
@@ -59,6 +60,43 @@
     <% } %>
   </section>
 </div>
+
+<% if (leadForm) { var lf = leadForm.form || {}; var opts = hotels.filter(function (h, i, a) { return h.entity_id && a.findIndex(function (x) { return x.entity_id === h.entity_id; }) === i; }); %>
+  <section class="card lead-form" id="anfrage" style="margin-top:28px">
+    <p class="eyebrow">Unverbindlich anfragen</p>
+    <h2 style="margin-top:0">Angebot von <%= p.name %> anfordern</h2>
+    <p class="muted" style="margin-top:0">Wir geben deine Anfrage nach deiner Bestätigung per E-Mail an <%= p.name %> weiter. Der Anbieter antwortet dir direkt. Kostenlos und ohne Buchung.</p>
+    <% if (leadErrors.length) { %><div class="errors" id="fehler" tabindex="-1" data-focus><strong>Noch nicht abgeschickt – bitte korrigieren:</strong><ul><% leadErrors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+    <form method="post" action="/trainingscamp/anbieter/<%= p.slug %>/anfrage#anfrage" novalidate data-sending="Wird gesendet …">
+      <div class="form-row">
+        <div><label for="ld-name">Dein Name *</label><input id="ld-name" name="name" type="text" maxlength="80" autocomplete="name" value="<%= lf.name || '' %>"></div>
+        <div><label for="ld-email">E-Mail *</label><input id="ld-email" name="email" type="email" maxlength="200" autocomplete="email" value="<%= lf.email || '' %>"></div>
+      </div>
+      <div class="form-row">
+        <div><label for="ld-month">Wann? *</label>
+          <select id="ld-month" name="period_month"><option value="">Monat wählen</option><% leadForm.months.forEach(function (m) { %><option value="<%= m.value %>" <%= lf.period_month === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %></select></div>
+        <div><label for="ld-note">Zeitraum genauer <small class="muted">optional, z. B. „Osterferien“</small></label><input id="ld-note" name="period_note" type="text" maxlength="120" value="<%= lf.period_note || '' %>"></div>
+      </div>
+      <div class="form-row">
+        <div><label for="ld-persons">Personen *</label><input id="ld-persons" name="persons" type="number" min="1" max="30" value="<%= lf.persons || '1' %>"></div>
+        <div><label for="ld-level">Niveau <small class="muted">optional</small></label>
+          <select id="ld-level" name="level"><option value="">keine Angabe</option><% Object.keys(leadForm.LEVELS).forEach(function (k) { %><option value="<%= k %>" <%= lf.level === k ? 'selected' : '' %>><%= leadForm.LEVELS[k] %></option><% }) %></select></div>
+      </div>
+      <% if (opts.length) { %>
+        <label for="ld-hotel">Hotelwunsch <small class="muted">optional</small></label>
+        <select id="ld-hotel" name="entity_id"><option value="">egal / noch offen</option><% opts.forEach(function (h) { %><option value="<%= h.entity_id %>" <%= lf.entity_id === h.entity_id ? 'selected' : '' %>><%= h.entity_name || h.hotel_name %><%= h.place ? ' (' + h.place + ')' : '' %></option><% }) %></select>
+      <% } %>
+      <label for="ld-phone">Telefon <small class="muted">optional, falls der Anbieter anrufen soll</small></label><input id="ld-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" value="<%= lf.phone || '' %>">
+      <label for="ld-msg">Nachricht <small class="muted">optional</small></label>
+      <textarea id="ld-msg" name="message" rows="4" maxlength="3000" placeholder="Was ist dir wichtig? Z. B. Schwimmtechnik, Radgruppen nach Tempo, Anreise mit Rad …"><%= lf.message || '' %></textarea>
+      <div class="hp" aria-hidden="true"><label for="ld-hp">Bitte leer lassen</label><input id="ld-hp" name="company_url" type="text" tabindex="-1" autocomplete="off"></div>
+      <label class="inline"><input type="checkbox" name="consent" <%= lf.consent === 'on' ? 'checked' : '' %>> <span><%= leadForm.consent %> *</span></label>
+      <p class="muted"><small>Wir schicken dir zuerst einen Bestätigungslink. <a href="/datenschutz#camp-anfragen" target="_blank">Datenschutz</a><% if (p.partner) { %> · Wir erhalten vom Anbieter eine Vergütung für vermittelte Anfragen; auf Reihenfolge und Darstellung der Anbieter hat das keinen Einfluss.<% } %></small></p>
+      <% if (leadErrors.length) { %><p class="form-error-hint"><a href="#fehler">Bitte die Hinweise oben beachten (<%= leadErrors.length %>)</a></p><% } %>
+      <p style="margin-bottom:0"><button class="btn cta" type="submit">Anfrage senden</button></p>
+    </form>
+  </section>
+<% } %>
 
 <p class="muted" style="margin-top:24px"><small>Angaben laut Website des Anbieters<% if (p.as_of) { %>, Stand <%= formatDate(p.as_of) %><% } %><% if (p.source_url) { %> (<a href="<%= p.source_url %>" rel="nofollow noopener" target="_blank">Quelle</a>)<% } %>. Ohne Gewähr – Termine, Preise und Leistungen bitte beim Anbieter prüfen. Anbieter bewerten wir nicht; einen Score gibt es nur für Hotels. Fehler entdeckt? <a href="/trainingscamp/fuer-anbieter?anbieter=<%= p.id %>">Korrektur melden</a></small></p>
 

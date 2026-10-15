@@ -442,7 +442,7 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .badge.lbl { border-color: transparent; color: #fff; }
 .lbl-review { background: #2563eb; } .lbl-answers { background: #0f766e; } .lbl-draft { background: #7c3aed; }
 .lbl-inquiry_failed { background: #cf222e; } .lbl-recheck { background: #b45309; } .lbl-image_rights { background: #be185d; }
-.lbl-stuck { background: #57606a; } .lbl-contact { background: #15803d; } .lbl-user_review { background: #ca8a04; } .lbl-camp_partner { background: #c2410c; } .lbl-unconfirmed { background: #0369a1; } .lbl-manual { background: #374151; } .lbl-google_place { background: #4285f4; }
+.lbl-stuck { background: #57606a; } .lbl-contact { background: #15803d; } .lbl-user_review { background: #ca8a04; } .lbl-camp_partner { background: #c2410c; } .lbl-unconfirmed { background: #0369a1; } .lbl-manual { background: #374151; } .lbl-google_place { background: #4285f4; } .lbl-camp_lead { background: #ff7a59; }
 .pill-row .badge.lbl:not(.on) { opacity: .55; }
 .task-card li { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -572,3 +572,5 @@ button[disabled] { opacity: .7; cursor: progress; }
 .partner-links li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .partner-links li strong { min-width: 110px; }
 .partner-reviews { margin: 8px 0 0; }
+.chip-cta { background: var(--cta); color: var(--cta-text); border-color: transparent; font-weight: 700; }
+.lead-form { max-width: 780px; }

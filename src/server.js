@@ -96,6 +96,7 @@ app.use('/admin/emails', require('./routes/admin-emails'));
 app.use('/admin/camps', require('./routes/admin-camps'));
 app.use('/admin/bewertungen', require('./routes/admin-reviews'));
 app.use('/admin/partner', require('./routes/admin-partners'));
+app.use('/admin/camp-anfragen', require('./routes/admin-leads'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/contact'));
 app.use('/', require('./routes/camps'));

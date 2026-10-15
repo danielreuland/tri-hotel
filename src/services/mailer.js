@@ -55,13 +55,13 @@ function htmlToText(html) {
     .trim();
 }
 
-async function send({ to, template, data, site = null, persona = null, submissionId = null, inquiryId = null }) {
+async function send({ to, template, data, site = null, persona = null, submissionId = null, inquiryId = null, replyTo: replyToOverride = null }) {
   const transport = transports[config.mail.provider];
   if (!transport) throw new Error(`Unbekannter MAIL_PROVIDER „${config.mail.provider}“`);
   const s = site || (await sites.getDefault());
   const locals = { ...data, site: s, baseUrl: sites.urlFor(s) };
   const from = sites.mailFrom(s, persona);
-  const replyTo = (s && s.mail_reply_to) || config.mail.replyTo;
+  const replyTo = replyToOverride || (s && s.mail_reply_to) || config.mail.replyTo;
   // Im Admin gepflegte Vorlage der Site, sonst Standardtext; Agenten-Mails (inquiry) bleiben EJS mit Agententext
   let html;
   let subject;
