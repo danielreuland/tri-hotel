@@ -241,10 +241,12 @@ async function loadDetail(id) {
     text = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]);
     if (text && text.input_hash) textStale = describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash;
   }
+  // Bewertung, die der Melder zusammen mit dem Vorschlag abgegeben hat (wartet bis zur Freigabe)
+  const heldReview = await require('../services/reviews').heldFor(sub.id);
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
   return {
-    campLinks,
+    campLinks, heldReview,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
   };

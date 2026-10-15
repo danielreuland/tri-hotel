@@ -3,6 +3,7 @@
 <div class="card">
   <p>Wir haben dir eine Mail geschickt. Bitte bestätige deinen Vorschlag über den Link darin – er ist 72 Stunden gültig.</p>
   <p>Danach prüfen wir das <%= ranking.entity_label_sg %> automatisch und von Hand. Sobald die Seite online ist, bekommst du Bescheid.</p>
+  <% if (locals.withReview) { %><p>Deine Bewertung ist gespeichert. Der Link bestätigt sie gleich mit; sie erscheint, sobald die Seite online ist und wir sie geprüft haben.</p><% } %>
   <p class="muted">Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach.</p>
 </div>
 <p><a class="btn secondary" href="/">Zur Startseite</a></p>

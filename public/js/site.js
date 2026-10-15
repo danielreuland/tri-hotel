@@ -66,3 +66,24 @@ document.querySelectorAll('[data-load-google]').forEach(function (btn) {
     box.appendChild(frame);
   });
 });
+
+// „hinzufügen“: Bewertung gleich mit abgeben – nicht für Betreiber; wer etwas ausfüllt, gibt eine Bewertung ab
+(function () {
+  var box = document.querySelector('[data-review-box]');
+  if (!box) return;
+  var fields = box.querySelector('[data-review-fields]');
+  var note = box.querySelector('[data-owner-note]');
+  var check = box.querySelector('input[name="with_review"]');
+  var role = document.getElementById('role');
+  function applyRole() {
+    var owner = role && role.value === 'owner';
+    fields.hidden = owner;
+    note.hidden = !owner;
+    if (owner && check) check.checked = false;
+  }
+  if (role) role.addEventListener('change', applyRole);
+  applyRole();
+  fields.addEventListener('change', function (e) {
+    if (check && e.target !== check && e.target.name !== 'honest' && e.target.name !== 'photo_consent') check.checked = true;
+  });
+})();

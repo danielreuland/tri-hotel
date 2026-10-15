@@ -26,6 +26,9 @@ async function appendLog(submissionId, step, ok, info) {
   );
 }
 
+// Bewertung, die zusammen mit dem Vorschlag abgegeben wurde (lazy, wegen gegenseitiger Abhängigkeit)
+const heldReviews = () => require('./reviews');
+
 async function setStatus(submissionId, status, extra = {}) {
   const cols = Object.keys(extra);
   const sets = cols.map((c, i) => `${c} = $${i + 3}`);
@@ -64,7 +67,7 @@ async function create(ranking, fields, { ip, adminId } = {}) {
       template: 'verify',
       site,
       submissionId: row.id,
-      data: { ranking, entityName: fields.name, link: `${sites.urlFor(site)}/bestaetigen/${tok.token}`, hours: config.verifyTokenHours },
+      data: { ranking, entityName: fields.name, link: `${sites.urlFor(site)}/bestaetigen/${tok.token}`, hours: config.verifyTokenHours, withReview: Boolean(fields.withReview) },
     });
   }
   return row;
@@ -85,6 +88,7 @@ async function verifyByAdmin(submissionId, adminId) {
   if (!sub) throw new Error('Meldung nicht gefunden.');
   if (!['received', 'expired'].includes(sub.status)) throw new Error('Nur für unbestätigte Meldungen möglich.');
   await setStatus(sub.id, 'verified', { verified_at: new Date(), verified_by: adminId });
+  await heldReviews().verifyHeld(sub.id, adminId);
   await logAction(adminId, 'submission', sub.id, 'verify_by_admin', { submitter_email_confirmed: false });
   await enqueue('auto-check', { submissionId: sub.id });
   return sub;
@@ -104,6 +108,7 @@ async function verify(token) {
     return { status: 'expired', submission: sub };
   }
   await setStatus(sub.id, 'verified', { verified_at: new Date() });
+  await heldReviews().verifyHeld(sub.id);
   await enqueue('auto-check', { submissionId: sub.id });
   return { status: 'ok', submission: sub };
 }
@@ -165,6 +170,7 @@ async function approve(submissionId, adminId) {
     await c.query(`UPDATE submissions SET status = 'live', updated_at = now() WHERE id = $1`, [sub.id]);
     await logAction(adminId, 'submission', sub.id, 'approve', { score: result.score, completeness: result.completeness }, c);
   });
+  await heldReviews().releaseHeld(sub.id, sub.entity_id);
 
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]);
   if (mayMailSubmitter(sub)) {
@@ -193,6 +199,7 @@ async function reject(submissionId, adminId, reason) {
     }
     await logAction(adminId, 'submission', sub.id, 'reject', { reason }, c);
   });
+  await heldReviews().dropHeld(sub.id);
   if (mayMailSubmitter(sub)) {
     const ranking = await rankings.getRanking(sub.ranking_id);
     await mailer.send({
@@ -213,6 +220,7 @@ async function confirmDuplicate(submissionId, adminId) {
     [dupId, sub.ranking_id]
   );
   await setStatus(sub.id, 'duplicate', { entity_id: dup.id, possible_duplicate_of: null });
+  await heldReviews().releaseHeld(sub.id, dup.id);
   await logAction(adminId, 'submission', sub.id, 'confirm_duplicate', { entity: dup.name });
   if (sub.submitter_email) {
     const ranking = await rankings.getRanking(sub.ranking_id);

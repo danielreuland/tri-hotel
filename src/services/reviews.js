@@ -83,13 +83,6 @@ async function validate(ranking, body, files) {
 async function create({ ranking, entity, site, data, ip }) {
   const tok = newToken();
   const id = crypto.randomUUID();
-  // Fotos als WebP-Varianten speichern (eigene ID je Foto), Originale verwerfen
-  const images = [];
-  for (const f of data.photos) {
-    const imgId = crypto.randomUUID();
-    images.push({ id: imgId, ...(await media.processImage(f.path, DIR, imgId)) });
-  }
-  for (const f of data.photos) fs.unlink(f.path, () => {});
   await db.tx(async (c) => {
     await c.query(
       `INSERT INTO reviews (id, entity_id, ranking_id, author_name, email, verify_token_hash, token_expires_at, stay_month, camp_provider_id,
@@ -98,11 +91,8 @@ async function create({ ranking, entity, site, data, ip }) {
       [id, entity.id, ranking.id, data.name, data.email, tok.hash, VERIFY_HOURS, data.month, data.camp, JSON.stringify(data.ratings),
         JSON.stringify(data.answers), data.title, data.text, ipHash(ip), CONSENT_VERSION]
     );
-    let i = 0;
-    for (const img of images) {
-      await c.query(`INSERT INTO review_images (id, review_id, width, height, variants, sort_order) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [img.id, id, img.width, img.height, img.variants, i++]);
-    }
+    // Fotos als WebP-Varianten speichern (eigene ID je Foto), Originale verwerfen
+    await saveImages(c, id, data.photos);
   });
   await mailer.send({
     to: data.email, template: 'review-verify', site,
@@ -152,8 +142,66 @@ async function remove(id, adminId) {
   const r = await db.one('DELETE FROM reviews WHERE id = $1 RETURNING *', [id]);
   if (!r) return;
   for (const i of imgs) for (const w of i.variants) fs.unlink(path.join(DIR, `${i.id}-${w}.webp`), () => {});
-  await logAction(adminId, 'review', id, 'delete_review', { entity_id: r.entity_id });
-  await afterChange(r.entity_id, r.ranking_id);
+  await logAction(adminId, 'review', id, 'delete_review', { entity_id: r.entity_id, submission_id: r.submission_id });
+  if (r.entity_id) await afterChange(r.entity_id, r.ranking_id);
+}
+
+// ---------- Bewertung zusammen mit einem Vorschlag (Formular „hinzufügen“) ----------
+// Wartet als „held“ an der Meldung; die Bestätigung der Meldung gilt auch für die Bewertung (gleiche Adresse).
+
+async function saveImages(c, reviewId, photos) {
+  const images = [];
+  for (const f of photos) {
+    const imgId = crypto.randomUUID();
+    images.push({ id: imgId, ...(await media.processImage(f.path, DIR, imgId)) });
+  }
+  for (const f of photos) fs.unlink(f.path, () => {});
+  let i = 0;
+  for (const img of images) {
+    await c.query(`INSERT INTO review_images (id, review_id, width, height, variants, sort_order) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [img.id, reviewId, img.width, img.height, img.variants, i++]);
+  }
+}
+
+async function createHeld({ ranking, submissionId, data, ip }) {
+  const id = crypto.randomUUID();
+  await db.tx(async (c) => {
+    await c.query(
+      `INSERT INTO reviews (id, submission_id, ranking_id, author_name, email, stay_month, camp_provider_id,
+         ratings, answers, title, body, status, ip_hash, consent_version)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'{}',$9,$10,'held',$11,$12)`,
+      [id, submissionId, ranking.id, data.name, data.email, data.month, data.camp, JSON.stringify(data.ratings),
+        data.title, data.text, ipHash(ip), CONSENT_VERSION]);
+    await saveImages(c, id, data.photos);
+  });
+  return id;
+}
+
+// Meldung bestätigt (Link oder Admin): Bewertung gilt als bestätigt, wartet aber weiter auf das Objekt
+async function verifyHeld(submissionId, adminId = null) {
+  await db.query(
+    `UPDATE reviews SET verified_at = CASE WHEN $2::uuid IS NULL THEN now() ELSE verified_at END, verified_by = $2, updated_at = now()
+      WHERE submission_id = $1 AND status = 'held'`, [submissionId, adminId]);
+}
+
+// Objekt ist online (oder Meldung an bestehendes Objekt angehängt): Bewertung geht in die Moderation
+async function releaseHeld(submissionId, entityId) {
+  const r = await db.query(
+    `UPDATE reviews SET entity_id = $2, status = 'pending', updated_at = now()
+      WHERE submission_id = $1 AND status = 'held' AND (verified_at IS NOT NULL OR verified_by IS NOT NULL) RETURNING id`,
+    [submissionId, entityId]);
+  return r.rowCount;
+}
+
+// Meldung abgelehnt oder abgelaufen: wartende Bewertung samt Fotos löschen
+async function dropHeld(submissionId) {
+  for (const r of await db.many(`SELECT id FROM reviews WHERE submission_id = $1 AND status = 'held'`, [submissionId])) await remove(r.id, null);
+}
+
+async function heldFor(submissionId) {
+  const r = await db.one(`SELECT * FROM reviews WHERE submission_id = $1 AND status = 'held'`, [submissionId]);
+  if (r) r.images = await db.many('SELECT * FROM review_images WHERE review_id = $1 ORDER BY sort_order', [r.id]);
+  return r;
 }
 
 async function setImage(imageId, approve, adminId) {
@@ -238,4 +286,5 @@ module.exports = {
   MAX_PHOTOS, VERIFY_HOURS, CONSENT_VERSION, PHOTO_CONSENT, DIR,
   config: config_, questions, stayMonth, validate, create, recentCountByIp, verify, verifyByAdmin, publish, reject, remove,
   setImage, reply, afterChange, factSuggestions, published, dimensionAverages, imageFile,
+  createHeld, verifyHeld, releaseHeld, dropHeld, heldFor,
 };

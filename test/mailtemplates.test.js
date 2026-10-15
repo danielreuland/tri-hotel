@@ -36,3 +36,9 @@ test('mailtemplates: Dublette ohne Link -> Hinweis „in Prüfung“ statt leere
   assert.ok(!html.includes('Hier ist die Seite'));
   assert.match(html, /gerade in Prüfung/);
 });
+
+test('mailtemplates: Hinweis zur mitgeschickten Bewertung nur, wenn es eine gibt', () => {
+  const withReview = mt.varsFor('verify', { ranking: { name: 'R' }, entityName: 'H', link: 'L', hours: 72, withReview: true });
+  assert.match(withReview.bewertung, /bestätigst du auch deine Bewertung/);
+  assert.equal(mt.varsFor('verify', { ranking: { name: 'R' }, entityName: 'H', link: 'L', hours: 72 }).bewertung, '');
+});

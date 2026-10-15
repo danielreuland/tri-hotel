@@ -11,6 +11,7 @@ const RETENTION = {
   consentYearsAfterEnd: 3,    // Einwilligungsnachweise nach Widerruf
   reviewEmailMonths: 6,       // E-Mail aus Bewertungen nach Freigabe/Ablehnung
   reviewUnconfirmedDays: 7,   // unbestätigte Bewertungen (mit Fotos) löschen
+  heldReviewDays: 7,          // Bewertung zu einem Vorschlag, der abgelaufen ist (nicht bestätigt)
 };
 
 async function run() {
@@ -36,6 +37,12 @@ async function run() {
   const stale = await db.many(`SELECT id FROM reviews WHERE status = 'received' AND verified_by IS NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.reviewUnconfirmedDays]);
   for (const s of stale) await require('./reviews').remove(s.id, null);
   r.reviewsUnconfirmed = stale.length;
+  // Bewertungen zu Vorschlägen, die nie bestätigt wurden (abgelehnte werden sofort gelöscht)
+  const heldStale = await db.many(
+    `SELECT r.id FROM reviews r JOIN submissions s ON s.id = r.submission_id
+      WHERE r.status = 'held' AND s.status IN ('expired', 'rejected') AND s.updated_at < now() - make_interval(days => $1)`, [RETENTION.heldReviewDays]);
+  for (const s of heldStale) await require('./reviews').remove(s.id, null);
+  r.reviewsHeldExpired = heldStale.length;
   await q('consents', `DELETE FROM consents WHERE withdrawn_at IS NOT NULL AND withdrawn_at < now() - make_interval(years => $1)`, [RETENTION.consentYearsAfterEnd]);
   return r;
 }

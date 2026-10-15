@@ -24,7 +24,7 @@ danke, dass du **{{hotel}}** für das Ranking „{{ranking}}“ vorgeschlagen ha
 Bitte bestätige deinen Vorschlag mit einem Klick:
 
 [Vorschlag bestätigen]({{link}})
-
+{{bewertung}}
 Der Link ist {{stunden}} Stunden gültig. Danach prüfen wir die Angaben automatisch und von Hand und melden uns, sobald die Seite online ist.
 
 Du hast nichts vorgeschlagen? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.`,
@@ -101,7 +101,7 @@ Neue Einwilligungen: **{{einwilligungen}}**
 // Platzhalter je Vorlage: Beschreibung für den Admin
 const VARS = {
   common: { hotel: 'Name des Objekts', ranking: 'Name des Rankings', scorename: 'Scorename, z. B. TriScore', site: 'Name der Site', startseite: 'Adresse der Startseite' },
-  verify: { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden' },
+  verify: { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden', bewertung: 'Hinweis zur mitgeschickten Bewertung (leer, wenn keine)' },
   live: { link: 'Link zur Profilseite', score: 'Score (leer, wenn noch unbekannt)', vorlaeufig: '„ (vorläufig …)“, solange keine Bewertungen vorliegen' },
   rejected: { begruendung: 'Begründung aus dem Admin' },
   duplicate: { link: 'Link zur bestehenden Seite (leer, solange sie nicht online ist)', in_pruefung: 'Hinweis „gerade in Prüfung“, wenn noch nicht online' },
@@ -115,7 +115,7 @@ function sampleData(key, site) {
   const base = { ranking, entityName: 'Beispielhotel Mar Azul' };
   const url = `https://${(site && site.primary_domain) || 'tri-hotel.de'}`;
   return {
-    verify: { ...base, link: `${url}/bestaetigen/beispiel`, hours: 72 },
+    verify: { ...base, link: `${url}/bestaetigen/beispiel`, hours: 72, withReview: true },
     live: { ...base, link: `${url}/hotel/beispielhotel-mar-azul`, score: 82, provisional: true },
     rejected: { ...base, reason: 'Im Umkreis von 5 km gibt es kein Becken mit mindestens 25 m.' },
     duplicate: { ...base, link: `${url}/hotel/beispielhotel-mar-azul` },
@@ -131,7 +131,12 @@ function varsFor(key, data, site, baseUrl) {
   const v = {
     hotel: d.entityName || '', ranking: r.name || '', scorename: r.score_name || '', site: (site && site.name) || '', startseite: baseUrl || '',
   };
-  if (key === 'verify') Object.assign(v, { link: d.link || '', stunden: String(d.hours || '') });
+  if (key === 'verify') {
+    Object.assign(v, {
+      link: d.link || '', stunden: String(d.hours || ''),
+      bewertung: d.withReview ? '\nDamit bestätigst du auch deine Bewertung. Sie erscheint, sobald die Seite online ist und wir sie geprüft haben.\n' : '',
+    });
+  }
   if (key === 'live') {
     const known = d.score !== null && d.score !== undefined;
     Object.assign(v, { link: d.link || '', score: known ? String(d.score) : '', vorlaeufig: known && d.provisional ? ' (vorläufig, solange noch keine Bewertungen vorliegen)' : '' });

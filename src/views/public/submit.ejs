@@ -14,7 +14,7 @@
   <div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
 <% } %>
 
-<form method="post" class="card" novalidate>
+<form method="post" class="card" enctype="multipart/form-data" novalidate>
   <div class="form-row">
     <div><label for="name">Name *</label><input id="name" name="name" type="text" required maxlength="200" value="<%= form.name || '' %>"></div>
     <div><label for="website">Website *</label><input id="website" name="website" type="url" required placeholder="https://" value="<%= form.website || '' %>"></div>
@@ -64,6 +64,46 @@
     </div>
   </div>
 
+  <% if (reviewCfg && reviewCfg.enabled) { var rv = form.review || {}; %>
+    <details class="submit-review" id="bewerten" <%= form.withReview ? 'open' : '' %> data-review-box>
+      <summary><strong>Warst du schon dort? Dann bewerte das <%= ranking.entity_label_sg %> gleich mit</strong> <small class="muted">optional</small></summary>
+      <p class="muted" data-owner-note hidden><small>Für Betreiber und Mitarbeiter ist keine Bewertung möglich.</small></p>
+      <div data-review-fields>
+        <label class="inline"><input type="checkbox" name="with_review" <%= form.withReview ? 'checked' : '' %>> <span>Ja, ich gebe eine Bewertung ab</span></label>
+        <p class="muted" style="margin-top:0"><small>Sie erscheint erst, wenn das <%= ranking.entity_label_sg %> online ist und wir sie geprüft haben. Der Bestätigungslink gilt für beides.</small></p>
+        <div class="form-row">
+          <div><label for="rv-name">Dein Name * <small class="muted">so steht er über der Bewertung, z. B. „Anna K.“</small></label><input id="rv-name" name="author_name" type="text" maxlength="40" value="<%= rv.author_name || '' %>" autocomplete="given-name"></div>
+          <div><label for="rv-month">Aufenthalt *</label>
+            <select id="rv-month" name="stay_month"><option value="">Monat wählen</option><% months.forEach(function (m) { %><option value="<%= m.value %>" <%= rv.stay_month === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %></select></div>
+        </div>
+        <% if (camps.length) { %>
+          <label for="rv-camp">Mit Camp-Anbieter? <small class="muted">optional</small></label>
+          <select id="rv-camp" name="camp_provider_id"><option value="">nein / auf eigene Faust</option><% camps.forEach(function (c) { %><option value="<%= c.id %>" <%= rv.camp_provider_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+        <% } %>
+        <p class="muted" style="margin:12px 0 0"><small>Sterne: 1 = schlecht, 5 = hervorragend. Lass Bereiche aus, die du nicht beurteilen kannst (mindestens drei).</small></p>
+        <div class="rating-grid">
+          <% reviewCfg.dimensions.forEach(function (d) { var cur = String(rv['r_' + d.code] || ''); %>
+            <fieldset class="stars">
+              <legend><%= d.label %></legend>
+              <% [5, 4, 3, 2, 1].forEach(function (n) { var id = 'r-' + d.code + '-' + n; %>
+                <input type="radio" id="<%= id %>" name="r_<%= d.code %>" value="<%= n %>" <%= cur === String(n) ? 'checked' : '' %>><label for="<%= id %>" title="<%= n %> von 5">★</label>
+              <% }) %>
+            </fieldset>
+          <% }) %>
+        </div>
+        <label for="rv-title">Überschrift <small class="muted">optional</small></label>
+        <input id="rv-title" name="title" type="text" maxlength="120" value="<%= rv.title || '' %>">
+        <label for="rv-body">Deine Erfahrung *</label>
+        <textarea id="rv-body" name="body" rows="6" maxlength="4000" placeholder="Wie waren Pool, Strecken, Essen, Service für Sportler?"><%= rv.body || '' %></textarea>
+        <label for="rv-photos">Fotos <small class="muted">optional, höchstens <%= MAX_PHOTOS %> (JPG, PNG, WebP, je bis 8 MB)<%= form.withReview && errors.length ? ' – bitte nach einem Fehler erneut auswählen' : '' %></small></label>
+        <input id="rv-photos" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
+        <label class="inline"><input type="checkbox" name="photo_consent" <%= rv.photo_consent === 'on' ? 'checked' : '' %>> <span><%= PHOTO_CONSENT %></span></label>
+        <label class="inline"><input type="checkbox" name="honest" <%= rv.honest === 'on' ? 'checked' : '' %>> <span>Ich war selbst dort, arbeite nicht für das <%= ranking.entity_label_sg %> und habe für diese Bewertung keine Gegenleistung erhalten. *</span></label>
+        <p class="muted" style="margin-bottom:0"><small><a href="/datenschutz#bewertungen" target="_blank">Datenschutz bei Bewertungen</a></small></p>
+      </div>
+    </details>
+  <% } %>
+
   <div class="hp" aria-hidden="true">
     <label for="company_url">Bitte leer lassen</label>
     <input id="company_url" name="company_url" type="text" tabindex="-1" autocomplete="off">
@@ -75,4 +115,5 @@
   <p><button class="btn cta" type="submit">Vorschlag absenden</button></p>
 </form>
 
+<% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>

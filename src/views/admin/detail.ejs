@@ -85,6 +85,15 @@
         </ul>
       <% } %>
       <% if (sub.notes) { %><p><strong>Hinweise:</strong> <%= sub.notes %></p><% } %>
+      <% if (heldReview) { var hr = heldReview; var dims = (ranking.review_config && ranking.review_config.dimensions) || []; %>
+        <div class="flash" style="margin:10px 0">
+          <strong>Bewertung des Melders</strong> <small class="muted">· <%= hr.author_name %> · Aufenthalt <%= new Date(hr.stay_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) %> · <%= hr.verified_at || hr.verified_by ? 'E-Mail bestätigt' : 'E-Mail noch unbestätigt' %> · <%= hr.images.length %> Foto(s)</small><br>
+          <% dims.forEach(function (d) { var v = (hr.ratings || {})[d.code]; if (v) { %><span class="badge"><%= d.label %>: <%= v %>★</span> <% } }) %>
+          <% if (hr.title) { %><br><strong><%= hr.title %></strong><% } %>
+          <p style="white-space:pre-line;margin:6px 0"><%= hr.body %></p>
+          <small class="muted">Geht mit der Freigabe des <%= ranking.entity_label_sg %>s (oder beim Zusammenführen mit einer Dublette) in die Moderation unter Kommunikation → Bewertungen. Bei Ablehnung wird sie gelöscht.</small>
+        </div>
+      <% } %>
       <% if (sub.admin_note) { %><p><strong>📝 Notiz:</strong> <%= sub.admin_note %></p><% } %>
       <% if (sub.rejection_reason) { %><p><strong>Ablehnungsgrund:</strong> <%= sub.rejection_reason %></p><% } %>
       <details <%= sub.status === 'auto_check' ? 'open' : '' %>>
