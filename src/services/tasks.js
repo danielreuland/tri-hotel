@@ -40,7 +40,7 @@ async function collect() {
     if (!l) continue;
     const lines = l.review.items.filter((i) => i.level !== 'hint' && !OWN_CARD_KEYS.has(i.key)).map((i) => ({ level: i.level, text: i.text }));
     if (!lines.length) continue;
-    push({ source: 'review', source_key: `review:${l.entity.id}:${l.ranking.id}`, title: l.sub.entity_name, detail: lines, link: detailLink(s.id, 'pruefliste'), entity_id: l.entity.id });
+    push({ source: 'review', source_key: `review:${l.entity.id}:${l.ranking.id}`, title: l.entity.name, detail: lines, link: detailLink(s.id, 'pruefliste'), entity_id: l.entity.id });
   }
 
   const latestSub = `(SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1)`;

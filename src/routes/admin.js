@@ -160,7 +160,7 @@ router.get('/', wrap(async (req, res) => {
   const status = STATUS_LABELS[req.query.status] ? req.query.status : req.query.status === 'alle' ? null : 'admin_review';
   const rankingId = UUID_RE.test(req.query.ranking || '') ? req.query.ranking : null;
   const rows = await db.many(
-    `SELECT s.*, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
+    `SELECT s.*, e.name AS current_name, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
             (SELECT name FROM entities d WHERE d.id = s.possible_duplicate_of) AS possible_duplicate_name,
             (SELECT email FROM admin_users u WHERE u.id = s.created_by) AS created_by_email,
             COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
@@ -270,7 +270,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     placesEnabled: places.enabled(),
     bestMonths: require('../lib/seo').bestMonths(d.ranking.formula, d.climate),
     placesMapsLink: places.mapsLink,
-    title: d.sub.entity_name,
+    title: d.entity ? d.entity.name : d.sub.entity_name,
     ...d,
     factByCrit,
     detailByCrit,
