@@ -39,7 +39,7 @@ function validate(body, provider, hotels, now = new Date()) {
     persons: persons >= 1 && persons <= 30 ? persons : null,
     level: LEVELS[body.level] ? body.level : null,
     entity_id: hotel ? hotel.entity_id : null,
-    hotel_text: hotel ? hotel.hotel_name : String(body.hotel_text || '').trim().slice(0, 120) || null,
+    hotel_text: hotel ? hotel.entity_name || hotel.hotel_name : String(body.hotel_text || '').trim().slice(0, 120) || null,
     message: String(body.message || '').trim().slice(0, 3000) || null,
   };
   if (data.name.length < 2) errors.push('Bitte gib deinen Namen an.');
