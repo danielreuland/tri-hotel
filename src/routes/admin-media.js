@@ -36,7 +36,7 @@ async function render(req, res, extra = {}) {
   const regions = await db.many(`SELECT id, name FROM regions WHERE site_id = $1 ORDER BY sort_order, name`, [siteId]);
   res.render('admin/media', {
     title: 'Medien', sites, siteId, rows, regions, SLOTS: media.SLOTS, imgAttrs: media.imgAttrs,
-    errors: [], flash: req.query.ok || null, form: {}, ...extra,
+    errors: req.query.fehler ? [String(req.query.fehler)] : [], flash: req.query.ok || null, form: {}, ...extra,
   });
 }
 
@@ -106,11 +106,18 @@ router.post('/:id', wrap(async (req, res, next) => {
   const m = await db.one('SELECT * FROM site_media WHERE id = $1', [req.params.id]);
   if (!m) return next();
   const p = placement(req.body.placement);
+  // Beispielbild für Objektseiten ohne eigene Fotos (je Region zusammen mit dem Titelbild höchstens 5)
+  const ex = UUID_RE.test(req.body.example_region_id || '') ? req.body.example_region_id : null;
+  if (ex && ex !== m.example_region_id) {
+    const { n } = await db.one(
+      `SELECT count(*)::int AS n FROM site_media WHERE site_id = $1 AND id <> $3 AND (example_region_id = $2 OR region_id = $2)`, [m.site_id, ex, m.id]);
+    if (n >= media.MAX_REGION_EXAMPLES) return res.redirect(`/admin/medien?site=${m.site_id}&fehler=${encodeURIComponent(`Für diese Region gibt es schon ${media.MAX_REGION_EXAMPLES} Bilder.`)}`);
+  }
   await db.tx(async (client) => {
     await freePlacement(client, m.site_id, p, m.id);
     await client.query(
-      `UPDATE site_media SET slot = $2, region_id = $3, focal = $4, alt = COALESCE(NULLIF($5, ''), alt) WHERE id = $1`,
-      [m.id, p.slot, p.region_id, FOCAL[req.body.focal] || m.focal, String(req.body.alt || '').trim().slice(0, 300)]
+      `UPDATE site_media SET slot = $2, region_id = $3, focal = $4, alt = COALESCE(NULLIF($5, ''), alt), example_region_id = $6 WHERE id = $1`,
+      [m.id, p.slot, p.region_id, FOCAL[req.body.focal] || m.focal, String(req.body.alt || '').trim().slice(0, 300), ex]
     );
     await logAction(req.session.admin.id, 'media', m.id, 'edit_media', p, client);
   });

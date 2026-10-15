@@ -35,6 +35,38 @@
   <% } %>
 </div>
 
+<% var galleryCount = images.length + guestPhotos.length; %>
+<% if (galleryCount || regionExamples.length) { %>
+  <section class="gallery-wrap" style="margin-top:16px" aria-label="Fotos">
+    <% if (!galleryCount) { %>
+      <p class="gallery-note"><strong>Beispielbilder der Region <%= galleryRegion.name %></strong> – noch keine Fotos dieses <%= ranking.entity_label_sg %>s.<% if (reviewCfg.enabled) { %> Warst du dort? <a href="/<%= ranking.entity_type %>/<%= entity.slug %>/bewerten">Teile deine Fotos mit einer Bewertung →</a><% } %></p>
+    <% } %>
+    <% var shown = Math.min(images.length, 5) + Math.min(guestPhotos.length, Math.max(0, 5 - images.length)) + regionExamples.length; %>
+    <div class="gallery" data-n="<%= Math.min(shown, 5) %>">
+      <% images.slice(0, 5).forEach(function (img) { %>
+        <figure>
+          <% if (img.variants && img.variants.length) { %><img <%- entityImgAttrs(img) %> sizes="(max-width: 700px) 100vw, 50vw" alt="<%= entity.name %>" loading="lazy">
+          <% } else { %><img src="/media/<%= img.id %>" alt="<%= entity.name %>" loading="lazy"><% } %>
+          <figcaption>© <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><%= img.license ? ' · ' + img.license : '' %></figcaption>
+        </figure>
+      <% }) %>
+      <% guestPhotos.slice(0, Math.max(0, 5 - images.length)).forEach(function (p) { var v = p.variants; var mid = v.includes(1280) ? 1280 : v[v.length - 1]; %>
+        <figure>
+          <a href="/media/review/<%= p.id %>-<%= v[v.length - 1] %>.webp" target="_blank" rel="noopener"><img src="/media/review/<%= p.id %>-<%= mid %>.webp" srcset="<%= v.map(function (w) { return '/media/review/' + p.id + '-' + w + '.webp ' + w + 'w'; }).join(', ') %>" sizes="(max-width: 700px) 100vw, 50vw" width="<%= mid %>" height="<%= Math.round(p.height * mid / p.width) %>" alt="Gastfoto aus <%= entity.name %>" loading="lazy"></a>
+          <figcaption>Gastfoto: <%= p.author %> · <%= new Date(p.stay_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) %></figcaption>
+        </figure>
+      <% }) %>
+      <% regionExamples.forEach(function (m) { %>
+        <figure class="example">
+          <img <%- imgAttrs(m) %> sizes="(max-width: 700px) 100vw, 50vw" alt="<%= m.alt %>" loading="lazy">
+          <figcaption><span class="badge">Beispiel Region</span> <%= m.credit %></figcaption>
+        </figure>
+      <% }) %>
+    </div>
+    <% if (guestPhotos.length > Math.max(0, 5 - images.length)) { %><p class="muted"><small><a href="#bewertungen">Weitere Gastfotos bei den Bewertungen</a></small></p><% } %>
+  </section>
+<% } %>
+
 <% if (textBlocks.length) { %>
   <section class="entity-text" style="margin-top:20px">
     <h2 style="margin-top:0">Unsere Einschätzung</h2>
@@ -73,17 +105,7 @@
   </section>
 <% } %>
 
-<% if (images.length) { %>
-  <div class="grid grid-3 entity-photos" style="margin-top:16px">
-    <% images.forEach(function (img) { %>
-      <figure>
-        <% if (img.variants && img.variants.length) { %><img <%- entityImgAttrs(img) %> sizes="(max-width: 700px) 100vw, 33vw" alt="<%= entity.name %>" loading="lazy">
-        <% } else { %><img src="/media/<%= img.id %>" alt="<%= entity.name %>" loading="lazy"><% } %>
-        <figcaption>© <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><%= img.license ? ' · ' + img.license : '' %></figcaption>
-      </figure>
-    <% }) %>
-  </div>
-<% } %>
+
 
 <div class="grid grid-2 grid-content" style="margin-top:8px">
   <section>

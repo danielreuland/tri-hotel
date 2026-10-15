@@ -550,3 +550,18 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .form-error-hint { margin: 12px 0 0; font-weight: 700; }
 .form-error-hint a { color: var(--bad); }
 button[disabled] { opacity: .7; cursor: progress; }
+/* Hotelseite: Galerie (Objektbilder, Gastfotos oder Beispielbilder der Region) */
+.gallery { display: grid; gap: 8px; grid-template-columns: 2fr 1fr 1fr; grid-auto-rows: 170px; }
+.gallery[data-n="1"] { grid-template-columns: 1fr; grid-auto-rows: 340px; }
+.gallery[data-n="2"] { grid-template-columns: 1fr 1fr; grid-auto-rows: 280px; }
+.gallery[data-n="3"] { grid-template-columns: 2fr 1fr; }
+.gallery:not([data-n="1"]):not([data-n="2"]) figure:first-child { grid-row: span 2; }
+.gallery figure { margin: 0; position: relative; overflow: hidden; border-radius: var(--radius); background: var(--accent-soft); }
+.gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery figcaption { position: absolute; inset: auto 0 0 0; padding: 14px 8px 4px; font-size: .72rem; color: #fff; background: linear-gradient(transparent, rgba(0, 0, 0, .65)); }
+.gallery figcaption .badge { color: #fff; border-color: rgba(255, 255, 255, .7); font-size: .66rem; padding: 0 6px; }
+.gallery-note { margin: 0 0 8px; padding: 8px 12px; border-left: 4px solid var(--ok); background: var(--surface); border-radius: 0; }
+@media (max-width: 700px) {
+  .gallery, .gallery[data-n="3"] { grid-template-columns: 1fr 1fr; grid-auto-rows: 130px; }
+  .gallery:not([data-n="1"]) figure:first-child { grid-column: span 2; grid-row: span 2; }
+}

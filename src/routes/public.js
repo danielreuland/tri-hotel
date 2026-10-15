@@ -201,6 +201,10 @@ async function renderEntity(req, res, ranking, slug) {
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
   const reviewCfg = reviewsService.config(ranking);
   const reviewList = reviewCfg.enabled ? await reviewsService.published(entity.id, ranking.id) : [];
+  // Galerie: eigene/freigegebene Objektbilder, dann Gästefotos aus Bewertungen; ohne beides Beispielbilder der Region (mit Hinweis)
+  const guestPhotos = [];
+  for (const r of reviewList) for (const i of r.images) guestPhotos.push({ ...i, author: r.author_name, stay_month: r.stay_month });
+  const regionExamples = !images.length && !guestPhotos.length && region ? media.regionExamples(res.locals.siteMedia, region.id) : [];
   const text = await db.one(`SELECT summary, body, published_at FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
@@ -236,6 +240,7 @@ async function renderEntity(req, res, ranking, slug) {
     bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
+    guestPhotos, regionExamples, galleryRegion: region,
     reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),
     reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,

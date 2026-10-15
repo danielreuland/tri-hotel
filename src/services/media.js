@@ -52,14 +52,24 @@ async function forSite(siteId) {
   if (!siteId) return { slots: {}, regions: {} };
   const hit = cache.get(siteId);
   if (hit && hit.at > Date.now() - TTL_MS) return hit.data;
-  const rows = await db.many(`SELECT * FROM site_media WHERE site_id = $1 AND (slot IS NOT NULL OR region_id IS NOT NULL)`, [siteId]);
-  const data = { slots: {}, regions: {} };
+  const rows = await db.many(
+    `SELECT * FROM site_media WHERE site_id = $1 AND (slot IS NOT NULL OR region_id IS NOT NULL OR example_region_id IS NOT NULL) ORDER BY created_at`, [siteId]);
+  const data = { slots: {}, regions: {}, examples: {} };
   for (const m of rows) {
     if (m.slot) data.slots[m.slot] = m;
     if (m.region_id) data.regions[m.region_id] = m;
+    if (m.example_region_id) (data.examples[m.example_region_id] = data.examples[m.example_region_id] || []).push(m);
   }
   cache.set(siteId, { at: Date.now(), data });
   return data;
+}
+
+const MAX_REGION_EXAMPLES = 5;
+function regionExamples(data, regionId) {
+  const out = [];
+  if (data.regions[regionId]) out.push(data.regions[regionId]);
+  for (const m of data.examples[regionId] || []) if (!out.some((x) => x.id === m.id)) out.push(m);
+  return out.slice(0, MAX_REGION_EXAMPLES);
 }
 
 function invalidate() {
@@ -98,6 +108,7 @@ function removeEntityFiles(img) {
 const entityImgAttrs = (img) => imgAttrs(img, '/media');
 
 module.exports = {
+  regionExamples, MAX_REGION_EXAMPLES,
   SLOTS, WIDTHS, DIR, fileFor, processImage, processUpload, removeFiles, forSite, invalidate, imgAttrs,
   ENTITY_DIR, MAX_PER_ENTITY, entityFileFor, processEntityImage, removeEntityFiles, entityImgAttrs,
 };
