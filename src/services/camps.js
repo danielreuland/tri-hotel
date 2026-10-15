@@ -75,6 +75,27 @@ async function hotelsOf(providerId, rankingId) {
 }
 
 // Anbieter, die in einem Hotel Camps durchführen (für die Hotelseite)
+// Anbieter-Hotel einem Objekt zuordnen: gleicher Name (ohne Allerweltswörter wie „Hotel“, Akzente egal), nur eindeutige Treffer
+async function matchEntity(hotelName, client = db) {
+  const { nameMatch } = require('./places');
+  const rows = client.query ? (await client.query('SELECT id, name FROM entities')).rows : await db.many('SELECT id, name FROM entities');
+  const hits = rows.filter((e) => nameMatch(hotelName, e.name) === 2);
+  return hits.length === 1 ? hits[0].id : null;
+}
+
+// Noch nicht verknüpfte Anbieter-Hotels zuordnen; Rückgabe: neu verknüpfte Paare
+async function autoLink() {
+  const open = await db.many(`SELECT h.id, h.hotel_name, p.name AS provider FROM camp_provider_hotels h JOIN camp_providers p ON p.id = h.provider_id WHERE h.entity_id IS NULL`);
+  const linked = [];
+  for (const h of open) {
+    const id = await matchEntity(h.hotel_name);
+    if (!id) continue;
+    await db.query('UPDATE camp_provider_hotels SET entity_id = $2 WHERE id = $1', [h.id, id]);
+    linked.push({ provider: h.provider, hotel: h.hotel_name });
+  }
+  return linked;
+}
+
 async function forEntity(entityId) {
   return db.many(
     `SELECT DISTINCT p.id, p.slug, p.name, p.model, p.model_label, p.partner
@@ -118,4 +139,5 @@ async function clickStats(siteId) {
   return Object.fromEntries(rows.map((r) => [r.id, r]));
 }
 
-module.exports = { MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };
+module.exports = {
+  matchEntity, autoLink, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };

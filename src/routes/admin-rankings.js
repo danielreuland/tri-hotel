@@ -8,6 +8,8 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 
 const router = express.Router();
+// Verknüpfte Quellen für Kriterien (Anzeige neben dem Wert, Abgleich in der Prüfliste)
+const LINK_SOURCES = { camp_providers: 'Camp-Anbieter, die hier Camps anbieten' };
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -203,8 +205,8 @@ router.post('/:id/duplizieren', wrap(async (req, res) => {
           [copy.id, cat.code, cat.label, cat.sort_order])
       ).rows[0];
       await c.query(
-        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active)
-         SELECT $1, $2, code, label, value_type, scoring, max_points, is_ko, sort_order, active FROM criteria WHERE category_id = $3`,
+        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source)
+         SELECT $1, $2, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source FROM criteria WHERE category_id = $3`,
         [copy.id, newCat.id, cat.id]
       );
     }
@@ -247,7 +249,7 @@ router.post('/:id/kategorien/:cid', wrap(async (req, res) => {
 async function renderCriterion(req, res, ranking, c, errors = [], warnings = []) {
   const categories = await rankings.getCategories(ranking.id);
   res.status(errors.length ? 422 : 200).render('admin/criterion-form', {
-    title: c.id ? `Kriterium ${c.code}` : 'Neues Kriterium', ranking, c, categories, errors, warnings, VALUE_TYPES,
+    title: c.id ? `Kriterium ${c.code}` : 'Neues Kriterium', ranking, c, categories, errors, warnings, VALUE_TYPES, LINK_SOURCES,
   });
 }
 
@@ -283,6 +285,7 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
     is_ko: b.is_ko === 'on',
     sort_order: Number(b.sort_order) || 0,
     active: b.active === 'on',
+    link_source: LINK_SOURCES[b.link_source] ? b.link_source : null,
   };
   const { errors, warnings } = scoring.validateCriterion(c);
   if (parsed.error) errors.unshift('Punkteschema ist kein gültiges JSON.');
@@ -300,8 +303,8 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
       // Jede Katalogänderung erhöht die Version; danach werden die Scores neu berechnet.
       await db.query(
         `UPDATE criteria SET code=$3, label=$4, category_id=$5, value_type=$6, scoring=$7, max_points=$8, is_ko=$9,
-           sort_order=$10, active=$11, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
-        [c.id, ranking.id, c.code, c.label, c.category_id, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active]
+           sort_order=$10, active=$11, link_source=$12, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
+        [c.id, ranking.id, c.code, c.label, c.category_id, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source]
       );
       await logAction(req.session.admin.id, 'criterion', c.id, 'edit_criterion', {
         old: { scoring: old.scoring, max_points: old.max_points, is_ko: old.is_ko, active: old.active, version: old.version },
@@ -309,9 +312,9 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
       });
     } else {
       const row = await db.one(
-        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-        [ranking.id, c.category_id, c.code, c.label, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active]
+        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+        [ranking.id, c.category_id, c.code, c.label, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source]
       );
       await logAction(req.session.admin.id, 'criterion', row.id, 'create_criterion', { code: c.code, scoring: c.scoring });
     }

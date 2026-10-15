@@ -104,6 +104,9 @@
           <div class="fact">
             <span><%= it.label %></span>
             <span class="val <%= it.value === null ? 'unknown' : '' %>"><%= it.value === null ? 'unbekannt' : it.value %><% if (it.points !== null) { %> <small>(<%= it.points %>)</small><% } else if (it.imputed !== null && it.imputed !== undefined) { %> <small title="Unbekannt: zählt mit dem Durchschnitt aller geprüften <%= ranking.entity_label_pl %>">(Ø <%= String(Math.round(it.imputed * 10) / 10).replace('.', ',') %>)</small><% } %></span>
+            <% if (it.linkSource === 'camp_providers' && campProviders.length) { %>
+              <span class="src">Camps von <% campProviders.forEach(function (c, i) { %><%= i ? ', ' : '' %><a href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %></a><% }) %></span>
+            <% } %>
             <% if (it.source || it.disputed) { %>
               <span class="src">
                 <%= it.source || '' %>

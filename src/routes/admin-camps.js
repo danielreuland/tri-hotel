@@ -93,14 +93,14 @@ router.post('/:id?', wrap(async (req, res) => {
         pid = (await c.query(`INSERT INTO camp_providers (site_id, slug, name, model, model_label, seat, summary, website, destinations, regions, features, prices, as_of, source_url, partner, partner_url, status)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id`, [sid, ...vals])).rows[0].id;
       }
-      // Hotels neu schreiben; Verknüpfung zum Ranking über exakten Namen (bestehende Verknüpfungen bleiben erhalten)
+      // Hotels neu schreiben; Verknüpfung über gleichen Namen (ohne „Hotel“, Akzente egal, nur eindeutig) (bestehende Verknüpfungen bleiben erhalten)
       const old = await c.query('SELECT hotel_name, entity_id FROM camp_provider_hotels WHERE provider_id = $1', [pid]);
       const keep = new Map(old.rows.filter((r) => r.entity_id).map((r) => [r.hotel_name, r.entity_id]));
       await c.query('DELETE FROM camp_provider_hotels WHERE provider_id = $1', [pid]);
       let i = 0;
       for (const h of f.hotels) {
         if (!h.hotel_name) continue;
-        const match = keep.get(h.hotel_name) || ((await c.query('SELECT id FROM entities WHERE name = $1 LIMIT 1', [h.hotel_name])).rows[0] || {}).id || null;
+        const match = keep.get(h.hotel_name) || (await camps.matchEntity(h.hotel_name, c));
         await c.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, region, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
           [pid, match, h.hotel_name, h.place || null, h.region || null, i++]);
       }

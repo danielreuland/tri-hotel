@@ -167,6 +167,7 @@ async function renderEntity(req, res, ranking, slug) {
         source: isClimate ? (climateRow ? 'Open-Meteo, Mittel der letzten 3 Jahre' : null) : fact ? trustText(fact, ranking) : null,
         evidenceUrl: fact && fact.evidence_url,
         disputed: fact && fact.disputed,
+        linkSource: c.link_source || null,
       };
     });
     const known = items.filter((i) => i.points !== null);

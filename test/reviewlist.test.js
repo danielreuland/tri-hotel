@@ -79,3 +79,16 @@ test('reviewlist: nur Notizen ohne Text gilt als „noch kein Beschreibungstext�
   assert.ok(keys.includes('text-missing'));
   assert.ok(!keys.includes('text-draft'));
 });
+
+test('reviewlist: Camp-Anbieter verknüpft, Kriterium aber unbekannt oder nein', () => {
+  const d = base();
+  const crit = { id: 'camps', code: 'camps', label: 'Camps buchbar', category_id: d.criteria[0].category_id, max_points: 2, link_source: 'camp_providers', scoring: { type: 'bool', points_true: 2 } };
+  d.criteria = [...d.criteria, crit];
+  d.campLinks = [{ name: 'Anbieter A' }];
+  assert.match(review.build(d).items.map((i) => i.text).join(' | '), /Anbieter A hier Camps an – „Camps buchbar“ ist unbekannt/);
+  d.facts = [...d.facts, { criterion_id: 'camps', value: { bool: true }, trust_level: 2 }];
+  assert.ok(!review.build(d).items.some((i) => i.key === 'link-camps'), 'Wert ja: kein Hinweis');
+  d.campLinks = [];
+  d.facts = d.facts.map((f) => (f.criterion_id === 'camps' ? { ...f, value: { bool: false } } : f));
+  assert.ok(!review.build(d).items.some((i) => i.key === 'link-camps'), 'ohne Anbieter: kein Hinweis');
+});

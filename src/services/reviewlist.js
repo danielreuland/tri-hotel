@@ -50,6 +50,15 @@ function build(d, dismissals = []) {
     add(level, `${why} Fehlend: ${names}${more}.`, 'fakten', null, 'missing');
   }
 
+  // Verknüpfte Quellen: Camp-Anbieter bieten hier Camps an, der Wert sagt aber nein oder unbekannt
+  const campLinks = d.campLinks || [];
+  for (const c of criteria.filter((x) => x.link_source === 'camp_providers' && x.scoring.type === 'bool')) {
+    const f = facts.find((x) => x.criterion_id === c.id);
+    if (campLinks.length && !(f && f.value && f.value.bool === true)) {
+      add('todo', `Laut Camp-Übersicht ${campLinks.length === 1 ? 'bietet' : 'bieten'} ${campLinks.map((p) => p.name).join(', ')} hier Camps an – „${c.label}“ ist ${f ? 'auf „nein“' : 'unbekannt'}.`, 'fakten', null, `link-${c.code}`);
+    }
+  }
+
   // Leistungen, Anfragen, Kontakt
   const autoFeatures = (manualFeatures || []).filter((f) => f.trust_level === 4);
   if (autoFeatures.length) add('todo', `${autoFeatures.length} automatisch erkannte ${autoFeatures.length === 1 ? 'Leistung' : 'Leistungen'} bestätigen.`, 'leistungen', null, 'auto-features');
@@ -118,7 +127,8 @@ async function load(submissionId) {
   for (const i of inquiryList) i.answers = answers.filter((a) => a.inquiry_id === i.id);
   const textStale = Boolean(text && text.input_hash && describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash);
   const duplicateOf = sub.possible_duplicate_of ? await db.one('SELECT id, name FROM entities WHERE id = $1', [sub.possible_duplicate_of]) : null;
-  const d = { sub, ranking, criteria, facts, climate, entity, result, images, text, textStale, inquiryList, manualFeatures, duplicateOf };
+  const campLinks = criteria.some((c) => c.link_source === 'camp_providers') ? await require('./camps').forEntity(entity.id) : [];
+  const d = { sub, ranking, criteria, facts, climate, entity, result, images, text, textStale, inquiryList, manualFeatures, duplicateOf, campLinks };
   return { sub, entity, ranking, result, review: build(d, dismissals) };
 }
 
