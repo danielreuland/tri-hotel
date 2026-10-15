@@ -14,7 +14,7 @@ const base = () => ({
   climate: [{ month: 1 }],
   entity: { lat: 1, lng: 2, contact_email: 'x@y.de', attributes: {} },
   result: { ko: false, completeness: 80 },
-  images: [], text: { status: 'published' }, textStale: false, inquiryList: [], manualFeatures: [], duplicateOf: null,
+  images: [], text: { status: 'published', body: 'Text' }, textStale: false, inquiryList: [], manualFeatures: [], duplicateOf: null,
 });
 
 test('reviewlist: alles erledigt bis auf fehlendes Kriterium -> nur Empfehlung', () => {
@@ -70,4 +70,12 @@ test('reviewlist: Anfrage-Entwurf als Aufgabe', () => {
   const d = base();
   d.inquiryList = [{ status: 'draft', recipient: 'info@h.example', criteria_ids: ['b'], answers: [] }];
   assert.match(review.build(d).items.map((i) => i.text).join(' '), /Anfrage-Entwurf an info@h\.example \(1 Fragen\)/);
+});
+
+test('reviewlist: nur Notizen ohne Text gilt als „noch kein Beschreibungstext“', () => {
+  const d = base();
+  d.text = { status: 'draft', body: '', notes: 'viel Wind' };
+  const keys = review.build(d).items.map((i) => i.key);
+  assert.ok(keys.includes('text-missing'));
+  assert.ok(!keys.includes('text-draft'));
 });
