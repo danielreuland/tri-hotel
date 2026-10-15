@@ -148,8 +148,7 @@ ${example.body}
 ` : ''}
 Inhalt:
 - Nutze ausschließlich die Daten${input.notes ? ' und die redaktionellen Notizen' : ''}. Erfinde nichts: keine Zahlen, Entfernungen, Namen, Ausstattung, Lage oder Eindrücke.
-${input.notes ? '- Die Notizen sind unsere Einschätzung: einbauen, wo sie passen, sachlich und ohne zu übertreiben.
-' : ''}- Werte mit Quelle „automatisch ermittelt“ vorsichtig formulieren („laut Website“, „laut Karte“).
+${input.notes ? '- Die Notizen sind unsere Einschätzung: einbauen, wo sie passen, sachlich und ohne zu übertreiben.\n' : ''}- Werte mit Quelle „automatisch ermittelt“ vorsichtig formulieren („laut Website“, „laut Karte“).
 - „nein“ heißt: gibt es nicht (bestätigt). Kriterien unter „unknown“ sind noch nicht bestätigt – nur so benennen, wenn sie für die Zielgruppe wichtig sind.
 - Pro Abschnitt nur die 2–3 wichtigsten Punkte. Keine Aufzählungen von Ausstattung im Fließtext; die Details stehen in den Tabellen darunter.
 - Lücken nur nennen, wenn sie zählen: Kriterien mit max ≥ 3 oder eine ganze Kategorie ohne Angebot. Kleinigkeiten weglassen.
