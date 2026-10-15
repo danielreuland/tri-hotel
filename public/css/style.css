@@ -567,3 +567,8 @@ button[disabled] { opacity: .7; cursor: progress; }
   .gallery:not([data-n="1"]) figure:first-child { grid-column: span 2; grid-row: span 2; }
   .gallery[data-n="4"] figure:last-child, .gallery[data-n="2"] figure:last-child { grid-column: span 2; }
 }
+/* Partnerlinks (Anzeige) */
+.partner-links { list-style: none; padding: 0; margin: 4px 0 10px; display: grid; gap: 8px; }
+.partner-links li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.partner-links li strong { min-width: 110px; }
+.partner-reviews { margin: 8px 0 0; }

@@ -1,0 +1,45 @@
+<%- include('../partials/admin-head') %>
+<h1>Partnerprogramme</h1>
+<p class="muted">Partnerlinks erscheinen auf Profilseiten als <strong>Anzeige</strong>, alphabetisch nach Anbieter und ohne Einfluss auf Score, Reihenfolge oder Prüfung. Links je Objekt pflegst du in der Detailansicht (Reiter Stammdaten → Partnerlinks). Ohne Partnerkennung bzw. Deeplink-Vorlage sind es normale Links ohne Provision.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+
+<h2>Klicks <small class="muted">letzte <%= days %> Tage · <% [7, 30, 90, 365].forEach(function (d) { %><a href="/admin/partner?tage=<%= d %>" class="<%= d === days ? 'on' : '' %>"><%= d %></a> <% }) %></small></h2>
+<div class="table-scroll"><table>
+  <tr><th>Programm</th><th>Links</th><th>Klicks</th></tr>
+  <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td></tr><% }) %>
+</table></div>
+<% if (stats.top.length) { %>
+  <details style="margin:8px 0 20px"><summary>Meistgeklickte Links</summary>
+    <div class="table-scroll"><table><tr><th>Objekt</th><th>Programm</th><th>Art</th><th>Klicks</th></tr>
+      <% stats.top.forEach(function (t) { %><tr><td><%= t.name %></td><td><%= t.program %></td><td><%= t.kind === 'reviews' ? 'Bewertungen' : 'Preise' %></td><td><%= t.clicks %></td></tr><% }) %>
+    </table></div>
+  </details>
+<% } %>
+
+<h2>Programme</h2>
+<% programs.forEach(function (p) { var params = Object.keys(p.link_params || {}).map(function (k) { return k + '=' + p.link_params[k]; }).join('\n'); %>
+  <section class="card" style="margin-bottom:12px">
+    <h3 style="margin-top:0"><%= p.name %>
+      <span class="badge <%= p.status === 'active' ? 'good' : '' %>"><%= p.status === 'active' ? 'aktiv' : 'inaktiv' %></span>
+      <span class="badge <%= monetized(p) ? 'good' : 'warn' %>"><%= monetized(p) ? 'mit Partnerkennung' : 'ohne Partnerkennung' %></span></h3>
+    <% if (p.notes) { %><p class="muted" style="margin-top:0"><small><%= p.notes %></small></p><% } %>
+    <form method="post" action="/admin/partner/<%= p.id %>">
+      <div class="form-row">
+        <div><label>Anzeigename</label><input name="name" type="text" value="<%= p.name %>"></div>
+        <div><label>Status</label><select name="status"><option value="active" <%= p.status === 'active' ? 'selected' : '' %>>aktiv (auf Profilseiten sichtbar)</option><option value="inactive" <%= p.status !== 'active' ? 'selected' : '' %>>inaktiv</option></select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Partnerkennung als Parameter <small class="muted">je Zeile name=wert, z. B. aid=1234567</small></label><textarea name="link_params" rows="2"><%= params %></textarea></div>
+        <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">z. B. https://www.awin1.com/cread.php?awinmid=…&amp;awinaffid=…&amp;ued={url_enc}</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Beschriftung Preise</label><input name="label_booking" type="text" value="<%= p.label_booking %>"></div>
+        <div><label>Beschriftung Bewertungen</label><input name="label_reviews" type="text" value="<%= p.label_reviews %>"></div>
+      </div>
+      <label>Notiz</label><input name="notes" type="text" value="<%= p.notes || '' %>">
+      <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button> <small class="muted">Erlaubte Ziel-Domains: <%= p.domains.length ? p.domains.join(', ') : 'beliebige https-Adresse' %></small></p>
+    </form>
+  </section>
+<% }) %>
+<%- include('../partials/admin-foot') %>

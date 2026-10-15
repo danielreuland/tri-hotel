@@ -22,6 +22,7 @@ const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
 const tasks = require('../services/tasks');
 const places = require('../services/places');
+const partners = require('../services/partners');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -243,10 +244,13 @@ async function loadDetail(id) {
   }
   // Bewertung, die der Melder zusammen mit dem Vorschlag abgegeben hat (wartet bis zur Freigabe)
   const heldReview = await require('../services/reviews').heldFor(sub.id);
+  // Partnerlinks (alle Programme, auch inaktive, damit Links vorbereitet werden können)
+  const partnerPrograms = entity ? await partners.programs() : [];
+  const partnerLinks = entity ? await db.many('SELECT * FROM entity_links WHERE entity_id = $1', [entity.id]) : [];
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
   return {
-    campLinks, heldReview,
+    campLinks, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
   };
@@ -395,8 +399,9 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
     website: normalizeUrl(b.website),
     lat: num(b.lat),
     lng: num(b.lng),
-    booking_url: normalizeUrl(b.booking_url, { keepTracking: true }),
-    booking_provider: String(b.booking_provider || '').trim() || null,
+    // Buchungslinks laufen über Partnerlinks (entity_links); alte Felder bleiben unverändert
+    booking_url: old.booking_url,
+    booking_provider: old.booking_provider,
     contact_email: String(b.contact_email || '').trim().toLowerCase() || null,
   };
   // Google Place ID (optional, nur für den exakten Link zu den Google-Bewertungen)
@@ -422,6 +427,16 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
   res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);
+}));
+
+// Partnerlinks eines Objekts (Booking.com, HolidayCheck …): je Programm Buchungs- und Bewertungsseite
+router.post('/meldungen/:id/partnerlinks', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const { errors, changes } = await partners.saveLinks(t.entity.id, req.body.links, req.session.admin.id);
+  if (changes.length) await logAction(req.session.admin.id, 'entity', t.entity.id, 'edit_partner_links', { changes });
+  const msg = errors.length ? errors.join(' ') : changes.length ? `${changes.length} Partnerlink(s) gespeichert` : 'Keine Änderung';
+  res.redirect(`/admin/meldungen/${t.sub.id}?${errors.length ? 'fehler' : 'ok'}=${encodeURIComponent(msg)}#partnerlinks`);
 }));
 
 // ---------- Google Place ID (Suche über die Places API, Übernahme nur durch den Admin) ----------

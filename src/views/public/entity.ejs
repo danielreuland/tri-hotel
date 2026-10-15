@@ -145,12 +145,19 @@
   </section>
 
   <section>
-    <% if (entity.booking_url) { %>
-      <h2>Buchen</h2>
-      <div class="ad">
-        <div class="ad-label">Anzeige</div>
-        <p>Buchung über <%= entity.booking_provider || 'Partner' %>. Wir erhalten bei einer Buchung eine Provision – auf den <%= ranking.score_name %> hat das keinen Einfluss.</p>
-        <a class="btn secondary" href="<%= entity.booking_url %>" rel="sponsored nofollow noopener" target="_blank">Verfügbarkeit prüfen</a>
+    <% if (partnerGroups.length) { var anyAd = partnerGroups.some(function (g) { return g.monetized; }); %>
+      <h2 id="partner">Preise und Bewertungen</h2>
+      <div class="ad partner-box">
+        <% if (anyAd) { %><div class="ad-label">Anzeige</div><% } %>
+        <ul class="partner-links">
+          <% partnerGroups.forEach(function (g) { %>
+            <li><strong><%= g.name %></strong>
+              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank"><%= g.label_booking %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank"><%= g.label_reviews %> ↗</a><% } %>
+            </li>
+          <% }) %>
+        </ul>
+        <p class="muted" style="margin-bottom:0"><small><%= anyAd ? 'Bei einer Buchung über diese Links erhalten wir eine Provision. ' : '' %>Anbieter alphabetisch – auf <%= ranking.score_name %> und Reihenfolge hat das keinen Einfluss. Bewertungen dort stammen von den Anbietern und sind nicht Teil unseres Scores.</small></p>
       </div>
     <% } %>
 
@@ -189,6 +196,10 @@
           <p><a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Direkt bei Google ansehen ↗</a> · <a href="/datenschutz#google">Datenschutz</a></p>
         </div>
       </div>
+      <% var reviewPartners = partnerGroups.filter(function (g) { return g.kinds.indexOf('reviews') >= 0; }); %>
+      <% if (reviewPartners.length) { %>
+        <p class="muted partner-reviews"><small>Weitere Gästebewertungen<%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (Anzeige)' : '' %>: <% reviewPartners.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank"><%= g.name %> ↗</a><% }) %></small></p>
+      <% } %>
     <% } %>
   </section>
 </div>

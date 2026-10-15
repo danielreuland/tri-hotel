@@ -36,6 +36,7 @@ const SECTIONS = [
     tabs: [
       { href: '/admin/rankings', label: 'Rankings' },
       { href: '/admin/sites', label: 'Sites' },
+      { href: '/admin/partner', label: 'Partnerprogramme' },
       { href: '/admin/emails', label: 'E-Mail-Vorlagen' },
       { href: '/admin/team', label: 'Team' },
       { href: '/admin/log', label: 'Log' },

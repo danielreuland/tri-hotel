@@ -10,6 +10,7 @@ const featureLib = require('../lib/features');
 const areas = require('../services/areas');
 const seo = require('../lib/seo');
 const media = require('../services/media');
+const partners = require('../services/partners');
 const describer = require('../services/describer');
 const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
@@ -199,6 +200,13 @@ async function renderEntity(req, res, ranking, slug) {
   const formula = scoring.withDefaults(ranking.formula);
   // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
+  // Partnerlinks je Anbieter gruppiert (alphabetisch, ohne Einfluss auf Score/Reihenfolge)
+  const partnerGroups = [];
+  for (const l of await partners.linksFor(entity.id)) {
+    let g = partnerGroups.find((x) => x.code === l.code);
+    if (!g) partnerGroups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized, kinds: [] }));
+    g.kinds.push(l.kind);
+  }
   const reviewCfg = reviewsService.config(ranking);
   const reviewList = reviewCfg.enabled ? await reviewsService.published(entity.id, ranking.id) : [];
   // Galerie: eigene/freigegebene Objektbilder, dann Gästefotos aus Bewertungen; ohne beides Beispielbilder der Region (mit Hinweis)
@@ -240,7 +248,7 @@ async function renderEntity(req, res, ranking, slug) {
     bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
-    guestPhotos, regionExamples, galleryRegion: region,
+    guestPhotos, regionExamples, galleryRegion: region, partnerGroups,
     reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),
     reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,

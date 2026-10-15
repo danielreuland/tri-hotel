@@ -132,10 +132,6 @@
           </div>
         </div>
         <div class="form-row">
-          <div><label>Buchungslink (Affiliate)</label><input name="booking_url" type="url" value="<%= entity.booking_url || '' %>"></div>
-          <div><label>Anbieter</label><input name="booking_provider" type="text" placeholder="z. B. Booking.com, Stay22" value="<%= entity.booking_provider || '' %>"></div>
-        </div>
-        <div class="form-row">
           <div><label>Google Place ID <small class="muted">optional – macht den Link „Bewertungen bei Google“ exakt</small></label>
             <input name="google_place_id" type="text" value="<%= (entity.attributes || {}).google_place_id || '' %>" placeholder="ChIJ…">
             <small class="muted"><% if (placesEnabled) { %>Suche bei Google unten<% } else { %><a href="https://developers.google.com/maps/documentation/places/web-service/place-id#find-id" target="_blank" rel="noopener">Place ID finden ↗</a><% } %> · ohne ID sucht der Link nach Name und Anschrift · <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="noopener">Link testen ↗</a></small></div>
@@ -176,6 +172,24 @@
           </table></div>
         </div>
       <% } %>
+    </section>
+
+    <section class="card" style="margin-top:16px" id="partnerlinks" data-tab="stammdaten">
+      <h2 style="margin-top:0">Partnerlinks</h2>
+      <p class="muted" style="margin-top:0"><small>Links zur Seite dieses <%= ranking.entity_label_sg %>s beim jeweiligen Anbieter. Erscheinen auf der Profilseite als Anzeige, alphabetisch und ohne Einfluss auf Score oder Reihenfolge. Die Partnerkennung wird automatisch ergänzt (<a href="/admin/partner">Partnerprogramme</a>).</small></p>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/partnerlinks">
+        <% partnerPrograms.forEach(function (p) { var get = function (kind) { var l = partnerLinks.find(function (x) { return x.program_id === p.id && x.kind === kind; }); return l ? l.url : ''; }; %>
+          <fieldset style="border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:0 0 10px">
+            <legend><strong><%= p.name %></strong> <small class="muted"><%= p.status === 'active' ? '' : '· inaktiv – wird nicht angezeigt' %><%= p.domains.length ? ' · nur ' + p.domains.join(', ') : '' %></small></legend>
+            <div class="form-row">
+              <div><label>Seite mit Preisen / Buchung</label><input name="links[<%= p.id %>][booking]" type="url" placeholder="https://" value="<%= get('booking') %>"></div>
+              <div><label>Bewertungsseite <small class="muted">optional</small></label><input name="links[<%= p.id %>][reviews]" type="url" placeholder="https://" value="<%= get('reviews') %>"></div>
+            </div>
+            <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener">Bei <%= p.name %> suchen ↗</a></small><% } %>
+          </fieldset>
+        <% }) %>
+        <button class="btn small" type="submit">Partnerlinks speichern</button>
+      </form>
     </section>
 
     <section class="card" style="margin-top:16px" id="klima" data-tab="stammdaten">
