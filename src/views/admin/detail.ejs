@@ -185,7 +185,7 @@
 
     <section class="card" style="margin-top:16px" id="fakten" data-tab="pruefung">
       <h2 style="margin-top:0">Fakten</h2>
-      <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Beim Ändern eines Werts springt die Vertrauensstufe auf 2 (Admin geprüft).</p>
+      <p class="muted">Werte ohne Fundstelle bitte nicht übernehmen. Stimmt ein Vorschlag, genügt „✓ Übernehmen“ (sofort gespeichert). Änderst du einen Wert, springt die Vertrauensstufe auf 2 (Admin geprüft) – dann „Fakten speichern“.</p>
       <% var autoWithEvidence = facts.filter(function (f) { return f.trust_level === 4 && f.evidence_url && !f.disputed }).length; %>
       <div class="filters fact-tools">
         <label class="inline" style="margin:0"><input type="checkbox" id="only-open"> Nur offene Punkte zeigen</label>
@@ -206,7 +206,7 @@
               <% var state = s.type === 'climate' ? (climateRow ? 'ok' : 'missing') : !f ? 'missing' : f.disputed ? 'disputed' : f.trust_level === 4 ? 'auto' : 'ok'; %>
               <tr class="crit-row state-<%= state %> <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
                 <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %>
-                  <% if (state === 'auto') { %> <span class="badge warn">Vorschlag</span><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
+                  <% if (state === 'auto') { %> <span class="badge warn" data-state-badge>Vorschlag</span> <button type="button" class="btn small" data-accept-fact title="Wert unverändert als „Admin geprüft“ übernehmen – wird sofort gespeichert">✓ Übernehmen</button><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
                   <br><small class="muted"><%= c.code %> · max <%= c.max_points %></small>
                   <% if (state === 'auto' && f.evidence_text) { %><br><small class="evidence">„<%= f.evidence_text.slice(0, 160) %><%= f.evidence_text.length > 160 ? '…' : '' %>“<% if (f.evidence_url) { %> <a href="<%= f.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %>
                 </td>

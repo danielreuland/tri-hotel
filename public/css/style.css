@@ -397,7 +397,9 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .crit-row .evidence { color: var(--muted); font-style: italic; }
 .fact-tools { align-items: center; gap: 8px 16px; }
 .fact-tools .legend { font-size: .85rem; color: var(--muted); }
-.only-open .crit-row.state-ok { display: none; }
+.only-open .crit-row.state-ok:not(.accepted) { display: none; }
+.crit-row.accepted { background: color-mix(in srgb, var(--good) 8%, transparent); }
+[data-accept-fact] { padding: 2px 10px; font-size: .78rem; }
 .draft-box { border: 1px dashed var(--ok); border-radius: var(--radius); padding: 12px 14px; }
 .review-items { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
 .review-items li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }

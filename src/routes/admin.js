@@ -594,6 +594,23 @@ router.post('/meldungen/:id/vorschlaege-bestaetigen', wrap(async (req, res, next
   res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent(`${rows.length} Vorschläge als geprüft übernommen`)}#fakten`);
 }));
 
+// Einzelnen Vorschlag unverändert übernehmen (Stufe 4 -> 2), sofort gespeichert; Antwort für die Prüfansicht
+router.post('/meldungen/:id/fakten/:critId/uebernehmen', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.critId)) return next();
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);
+  if (!sub || !sub.entity_id) return next();
+  const row = await db.one(
+    `UPDATE entity_facts f SET trust_level = 2, source = 'admin', checked_at = now(), disputed = false
+       FROM criteria c WHERE c.id = f.criterion_id AND c.ranking_id = $3
+        AND f.entity_id = $1 AND f.criterion_id = $2 AND f.trust_level = 4
+      RETURNING f.id, c.code`,
+    [sub.entity_id, req.params.critId, sub.ranking_id]);
+  if (!row) return res.status(409).json({ error: 'Kein offener Vorschlag – bitte Seite neu laden.' });
+  await logAction(req.session.admin.id, 'fact', row.id, 'confirm_auto_fact', { criterion: row.code });
+  const result = await rankings.recomputeEntity(sub.entity_id, sub.ranking_id);
+  res.json({ ok: true, score: result.score, completeness: result.completeness });
+}));
+
 // Live-Objekt: Auto-Prüfung im Hintergrund wiederholen, Objekt bleibt online (neue Werte nur als Vorschläge)
 router.post('/meldungen/:id/aktualisieren', wrap(async (req, res, next) => {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);

@@ -65,10 +65,36 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
       .catch(function () { /* Vorschau ist optional */ });
   }
 
+  // Vorschlag unverändert übernehmen: sofort speichern, Zeile als geprüft markieren
+  form.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-accept-fact]');
+    if (!btn) return;
+    var row = btn.closest('tr[data-crit]');
+    btn.disabled = true;
+    fetch('/admin/meldungen/' + form.dataset.submission + '/fakten/' + row.dataset.crit + '/uebernehmen', {
+      method: 'POST', headers: { Accept: 'application/json' }, credentials: 'same-origin',
+    })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Speichern fehlgeschlagen'); return j; }); })
+      .then(function () {
+        var trust = row.querySelector('[data-trust]');
+        if (trust) trust.value = '2';
+        row.classList.remove('state-auto');
+        row.classList.add('state-ok', 'accepted');
+        var badge = row.querySelector('[data-state-badge]');
+        if (badge) { badge.className = 'badge good'; badge.textContent = '✓ übernommen'; }
+        btn.remove();
+        preview();
+      })
+      .catch(function (err) { btn.disabled = false; alert(err.message); });
+  });
+
   form.addEventListener('input', function (e) {
     var row = e.target.closest('tr[data-crit]');
     if (row && e.target.matches('[data-value]')) {
       row.classList.add('changed');
+      // Wert geändert: „Übernehmen“ passt nicht mehr, gespeichert wird mit „Fakten speichern“
+      var accept = row.querySelector('[data-accept-fact]');
+      if (accept) accept.remove();
       // Vom Admin geänderte Werte gelten als geprüft (Stufe 2), außer es ist bewusst Stufe 1 gewählt
       var trust = row.querySelector('[data-trust]');
       if (trust && trust.value !== '1') trust.value = '2';
