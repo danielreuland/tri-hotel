@@ -43,7 +43,7 @@
         <p class="muted" style="margin:6px 0 0"><small>Mit Beispieldaten und dem gespeicherten Text<%= provider === 'console' ? ' – solange kein Mailversand eingerichtet ist, nur im Server-Log' : '' %>.</small></p>
       </form>
       <% if (saved) { %>
-        <form method="post" action="/admin/emails/<%= key %>" style="margin-top:10px" onsubmit="return confirm('Eigenen Text verwerfen und Standardtext verwenden?')">
+        <form method="post" action="/admin/emails/<%= key %>" style="margin-top:10px" data-confirm="Eigenen Text verwerfen und Standardtext verwenden?">
           <input type="hidden" name="site_id" value="<%= site.id %>">
           <button class="btn small secondary" type="submit" name="action" value="reset" style="width:100%">Auf Standardtext zurücksetzen</button>
         </form>

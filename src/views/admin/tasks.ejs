@@ -73,7 +73,7 @@
             </footer>
             <% if (st === 'done') { %><p class="meta"><%= t.done_auto ? 'automatisch erledigt' : 'erledigt' + (t.done_by_email ? ' von ' + t.done_by_email.split('@')[0] : '') %> · <%= formatDate(t.done_at || t.updated_at) %></p><% } %>
             <% if (t.source === 'manual') { %>
-              <form method="post" action="/admin/aufgaben/<%= t.id %>/loeschen" onsubmit="return confirm('Aufgabe löschen?')" class="meta"><button class="linklike" type="submit"><small>löschen</small></button></form>
+              <form method="post" action="/admin/aufgaben/<%= t.id %>/loeschen" data-confirm="Aufgabe löschen?" class="meta"><button class="linklike" type="submit"><small>löschen</small></button></form>
             <% } %>
           </article>
         <% }) %>

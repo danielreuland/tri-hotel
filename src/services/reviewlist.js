@@ -66,7 +66,7 @@ function build(d, dismissals = []) {
   // Bilder und Text
   const pendingImages = (images || []).filter((i) => !i.approved_at);
   if (pendingImages.length) add('todo', `${pendingImages.length} ${pendingImages.length === 1 ? 'Bild wartet' : 'Bilder warten'} auf Freigabe.`, 'bilder', null, 'images');
-  if (!text) add('hint', 'Noch kein Beschreibungstext.', 'text', null, 'text-missing');
+  if (!text || !text.body) add('hint', 'Noch kein Beschreibungstext.', 'text', null, 'text-missing');
   else if (text.status !== 'published') add('todo', 'Beschreibungstext prüfen und freigeben.', 'text', null, 'text-draft');
   else if (textStale) add('todo', 'Beschreibungstext ist veraltet – Fakten haben sich geändert.', 'text', null, 'text-stale');
 

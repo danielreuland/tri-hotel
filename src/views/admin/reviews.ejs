@@ -33,7 +33,7 @@
         <details><summary class="btn small secondary">Ablehnen</summary>
           <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion" style="margin-top:6px"><input type="hidden" name="status" value="<%= status %>"><input type="text" name="reason" placeholder="Grund (intern)"><button class="btn small danger" name="action" value="reject">Ablehnen</button></form></details>
       <% } %>
-      <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion" onsubmit="return confirm('Bewertung mit Fotos endgültig löschen?')"><input type="hidden" name="status" value="<%= status %>"><button class="btn small secondary" name="action" value="delete">Löschen</button></form>
+      <form method="post" action="/admin/bewertungen/<%= r.id %>/aktion" data-confirm="Bewertung mit Fotos endgültig löschen?"><input type="hidden" name="status" value="<%= status %>"><button class="btn small secondary" name="action" value="delete">Löschen</button></form>
     </div>
     <% if (r.status === 'published') { %>
       <details style="margin-top:8px" <%= r.hotel_reply ? 'open' : '' %>><summary><small>Antwort des Hotels <%= r.hotel_reply ? '(veröffentlicht)' : '' %></small></summary>

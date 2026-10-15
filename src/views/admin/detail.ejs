@@ -191,7 +191,7 @@
         <label class="inline" style="margin:0"><input type="checkbox" id="only-open"> Nur offene Punkte zeigen</label>
         <span class="legend"><span class="badge warn">Vorschlag</span> automatisch, bitte prüfen · <span class="badge">fehlt</span> unbekannt · <span class="badge bad">strittig</span></span>
         <% if (autoWithEvidence) { %>
-          <form method="post" action="/admin/meldungen/<%= sub.id %>/vorschlaege-bestaetigen" onsubmit="return confirm('Alle <%= autoWithEvidence %> Vorschläge mit Fundstelle als „Admin geprüft“ übernehmen? Vorher bitte Fundstellen ansehen.')">
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/vorschlaege-bestaetigen" data-confirm="Alle <%= autoWithEvidence %> Vorschläge mit Fundstelle als „Admin geprüft“ übernehmen? Vorher bitte Fundstellen ansehen.">
             <button class="btn small secondary" type="submit"><%= autoWithEvidence %> Vorschläge mit Fundstelle übernehmen</button>
           </form>
         <% } %>
@@ -290,16 +290,22 @@
       <h2 style="margin-top:0">Beschreibungstext</h2>
       <p class="muted" style="margin-top:0"><small>Steht auf der Profilseite über den Fakten; die Kurzbeschreibung ist zugleich die Meta-Beschreibung für Google. Der KI-Entwurf beruht nur auf den geprüften Daten dieser Seite. Öffentlich erst nach Freigabe.</small></p>
       <p>
-        <% if (!text) { %><span class="badge">noch kein Text</span>
+        <% var hasText = text && text.body; if (!hasText) { %><span class="badge">noch kein Text</span>
         <% } else { %>
           <span class="badge <%= text.status === 'published' ? 'good' : 'warn' %>"><%= text.status === 'published' ? 'freigegeben' : 'Entwurf' %></span>
           <% if (textStale) { %><span class="badge bad" title="Fakten, Klima oder Leistungen haben sich seit dem Erzeugen bzw. der Freigabe geändert">veraltet – Fakten geändert</span><% } %>
           <small class="muted"><%= text.model ? 'erzeugt mit ' + text.model + (text.generated_at ? ' am ' + new Date(text.generated_at).toLocaleString('de-DE') : '') : 'von Hand geschrieben' %><%= text.published_at ? ' · freigegeben am ' + new Date(text.published_at).toLocaleString('de-DE') : '' %></small>
         <% } %>
       </p>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/notizen" style="margin-bottom:14px">
+        <label for="t-notes">Redaktionelle Notizen <small class="muted">eigene Einschätzung in Stichworten – fließt in den KI-Entwurf ein, erscheint nicht direkt auf der Seite</small></label>
+        <textarea id="t-notes" name="notes" rows="3" maxlength="3000" placeholder="z. B. viel Wind, wenig Streckenvielfalt · direkt am Strand · Sportlerbahnen gegen Aufpreis · ganze Anlage auf Sportler ausgerichtet"><%= text ? text.notes : '' %></textarea>
+        <button class="btn small secondary" type="submit">Notizen speichern</button>
+        <small class="muted">Danach „Neu erzeugen“, damit der Entwurf sie berücksichtigt. <a href="/admin/ki-texte">So entsteht der Text ↗</a></small>
+      </form>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/text/erzeugen" style="margin-bottom:12px"
-            <% if (text) { %>onsubmit="return confirm('Den bisherigen Text durch einen neuen Entwurf ersetzen?')"<% } %>>
-        <button class="btn small secondary" type="submit"><%= text ? 'Neu erzeugen' : 'Entwurf erzeugen' %></button>
+            <% if (hasText) { %>data-confirm="Den bisherigen Text durch einen neuen Entwurf ersetzen?"<% } %>>
+        <button class="btn small secondary" type="submit"><%= hasText ? 'Neu erzeugen' : 'Entwurf erzeugen' %></button>
         <small class="muted">ca. 3 Cent</small>
       </form>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/text">
@@ -307,6 +313,12 @@
         <input id="t-summary" name="summary" type="text" maxlength="<%= SUMMARY_MAX %>" value="<%= text ? text.summary : '' %>">
         <label for="t-body">Text <small class="muted">Absätze durch Leerzeile trennen · „## “ = Zwischenüberschrift · „- “ = Aufzählung</small></label>
         <textarea id="t-body" name="body" rows="14"><%= text ? text.body : '' %></textarea>
+        <% if (text && text.generated_body && (text.generated_body !== text.body || text.generated_summary !== text.summary)) { %>
+          <details style="margin:6px 0 10px"><summary><small>Ursprünglichen KI-Entwurf ansehen (von dir überarbeitet)</small></summary>
+            <pre class="json" style="white-space:pre-wrap;margin-top:6px"><%= text.generated_summary %>
+
+<%= text.generated_body %></pre></details>
+        <% } %>
         <div class="filters" style="margin-bottom:0">
           <button class="btn small secondary" type="submit" name="action" value="save">Speichern</button>
           <button class="btn small" type="submit" name="action" value="publish"><%= text && text.status === 'published' ? 'Erneut freigeben' : 'Freigeben' %></button>

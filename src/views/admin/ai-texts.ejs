@@ -1,0 +1,55 @@
+<%- include('../partials/admin-head') %>
+<h1>KI-Texte</h1>
+<p class="muted">So entstehen die Beschreibungstexte der Profilseiten. Die KI schreibt nur einen Entwurf; öffentlich wird er erst nach deiner Prüfung und Freigabe.</p>
+<% if (rankings.length > 1) { %>
+  <p class="pill-row"><% rankings.forEach(function (r) { %><a class="badge <%= ranking && r.id === ranking.id ? 'accent' : '' %>" href="/admin/ki-texte?ranking=<%= r.id %>"><%= r.name %></a> <% }) %></p>
+<% } %>
+<% if (!ranking) { %><p class="card">Noch kein Ranking angelegt.</p><% } else { %>
+
+<section class="card">
+  <h2 style="margin-top:0">Ablauf</h2>
+  <ol>
+    <li><strong>Grundlage sammeln:</strong> geprüfte Fakten je Kategorie (mit Quelle), unbekannte Kriterien, Stufe, Klima je Monat, beste Reisezeit, Leistungen und – falls eingetragen – die <strong>redaktionellen Notizen</strong> des Objekts. Keine Texte fremder Websites.</li>
+    <li><strong>Stilvorlage:</strong> der zuletzt freigegebene Text dieses Rankings, den du überarbeitet oder selbst geschrieben hast. Die KI übernimmt daraus nur Ton und Auswahl, keinen Inhalt.</li>
+    <li><strong>Entwurf erzeugen</strong> mit Modell <code><%= model %></code> (fest vorgegebene Ausgabe: Kurzbeschreibung, Abschnitte, „Gut zu wissen“). Links werden entfernt, die Kurzbeschreibung auf 160 Zeichen begrenzt.</li>
+    <li><strong>Prüfen, anpassen, freigeben</strong> im Reiter „Inhalte“ des Objekts. Der ursprüngliche Entwurf bleibt zum Vergleich gespeichert.</li>
+    <li><strong>Veraltet-Hinweis:</strong> Ändern sich Fakten, Klima, Leistungen oder Notizen, wird der Text als veraltet markiert und erscheint im Prüfbericht.</li>
+  </ol>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2 style="margin-top:0">Aktuelle Stilvorlage</h2>
+  <% if (example) { %>
+    <p class="muted" style="margin-top:0">Text zu „<%= example.name %>“</p>
+    <pre class="json" style="white-space:pre-wrap"><%= example.summary %>
+
+<%= example.body %></pre>
+  <% } else { %>
+    <p class="muted">Noch keine. Sobald du einen Text überarbeitet und freigegeben hast, dient er als Vorlage für die nächsten Entwürfe.</p>
+  <% } %>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2 style="margin-top:0">Prompt</h2>
+  <p class="muted" style="margin-top:0">Wortlaut, wie er an die KI geht; Angaben in eckigen Klammern werden je Objekt eingesetzt. Änderungen am Prompt erfolgen im Code (<code>src/services/describer.js</code>), damit sie getestet und nachvollziehbar sind.</p>
+  <pre class="json" style="white-space:pre-wrap"><%= template %></pre>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2 style="margin-top:0">Texte dieses Rankings</h2>
+  <% if (!texts.length) { %><p class="muted">Noch keine Texte.</p><% } else { %>
+    <div class="table-scroll"><table>
+      <tr><th><%= ranking.entity_label_sg %></th><th>Status</th><th>Entstehung</th><th>Notizen</th></tr>
+      <% texts.forEach(function (t) { %>
+        <tr>
+          <td><% if (t.sub_id) { %><a href="/admin/meldungen/<%= t.sub_id %>#text"><%= t.name %></a><% } else { %><%= t.name %><% } %></td>
+          <td><span class="badge <%= t.status === 'published' ? 'good' : 'warn' %>"><%= t.status === 'published' ? 'freigegeben' : 'Entwurf' %></span></td>
+          <td><small><%= !t.model ? 'von Hand' : !t.has_original ? 'KI (Entwurf vor Einführung des Vergleichs)' : t.edited ? 'KI, überarbeitet' : 'KI, unverändert' %></small></td>
+          <td><small><%= t.has_notes ? 'ja' : '–' %></small></td>
+        </tr>
+      <% }) %>
+    </table></div>
+  <% } %>
+</section>
+<% } %>
+<%- include('../partials/admin-foot') %>

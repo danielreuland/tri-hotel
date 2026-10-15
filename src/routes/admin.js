@@ -935,9 +935,10 @@ router.post('/meldungen/:id/text/erzeugen', wrap(async (req, res, next) => {
   const back = `/admin/meldungen/${sub.id}`;
   if (config.llm.provider !== 'anthropic') return res.redirect(`${back}?fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#text`);
   const input = await describer.gather(sub.entity_id, sub.ranking_id);
+  const example = await describer.styleExample(sub.ranking_id, sub.entity_id);
   let out;
   try {
-    out = await describer.generate(input);
+    out = await describer.generate(input, example);
   } catch (err) {
     console.error('[describer]', err.message);
     return res.redirect(`${back}?fehler=${encodeURIComponent(`Text konnte nicht erzeugt werden: ${err.message.slice(0, 200)}`)}#text`);
@@ -947,13 +948,14 @@ router.post('/meldungen/:id/text/erzeugen', wrap(async (req, res, next) => {
   }
   if (!out.text) return res.redirect(`${back}?fehler=${encodeURIComponent('Das Modell hat keinen Text geliefert.')}#text`);
   await db.query(
-    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, input_hash, model, generated_at, status, updated_by, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, now(), 'draft', $7, now())
-     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, generated_summary, generated_body, input_hash, model, generated_at, status, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $3, $4, $5, $6, now(), 'draft', $7, now())
+     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body,
+       generated_summary = EXCLUDED.summary, generated_body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
        model = EXCLUDED.model, generated_at = now(), status = 'draft', updated_by = EXCLUDED.updated_by, updated_at = now()`,
     [sub.entity_id, sub.ranking_id, out.text.summary, out.text.body, describer.inputHash(input), out.usage.model, req.session.admin.id]
   );
-  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', { model: out.usage.model });
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', { model: out.usage.model, style_example: example ? example.name : null });
   res.redirect(`${back}?ok=${encodeURIComponent('Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
 }));
 
@@ -982,6 +984,36 @@ router.post('/meldungen/:id/text', wrap(async (req, res, next) => {
   await logAction(req.session.admin.id, 'entity', sub.entity_id, `text_${action}`, { status });
   const msg = { save: 'Text gespeichert', publish: 'Text freigegeben – jetzt auf der Profilseite sichtbar', unpublish: 'Text zurückgezogen' }[action];
   res.redirect(`${back}?ok=${encodeURIComponent(msg)}#text`);
+}));
+
+// Redaktionelle Notizen: zusätzliche Grundlage für den KI-Entwurf (Text wird danach als veraltet markiert)
+router.post('/meldungen/:id/text/notizen', wrap(async (req, res, next) => {
+  const sub = await subWithEntity(req.params.id);
+  if (!sub) return next();
+  const notes = String(req.body.notes || '').replace(/\r/g, '').trim().slice(0, 3000);
+  await db.query(
+    `INSERT INTO entity_texts (entity_id, ranking_id, notes, updated_by, updated_at) VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET notes = EXCLUDED.notes, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+    [sub.entity_id, sub.ranking_id, notes, req.session.admin.id]);
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'text_notes', { length: notes.length });
+  res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Notizen gespeichert')}#text`);
+}));
+
+// Dokumentation der KI-Texte: Prompt, Modell, Stilvorlage, Überarbeitungsquote
+router.get('/ki-texte', wrap(async (req, res) => {
+  const list = await db.many(`SELECT * FROM rankings WHERE status <> 'archived' ORDER BY is_default DESC, name`);
+  const ranking = list.find((r) => r.id === req.query.ranking) || list[0];
+  const texts = ranking ? await db.many(
+    `SELECT t.status, t.model, t.generated_at, t.published_at, t.notes <> '' AS has_notes,
+            t.generated_body IS NOT NULL AS has_original, t.generated_body IS DISTINCT FROM t.body AS edited,
+            length(t.body) AS len, e.name, (SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1) AS sub_id
+       FROM entity_texts t JOIN entities e ON e.id = t.entity_id
+      WHERE t.ranking_id = $1 AND (t.body <> '' OR t.notes <> '') ORDER BY t.updated_at DESC`, [ranking.id]) : [];
+  const example = ranking ? await describer.styleExample(ranking.id, '00000000-0000-0000-0000-000000000000') : null;
+  res.render('admin/ai-texts', {
+    title: 'KI-Texte', rankings: list, ranking, texts, example,
+    template: ranking ? describer.promptTemplate(ranking) : '', model: config.llm.models.describe,
+  });
 }));
 
 // ---------- Aufgaben ----------

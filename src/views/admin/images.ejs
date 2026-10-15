@@ -44,7 +44,7 @@
             <% if (!img.approved_at) { %>
               <form method="post" action="/admin/bilder/<%= img.id %>/freigeben" style="display:inline"><input type="hidden" name="back" value="<%= back %>"><button class="btn small" type="submit">Freigeben</button></form>
             <% } %>
-            <form method="post" action="/admin/bilder/<%= img.id %>/loeschen" style="display:inline" onsubmit="return confirm('Bild endgültig entfernen?')">
+            <form method="post" action="/admin/bilder/<%= img.id %>/loeschen" style="display:inline" data-confirm="Bild endgültig entfernen?">
               <input type="hidden" name="back" value="<%= back %>"><input type="hidden" name="reason" value="Admin (Übersicht)">
               <button class="btn small danger" type="submit">Entfernen</button>
             </form>

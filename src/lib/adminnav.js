@@ -28,6 +28,7 @@ const SECTIONS = [
       { href: '/admin/camps', label: 'Camps' },
       { href: '/admin/regionen', label: 'Regionen' },
       { href: '/admin/leistungen', label: 'Leistungen' },
+      { href: '/admin/ki-texte', label: 'KI-Texte' },
     ],
   },
   {

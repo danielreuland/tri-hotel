@@ -48,7 +48,7 @@
           </form>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn small" type="submit" form="<%= fid %>">Speichern</button>
-            <form method="post" action="/admin/medien/<%= m.id %>/loeschen" onsubmit="return confirm('Bild endgültig löschen?')"><button class="btn small secondary" type="submit">Löschen</button></form>
+            <form method="post" action="/admin/medien/<%= m.id %>/loeschen" data-confirm="Bild endgültig löschen?"><button class="btn small secondary" type="submit">Löschen</button></form>
           </div>
         </details>
       </div>

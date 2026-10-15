@@ -41,3 +41,16 @@ test('describer.prompt: nutzt Beschriftungen des Rankings, nichts Triathlon-spez
   assert.match(p, /HyScore/);
   assert.ok(!/triathlon/i.test(p));
 });
+
+test('describer.prompt: Notizen und Stilvorlage nur, wenn vorhanden', () => {
+  const base = { ranking: { name: 'Hyrox-Gyms', score_name: 'HyScore', entity: 'Gym', entities: 'Gyms' }, score: { label: 'Gut' }, categories: [] };
+  const plain = describer.prompt(base);
+  assert.ok(!/Redaktionelle Notizen/.test(plain));
+  assert.ok(!/Stilvorlage/.test(plain));
+  const full = describer.prompt({ ...base, notes: 'Viel Wind' }, { name: 'Anderes Gym', summary: 'S', body: 'B' });
+  assert.match(full, /Redaktionelle Notizen[\s\S]*Viel Wind/);
+  assert.match(full, /Stilvorlage[\s\S]*Anderes Gym/);
+  const tpl = describer.promptTemplate({ name: 'Hyrox-Gyms', score_name: 'HyScore', entity_label_sg: 'Gym', entity_label_pl: 'Gyms' });
+  assert.match(tpl, /\[Daten des Objekts als JSON/);
+  assert.ok(!/triathlon/i.test(tpl));
+});

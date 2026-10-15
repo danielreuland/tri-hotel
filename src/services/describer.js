@@ -53,6 +53,8 @@ async function gather(entityId, rankingId) {
     .slice().sort((a, b) => a.month - b.month)
     .map((r) => ({ month: MONTHS[r.month - 1], max_c: r.avg_high_c === null ? null : Math.round(r.avg_high_c), rain_days: r.rain_days === null ? null : Math.round(r.rain_days) }));
 
+  const saved = await db.one('SELECT notes FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]);
+  const notes = saved && saved.notes ? saved.notes.trim() : '';
   return {
     ranking: { name: ranking.name, score_name: ranking.score_name, entity: ranking.entity_label_sg, entities: ranking.entity_label_pl },
     entity: { name: entity.name, city: entity.city, country: entity.country ? seo.countryName(entity.country) : null, region: regionList[0] ? regionList[0].name : null },
@@ -61,7 +63,18 @@ async function gather(entityId, rankingId) {
     best_months: best.length ? seo.monthRanges(best, MONTHS) : null,
     climate: climateTable,
     features: feats.map((f) => f.label),
+    // nur wenn vorhanden, damit bestehende Fingerabdrücke gültig bleiben
+    ...(notes ? { notes } : {}),
   };
+}
+
+// Stilvorlage: zuletzt vom Admin freigegebener und überarbeiteter (oder selbst geschriebener) Text desselben Rankings
+async function styleExample(rankingId, entityId) {
+  return db.one(
+    `SELECT t.summary, t.body, e.name FROM entity_texts t JOIN entities e ON e.id = t.entity_id
+      WHERE t.ranking_id = $1 AND t.entity_id <> $2 AND t.status = 'published' AND t.body <> ''
+        AND (t.generated_body IS NULL OR t.generated_body <> t.body)
+      ORDER BY t.published_at DESC NULLS LAST LIMIT 1`, [rankingId, entityId]);
 }
 
 function inputHash(input) {
@@ -112,31 +125,58 @@ function toBody(parsed) {
   return parts.join('\n\n');
 }
 
-function prompt(input) {
+// Prompt für den KI-Entwurf. example = Stilvorlage (nur Ton, nicht Inhalt). Wird im Admin unter Inhalte → KI-Texte dokumentiert.
+function prompt(input, example = null) {
   const r = input.ranking;
+  const label = input.score && input.score.label;
   return `Du schreibst für die unabhängige Übersicht „${r.name}“ einen kurzen redaktionellen Text über ein ${r.entity}.
-Zielgruppe: Leute, die ein ${r.entity} für genau diesen Zweck suchen. Der Text steht auf der Profilseite über den Detailtabellen.
+Zielgruppe: Sportler, die ein ${r.entity} genau für diesen Zweck suchen. Der Text steht auf der Profilseite über den Detailtabellen.
 
 Daten (einzige erlaubte Grundlage):
 ${JSON.stringify(input, null, 2)}
+${input.notes ? `
+Redaktionelle Notizen (eigene Einschätzung der Redaktion, gleichrangig mit den Daten):
+${input.notes}
+` : ''}${example ? `
+Stilvorlage – ein von der Redaktion überarbeiteter Text zu einem anderen ${r.entity} („${example.name}“).
+Übernimm Ton, Satzbau und Auswahl, aber keinen Inhalt daraus:
+"""
+${example.summary}
 
-Regeln:
-- Nutze ausschließlich die Daten oben. Erfinde nichts, auch keine Zahlen, Entfernungen, Namen, Ausstattung oder Eindrücke.
-- Werte mit Quelle „automatisch ermittelt“ vorsichtig formulieren („laut Website“, „laut Karte“).
-- Sachlich und neutral, Du-Form. Keine Werbesprache und keine Superlative („Paradies“, „perfekt“, „traumhaft“), keine Preise, keine Personen, keine Buchungsaufforderung, keine Links.
-- Nenne keine ${r.score_name}-Zahl und keine Punktzahlen (die stehen daneben); die Stufe („${input.score.label || ''}“) darfst du sinngemäß einordnen.
-- Stärken klar benennen, Schwächen und wichtige unbekannte Punkte ehrlich nennen („noch nicht bestätigt“).
-- Keine Aussagen über unsere Prüfung oder Datenqualität („alle Angaben geprüft“, „vollständig“) – das zeigt die Seite selbst.
-- Nicht jede Ausstattung aufzählen: die 2–4 wichtigsten je Abschnitt, Details stehen in den Tabellen darunter.
+${example.body}
+"""
+` : ''}
+Inhalt:
+- Nutze ausschließlich die Daten${input.notes ? ' und die redaktionellen Notizen' : ''}. Erfinde nichts: keine Zahlen, Entfernungen, Namen, Ausstattung, Lage oder Eindrücke.
+${input.notes ? '- Die Notizen sind unsere Einschätzung: einbauen, wo sie passen, sachlich und ohne zu übertreiben.
+' : ''}- Werte mit Quelle „automatisch ermittelt“ vorsichtig formulieren („laut Website“, „laut Karte“).
+- „nein“ heißt: gibt es nicht (bestätigt). Kriterien unter „unknown“ sind noch nicht bestätigt – nur so benennen, wenn sie für die Zielgruppe wichtig sind.
+- Pro Abschnitt nur die 2–3 wichtigsten Punkte. Keine Aufzählungen von Ausstattung im Fließtext; die Details stehen in den Tabellen darunter.
+- Lücken nur nennen, wenn sie zählen: Kriterien mit max ≥ 3 oder eine ganze Kategorie ohne Angebot. Kleinigkeiten weglassen.
+- Allgemeine Ausstattung (z. B. Parkplatz, Kinderbetreuung, Barrierefreiheit) nur erwähnen, wenn sie für die Zielgruppe etwas bedeutet.
+
+Sprache:
+- Schreib wie ein erfahrener Sportler, der einem Freund das ${r.entity} beschreibt: Was bedeutet das konkret fürs Training?
+- Übersetze Daten in Alltagssprache. Zitiere keine Kriteriennamen, Skalen, Grenzwerte oder Punkte: nicht „8 von 10“, sondern „sehr gut“; nicht „≤ 1 km“, sondern „in wenigen Minuten“; nicht „≥ 25 °C“, sondern „angenehm warm“.
+- Kein „laut Daten“, keine ${r.score_name}-Zahl, keine Punktzahl und kein Stufenname in Anführungszeichen. Die Einordnung${label ? ` (${label})` : ''} sinngemäß ausdrücken („gehört zu den stärksten Adressen“).
+- Sachlich, Du-Form, kurze klare Sätze, abwechslungsreicher Satzbau. Keine Werbesprache, keine leeren Superlative („Paradies“, „perfekt“, „traumhaft“), keine Preise, keine Personen, keine Buchungsaufforderung, keine Links.
+- Keine Aussagen über unsere Prüfung oder Datenqualität („alle Angaben geprüft“, „vollständig“).
 - Insgesamt 150–220 Wörter.
 
 Ausgabe:
 - summary: genau ein Satz, höchstens 155 Zeichen, mit Name, Ort und der wichtigsten Stärke für die Zielgruppe.
-- sections: 3–5 Abschnitte mit kurzem Titel (z. B. nach den Kategorien der Daten, „Beste Reisezeit“ aus Klima/best_months, „Anreise“ falls Daten vorhanden), je 1–3 Sätze. Der erste Abschnitt ist ein Kurzfazit: Für wen passt das ${r.entity}?
-- good_to_know: 1–4 kurze Punkte zu Einschränkungen oder offenen Fragen; leer, wenn es nichts Relevantes gibt.`;
+- sections: 3–5 Abschnitte mit kurzem Titel, je 1–3 Sätze, entlang der Kategorien der Daten (verwandte zusammenfassen). Der erste Abschnitt ist ein Kurzfazit mit klarem Urteil: Für wen passt das ${r.entity}, was ist seine größte Stärke? Schwächen gehören nicht ins Kurzfazit, sondern unter good_to_know. Wenn best_months vorhanden ist, ein Abschnitt zur besten Reisezeit (mit Anreise, falls Daten vorhanden).
+- good_to_know: 1–4 kurze Punkte zu relevanten Einschränkungen oder offenen Fragen; leer, wenn es nichts Wichtiges gibt.`;
 }
 
-async function generate(input) {
+// Für die Dokumentation im Admin: Prompt mit Platzhaltern statt echter Daten
+function promptTemplate(ranking) {
+  const input = { ranking: { name: ranking.name, score_name: ranking.score_name, entity: ranking.entity_label_sg, entities: ranking.entity_label_pl }, score: { label: '[Stufe]' }, notes: '[Redaktionelle Notizen des Objekts – nur wenn vorhanden]' };
+  return prompt(input, { name: '[anderes Objekt]', summary: '[Kurzbeschreibung]', body: '[Text – nur wenn es eine überarbeitete Freigabe gibt]' })
+    .replace(JSON.stringify(input, null, 2), '[Daten des Objekts als JSON: Kategorien mit bekannten Werten (Wert, Quelle, Punkte, max) und unbekannten Kriterien, Stufe, beste Reisezeit, Klima je Monat, Leistungen]');
+}
+
+async function generate(input, example = null) {
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
   const llm = require('../lib/llm');
@@ -152,7 +192,7 @@ async function generate(input) {
       max_tokens: 8000,
       output_config: { effort: 'medium', format: zodOutputFormat(Schema) },
       fallbacks: 'default',
-      messages: [{ role: 'user', content: prompt(input) }],
+      messages: [{ role: 'user', content: prompt(input, example) }],
     },
     { headers: { 'anthropic-beta': 'server-side-fallback-2026-07-01' } }
   );
@@ -162,4 +202,4 @@ async function generate(input) {
   return { text: { summary: shorten(p.summary, SUMMARY_MAX), body: toBody(p) }, usage };
 }
 
-module.exports = { gather, inputHash, generate, parseBody, toBody, shorten, prompt, SUMMARY_MAX };
+module.exports = { gather, inputHash, generate, styleExample, parseBody, toBody, shorten, prompt, promptTemplate, SUMMARY_MAX };
