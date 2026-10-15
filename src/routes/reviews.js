@@ -64,7 +64,17 @@ router.post('/:type/:slug/bewerten', limiter, (req, res, next) => {
   const { errors, data } = await reviews.validate(t.ranking, req.body, files);
   if (req.uploadError) errors.unshift(req.uploadError);
   if (errors.length) { cleanup(); return render(req, res, t, { errors, form: req.body }); }
-  await reviews.create({ ranking: t.ranking, entity: t.entity, site: req.site, data, ip: req.ip });
+  // Mehrfach abgeschickt (gleiche Adresse, gleiches Objekt, kurz hintereinander): nur einmal speichern
+  const dup = await db.one(
+    `SELECT id FROM reviews WHERE entity_id = $1 AND email = $2 AND created_at > now() - interval '30 minutes' LIMIT 1`, [t.entity.id, data.email]);
+  if (dup) cleanup();
+  else await reviews.create({ ranking: t.ranking, entity: t.entity, site: req.site, data, ip: req.ip });
+  res.redirect(303, `/${t.ranking.entity_type}/${t.entity.slug}/bewerten/danke`);
+}));
+
+router.get('/:type/:slug/bewerten/danke', wrap(async (req, res, next) => {
+  const t = await target(req);
+  if (!t) return next();
   res.render('public/review-done', { title: 'Danke für deine Bewertung', noindex: true, entity: t.entity, status: 'sent' });
 }));
 

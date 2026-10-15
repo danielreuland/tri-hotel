@@ -87,3 +87,22 @@ document.querySelectorAll('[data-load-google]').forEach(function (btn) {
     if (check && e.target !== check && e.target.name !== 'honest' && e.target.name !== 'photo_consent') check.checked = true;
   });
 })();
+
+// Formulare: beim Absenden Knopf sperren und Fortschritt zeigen (verhindert doppeltes Absenden)
+document.querySelectorAll('form[data-sending]').forEach(function (form) {
+  var btn = form.querySelector('button[type="submit"]');
+  if (!btn) return;
+  var label = btn.textContent;
+  form.addEventListener('submit', function () {
+    btn.disabled = true;
+    btn.textContent = form.getAttribute('data-sending');
+    form.setAttribute('aria-busy', 'true');
+  });
+  // Zurück-Taste (Seite aus dem Zwischenspeicher): Knopf wieder freigeben
+  window.addEventListener('pageshow', function () { btn.disabled = false; btn.textContent = label; form.removeAttribute('aria-busy'); });
+});
+// Fehlerhinweise nach dem Absenden in den Blick rücken
+(function () {
+  var box = document.querySelector('[data-focus]');
+  if (box) { box.scrollIntoView({ block: 'center' }); box.focus({ preventScroll: true }); }
+})();

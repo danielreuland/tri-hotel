@@ -100,6 +100,8 @@ function validate(body, askCriteria) {
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 router.get('/:type-hinzufuegen', wrap(formRanking), wrap((req, res) => render(req, res)));
+router.get('/:type-hinzufuegen/danke', wrap(formRanking), (req, res) =>
+  res.render('public/submitted', { title: 'Danke', noindex: true, ranking: req.ranking, withReview: req.query.bewertung === '1' }));
 
 // Alte Adresse /<objekttyp>-melden dauerhaft weiterleiten
 router.get('/:type-melden', (req, res, next) => {
@@ -140,7 +142,7 @@ router.post('/:type-hinzufuegen', wrap(formRanking), submitLimiter, (req, res, n
     }
     const sub = await submissions.create(req.ranking, form, { ip: req.ip });
     if (reviewData) await reviews.createHeld({ ranking: req.ranking, submissionId: sub.id, data: reviewData, ip: req.ip });
-    res.render('public/submitted', { title: 'Danke', ranking: req.ranking, withReview: Boolean(reviewData) });
+    res.redirect(303, `/${req.ranking.entity_type}-hinzufuegen/danke${reviewData ? '?bewertung=1' : ''}`);
   } catch (err) {
     cleanup();
     next(err);

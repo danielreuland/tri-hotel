@@ -11,10 +11,10 @@
 <p class="lead">Du kennst ein <%= ranking.entity_label_sg %>, das ins Ranking gehört? Wir prüfen jeden Vorschlag, bevor er online geht. Du bekommst eine Mail mit Bestätigungslink.</p>
 
 <% if (errors.length) { %>
-  <div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
+  <div class="errors" id="fehler" tabindex="-1" data-focus><strong>Noch nicht abgeschickt – bitte korrigieren:</strong><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div>
 <% } %>
 
-<form method="post" class="card" enctype="multipart/form-data" novalidate>
+<form method="post" class="card" enctype="multipart/form-data" novalidate data-sending="Wird gesendet …">
   <div class="form-row">
     <div><label for="name">Name *</label><input id="name" name="name" type="text" required maxlength="200" value="<%= form.name || '' %>"></div>
     <div><label for="website">Website *</label><input id="website" name="website" type="url" required placeholder="https://" value="<%= form.website || '' %>"></div>
@@ -112,6 +112,7 @@
   <label class="inline"><input type="checkbox" name="privacy" required>
     <span>Ich habe die <a href="/datenschutz#vorschlag" target="_blank">Datenschutzerklärung</a> gelesen. Meine E-Mail-Adresse wird nur für diesen Vorschlag verwendet. *</span></label>
 
+  <% if (errors.length) { %><p class="form-error-hint"><a href="#fehler">Bitte die Hinweise oben beachten (<%= errors.length %>)</a></p><% } %>
   <p><button class="btn cta" type="submit">Vorschlag absenden</button></p>
 </form>
 

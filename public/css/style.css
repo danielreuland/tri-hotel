@@ -547,3 +547,6 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .submit-review { margin: 18px 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--accent-soft); }
 .submit-review summary { cursor: pointer; }
 .submit-review[open] summary { margin-bottom: 8px; }
+.form-error-hint { margin: 12px 0 0; font-weight: 700; }
+.form-error-hint a { color: var(--bad); }
+button[disabled] { opacity: .7; cursor: progress; }

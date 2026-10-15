@@ -1,7 +1,7 @@
 <%- include('../partials/head') %>
 <%
   var texts = {
-    sent: ['Fast geschafft!', 'Wir haben dir einen Bestätigungslink per E-Mail geschickt. Sobald du bestätigt hast, prüfen wir deine Bewertung und schalten sie frei.'],
+    sent: ['✓ Deine Bewertung ist angekommen', 'Jetzt fehlt nur noch ein Klick: Wir haben dir einen Bestätigungslink per E-Mail geschickt. Sobald du bestätigt hast, prüfen wir deine Bewertung und schalten sie frei. Du musst sie nicht noch einmal absenden.'],
     ok: ['Danke – deine Bewertung ist bestätigt.', 'Wir prüfen sie jetzt von Hand und schalten sie in Kürze frei.'],
     already: ['Diese Bewertung ist schon bestätigt.', 'Sie wird gerade geprüft oder ist bereits online.'],
     expired: ['Der Link ist abgelaufen.', 'Bitte schreib deine Bewertung noch einmal.'],
@@ -9,7 +9,8 @@
   };
   var t = texts[status] || texts.invalid;
 %>
-<h1><%= t[0] %></h1>
+<h1 <%- status === 'sent' ? 'data-goal="Bewertung abgeschickt"' : '' %>><%= t[0] %></h1>
 <div class="card"><p style="margin:0"><%= t[1] %></p>
+  <% if (status === 'sent') { %><p class="muted" style="margin-bottom:0"><small>Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach. Der Link ist 72 Stunden gültig.</small></p><% } %>
   <% if (entity) { %><p style="margin-bottom:0"><a href="/<%= entity.entity_type %>/<%= entity.slug %>">Zurück zu <%= entity.name %></a></p><% } %></div>
 <%- include('../partials/foot') %>
