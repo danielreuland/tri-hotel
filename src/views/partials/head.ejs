@@ -35,7 +35,7 @@
     <a class="logo" href="/"><%- include('logo') %></a>
     <nav>
       <% if (locals.hostRanking) { %>
-        <a href="/#ranking">Ranking</a>
+        <a href="/#ranking"><%= locals.hostRanking ? hostRanking.entity_label_pl : 'Ranking' %></a>
         <% if (locals.campGuide) { %><a href="/trainingscamp">Trainingscamps</a><% } %>
         <a class="nav-cta" href="/<%= hostRanking.entity_type %>-hinzufuegen"><%= hostRanking.entity_label_sg %> hinzufügen</a>
       <% } %>
