@@ -17,6 +17,8 @@ module.exports = {
   env: process.env.NODE_ENV || 'development',
   isProd: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT || 3010),
+  // hinter Nginx: nur intern lauschen (HOST=127.0.0.1); ohne Angabe alle Schnittstellen
+  host: process.env.HOST || '0.0.0.0',
   baseUrl,
   baseHost: new URL(baseUrl).hostname,
   databaseUrl: process.env.DATABASE_URL,

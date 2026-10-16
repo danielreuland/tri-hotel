@@ -114,7 +114,7 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
-  app.listen(config.port, async () => {
+  app.listen(config.port, config.host, async () => {
     console.log(`Server läuft auf Port ${config.port}`);
     try {
       await jobs.start();
