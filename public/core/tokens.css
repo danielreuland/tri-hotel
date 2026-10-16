@@ -1,0 +1,76 @@
+/* Design-Kern (tri-hotel.de, triprep.de, danielreuland.com) – Schriften und Farb-Tokens.
+   Quelle: tri-hotel-Repo, public/core/. Projekte binden tokens.css, base.css und theme.js ein und setzen danach nur eigene Ergänzungen.
+   Token-Namen sind ein Vertrag: Paletten (tri-hotel src/lib/palettes.js) und Projekte überschreiben genau diese Namen – nicht umbenennen.
+   Hell und Dunkel: ohne Wahl entscheidet html[data-theme-default] bzw. das System; theme.js setzt html[data-theme].
+   Schriften liegen lokal (fonts/, SIL Open Font License): keine Datenübertragung an Google. Pfade relativ zu dieser Datei. */
+
+@font-face { font-family: "Bebas Neue"; src: url("fonts/bebas-neue-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("fonts/nunito-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-display: swap; }
+
+/* Farb-Tokens. Standardwerte = Palette „Pool & Sonne“ (hell). Jede Site kann alle Tokens für Hell und Dunkel
+   überschreiben (sites.theme, siehe services/sites.js). Komponenten nutzen ausschließlich diese Tokens. */
+:root {
+  --bg: #f5f8fb;
+  --surface: #ffffff;
+  --surface-2: #eaf0f6;
+  --border: #d8e1ea;
+  --text: #102a43;
+  --muted: #52637a;
+  --heading: #12345a;
+  --accent: #0dcfbd;          /* Marke als Fläche: Balken, Ringe, Logo-Strich */
+  --accent-strong: #0b6f6a;   /* Links und hervorgehobene Wörter */
+  --accent-soft: rgba(13, 207, 189, .14);
+  --primary: #12345a;         /* Hauptbuttons */
+  --primary-text: #ffffff;
+  --cta: #ff7a59;             /* Mitmach-Aktion („hinzufügen“): Koralle mit Navy-Schrift (5,7 : 1) */
+  --cta-text: #102a43;
+  --header-bg: #12345a;
+  --header-text: #ffffff;
+  --logo-accent: #0dcfbd;
+  --score-bg: #12345a;
+  --score-text: #ffffff;
+  --score-ring: #0dcfbd;
+  --good: #1a7f37;
+  --ok: #9a6700;
+  --bad: #cf222e;
+  --bad-soft: rgba(207, 34, 46, .07);
+  --shadow: 0 10px 30px rgba(16, 42, 67, .08);
+  --radius: 12px;
+  --head: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --body: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+
+/* Dunkel: ohne Skript folgt die Seite dem System; theme.js setzt sonst data-theme
+   (öffentlich standardmäßig hell, Admin nach System). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1a24; --surface: #162433; --surface-2: #1d2e40; --border: #26384a;
+    --text: #e7eef5; --muted: #93a4b5; --heading: #ffffff;
+    --accent: #0dcfbd; --accent-strong: #3fd3c4; --accent-soft: rgba(13, 207, 189, .14);
+    --primary: #0dcfbd; --primary-text: #04211e; --cta: #ff7a59; --cta-text: #102a43;
+    --header-bg: #0b1520; --header-text: #e7eef5; --logo-accent: #0dcfbd;
+    --score-bg: #12345a; --score-text: #ffffff; --score-ring: #0dcfbd;
+    --good: #3fb950; --ok: #d29922; --bad: #f85149; --bad-soft: rgba(248, 81, 73, .1);
+    --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1a24; --surface: #162433; --surface-2: #1d2e40; --border: #26384a;
+  --text: #e7eef5; --muted: #93a4b5; --heading: #ffffff;
+  --accent: #0dcfbd; --accent-strong: #3fd3c4; --accent-soft: rgba(13, 207, 189, .14);
+  --primary: #0dcfbd; --primary-text: #04211e; --cta: #ff7a59; --cta-text: #102a43;
+  --header-bg: #0b1520; --header-text: #e7eef5; --logo-accent: #0dcfbd;
+  --score-bg: #12345a; --score-text: #ffffff; --score-ring: #0dcfbd;
+  --good: #3fb950; --ok: #d29922; --bad: #f85149; --bad-soft: rgba(248, 81, 73, .1);
+  --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+
+/* Ein Spaltenabstand für alle nebeneinanderstehenden Inhaltsblöcke (Leistungen, Fakten | Klima, Hero …),
+   damit Spalten untereinander bündig stehen. Karten-Raster (Bilder, Schritte) behalten 16px. */
+:root { --col-gap: clamp(32px, 5vw, 64px); }

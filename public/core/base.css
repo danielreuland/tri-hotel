@@ -1,0 +1,84 @@
+/* Design-Kern – Grundlayout und Komponenten: Typografie, Kopf- und Fußzeile, Logo, Farbschema-Umschalter,
+   Buttons, Karten, Raster, Badges, Formulare, Hinweise, Tabellen. Nutzt ausschließlich die Tokens aus tokens.css. */
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--body); }
+a { color: var(--accent-strong); }
+img { max-width: 100%; height: auto; }
+h1, h2, h3 { font-family: var(--head); font-weight: 400; letter-spacing: .03em; line-height: 1.05; text-wrap: balance; color: var(--heading); }
+h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); margin: .2em 0 .4em; }
+h2 { font-size: clamp(1.7rem, 3.4vw, 2.2rem); margin: 1.6em 0 .5em; }
+h3 { font-size: 1.35rem; margin: 1.2em 0 .4em; }
+small, .muted { color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.num, .score, table { font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+.site-header { border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-text); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; }
+.site-header .wrap { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; justify-content: space-between; min-height: 62px; }
+.logo { font-family: var(--head); font-size: 1.8rem; color: var(--header-text); text-decoration: none; letter-spacing: .05em; }
+.logo span { color: var(--logo-accent); }
+.site-header nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.site-header nav a { color: var(--header-text); text-decoration: none; font-weight: 700; opacity: .92; }
+.site-header nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+.site-header nav a.nav-cta { background: var(--cta); color: var(--cta-text); padding: 6px 14px; border-radius: 999px; opacity: 1; }
+.site-header nav a.nav-cta:hover { text-decoration: none; filter: brightness(1.06); }
+.site-header .btn.secondary { color: var(--header-text); border-color: color-mix(in srgb, var(--header-text) 35%, transparent); }
+.theme-toggle { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--header-text) 35%, transparent); background: transparent; color: var(--header-text); cursor: pointer; padding: 0; }
+.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle .moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .moon { display: block; }
+main { padding-block: 24px 64px; }
+.site-footer { border-top: 1px solid var(--border); padding-block: 28px; color: var(--muted); font-size: .9rem; background: var(--surface); }
+.site-footer a { color: var(--muted); margin-right: 16px; }
+
+.btn { display: inline-block; border: 0; border-radius: 999px; padding: 11px 22px; font: 800 1rem var(--body);
+  background: var(--primary); color: var(--primary-text); text-decoration: none; cursor: pointer; }
+.btn.cta { background: var(--cta); color: var(--cta-text); }
+.btn:hover { filter: brightness(1.06); }
+.btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--bad); color: #fff; }
+.btn.small { padding: 6px 12px; font-size: .85rem; }
+.btn.large { padding: 14px 28px; font-size: 1.05rem; }
+.btn:disabled { opacity: .35; cursor: not-allowed; filter: none; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+.grid > * { min-width: 0; }
+/* Inhaltsspalten (Fakten | Klima, Ausstattung | Klima): mehr Luft zwischen den Spalten */
+.grid-content { column-gap: var(--col-gap); row-gap: 8px; }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+.badge.accent { color: var(--accent-strong); border-color: var(--accent-strong); }
+.badge.warn { color: var(--ok); border-color: var(--ok); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
+.badge.good { color: var(--good); border-color: var(--good); }
+
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 18px; }
+select, input[type=text], input[type=search], input[type=email], input[type=url], input[type=number], input[type=password], input[type=date], input[type=file], textarea {
+  width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 11px; font: inherit; }
+.filters select { width: auto; }
+textarea { min-height: 90px; }
+textarea.code { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 180px; }
+label { display: block; font-weight: 700; margin: 12px 0 4px; }
+label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+label.inline input { width: auto; margin-top: 5px; }
+.form-row { display: grid; gap: 0 16px; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.errors { background: var(--bad-soft); border: 1px solid var(--bad); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
+.flash { background: var(--accent-soft); border: 1px solid var(--accent-strong); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
+.lead { font-size: 1.15rem; max-width: 62ch; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 700; font-size: .85rem; }
+.table-scroll { overflow-x: auto; }
+.num { text-align: right; white-space: nowrap; }

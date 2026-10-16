@@ -1,140 +1,10 @@
-/* tri-hotel.de – Design angelehnt an triprep.de (Türkis, Bebas Neue + Nunito).
-   Hell und Dunkel: ohne Wahl folgt die Seite dem System, der Umschalter setzt html[data-theme].
-   Schriften liegen lokal (public/fonts): keine Datenübertragung an Google. */
-
-@font-face { font-family: "Bebas Neue"; src: url("/static/fonts/bebas-neue-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Nunito"; src: url("/static/fonts/nunito-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Nunito"; src: url("/static/fonts/nunito-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Nunito"; src: url("/static/fonts/nunito-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-@font-face { font-family: "Nunito"; src: url("/static/fonts/nunito-latin-800-normal.woff2") format("woff2"); font-weight: 800; font-display: swap; }
-
-/* Farb-Tokens. Standardwerte = Palette „Pool & Sonne“ (hell). Jede Site kann alle Tokens für Hell und Dunkel
-   überschreiben (sites.theme, siehe services/sites.js). Komponenten nutzen ausschließlich diese Tokens. */
-:root {
-  --bg: #f5f8fb;
-  --surface: #ffffff;
-  --surface-2: #eaf0f6;
-  --border: #d8e1ea;
-  --text: #102a43;
-  --muted: #52637a;
-  --heading: #12345a;
-  --accent: #0dcfbd;          /* Marke als Fläche: Balken, Ringe, Logo-Strich */
-  --accent-strong: #0b6f6a;   /* Links und hervorgehobene Wörter */
-  --accent-soft: rgba(13, 207, 189, .14);
-  --primary: #12345a;         /* Hauptbuttons */
-  --primary-text: #ffffff;
-  --cta: #ff7a59;             /* Mitmach-Aktion („hinzufügen“): Koralle mit Navy-Schrift (5,7 : 1) */
-  --cta-text: #102a43;
-  --header-bg: #12345a;
-  --header-text: #ffffff;
-  --logo-accent: #0dcfbd;
-  --score-bg: #12345a;
-  --score-text: #ffffff;
-  --score-ring: #0dcfbd;
-  --good: #1a7f37;
-  --ok: #9a6700;
-  --bad: #cf222e;
-  --bad-soft: rgba(207, 34, 46, .07);
-  --shadow: 0 10px 30px rgba(16, 42, 67, .08);
-  --radius: 12px;
-  --head: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;
-  --body: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  color-scheme: light;
-}
-
-/* Dunkel: ohne Skript folgt die Seite dem System; theme.js setzt sonst data-theme
-   (öffentlich standardmäßig hell, Admin nach System). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1a24; --surface: #162433; --surface-2: #1d2e40; --border: #26384a;
-    --text: #e7eef5; --muted: #93a4b5; --heading: #ffffff;
-    --accent: #0dcfbd; --accent-strong: #3fd3c4; --accent-soft: rgba(13, 207, 189, .14);
-    --primary: #0dcfbd; --primary-text: #04211e; --cta: #ff7a59; --cta-text: #102a43;
-    --header-bg: #0b1520; --header-text: #e7eef5; --logo-accent: #0dcfbd;
-    --score-bg: #12345a; --score-text: #ffffff; --score-ring: #0dcfbd;
-    --good: #3fb950; --ok: #d29922; --bad: #f85149; --bad-soft: rgba(248, 81, 73, .1);
-    --shadow: 0 10px 30px rgba(0, 0, 0, .35);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1a24; --surface: #162433; --surface-2: #1d2e40; --border: #26384a;
-  --text: #e7eef5; --muted: #93a4b5; --heading: #ffffff;
-  --accent: #0dcfbd; --accent-strong: #3fd3c4; --accent-soft: rgba(13, 207, 189, .14);
-  --primary: #0dcfbd; --primary-text: #04211e; --cta: #ff7a59; --cta-text: #102a43;
-  --header-bg: #0b1520; --header-text: #e7eef5; --logo-accent: #0dcfbd;
-  --score-bg: #12345a; --score-text: #ffffff; --score-ring: #0dcfbd;
-  --good: #3fb950; --ok: #d29922; --bad: #f85149; --bad-soft: rgba(248, 81, 73, .1);
-  --shadow: 0 10px 30px rgba(0, 0, 0, .35);
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--body); }
-a { color: var(--accent-strong); }
-img { max-width: 100%; height: auto; }
-h1, h2, h3 { font-family: var(--head); font-weight: 400; letter-spacing: .03em; line-height: 1.05; text-wrap: balance; color: var(--heading); }
-h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); margin: .2em 0 .4em; }
-h2 { font-size: clamp(1.7rem, 3.4vw, 2.2rem); margin: 1.6em 0 .5em; }
-h3 { font-size: 1.35rem; margin: 1.2em 0 .4em; }
-small, .muted { color: var(--muted); }
-:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
-.num, .score, table { font-variant-numeric: tabular-nums; }
-
-.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
-.site-header { border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-text); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; }
-.site-header .wrap { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; justify-content: space-between; min-height: 62px; }
-.logo { font-family: var(--head); font-size: 1.8rem; color: var(--header-text); text-decoration: none; letter-spacing: .05em; }
-.logo span { color: var(--logo-accent); }
-.site-header nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
-.site-header nav a { color: var(--header-text); text-decoration: none; font-weight: 700; opacity: .92; }
-.site-header nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
-.site-header nav a.nav-cta { background: var(--cta); color: var(--cta-text); padding: 6px 14px; border-radius: 999px; opacity: 1; }
-.site-header nav a.nav-cta:hover { text-decoration: none; filter: brightness(1.06); }
-.site-header .btn.secondary { color: var(--header-text); border-color: color-mix(in srgb, var(--header-text) 35%, transparent); }
-.theme-toggle { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--header-text) 35%, transparent); background: transparent; color: var(--header-text); cursor: pointer; padding: 0; }
-.theme-toggle svg { width: 18px; height: 18px; }
-.theme-toggle .moon { display: none; }
-:root[data-theme="dark"] .theme-toggle .sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .moon { display: block; }
-main { padding-block: 24px 64px; }
-.site-footer { border-top: 1px solid var(--border); padding-block: 28px; color: var(--muted); font-size: .9rem; background: var(--surface); }
-.site-footer a { color: var(--muted); margin-right: 16px; }
-
-.btn { display: inline-block; border: 0; border-radius: 999px; padding: 11px 22px; font: 800 1rem var(--body);
-  background: var(--primary); color: var(--primary-text); text-decoration: none; cursor: pointer; }
-.btn.cta { background: var(--cta); color: var(--cta-text); }
-.btn:hover { filter: brightness(1.06); }
-.btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
-.btn.danger { background: var(--bad); color: #fff; }
-.btn.small { padding: 6px 12px; font-size: .85rem; }
-.btn.large { padding: 14px 28px; font-size: 1.05rem; }
-.btn:disabled { opacity: .35; cursor: not-allowed; filter: none; }
-
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
-/* Ein Spaltenabstand für alle nebeneinanderstehenden Inhaltsblöcke (Leistungen, Fakten | Klima, Hero …),
-   damit Spalten untereinander bündig stehen. Karten-Raster (Bilder, Schritte) behalten 16px. */
-:root { --col-gap: clamp(32px, 5vw, 64px); }
-.grid { display: grid; gap: 16px; }
-.grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
-.grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
-.grid > * { min-width: 0; }
-/* Inhaltsspalten (Fakten | Klima, Ausstattung | Klima): mehr Luft zwischen den Spalten */
-.grid-content { column-gap: var(--col-gap); row-gap: 8px; }
+/* tri-hotel.de – projektspezifische Gestaltung. Grundlage ist der Design-Kern unter public/core/
+   (tokens.css, base.css, theme.js), den auch triprep.de nutzt. */
 
 .score { display: inline-grid; place-items: center; min-width: 64px; height: 64px; padding: 0 8px; border-radius: 14px;
   font: 400 2.2rem var(--head); background: var(--score-bg); border: 3px solid var(--score-ring); color: var(--score-text); }
 .score.big { min-width: 110px; height: 110px; font-size: 4rem; }
 .score.none { background: var(--surface-2); border-color: var(--border); color: var(--muted); }
-.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700;
-  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
-.badge.accent { color: var(--accent-strong); border-color: var(--accent-strong); }
-.badge.warn { color: var(--ok); border-color: var(--ok); }
-.badge.bad { color: var(--bad); border-color: var(--bad); }
-.badge.good { color: var(--good); border-color: var(--good); }
-
 .rank-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .rank-item { display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 12px 16px; text-decoration: none; color: var(--text); }
@@ -142,28 +12,6 @@ main { padding-block: 24px 64px; }
 .rank-item .pos { font: 400 1.6rem var(--head); color: var(--muted); width: 28px; text-align: right; }
 .rank-item .info { flex: 1; min-width: 0; }
 .rank-item .name { font-weight: 800; }
-
-.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 18px; }
-select, input[type=text], input[type=search], input[type=email], input[type=url], input[type=number], input[type=password], input[type=date], input[type=file], textarea {
-  width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
-  padding: 9px 11px; font: inherit; }
-.filters select { width: auto; }
-textarea { min-height: 90px; }
-textarea.code { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 180px; }
-label { display: block; font-weight: 700; margin: 12px 0 4px; }
-label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
-label.inline input { width: auto; margin-top: 5px; }
-.form-row { display: grid; gap: 0 16px; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
-.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-.errors { background: var(--bad-soft); border: 1px solid var(--bad); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
-.flash { background: var(--accent-soft); border: 1px solid var(--accent-strong); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; }
-.lead { font-size: 1.15rem; max-width: 62ch; }
-
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-th { color: var(--muted); font-weight: 700; font-size: .85rem; }
-.table-scroll { overflow-x: auto; }
-.num { text-align: right; white-space: nowrap; }
 
 .facts-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .facts-groups { border-top: 1px solid var(--border); }
