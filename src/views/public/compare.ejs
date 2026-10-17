@@ -1,0 +1,109 @@
+<%- include('../partials/head') %>
+<%
+  var n = entities.length;
+  var listUrl = (base || '') + '/#ranking';
+  var fmt = function (v) { return v === null || v === undefined || v === '' ? '' : v; };
+  var withoutAt = function (i) { var rest = entities.filter(function (_, j) { return j !== i; }); return rest.length >= 2 ? (base || '') + '/vergleich/' + comboPath(rest.map(function (e) { return e.slug; })) : listUrl; };
+  var anyDiff = function (rows) { return rows.some(function (r) { return r.differ; }); };
+%>
+<nav class="crumbs" aria-label="Brotkrumen"><a href="<%= base || '/' %>"><%= ranking.name %></a> › <span>Vergleich</span></nav>
+
+<div class="compare-head">
+  <h1 data-goal="Hotelvergleich"><%= ranking.entity_label_pl %> im Vergleich</h1>
+  <div class="compare-toggle" role="group" aria-label="Anzeige">
+    <a href="?" class="<%= onlyDiff ? '' : 'on' %>" data-diff-toggle="alle">Alle Angaben</a>
+    <a href="?nur=unterschiede" class="<%= onlyDiff ? 'on' : '' %>" data-diff-toggle="unterschiede">Nur Unterschiede</a>
+  </div>
+</div>
+
+<div class="table-scroll compare-scroll">
+<table class="compare cols-<%= n %> <%= onlyDiff ? 'only-diff' : '' %>" data-compare-table>
+  <thead>
+    <tr>
+      <th class="lab"><span class="sr-only">Merkmal</span></th>
+      <% entities.forEach(function (e, i) { %>
+        <th class="ent">
+          <a class="ent-name" href="<%= entityPath(e) %>"><%= e.name %></a>
+          <small class="muted"><%= e.city %><%= e.country ? ', ' + e.country : '' %></small>
+          <div class="ent-score">
+            <span class="score <%= e.score === null ? 'none' : '' %>"><%= e.score === null ? '–' : e.score %></span>
+            <span><strong><%= e.label || '' %></strong><br><small class="muted"><%= ranking.score_name %></small></span>
+          </div>
+          <a class="ent-remove" href="<%= withoutAt(i) %>" title="Aus dem Vergleich nehmen">× entfernen</a>
+        </th>
+      <% }) %>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr class="sec"><th colspan="<%= n + 1 %>">Überblick</th></tr>
+    <% overview.forEach(function (r) { %>
+      <tr class="<%= r.differ ? 'diff' : 'same' %>"><th class="lab"><%= r.label %></th>
+        <% r.cells.forEach(function (c) { %><td class="<%= c ? '' : 'unknown' %>"><%= c || 'unbekannt' %></td><% }) %></tr>
+    <% }) %>
+  </tbody>
+
+  <% sections.forEach(function (s) { %>
+    <tbody class="<%= anyDiff(s.rows) ? '' : 'no-diff' %>">
+      <tr class="sec"><th class="lab"><%= s.label %></th>
+        <% s.points.forEach(function (p, i) { %><th class="sec-pts <%= s.best.indexOf(i) >= 0 ? 'best' : '' %>"><%= p %> / <%= s.max %></th><% }) %></tr>
+      <% s.rows.forEach(function (r) { %>
+        <tr class="<%= r.differ ? 'diff' : 'same' %>"><th class="lab"><%= r.label %> <small class="muted">max <%= r.max %></small></th>
+          <% r.cells.forEach(function (c, i) { %>
+            <td class="<%= c.text === null ? 'unknown' : '' %> <%= r.best.indexOf(i) >= 0 ? 'best' : '' %>"><%= c.text === null ? 'unbekannt' : c.text %><% if (c.points !== null) { %> <small class="pts">(<%= c.points %>)</small><% } %></td>
+          <% }) %></tr>
+      <% }) %>
+    </tbody>
+  <% }) %>
+
+  <% if (featureRows.length) { %>
+    <tbody class="<%= anyDiff(featureRows) ? '' : 'no-diff' %>">
+      <tr class="sec"><th colspan="<%= n + 1 %>">Leistungen</th></tr>
+      <% featureRows.forEach(function (f) { %>
+        <tr class="<%= f.differ ? 'diff' : 'same' %>"><th class="lab"><%= f.label %></th>
+          <% f.has.forEach(function (h) { %><td class="feat <%= h ? 'yes' : 'no' %>"><%= h ? '✓' : '–' %><span class="sr-only"><%= h ? 'vorhanden' : 'nicht angegeben' %></span></td><% }) %></tr>
+      <% }) %>
+    </tbody>
+  <% } %>
+
+  <tbody class="always">
+    <% var anyPartner = entities.some(function (e) { return e.partnerGroups.length; }); %>
+    <% var anyAd = entities.some(function (e) { return e.partnerGroups.some(function (g) { return g.monetized; }); }); %>
+    <% if (anyPartner) { %>
+      <tr class="sec"><th colspan="<%= n + 1 %>">Preise und Bewertungen<% if (anyAd) { %> <span class="ad-label">Anzeige</span><% } %></th></tr>
+      <tr><th class="lab">Bei Partnern</th>
+        <% entities.forEach(function (e) { %>
+          <td class="links">
+            <% if (!e.partnerGroups.length) { %><span class="muted">–</span><% } %>
+            <% e.partnerGroups.forEach(function (g) { %>
+              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="/go/<%= e.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.label_booking %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="/go/<%= e.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.label_reviews %> ↗</a><% } %>
+            <% }) %>
+          </td>
+        <% }) %></tr>
+    <% } %>
+    <% if (entities.some(function (e) { return e.campList.length; })) { %>
+      <tr class="sec"><th colspan="<%= n + 1 %>">Trainingscamps</th></tr>
+      <tr><th class="lab">Anbieter mit Camps hier</th>
+        <% entities.forEach(function (e) { %>
+          <td class="links">
+            <% if (!e.campList.length) { %><span class="muted">keine bekannt</span><% } %>
+            <% e.campList.forEach(function (c) { %>
+              <div class="camp-line"><a href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %></a>
+                <% if (c.lead_active) { %><a class="chip chip-cta" href="/trainingscamp/anbieter/<%= c.slug %>?hotel=<%= e.id %>#anfrage">Camp anfragen</a><% } %></div>
+            <% }) %>
+          </td>
+        <% }) %></tr>
+    <% } %>
+  </tbody>
+</table>
+</div>
+
+<p class="muted compare-note"><small>
+  Punkte in Klammern: Beitrag zum <%= ranking.score_name %>; der höchste Wert je Zeile ist hervorgehoben. „unbekannt“ heißt: noch nicht belegt.
+  <% if (entities.some(function (e) { return e.partnerGroups.some(function (g) { return g.monetized; }); })) { %>Bei Buchungen über Partnerlinks erhalten wir eine Provision – auf <%= ranking.score_name %> und Reihenfolge hat das keinen Einfluss.<% } %>
+</small></p>
+<p><a class="btn secondary" href="<%= listUrl %>" data-compare-again data-compare-base="<%= base %>" data-compare-picks="<%= JSON.stringify(entities.map(function (e) { return { slug: e.slug, name: e.name }; })) %>">Andere <%= ranking.entity_label_pl %> vergleichen</a></p>
+
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>

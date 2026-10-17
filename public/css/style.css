@@ -422,3 +422,51 @@ button[disabled] { opacity: .7; cursor: progress; }
 .partner-reviews { margin: 8px 0 0; }
 .chip-cta { background: var(--cta); color: var(--cta-text); border-color: transparent; font-weight: 700; }
 .lead-form { max-width: 780px; }
+
+/* ---------- Direktvergleich ---------- */
+.rank-list > li { display: flex; align-items: center; gap: 10px; }
+.rank-list > li > .rank-item { flex: 1; min-width: 0; }
+.compare-pick { margin: 0; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.compare-pick[hidden] { display: none; }
+.compare-pick input { width: 20px; height: 20px; margin: 0; accent-color: var(--primary); cursor: pointer; }
+.compare-pick:has(input:checked) { border-color: var(--primary); background: var(--accent-soft); }
+.compare-pick:has(input:disabled) { opacity: .4; cursor: not-allowed; }
+[data-compare-toggle].on { border-color: var(--primary); background: var(--accent-soft); }
+.compare-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--header-bg); color: var(--header-text); padding-bottom: env(safe-area-inset-bottom, 0px); box-shadow: 0 -6px 20px rgba(0, 0, 0, .15); }
+.compare-bar .wrap { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding-block: 12px; }
+.compare-bar [data-compare-status] { font-weight: 700; min-width: 0; }
+.compare-bar-actions { display: flex; gap: 8px; align-items: center; }
+.compare-bar .btn.secondary { color: var(--header-text); border-color: color-mix(in srgb, var(--header-text) 35%, transparent); }
+.compare-bar .btn.disabled { opacity: .45; pointer-events: auto; cursor: not-allowed; filter: none; }
+body.compare-mode { padding-bottom: 76px; }
+
+.compare-head { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; }
+.compare-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+.compare-toggle a { padding: 7px 16px; text-decoration: none; color: var(--text); font-weight: 700; font-size: .9rem; }
+.compare-toggle a.on { background: var(--primary); color: var(--primary-text); }
+.compare-scroll { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+table.compare { min-width: 640px; }
+table.compare th, table.compare td { padding: 9px 12px; vertical-align: top; }
+table.compare .lab { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; color: var(--text); font-weight: 600; font-size: .9rem; width: 28%; min-width: 160px; }
+table.compare.cols-2 td, table.compare.cols-2 th.ent { width: 36%; }
+table.compare.cols-3 td, table.compare.cols-3 th.ent { width: 24%; }
+table.compare thead th { vertical-align: bottom; border-bottom: 2px solid var(--border); }
+.ent-name { display: block; font: 400 1.4rem/1.1 var(--head); color: var(--heading); text-decoration: none; letter-spacing: .02em; }
+.ent-score { display: flex; gap: 10px; align-items: center; margin: 8px 0 4px; font-size: .9rem; color: var(--text); font-weight: 400; }
+.ent-score .score { min-width: 52px; height: 52px; font-size: 1.8rem; }
+.ent-remove { font-size: .8rem; color: var(--muted); font-weight: 600; }
+table.compare tr.sec th { background: var(--surface-2); font: 400 1.15rem var(--head); letter-spacing: .03em; color: var(--heading); text-align: left; }
+table.compare tr.sec th.lab { background: var(--surface-2); }
+table.compare .sec-pts { font: 700 .9rem var(--body); color: var(--muted); }
+table.compare td.best, table.compare th.best { background: var(--accent-soft); font-weight: 700; }
+table.compare td.unknown { color: var(--muted); font-style: italic; }
+table.compare td.feat { font-weight: 800; font-size: 1.05rem; }
+table.compare td.feat.yes { color: var(--good); }
+table.compare td.feat.no { color: var(--muted); }
+table.compare td.links { display: table-cell; }
+table.compare td.links .btn { margin: 0 6px 6px 0; }
+table.compare .camp-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+table.compare .pts { color: var(--muted); }
+table.compare .ad-label { font: 700 .7rem var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-left: 8px; }
+table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display: none; }
+.compare-note { margin-top: 10px; }

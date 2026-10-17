@@ -11,6 +11,7 @@ const areas = require('../services/areas');
 const seo = require('../lib/seo');
 const media = require('../services/media');
 const partners = require('../services/partners');
+const compare = require('../services/compare');
 const describer = require('../services/describer');
 const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
@@ -298,6 +299,40 @@ function explainScoring(c) {
 router.get('/', wrap(async (req, res, next) => {
   if (!req.hostRanking) return res.render('public/error', { title: 'Bald verfügbar', message: 'Hier entsteht gerade etwas.' });
   await renderList(req, res, req.hostRanking);
+}));
+
+// ---------- Direktvergleich (2–3 Objekte desselben Rankings) ----------
+
+async function renderCompare(req, res, ranking, combo) {
+  const slugs = compare.parseCombo(combo);
+  if (!slugs) return false;
+  const data = await compare.load(ranking, slugs);
+  if (!data) return false;
+  const base = rankingBase(ranking);
+  const siteUrl = res.locals.siteUrl;
+  const names = data.entities.map((e) => e.name);
+  res.render('public/compare', {
+    title: `${names.join(' vs. ')} im Vergleich`,
+    description: `${names.join(', ')}: ${ranking.score_name}, Leistungen und Unterschiede im direkten Vergleich.`,
+    canonical: `${siteUrl}${base}/vergleich/${compare.canonicalCombo(slugs)}`,
+    // jede Kombination wäre eine eigene Seite – vorerst nicht indexieren
+    noindex: true,
+    ranking, base, ...data,
+    onlyDiff: req.query.nur === 'unterschiede',
+    comboPath: compare.comboPath,
+    entityPath: (e) => entityPath(ranking, e),
+    jsonLd: [seo.breadcrumbLd([{ name: ranking.name, url: `${siteUrl}${base || '/'}` }, { name: 'Vergleich', url: `${siteUrl}${base}/vergleich/${compare.canonicalCombo(slugs)}` }])],
+  });
+  return true;
+}
+
+router.get('/vergleich/:combo', wrap(async (req, res, next) => {
+  if (!req.hostRanking || !(await renderCompare(req, res, req.hostRanking, req.params.combo))) return next();
+}));
+
+router.get('/rankings/:rslug/vergleich/:combo', wrap(async (req, res, next) => {
+  const ranking = req.site && (await rankings.getRankingBySlug(req.params.rslug, req.site.id));
+  if (!ranking || !(await renderCompare(req, res, ranking, req.params.combo))) return next();
 }));
 
 router.get('/impressum', (req, res) => res.render('public/impressum', { title: 'Impressum' }));

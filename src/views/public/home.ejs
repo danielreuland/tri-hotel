@@ -104,6 +104,7 @@
       <% } %>
       <div class="search-actions">
         <button class="btn" type="submit">Suchen</button>
+        <% if (ranked.length >= 2) { %><button class="btn secondary" type="button" data-compare-toggle hidden><%= ranking.entity_label_pl %> vergleichen</button><% } %>
         <% if (searchActive) { %><a href="<%= base || '/' %>#ranking">Filter zurücksetzen</a><% } %>
         <span class="muted"><%= searchActive ? ranked.length + ' von ' + totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' : totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' %></span>
       </div>
@@ -114,9 +115,10 @@
     <% } else if (!ranked.length) { %>
       <div class="card"><p style="margin:0">Noch keine <%= ranking.entity_label_pl %> im Ranking. Die ersten Einträge werden gerade geprüft.</p></div>
     <% } else { %>
-      <ol class="rank-list">
+      <ol class="rank-list" data-compare-list data-compare-base="<%= base %>" data-compare-max="3">
         <% ranked.forEach(function (e) { %>
           <li>
+            <label class="compare-pick" hidden><input type="checkbox" data-compare-pick value="<%= e.slug %>" data-name="<%= e.name %>"><span class="sr-only"><%= e.name %> zum Vergleich auswählen</span></label>
             <a class="rank-item" href="<%= entityPath(e) %>">
               <span class="pos"><%= e.rank %></span>
               <span class="info">
@@ -143,6 +145,18 @@
     <% } %>
   </div>
 </section>
+
+<% if (ranked.length >= 2) { %>
+  <div class="compare-bar" data-compare-bar hidden>
+    <div class="wrap">
+      <span data-compare-status>Bis zu 3 <%= ranking.entity_label_pl %> auswählen</span>
+      <span class="compare-bar-actions">
+        <button class="btn secondary small" type="button" data-compare-cancel>Abbrechen</button>
+        <a class="btn cta" href="#" data-compare-go aria-disabled="true">Zum Direktvergleich</a>
+      </span>
+    </div>
+  </div>
+<% } %>
 
 <% var areaList = areaOverview.regions.filter(function (r) { return r.count > 0 }); if (!areaList.length) areaList = areaOverview.regions; %>
 <% if (areaList.length || areaOverview.countries.length || Object.keys(siteMedia.regions).length) { %>

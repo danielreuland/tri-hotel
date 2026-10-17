@@ -118,3 +118,90 @@ document.querySelectorAll('form[data-sending]').forEach(function (form) {
   var box = document.querySelector('[data-focus]');
   if (box) { box.scrollIntoView({ block: 'center' }); box.focus({ preventScroll: true }); }
 })();
+
+// Direktvergleich: Auswahl in der Liste (bis zu 3), Auswahl bleibt beim Filtern erhalten (sessionStorage)
+(function () {
+  var list = document.querySelector('[data-compare-list]');
+  var again = document.querySelector('[data-compare-again]');
+  var base = list ? list.getAttribute('data-compare-base') : (again && again.getAttribute('data-compare-base')) || '';
+  var KEY = 'compare:' + base;
+  function load() { try { return JSON.parse(sessionStorage.getItem(KEY)) || { active: false, picks: [] }; } catch (e) { return { active: false, picks: [] }; } }
+  function save(s) { try { sessionStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* ohne Speicher */ } }
+
+  // Vergleichsseite: „Andere vergleichen“ startet die Auswahl mit den aktuellen Objekten
+  if (again) {
+    again.addEventListener('click', function () {
+      var picks = JSON.parse(again.getAttribute('data-compare-picks') || '[]');
+      save({ active: true, picks: picks });
+    });
+  }
+  if (!list) return;
+
+  var MAX = Number(list.getAttribute('data-compare-max')) || 3;
+  var toggle = document.querySelector('[data-compare-toggle]');
+  var bar = document.querySelector('[data-compare-bar]');
+  var status = bar && bar.querySelector('[data-compare-status]');
+  var go = bar && bar.querySelector('[data-compare-go]');
+  var cancel = bar && bar.querySelector('[data-compare-cancel]');
+  var boxes = list.querySelectorAll('[data-compare-pick]');
+  var state = load();
+  if (!toggle || !bar) return;
+  toggle.hidden = false;
+
+  function render() {
+    var on = state.active;
+    toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    toggle.classList.toggle('on', on);
+    document.body.classList.toggle('compare-mode', on);
+    bar.hidden = !on;
+    list.querySelectorAll('.compare-pick').forEach(function (l) { l.hidden = !on; });
+    var slugs = state.picks.map(function (p) { return p.slug; });
+    boxes.forEach(function (b) {
+      b.checked = slugs.indexOf(b.value) >= 0;
+      b.disabled = !b.checked && slugs.length >= MAX;
+    });
+    var n = state.picks.length;
+    status.textContent = n
+      ? state.picks.map(function (p) { return p.name; }).join(', ') + ' (' + n + ' von ' + MAX + ')'
+      : 'Wähle bis zu ' + MAX + ' aus der Liste';
+    var ready = n >= 2;
+    go.setAttribute('aria-disabled', ready ? 'false' : 'true');
+    go.classList.toggle('disabled', !ready);
+    go.href = ready ? base + '/vergleich/' + slugs.join('-vs-') : '#';
+  }
+
+  toggle.addEventListener('click', function () {
+    state.active = !state.active;
+    if (!state.active) state.picks = [];
+    save(state); render();
+    if (state.active) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  cancel.addEventListener('click', function () { state = { active: false, picks: [] }; save(state); render(); });
+  boxes.forEach(function (b) {
+    b.addEventListener('change', function () {
+      state.picks = state.picks.filter(function (p) { return p.slug !== b.value; });
+      if (b.checked && state.picks.length < MAX) state.picks.push({ slug: b.value, name: b.getAttribute('data-name') });
+      save(state); render();
+    });
+  });
+  go.addEventListener('click', function (e) {
+    if (go.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
+    save({ active: false, picks: [] });
+  });
+  render();
+})();
+
+// Vergleichsseite: „Nur Unterschiede“ ohne Neuladen (Links funktionieren auch ohne JavaScript)
+(function () {
+  var table = document.querySelector('[data-compare-table]');
+  if (!table) return;
+  document.querySelectorAll('[data-diff-toggle]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var only = a.getAttribute('data-diff-toggle') === 'unterschiede';
+      table.classList.toggle('only-diff', only);
+      document.querySelectorAll('[data-diff-toggle]').forEach(function (x) { x.classList.toggle('on', x === a); });
+      try { history.replaceState(null, '', only ? '?nur=unterschiede' : location.pathname); } catch (err) { /* egal */ }
+    });
+  });
+})();
