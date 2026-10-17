@@ -478,4 +478,7 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .ent-name { font-size: 1.15rem; }
   .ent-score .score { min-width: 42px; height: 42px; font-size: 1.4rem; }
   .compare-bar [data-compare-status] { font-size: .85rem; }
+  table.compare.cols-2 { table-layout: fixed; width: 100%; }
+  table.compare.cols-2 .lab { width: 32%; min-width: 0; }
+  table.compare.cols-2 td, table.compare.cols-2 th.ent { width: 34%; overflow-wrap: anywhere; }
 }
