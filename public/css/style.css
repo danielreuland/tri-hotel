@@ -470,3 +470,12 @@ table.compare .pts { color: var(--muted); }
 table.compare .ad-label { font: 700 .7rem var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-left: 8px; }
 table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display: none; }
 .compare-note { margin-top: 10px; }
+@media (max-width: 640px) {
+  table.compare { min-width: 0; font-size: .85rem; }
+  table.compare.cols-3 { min-width: 520px; }
+  table.compare th, table.compare td { padding: 8px 8px; }
+  table.compare .lab { width: 34%; min-width: 108px; font-size: .8rem; }
+  .ent-name { font-size: 1.15rem; }
+  .ent-score .score { min-width: 42px; height: 42px; font-size: 1.4rem; }
+  .compare-bar [data-compare-status] { font-size: .85rem; }
+}
