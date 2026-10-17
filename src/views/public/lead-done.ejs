@@ -14,4 +14,5 @@
 <div class="card"><p style="margin:0"><%= t[1] %></p>
   <% if (status === 'sent') { %><p class="muted" style="margin-bottom:0"><small>Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach. Der Link ist 72 Stunden gültig.</small></p><% } %>
   <% if (provider) { %><p style="margin-bottom:0"><a href="/trainingscamp/anbieter/<%= provider.slug %>">Zurück zu <%= provider.name %></a> · <a href="/trainingscamp">Alle Camp-Anbieter</a></p><% } %></div>
+<% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>

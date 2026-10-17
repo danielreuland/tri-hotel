@@ -13,4 +13,5 @@
 <div class="card"><p style="margin:0"><%= t[1] %></p>
   <% if (status === 'sent') { %><p class="muted" style="margin-bottom:0"><small>Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach. Der Link ist 72 Stunden gültig.</small></p><% } %>
   <% if (entity) { %><p style="margin-bottom:0"><a href="/<%= entity.entity_type %>/<%= entity.slug %>">Zurück zu <%= entity.name %></a></p><% } %></div>
+<% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>
