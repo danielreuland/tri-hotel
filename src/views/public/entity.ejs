@@ -8,7 +8,7 @@
   <div>
     <h1><%= entity.name %></h1>
     <p class="muted"><%= entity.city %><%= entity.country ? ', ' + entity.country : '' %>
-      <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank">Website</a><% } %></p>
+      <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
   </div>
   <div style="display:flex;gap:16px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
     <div>
@@ -152,8 +152,8 @@
         <ul class="partner-links">
           <% partnerGroups.forEach(function (g) { %>
             <li><strong><%= g.name %></strong>
-              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank"><%= g.label_booking %> ↗</a><% } %>
-              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank"><%= g.label_reviews %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.label_booking %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.label_reviews %> ↗</a><% } %>
             </li>
           <% }) %>
         </ul>
@@ -198,7 +198,7 @@
       </div>
       <% var reviewPartners = partnerGroups.filter(function (g) { return g.kinds.indexOf('reviews') >= 0; }); %>
       <% if (reviewPartners.length) { %>
-        <p class="muted partner-reviews"><small>Weitere Gästebewertungen<%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (Anzeige)' : '' %>: <% reviewPartners.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank"><%= g.name %> ↗</a><% }) %></small></p>
+        <p class="muted partner-reviews"><small>Weitere Gästebewertungen<%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (Anzeige)' : '' %>: <% reviewPartners.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.name %> ↗</a><% }) %></small></p>
       <% } %>
     <% } %>
   </section>

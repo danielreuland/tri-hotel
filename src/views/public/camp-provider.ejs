@@ -15,7 +15,7 @@
   <div class="camp-head-cta">
     <% if (p.partner) { %><span class="badge ad-badge">Anzeige · Partner</span><% } %>
     <% if (leadForm) { %><a class="btn large secondary" href="#anfrage">Unverbindlich anfragen</a><% } %>
-    <a class="btn large cta" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
+    <a class="btn large cta" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter" data-goal-prop-anbieter="<%= p.name %>">Zum Anbieter ↗</a>
   </div>
 </div>
 

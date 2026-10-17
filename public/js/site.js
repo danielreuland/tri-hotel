@@ -1,7 +1,17 @@
 // Öffentliche Seiten: Monatsfilter, Zwei-Klick-Karte (Leaflet erst nach Zustimmung laden), Plausible-Ziele.
-// Links und Buttons zählen beim Klick, alles andere (z. B. Überschrift einer Dankeseite) beim Aufruf
+// Links und Buttons zählen beim Klick, alles andere (z. B. Überschrift einer Dankeseite) beim Aufruf.
+// Zusatzangaben für Plausible: data-goal-prop-<name>="wert" (z. B. data-goal-prop-anbieter="Booking.com")
 document.querySelectorAll('[data-goal]').forEach(function (el) {
-  var send = function () { if (window.plausible) window.plausible(el.getAttribute('data-goal')); };
+  var props = {};
+  for (var i = 0; i < el.attributes.length; i++) {
+    var a = el.attributes[i];
+    if (a.name.indexOf('data-goal-prop-') === 0) props[a.name.slice(15)] = a.value;
+  }
+  var send = function () {
+    if (!window.plausible) return;
+    if (Object.keys(props).length) window.plausible(el.getAttribute('data-goal'), { props: props });
+    else window.plausible(el.getAttribute('data-goal'));
+  };
   if (el.matches('a, button')) { el.addEventListener('click', send); return; }
   if (window.plausible) send(); else window.addEventListener('load', send);
 });
