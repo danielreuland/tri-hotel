@@ -8,6 +8,7 @@ const sitesService = require('../services/sites');
 const aimail = require('../services/aimail');
 const agent = require('../services/inquiry-agent');
 const rankingsService = require('../services/rankings');
+const featureService = require('../services/features');
 const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 
@@ -69,7 +70,12 @@ async function renderAiEdit(req, res, site, key, language, draft, extra = {}) {
     || await db.one(`SELECT * FROM rankings WHERE is_default LIMIT 1`);
   const sampleEntity = { name: `${ranking ? ranking.entity_label_sg : 'Objekt'} Beispiel`, city: 'Playa Blanca', country: language === 'de' ? 'DE' : 'ES' };
   const criteria = ranking ? (await rankingsService.getCriteria(ranking.id)).filter(agent.isAskable).slice(0, 2) : [];
-  const ctx = { entity: sampleEntity, ranking: ranking || { name: site.name, entity_label_sg: 'Objekt', entity_label_pl: 'Objekte' }, criteria, facts: {}, language, brand: site.name, askPhotos: true, persona, template: tpl };
+  // Beispiel für „bekannte Angaben bestätigen“: drei Leistungen aus dem Katalog
+  const sampleFeatures = ranking ? (await featureService.catalog(ranking.entity_type)).filter((f) => !f.derive).slice(0, 3) : [];
+  const ctx = {
+    entity: sampleEntity, ranking: ranking || { name: site.name, entity_label_sg: 'Objekt', entity_label_pl: 'Objekte' }, criteria, facts: {},
+    language, brand: site.name, askPhotos: true, persona, template: tpl, confirm: { criteria: [], features: sampleFeatures, offer: [] },
+  };
   let fallback = agent.fallbackDraft(ctx);
   if (key === 'inquiry_reminder') {
     // Erinnerung: Beispiel-Anfrage (Mustertext der Datenanfrage) als ursprüngliche Nachricht einsetzen

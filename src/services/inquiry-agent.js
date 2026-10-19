@@ -91,21 +91,87 @@ function personaOr(persona, brand) {
   return persona || { name: `${brand}`, title: 'KI-Assistenz' };
 }
 
+// ---------- Bekannte Angaben bestätigen lassen ----------
+// confirm = { criteria: [Kriterium], features: [Leistung, schon erfasst], offer: [Leistung, „Bieten Sie außerdem …?“] }
+// In der Mail steht nur die Anzahl (criteria + features); die Liste steht im Antwortformular.
+
+function confirmCount(confirm) {
+  return confirm ? (confirm.criteria || []).length + (confirm.features || []).length : 0;
+}
+
+// Antwortwert eines Fakts in Formular-Schreibweise (wie answerOptions) bzw. null
+function formValue(c, value) {
+  if (!value) return null;
+  if (c.scoring.type === 'bool') return typeof value.bool === 'boolean' ? String(value.bool) : null;
+  return value.option && Object.prototype.hasOwnProperty.call(c.scoring.points || {}, value.option) ? value.option : null;
+}
+
+// Bestätigungsliste ohne KI: Bezeichnungen aus dem Ranking und dem Leistungskatalog
+function fallbackConfirmations(confirm, facts = {}, language = 'de') {
+  if (!confirmCount(confirm) && !(confirm && (confirm.offer || []).length)) return {};
+  const t = T[language] || T.de;
+  const optionsOf = (c) => answerOptions(c).map((o) => ({
+    value: o.value, text: c.scoring.type === 'bool' ? (o.value === 'true' ? t.yes : t.no) : o.text,
+  }));
+  const criteria = (confirm.criteria || []).map((c) => {
+    const f = facts[c.id];
+    const current = f ? formValue(c, f.value) : null;
+    if (!current) return null;
+    const options = optionsOf(c);
+    return { criterion_id: c.id, label: c.label, current, current_text: options.find((o) => o.value === current).text, options };
+  }).filter(Boolean);
+  const features = [
+    ...(confirm.features || []).map((ft) => ({ feature_id: ft.id, text: ft.label, known: true })),
+    ...(confirm.offer || []).map((ft) => ({ feature_id: ft.id, text: ft.label, known: false })),
+  ];
+  return { criteria, features };
+}
+
+// Formular auswerten: k_<id> = ok | wrong | unknown (bei wrong: kv_<id> = richtiger Wert),
+// Leistungen nur, wenn „Liste geprüft“ (features_checked) angehakt ist; f_<id> = bietet an
+function parseConfirmAnswers(confirmations, body, criteria) {
+  const out = { criteria: [], features: [], incomplete: [] };
+  const byId = new Map(criteria.map((c) => [c.id, c]));
+  for (const item of (confirmations && confirmations.criteria) || []) {
+    const c = byId.get(item.criterion_id);
+    if (!c) continue;
+    const choice = body[`k_${item.criterion_id}`];
+    const previous = toFactValue(c, item.current);
+    let value = null;
+    if (choice === 'ok') value = previous;
+    else if (choice === 'wrong') value = toFactValue(c, body[`kv_${item.criterion_id}`]);
+    if (choice === 'wrong' && !value) out.incomplete.push(item.label);
+    if (!value) continue;
+    out.criteria.push({ criterionId: c.id, value, previous, comment: String(body[`kc_${item.criterion_id}`] || '').trim().slice(0, 500) || null });
+  }
+  const features = (confirmations && confirmations.features) || [];
+  const checked = body.features_checked === 'on';
+  for (const ft of features) {
+    const ticked = body[`f_${ft.feature_id}`] === 'on';
+    // erfasste Leistungen zählen nur nach „Liste geprüft“; zusätzliche nur, wenn angehakt
+    if (ft.known && checked) out.features.push({ featureId: ft.feature_id, offered: ticked, known: true });
+    if (!ft.known && ticked) out.features.push({ featureId: ft.feature_id, offered: true, known: false });
+  }
+  return out;
+}
+
 // Werte für die Platzhalter im Mustertext (services/aimail.js)
-function templateVars({ entity, ranking, brand, persona, language }) {
+function templateVars({ entity, ranking, brand, persona, language, confirm }) {
   return {
+    anzahl: confirmCount(confirm),
     marke: brand, objekt: entity.name, objekt_art: ranking.entity_label_sg, name: personaOr(persona, brand).name,
     objekte: language === 'en' ? String(ranking.entity_label_pl || '').toLowerCase() : ranking.entity_label_pl,
   };
 }
 
 // Ohne KI: Mustertext des Anlasses (template) wörtlich ausgefüllt, sonst die eingebaute Vorlage
-function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template }) {
+function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts }) {
   const t = T[language] || T.de;
-  const vars = template ? templateVars({ entity, ranking, brand, persona, language }) : null;
+  const vars = template ? templateVars({ entity, ranking, brand, persona, language, confirm }) : null;
   return {
     subject: template ? aimail.fill(template.subject, vars).slice(0, 150) : t.subject(entity),
-    body: template ? aimail.fill(template.body, vars, { fotos: askPhotos }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
+    body: template ? aimail.fill(template.body, vars, { fotos: askPhotos, bestaetigen: confirmCount(confirm) > 0 }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
+    confirmations: fallbackConfirmations(confirm, facts, language),
     questions: criteria.map((c) => ({
       criterion_id: c.id,
       question: c.label,
@@ -127,8 +193,8 @@ function sanitizeDraft(draft, ctx) {
   return { ...out, body: withDisclosure(out.body, ctx.language, ctx.persona, ctx.brand) };
 }
 
-function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona, template }) {
-  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template });
+function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts }) {
+  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts });
   if (!draft || typeof draft !== 'object') return { ...fb, usedFallback: true };
 
   let body = String(draft.body || '').trim();
@@ -154,15 +220,43 @@ function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPh
     return { criterion_id: c.id, question: String(fromModel.question).trim().slice(0, 300), options };
   });
 
-  return { subject, body, questions, usedFallback: false };
+  return { subject, body, questions, confirmations: translateConfirmations(fb.confirmations, draft, criteria, confirm), usedFallback: false };
+}
+
+// Übersetzte Bezeichnungen des Modells in die Bestätigungsliste übernehmen; Werte und Auswahl bleiben aus dem System
+function translateConfirmations(base, draft, criteria, confirm) {
+  if (!base || (!(base.criteria || []).length && !(base.features || []).length)) return base || {};
+  const clean = (v, max) => { const s = String(v || '').trim(); return s ? s.slice(0, max) : null; };
+  const crits = new Map(((confirm && confirm.criteria) || []).map((c) => [c.code, c.id]));
+  const feats = new Map([...((confirm && confirm.features) || []), ...((confirm && confirm.offer) || [])].map((f) => [f.code, f.id]));
+  const items = new Map((draft.confirm_items || []).map((i) => [crits.get(i.criterion_code), i]));
+  const ftexts = new Map((draft.feature_items || []).map((i) => [feats.get(i.code), clean(i.text, 120)]));
+  return {
+    criteria: base.criteria.map((it) => {
+      const m = items.get(it.criterion_id);
+      if (!m) return it;
+      const options = it.options.map((o) => {
+        const mo = (m.options || []).find((x) => String(x.value) === o.value);
+        return { value: o.value, text: (mo && clean(mo.text, 200)) || o.text };
+      });
+      return { ...it, label: clean(m.label, 200) || it.label, options, current_text: options.find((o) => o.value === it.current).text };
+    }),
+    features: base.features.map((ft) => ({ ...ft, text: ftexts.get(ft.feature_id) || ft.text })),
+  };
 }
 
 // Prompt = feste Regeln + Rolle & Stil der Persona + Mustertext/Pflichtpunkte des Anlasses + Angaben + Stilbeispiel.
 // ctx.template: { subject, body, must } aus aimail.get(); ctx.example: { subject, body } oder null
 function buildPrompt(ctx) {
-  const { entity, ranking, criteria, facts = {}, language, brand, adminNote, askPhotos, persona, template, example } = ctx;
+  const { entity, ranking, criteria, facts = {}, language, brand, adminNote, askPhotos, persona, template, example, confirm } = ctx;
   const p = personaOr(persona, brand);
-  const vars = templateVars({ entity, ranking, brand, persona, language });
+  const vars = templateVars({ entity, ranking, brand, persona, language, confirm });
+  const nConfirm = confirmCount(confirm);
+  const fbConfirm = fallbackConfirmations(confirm, facts, language);
+  const confirmLines = [
+    ...(fbConfirm.criteria || []).map((it) => `- ${(confirm.criteria.find((c) => c.id === it.criterion_id) || {}).code}: ${it.label}. Antwortwerte: ${it.options.map((o) => `"${o.value}" = ${o.text}`).join('; ')}`),
+  ];
+  const featureLines = [...((confirm && confirm.features) || []), ...((confirm && confirm.offer) || [])].map((ft) => `- ${ft.code}: ${ft.label}`);
   const lines = criteria.map((c) => {
     const f = facts[c.id];
     const known = f ? `bisher: ${JSON.stringify(f.value)} (Vertrauensstufe ${f.trust_level}${f.disputed ? ', strittig' : ''})` : 'bisher: unbekannt';
@@ -175,13 +269,14 @@ function buildPrompt(ctx) {
     persona && persona.style ? `Rolle und Stil:\n${persona.style.trim()}` : null,
     `Aufgabe: eine Mail an den Betreiber von „${entity.name}“ (${entity.city || ''}, ${entity.country || ''}), damit unklare Angaben im Profil vom Betreiber bestätigt werden.
 Sprache von Mail und Fragen: ${language === 'de' ? 'Deutsch (Sie-Form)' : 'Englisch'}.`,
-    `Unklare Punkte:\n${lines.length ? lines.join('\n') : '(keine – es geht nur um Fotos)'}`,
+    `Unklare Punkte:\n${lines.length ? lines.join('\n') : nConfirm ? '(keine – es geht um die Bestätigung bekannter Angaben)' : '(keine – es geht nur um Fotos)'}`,
+    nConfirm ? `Außerdem bitten wir, ${nConfirm} bereits erfasste Angaben kurz zu prüfen. In der Mail nur die Anzahl in einem Satz nennen, nichts aufzählen – die Liste steht im Antwortformular.` : null,
     adminNote ? `Hinweis der Redaktion: ${adminNote}` : null,
     template ? `Mustertext – Aufbau und Inhalte übernehmen, Formulierung im Stil der Rolle (${LINK} unverändert lassen):
 """
 Betreff: ${aimail.fill(template.subject, vars)}
 
-${aimail.fill(template.body, vars, { fotos: askPhotos })}
+${aimail.fill(template.body, vars, { fotos: askPhotos, bestaetigen: nConfirm > 0 })}
 """` : null,
     must.length ? `Pflichtpunkte (müssen inhaltlich vorkommen):\n${must.map((m) => `- ${m}`).join('\n')}` : null,
     example ? `Stilbeispiel – eine frühere Mail, die die Redaktion überarbeitet hat. Übernimm Ton, Länge und Aufbau, keine Inhalte:
@@ -192,7 +287,9 @@ ${example.body}
 """` : null,
     `Feste Regeln:\n${aimail.rules({ askPhotos }).map((r) => `- ${r}`).join('\n')}
 - Unterschrift: „${p.name}“.
-- questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.`,
+- questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.${confirmLines.length || featureLines.length ? `\n- confirm_items und feature_items: nur kurze Bezeichnungen in der Sprache der Mail (für die Liste im Formular), Werte unverändert.` : ''}`,
+    confirmLines.length ? `Bekannte Angaben zum Bestätigen (confirm_items: label = kurze Bezeichnung, options mit genau diesen Antwortwerten):\n${confirmLines.join('\n')}` : null,
+    featureLines.length ? `Leistungen für die Liste im Formular (feature_items: code unverändert, text = kurze Bezeichnung):\n${featureLines.join('\n')}` : null,
   ];
   return parts.filter(Boolean).join('\n\n');
 }
@@ -200,7 +297,9 @@ ${example.body}
 async function draftAnthropic(ctx) {
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
-  const { criteria } = ctx;
+  const { criteria, confirm } = ctx;
+  const confirmCodes = ((confirm && confirm.criteria) || []).map((c) => c.code);
+  const featureCodes = [...((confirm && confirm.features) || []), ...((confirm && confirm.offer) || [])].map((f) => f.code);
 
   const Schema = z.object({
     subject: z.string(),
@@ -212,6 +311,12 @@ async function draftAnthropic(ctx) {
         options: z.array(z.object({ value: z.string(), text: z.string() })),
       })
     ),
+    confirm_items: z.array(z.object({
+      criterion_code: confirmCodes.length ? z.enum(confirmCodes) : z.string(),
+      label: z.string(),
+      options: z.array(z.object({ value: z.string(), text: z.string() })),
+    })),
+    feature_items: z.array(z.object({ code: featureCodes.length ? z.enum(featureCodes) : z.string(), text: z.string() })),
   });
 
   const prompt = buildPrompt(ctx);
@@ -248,4 +353,4 @@ async function draftInquiry(ctx) {
   return { language: full.language, ...sanitizeDraft(draft, full), usage };
 }
 
-module.exports = { draftInquiry, buildPrompt, templateVars, sanitizeDraft, fallbackDraft, answerOptions, isAskable, unclearCriteria, toFactValue, languageFor, LINK };
+module.exports = { draftInquiry, buildPrompt, templateVars, confirmCount, fallbackConfirmations, parseConfirmAnswers, formValue, sanitizeDraft, fallbackDraft, answerOptions, isAskable, unclearCriteria, toFactValue, languageFor, LINK };

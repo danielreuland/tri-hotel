@@ -11,17 +11,14 @@ Anlässe jetzt: `inquiry` (Datenanfrage, KI) und `inquiry_reminder` (Erinnerung,
 
 ## Noch zu tun
 
-### 6. Danach (mit Daniel abgestimmt): Bekannte Angaben und Leistungen bestätigen lassen
-- Entwurf Schritt 1: zusätzlicher Block „Bekannte Angaben bestätigen lassen“ – vorausgewählt alle Fakten mit
-  Vertrauensstufe 2 oder 4 sowie die vorhandenen Leistungen; abwählbar. Speichern z. B. in `inquiries.confirm_criteria_ids`
-  und `inquiries.confirm_features` (Migration).
-- Mail: nur ein Satz mit Anzahl („Außerdem haben wir 14 Angaben erfasst – bitte kurz prüfen“), als Pflichtpunkt/Abschnitt
-  `{{#bestaetigen}}…{{/bestaetigen}}` im Mustertext; die Liste steht im Formular (150-Wörter-Grenze).
-- Antwortformular `/anfrage/:token`: Abschnitt „Das wissen wir bereits“ – je Angabe Wert + stimmt / stimmt nicht
-  (dann Auswahl der richtigen Option) / weiß nicht; Leistungen als Häkchenliste, optional „Bieten Sie außerdem …?“ aus dem Katalog.
-- Antworten in den bestehenden Ablauf (`inquiry_answers`, Admin übernimmt); übernommen = Vertrauensstufe 1 mit Quelle/Datum.
-  Für Leistungen prüfen, wie `entity_features` Herkunft speichert (ggf. Spalten für Bestätigung ergänzen).
-- Knopftext im Mail-Template `views/emails/inquiry.ejs` passend zum Inhalt (nur Fotos → „Fotos hochladen“ / „Upload photos“).
+### 6. Bekannte Angaben und Leistungen bestätigen lassen – umgesetzt (19.10.2026)
+Migration 043 (inquiries.confirm_criteria_ids/confirm_feature_ids/offer_feature_ids/confirmations, inquiry_answers.kind/previous,
+inquiry_feature_answers). Entwurf Schritt 1: Block „Bekannte Angaben bestätigen lassen“ (views/admin/_confirm-block.ejs);
+Mail: Abschnitt {{#bestaetigen}} mit {{anzahl}}; Formular: „Das wissen wir bereits“ (stimmt / stimmt nicht + Auswahl / weiß nicht,
+Leistungen nur mit „Liste geprüft“, „Bieten Sie außerdem …?“); Admin: Antworten einzeln oder „Alle Bestätigungen übernehmen“;
+Knopftext je Inhalt (Fragen beantworten / Angaben prüfen / Fotos hochladen). Tests: test/inquiry-confirm.test.js.
+Nach dem Deploy prüfen: Entwurf mit Bestätigungen formulieren (DE + EN), Antwortformular, Übernahme.
+Hinweis: Eigene KI-Mail-Mustertexte (falls schon angepasst) bekommen den Abschnitt {{#bestaetigen}} nicht automatisch.
 
 ### 7. Admin-Liste „Hotels“ (`/admin`, Route in `src/routes/admin.js`, View `views/admin/queue.ejs`): Suche + Filter
 - Suchfeld „Name oder Ort“ (Parameter `q`): Name, Ort, Website; ohne Groß-/Kleinschreibung und Akzente

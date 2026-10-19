@@ -122,7 +122,9 @@ async function load(submissionId) {
     db.many('SELECT * FROM review_dismissals WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]),
   ]);
   const answers = inquiryList.length
-    ? await db.many(`SELECT inquiry_id, status FROM inquiry_answers WHERE inquiry_id = ANY($1::uuid[])`, [inquiryList.map((i) => i.id)])
+    ? await db.many(
+      `SELECT inquiry_id, status FROM inquiry_answers WHERE inquiry_id = ANY($1::uuid[])
+       UNION ALL SELECT inquiry_id, status FROM inquiry_feature_answers WHERE inquiry_id = ANY($1::uuid[])`, [inquiryList.map((i) => i.id)])
     : [];
   for (const i of inquiryList) i.answers = answers.filter((a) => a.inquiry_id === i.id);
   const textStale = Boolean(text && text.input_hash && describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash);

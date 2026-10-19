@@ -12,8 +12,8 @@ const KEYS = {
   inquiry: {
     label: 'Datenanfrage', persona: 'data_inquiry', ai: true,
     trigger: 'Anfrage an den Betreiber (Reiter Kommunikation → Entwurf formulieren)',
-    vars: { marke: 'Name der Site', objekt: 'Name des Objekts', objekte: 'Objekte (Mehrzahl, z. B. „Hotels“)', objekt_art: 'Objektart (Einzahl, z. B. „Hotel“)', name: 'Vorname der Persona', LINK: 'persönlicher Antwortlink (Pflicht)' },
-    sections: { fotos: 'nur, wenn Fotos angefragt werden' },
+    vars: { marke: 'Name der Site', objekt: 'Name des Objekts', objekte: 'Objekte (Mehrzahl, z. B. „Hotels“)', objekt_art: 'Objektart (Einzahl, z. B. „Hotel“)', name: 'Vorname der Persona', anzahl: 'Anzahl bekannter Angaben zum Bestätigen', LINK: 'persönlicher Antwortlink (Pflicht)' },
+    sections: { fotos: 'nur, wenn Fotos angefragt werden', bestaetigen: 'nur, wenn bekannte Angaben bestätigt werden sollen' },
   },
   inquiry_reminder: {
     label: 'Erinnerung zur Datenanfrage', persona: 'data_inquiry', ai: false,
@@ -33,6 +33,9 @@ const DEFAULTS = {
 
 Die Beantwortung dauert etwa zwei Minuten:
 {{LINK}}
+{{#bestaetigen}}
+Außerdem haben wir {{anzahl}} Angaben zu Ihrem Haus erfasst – über denselben Link können Sie diese kurz prüfen und bei Bedarf korrigieren.
+{{/bestaetigen}}
 {{#fotos}}
 Über denselben Link können Sie uns auch gern Fotos Ihres Hauses mit Nutzungserlaubnis senden. Wir zeigen sie mit Ihrem Urhebervermerk auf Ihrem Profil.
 {{/fotos}}
@@ -55,6 +58,9 @@ Man kann auch einfach auf die Mail antworten`,
 
 Answering takes about two minutes:
 {{LINK}}
+{{#bestaetigen}}
+We have also recorded {{anzahl}} details about your property – using the same link, you can quickly check them and correct anything if needed.
+{{/bestaetigen}}
 {{#fotos}}
 Using the same link, you are welcome to send us photos of your property along with permission to use them. We will show them on your profile with your photo credit.
 {{/fotos}}

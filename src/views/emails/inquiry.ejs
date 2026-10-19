@@ -3,12 +3,19 @@
 <%
   function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   var button = 'display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold';
+  // Knopftext passend zum Inhalt der Anfrage: Fragen, nur Bestätigungen oder nur Fotos
+  var BUTTONS = {
+    answer: { de: 'Fragen beantworten', en: 'Answer the questions' },
+    confirm: { de: 'Angaben prüfen', en: 'Check the details' },
+    photos: { de: 'Fotos hochladen', en: 'Upload photos' },
+  };
+  var buttonText = (BUTTONS[locals.cta] || BUTTONS.answer)[language === 'de' ? 'de' : 'en'];
 %>
 <% text.split(/\n{2,}/).forEach(function (para) {
      var lines = para.split('\n'); var buf = []; %>
   <% lines.forEach(function (line) { var url = line.trim(); if (/^https?:\/\/\S+$/.test(url)) { %>
     <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% buf = []; } %>
-    <p><a href="<%= url %>" style="<%= button %>"><%= language === 'de' ? 'Fragen beantworten' : 'Answer the questions' %></a><br>
+    <p><a href="<%= url %>" style="<%= button %>"><%= buttonText %></a><br>
       <small style="color:#6a737d"><%= url %></small></p>
   <% } else { buf.push(line); } }) %>
   <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% } %>

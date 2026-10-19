@@ -68,6 +68,7 @@ async function middleware(req, res, next) {
                 (SELECT count(*)::int FROM reviews WHERE status = 'pending')
                   + (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL)
                   + (SELECT count(*)::int FROM inquiry_answers WHERE status = 'pending')
+                  + (SELECT count(*)::int FROM inquiry_feature_answers WHERE status = 'pending')
                   + (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed')
                   + (SELECT count(*)::int FROM mail_messages WHERE status = 'new') AS kommunikation`);
       res.locals.adminNav.counts = { aufgaben: r.aufgaben, kommunikation: r.kommunikation };

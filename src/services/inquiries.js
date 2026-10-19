@@ -10,6 +10,7 @@ const mailer = require('./mailer');
 const rankings = require('./rankings');
 const agent = require('./inquiry-agent');
 const aimail = require('./aimail');
+const featureService = require('./features');
 const sites = require('./sites');
 const consentTexts = require('../lib/consents');
 const { logAction } = require('../lib/audit');
@@ -104,7 +105,7 @@ async function createDraft({ entityId, rankingId, submissionId }) {
 }
 
 // Neue Anfrage aus dem Admin: als Entwurf anlegen und gleich formulieren (gesendet wird erst nach Prüfung)
-async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askPhotos, adminNote, adminId }) {
+async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askPhotos, adminNote, adminId, confirmCriteriaIds, confirmFeatureIds, offerFeatures }) {
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
   if (!entity) throw new Error('Objekt nicht gefunden.');
   if (!isEmail(entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers in den Stammdaten eintragen.');
@@ -119,7 +120,7 @@ async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askP
   );
   await logAction(adminId, 'inquiry', row.id, 'draft_inquiry', { recipient: entity.contact_email });
   try {
-    return await formulate(row.id, { criteriaIds, askPhotos, adminNote }, adminId);
+    return await formulate(row.id, { criteriaIds, askPhotos, adminNote, confirmCriteriaIds, confirmFeatureIds, offerFeatures }, adminId);
   } catch (err) {
     // ohne gültige Auswahl keinen leeren Entwurf stehen lassen
     await db.query(`DELETE FROM inquiries WHERE id = $1 AND status = 'draft' AND body IS NULL`, [row.id]);
@@ -127,37 +128,90 @@ async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askP
   }
 }
 
+// ---------- Bekannte Angaben bestätigen lassen ----------
+
+// Leistungen, die je Objekt gepflegt werden (ohne Ableitung aus einem Fakt) – nur diese kann der Betreiber bestätigen
+async function manualFeatures(entityType, entityId) {
+  const catalog = (await featureService.catalog(entityType)).filter((ft) => !ft.derive);
+  const present = new Set((await db.many('SELECT feature_id FROM entity_features WHERE entity_id = $1', [entityId])).map((r) => r.feature_id));
+  return { catalog, present };
+}
+
+// Vorschlag fürs Formular: bekannte Werte mit Vertrauensstufe 2 oder 4 (ohne die gefragten) und alle erfassten Leistungen
+function defaultConfirmSelection(criteria, facts, askedIds, presentFeatureIds) {
+  const byCrit = new Map(facts.map((f) => [f.criterion_id, f]));
+  return {
+    criteriaIds: criteria.filter((c) => {
+      const f = byCrit.get(c.id);
+      return agent.isAskable(c) && f && !f.disputed && [2, 4].includes(f.trust_level) && agent.formValue(c, f.value) && !askedIds.includes(c.id);
+    }).map((c) => c.id),
+    featureIds: [...presentFeatureIds],
+  };
+}
+
+// Auswahl prüfen: nur bekannte, erfragbare Werte (nicht zugleich gefragt) und erfasste Leistungen.
+// offerIds: feste Liste „Bieten Sie außerdem …?“; ohne sie mit offer = true alle übrigen Leistungen des Katalogs
+async function confirmSelection({ entity, ranking, criteria, facts, askedIds, criteriaIds = [], featureIds = [], offer = false, offerIds = null }) {
+  const factBy = new Map(facts.map((f) => [f.criterion_id, f]));
+  const crit = criteria.filter((c) => criteriaIds.includes(c.id) && !askedIds.includes(c.id) && agent.isAskable(c)
+    && factBy.get(c.id) && agent.formValue(c, factBy.get(c.id).value));
+  const { catalog, present } = await manualFeatures(ranking.entity_type, entity.id);
+  const features = catalog.filter((ft) => present.has(ft.id) && featureIds.includes(ft.id));
+  const offerList = offerIds ? catalog.filter((ft) => offerIds.includes(ft.id) && !present.has(ft.id))
+    : offer ? catalog.filter((ft) => !present.has(ft.id)) : [];
+  return { criteria: crit, features, offer: offerList };
+}
+
+// Knopf in der Mail passend zum Inhalt
+function buttonKind(inq) {
+  if ((inq.criteria_ids || []).length) return 'answer';
+  if ((inq.confirm_criteria_ids || []).length || (inq.confirm_feature_ids || []).length) return 'confirm';
+  return inq.ask_photos ? 'photos' : 'answer';
+}
+
 // Entwurf formulieren: Auswahl speichern, Agent schreibt Betreff, Text und Fragen. Der Entwurf bleibt Entwurf.
-async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote }, adminId) {
+async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote, confirmCriteriaIds = [], confirmFeatureIds = [], offerFeatures = false }, adminId) {
   const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
   if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [inq.entity_id]);
   if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
   const ranking = await rankings.getRanking(inq.ranking_id);
-  const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
-  if (!criteria.length && !askPhotos) throw new Error('Bitte mindestens einen Wert oder die Fotos auswählen.');
+  const allCriteria = await rankings.getCriteria(inq.ranking_id);
+  const criteria = allCriteria.filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
   const site = await sites.forRanking(ranking);
   const persona = await personaOf(inq);
-  const facts = Object.fromEntries((await rankings.getFacts(entity.id, ranking.id)).map((f) => [f.criterion_id, f]));
+  const factRows = await rankings.getFacts(entity.id, ranking.id);
+  const facts = Object.fromEntries(factRows.map((f) => [f.criterion_id, f]));
+  const confirm = await confirmSelection({
+    entity, ranking, criteria: allCriteria, facts: factRows, askedIds: criteria.map((c) => c.id),
+    criteriaIds: confirmCriteriaIds, featureIds: confirmFeatureIds, offer: Boolean(offerFeatures),
+  });
+  if (!criteria.length && !askPhotos && !agent.confirmCount(confirm)) throw new Error('Bitte mindestens einen Wert, eine Bestätigung oder die Fotos auswählen.');
   const language = agent.languageFor(entity.country);
   const template = await aimail.get(site.id, 'inquiry', language);
   const example = await aimail.inquiryExample(language, inq.id);
   const draft = await agent.draftInquiry({
     entity, ranking, criteria, facts, language, adminNote: adminNote || null, askPhotos: Boolean(askPhotos), persona, brand: site.name,
-    template, example,
+    template, example, confirm,
   });
   if (draft.usage) {
     await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
   }
   const row = await db.one(
     `UPDATE inquiries SET criteria_ids = $2, ask_photos = $3, admin_note = $4, recipient = $5, language = $6,
-       subject = $7, body = $8, questions = $9, error = $10, generated_subject = $7, generated_body = $8, updated_at = now()
+       subject = $7, body = $8, questions = $9, error = $10, generated_subject = $7, generated_body = $8,
+       confirm_criteria_ids = $11, confirm_feature_ids = $12, offer_feature_ids = $13, confirmations = $14, updated_at = now()
       WHERE id = $1 RETURNING *`,
     [inq.id, criteria.map((c) => c.id), Boolean(askPhotos), adminNote || null, entity.contact_email, language,
       draft.subject, draft.body, JSON.stringify(draft.questions),
-      draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
+      draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null,
+      confirm.criteria.map((c) => c.id), confirm.features.map((ft) => ft.id), confirm.offer.map((ft) => ft.id),
+      JSON.stringify(draft.confirmations || {})]
   );
-  await logAction(adminId, 'inquiry', inq.id, 'formulate_inquiry', { criteria: criteria.map((c) => c.code), askPhotos: Boolean(askPhotos) });
+  await logAction(adminId, 'inquiry', inq.id, 'formulate_inquiry', {
+    criteria: criteria.map((c) => c.code), askPhotos: Boolean(askPhotos),
+    confirm: confirm.criteria.map((c) => c.code), confirmFeatures: confirm.features.map((ft) => ft.code), offerFeatures: confirm.offer.length,
+  });
   return row;
 }
 
@@ -203,16 +257,22 @@ async function send(inquiryId) {
     const ranking = await rankings.getRanking(inq.ranking_id);
     const site = await sites.forRanking(ranking);
     const persona = await personaOf(inq);
-    const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => inq.criteria_ids.includes(c.id));
-    const facts = Object.fromEntries((await rankings.getFacts(entity.id, ranking.id)).map((f) => [f.criterion_id, f]));
+    const allCriteria = await rankings.getCriteria(inq.ranking_id);
+    const criteria = allCriteria.filter((c) => inq.criteria_ids.includes(c.id));
+    const factRows = await rankings.getFacts(entity.id, ranking.id);
+    const facts = Object.fromEntries(factRows.map((f) => [f.criterion_id, f]));
     // Im Admin formulierter und freigegebener Text wird unverändert versendet; sonst formuliert der Agent jetzt
     const draft = inq.body
-      ? { subject: inq.subject, body: inq.body, questions: inq.questions || [], usedFallback: false }
+      ? { subject: inq.subject, body: inq.body, questions: inq.questions || [], confirmations: inq.confirmations || {}, usedFallback: false }
       : await agent.draftInquiry({
         entity, ranking, criteria, facts, language: inq.language, adminNote: inq.admin_note, askPhotos: inq.ask_photos,
         persona, brand: site.name,
         template: await aimail.get(site.id, 'inquiry', inq.language),
         example: await aimail.inquiryExample(inq.language, inq.id),
+        confirm: await confirmSelection({
+          entity, ranking, criteria: allCriteria, facts: factRows, askedIds: inq.criteria_ids,
+          criteriaIds: inq.confirm_criteria_ids || [], featureIds: inq.confirm_feature_ids || [], offerIds: inq.offer_feature_ids || [],
+        }),
       });
     if (draft.usage) {
       await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
@@ -225,15 +285,16 @@ async function send(inquiryId) {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
-      data: { subject: draft.subject, text: draft.body.split(agent.LINK).join(answerUrl(site, tok.token)), language: inq.language },
+      data: { subject: draft.subject, text: draft.body.split(agent.LINK).join(answerUrl(site, tok.token)), language: inq.language, cta: buttonKind(inq) },
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
     await db.query(
       `UPDATE inquiries SET status = 'sent', subject = $2, body = $3, questions = $4, token_hash = $5, sent_at = now(),
-         expires_at = now() + make_interval(days => $6), error = $7, updated_at = now() WHERE id = $1`,
+         expires_at = now() + make_interval(days => $6), error = $7, confirmations = $8, updated_at = now() WHERE id = $1`,
       [inq.id, draft.subject, draft.body, JSON.stringify(draft.questions), tok.hash, VALID_DAYS,
-        inq.body ? null : draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
+        inq.body ? null : draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null,
+        JSON.stringify(draft.confirmations || {})]
     );
     await logAction(null, 'inquiry', inq.id, 'send_inquiry', { recipient: inq.recipient, persona: persona && persona.name }, db, persona && persona.id);
   } catch (err) {
@@ -271,7 +332,10 @@ function isImageFile(file) {
 // Antwort des Betreibers speichern. Werte werden NICHT direkt übernommen, der Admin prüft.
 async function submitAnswers(inq, entity, site, body, files = []) {
   const errors = [];
-  const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => inq.criteria_ids.includes(c.id));
+  const allCriteria = await rankings.getCriteria(inq.ranking_id);
+  const criteria = allCriteria.filter((c) => inq.criteria_ids.includes(c.id));
+  // Bekannte Angaben: bestätigt oder korrigiert (Liste aus der Anfrage), Leistungen nur nach „Liste geprüft“
+  const confirmed = agent.parseConfirmAnswers(inq.confirmations, body, allCriteria);
   const answers = [];
   for (const c of criteria) {
     const raw = body[`q_${c.id}`];
@@ -281,6 +345,9 @@ async function submitAnswers(inq, entity, site, body, files = []) {
     answers.push({ criterionId: c.id, value, comment: String(body[`c_${c.id}`] || '').trim().slice(0, 500) || null });
   }
 
+  for (const label of confirmed.incomplete) {
+    errors.push(inq.language === 'de' ? `„${label}“: Bitte den richtigen Wert auswählen.` : `“${label}”: please choose the correct value.`);
+  }
   const photos = inq.ask_photos ? files : [];
   const credit = String(body.photo_credit || '').trim().slice(0, 200);
   if (photos.length) {
@@ -289,7 +356,8 @@ async function submitAnswers(inq, entity, site, body, files = []) {
     if (photos.length > MAX_PHOTOS) errors.push(inq.language === 'de' ? `Höchstens ${MAX_PHOTOS} Fotos.` : `At most ${MAX_PHOTOS} photos.`);
     for (const f of photos) if (!isImageFile(f.path)) errors.push(`${f.originalname}: kein gültiges Bild (JPG, PNG, WebP).`);
   }
-  if (!answers.length && !photos.length && !String(body.note || '').trim() && body.consent_partner_contact !== 'on') {
+  if (!answers.length && !confirmed.criteria.length && !confirmed.features.length && !photos.length
+    && !String(body.note || '').trim() && body.consent_partner_contact !== 'on') {
     errors.push(inq.language === 'de' ? 'Bitte mindestens eine Frage beantworten.' : 'Please answer at least one question.');
   }
   if (photos.length && !errors.length) {
@@ -334,6 +402,20 @@ async function submitAnswers(inq, entity, site, body, files = []) {
         [inq.id, a.criterionId, a.value === null ? null : JSON.stringify(a.value), a.comment]
       );
     }
+    for (const a of confirmed.criteria) {
+      await client.query(
+        `INSERT INTO inquiry_answers (inquiry_id, criterion_id, value, comment, kind, previous) VALUES ($1, $2, $3, $4, 'confirm', $5)
+         ON CONFLICT (inquiry_id, criterion_id) DO NOTHING`,
+        [inq.id, a.criterionId, JSON.stringify(a.value), a.comment, a.previous ? JSON.stringify(a.previous) : null]
+      );
+    }
+    for (const ft of confirmed.features) {
+      await client.query(
+        `INSERT INTO inquiry_feature_answers (inquiry_id, feature_id, offered, known) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (inquiry_id, feature_id) DO NOTHING`,
+        [inq.id, ft.featureId, ft.offered, ft.known]
+      );
+    }
     for (const type of granted) {
       await client.query(
         `INSERT INTO consents (entity_id, site_id, type, source, inquiry_id, contact_email, contact_name, text_version, text)
@@ -355,7 +437,7 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       `UPDATE inquiries SET status = 'answered', answered_at = now(), reply_name = $2, reply_note = $3, updated_at = now() WHERE id = $1`,
       [inq.id, replyName, note]
     );
-    await logAction(null, 'inquiry', inq.id, 'answered', { answers: answers.length, photos: photos.length, consents: granted }, client);
+    await logAction(null, 'inquiry', inq.id, 'answered', { answers: answers.length, confirmed: confirmed.criteria.length, features: confirmed.features.length, photos: photos.length, consents: granted }, client);
   });
   if (config.mail.adminNotify) {
     await mailer.send({
@@ -365,12 +447,12 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       inquiryId: inq.id,
       entityId: inq.entity_id,
       data: {
-        entityName: entity.name, answers: answers.length, photos: photos.length, consents: granted.map((t) => consentTexts.TYPES[t]),
+        entityName: entity.name, answers: answers.length + confirmed.criteria.length + confirmed.features.length, photos: photos.length, consents: granted.map((t) => consentTexts.TYPES[t]),
         link: `${config.baseUrl}/admin/${inq.submission_id ? `meldungen/${inq.submission_id}` : 'aufgaben'}#anfragen`,
       },
     });
   }
-  return { errors: [], answers: answers.length, photos: photos.length, consents: granted };
+  return { errors: [], answers: answers.length + confirmed.criteria.length + confirmed.features.length, photos: photos.length, consents: granted };
 }
 
 async function acceptAnswer(answerId, adminId) {
@@ -381,7 +463,8 @@ async function acceptAnswer(answerId, adminId) {
   if (!a || a.status !== 'pending') return null;
   await db.tx(async (client) => {
     if (a.value) {
-      const evidence = `Antwort des Betreibers vom ${formatDate(a.answered_at)}${a.comment ? `: ${a.comment}` : ''}`;
+      const unchanged = a.kind === 'confirm' && JSON.stringify(a.value) === JSON.stringify(a.previous);
+      const evidence = `${unchanged ? 'Vom Betreiber bestätigt am' : 'Antwort des Betreibers vom'} ${formatDate(a.answered_at)}${a.comment ? `: ${a.comment}` : ''}`;
       const row = await client.query(
         `INSERT INTO entity_facts (entity_id, criterion_id, value, source, trust_level, evidence_url, evidence_text, disputed, checked_at)
          VALUES ($1, $2, $3, 'hotel', 1, NULL, $4, false, now())
@@ -404,6 +487,54 @@ async function rejectAnswer(answerId, adminId) {
     [answerId, adminId]
   );
   await logAction(adminId, 'inquiry_answer', answerId, 'reject_operator_answer');
+}
+
+// Leistung laut Betreiber: angeboten → als „vom Betreiber“ (Stufe 1) speichern, nicht angeboten → entfernen
+async function acceptFeatureAnswer(answerId, adminId) {
+  const a = await db.one(
+    `SELECT a.*, i.entity_id, i.ranking_id, i.answered_at FROM inquiry_feature_answers a JOIN inquiries i ON i.id = a.inquiry_id WHERE a.id = $1`,
+    [answerId]
+  );
+  if (!a || a.status !== 'pending') return null;
+  await db.tx(async (client) => {
+    if (a.offered) {
+      const evidence = `${a.known ? 'Vom Betreiber bestätigt am' : 'Angabe des Betreibers vom'} ${formatDate(a.answered_at)}`;
+      await client.query(
+        `INSERT INTO entity_features (entity_id, feature_id, source, trust_level, evidence_url, evidence_text, checked_at)
+         VALUES ($1, $2, 'hotel', 1, NULL, $3, now())
+         ON CONFLICT (entity_id, feature_id) DO UPDATE SET source = 'hotel', trust_level = 1, evidence_url = NULL,
+           evidence_text = EXCLUDED.evidence_text, checked_at = now()`,
+        [a.entity_id, a.feature_id, evidence]
+      );
+    } else {
+      await client.query('DELETE FROM entity_features WHERE entity_id = $1 AND feature_id = $2', [a.entity_id, a.feature_id]);
+    }
+    await client.query(`UPDATE inquiry_feature_answers SET status = 'accepted', reviewed_by = $2, reviewed_at = now() WHERE id = $1`, [a.id, adminId]);
+    await logAction(adminId, 'entity', a.entity_id, 'accept_operator_feature', { answer: a.id, feature: a.feature_id, offered: a.offered }, client);
+  });
+  return a;
+}
+
+async function rejectFeatureAnswer(answerId, adminId) {
+  await db.query(
+    `UPDATE inquiry_feature_answers SET status = 'rejected', reviewed_by = $2, reviewed_at = now() WHERE id = $1 AND status = 'pending'`,
+    [answerId, adminId]
+  );
+  await logAction(adminId, 'inquiry_feature_answer', answerId, 'reject_operator_feature');
+}
+
+// Alle unveränderten Bestätigungen einer Anfrage übernehmen (Werte wie bisher, erfasste Leistungen weiter angeboten).
+// Korrekturen und neue Leistungen bleiben zur Einzelprüfung stehen.
+async function acceptConfirmations(inquiryId, adminId) {
+  const values = await db.many(
+    `SELECT id FROM inquiry_answers WHERE inquiry_id = $1 AND status = 'pending' AND kind = 'confirm' AND value = previous`, [inquiryId]
+  );
+  const features = await db.many(
+    `SELECT id FROM inquiry_feature_answers WHERE inquiry_id = $1 AND status = 'pending' AND known AND offered`, [inquiryId]
+  );
+  for (const v of values) await acceptAnswer(v.id, adminId);
+  for (const ft of features) await acceptFeatureAnswer(ft.id, adminId);
+  return { values: values.length, features: features.length };
 }
 
 async function close(inquiryId, adminId) {
@@ -440,6 +571,7 @@ async function dailyMaintenance() {
         subject: aimail.fill(tpl.subject, vars).slice(0, 200),
         text: aimail.fill(tpl.body, vars).split(agent.LINK).join(url),
         language: inq.language,
+        cta: buttonKind(inq),
       },
     });
     if (ok) await db.query(`UPDATE inquiries SET token_hash = $2, reminder_sent_at = now(), updated_at = now() WHERE id = $1`, [inq.id, tok.hash]);
@@ -486,6 +618,7 @@ module.exports = {
   approveDraft,
   discardDraft,
   draftCriteria,
+  defaultConfirmSelection, manualFeatures, buttonKind, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
   setEnqueue, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
   dailyMaintenance, isImageFile, MAX_PHOTOS,
 };

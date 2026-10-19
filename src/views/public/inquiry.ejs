@@ -28,6 +28,53 @@
     </section>
   <% } %>
 
+  <% var conf = inquiry.confirmations || {}; var confCrit = conf.criteria || []; var confFeat = conf.features || [];
+     var knownFeat = confFeat.filter(function (f) { return f.known; }); var offerFeat = confFeat.filter(function (f) { return !f.known; }); %>
+  <% if (confCrit.length || confFeat.length) { %>
+    <section class="card">
+      <h2 style="margin-top:0"><%= de ? 'Das wissen wir bereits' : 'What we already know' %></h2>
+      <p class="muted"><%= de
+        ? 'Bitte kurz prüfen. Was stimmt, bestätigen Sie mit einem Klick; was nicht stimmt, korrigieren Sie direkt.'
+        : 'Please check briefly. Confirm what is correct with one click; correct anything that is not.' %></p>
+      <% confCrit.forEach(function (it) { var name = 'k_' + it.criterion_id; var cur = form[name]; %>
+        <fieldset style="border:0;border-top:1px solid var(--border);padding:12px 0 6px;margin:0">
+          <legend style="font-weight:800;padding:0;margin-bottom:6px"><%= it.label %>: <span style="font-weight:400"><%= it.current_text %></span></legend>
+          <label class="inline"><input type="radio" name="<%= name %>" value="ok" <%= cur === 'ok' ? 'checked' : '' %>> <span><%= de ? 'stimmt' : 'correct' %></span></label>
+          <label class="inline"><input type="radio" name="<%= name %>" value="wrong" <%= cur === 'wrong' ? 'checked' : '' %>> <span><%= de ? 'stimmt nicht, richtig ist:' : 'not correct, it is:' %></span></label>
+          <select name="kv_<%= it.criterion_id %>" aria-label="<%= de ? 'Richtiger Wert' : 'Correct value' %>" style="margin:4px 0 0">
+            <option value=""><%= de ? '– bitte wählen –' : '– please choose –' %></option>
+            <% it.options.filter(function (o) { return o.value !== it.current; }).forEach(function (o) { %>
+              <option value="<%= o.value %>" <%= form['kv_' + it.criterion_id] === o.value ? 'selected' : '' %>><%= o.text %></option>
+            <% }) %>
+          </select>
+          <label class="inline"><input type="radio" name="<%= name %>" value="unknown" <%= cur === 'unknown' ? 'checked' : '' %>> <span class="muted"><%= de ? 'weiß ich nicht' : "I don't know" %></span></label>
+        </fieldset>
+      <% }) %>
+      <% if (knownFeat.length) { %>
+        <h3 style="margin:16px 0 4px"><%= de ? 'Leistungen' : 'Facilities and services' %></h3>
+        <p class="muted" style="margin-top:0"><small><%= de
+          ? 'Diese Leistungen haben wir bei Ihnen erfasst. Bitte entfernen Sie den Haken bei allem, was es nicht (mehr) gibt.'
+          : 'We have recorded these for your property. Please untick anything you do not (or no longer) offer.' %></small></p>
+        <div class="grid grid-2" style="gap:2px 16px">
+          <% knownFeat.forEach(function (ft) { var n = 'f_' + ft.feature_id; %>
+            <label class="inline" style="margin:0"><input type="checkbox" name="<%= n %>" <%= form.features_checked ? (form[n] === 'on' ? 'checked' : '') : 'checked' %>> <span><%= ft.text %></span></label>
+          <% }) %>
+        </div>
+        <label class="inline" style="margin-top:10px"><input type="checkbox" name="features_checked" <%= form.features_checked === 'on' ? 'checked' : '' %>>
+          <span><strong><%= de ? 'Ich habe die Liste der Leistungen geprüft.' : 'I have checked the list of facilities.' %></strong></span></label>
+      <% } %>
+      <% if (offerFeat.length) { %>
+        <h3 style="margin:16px 0 4px"><%= de ? 'Bieten Sie außerdem …?' : 'Do you also offer …?' %></h3>
+        <p class="muted" style="margin-top:0"><small><%= de ? 'Bitte nur ankreuzen, was es bei Ihnen gibt.' : 'Please only tick what you offer.' %></small></p>
+        <div class="grid grid-2" style="gap:2px 16px">
+          <% offerFeat.forEach(function (ft) { var n = 'f_' + ft.feature_id; %>
+            <label class="inline" style="margin:0"><input type="checkbox" name="<%= n %>" <%= form[n] === 'on' ? 'checked' : '' %>> <span><%= ft.text %></span></label>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  <% } %>
+
   <% if (inquiry.ask_photos) { %>
     <section class="card">
       <h2 style="margin-top:0"><%= de ? 'Fotos (optional)' : 'Photos (optional)' %></h2>

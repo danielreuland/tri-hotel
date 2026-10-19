@@ -219,7 +219,13 @@ async function loadDetail(id) {
     const answers = inquiryList.length
       ? await db.many(`SELECT * FROM inquiry_answers WHERE inquiry_id = ANY($1::uuid[]) ORDER BY created_at`, [inquiryList.map((i) => i.id)])
       : [];
-    for (const i of inquiryList) i.answers = answers.filter((a) => a.inquiry_id === i.id);
+    const featureAnswers = inquiryList.length
+      ? await db.many(`SELECT a.*, f.label FROM inquiry_feature_answers a JOIN features f ON f.id = a.feature_id WHERE a.inquiry_id = ANY($1::uuid[]) ORDER BY a.known DESC, f.sort_order, f.label`, [inquiryList.map((i) => i.id)])
+      : [];
+    for (const i of inquiryList) {
+      i.answers = answers.filter((a) => a.inquiry_id === i.id);
+      i.featureAnswers = featureAnswers.filter((a) => a.inquiry_id === i.id);
+    }
     unclear = inquiries.unclearCriteria(criteria, facts);
   }
   const consents = entity
@@ -230,6 +236,10 @@ async function loadDetail(id) {
   const featureCatalog = await featureService.catalog(ranking.entity_type);
   const present = entity ? await featureService.forEntity(ranking.entity_type, entity.id) : [];
   const manualFeatures = entity ? await db.many('SELECT * FROM entity_features WHERE entity_id = $1', [entity.id]) : [];
+  // Anfragen: Vorschlag „Bekannte Angaben bestätigen lassen“ (Werte Stufe 2/4 ohne die gefragten, erfasste Leistungen)
+  const confirmFeatureList = featureCatalog.filter((f) => !f.derive && manualFeatures.some((m) => m.feature_id === f.id));
+  const offerFeatureCount = featureCatalog.filter((f) => !f.derive && !manualFeatures.some((m) => m.feature_id === f.id)).length;
+  const confirmDefaults = (askedIds) => inquiries.defaultConfirmSelection(criteria, facts, askedIds, confirmFeatureList.map((f) => f.id));
   // KI-Verbrauch dieses Objekts und des laufenden Monats
   const llmUsage = entity
     ? await db.many(`SELECT * FROM llm_usage WHERE entity_id = $1 OR submission_id = $2 ORDER BY created_at DESC`, [entity.id, sub.id])
@@ -259,6 +269,7 @@ async function loadDetail(id) {
     campLinks, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
+    confirmFeatureList, offerFeatureCount, confirmDefaults,
   };
 }
 
@@ -694,6 +705,15 @@ function safeBack(v) {
   return /^\/admin(\/[\w\/-]*)?(#[\w-]+)?$/.test(back) ? back : '/admin/aufgaben';
 }
 
+// Auswahl „Bekannte Angaben bestätigen lassen“ aus dem Formular
+function confirmFields(body) {
+  return {
+    confirmCriteriaIds: [].concat(body.confirm_criteria || []).filter((v) => UUID_RE.test(v)),
+    confirmFeatureIds: [].concat(body.confirm_features || []).filter((v) => UUID_RE.test(v)),
+    offerFeatures: body.offer_features === 'on',
+  };
+}
+
 router.post('/meldungen/:id/anfrage', wrap(async (req, res, next) => {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);
   if (!sub || !sub.entity_id) return next();
@@ -702,6 +722,7 @@ router.post('/meldungen/:id/anfrage', wrap(async (req, res, next) => {
     await inquiries.startDraft({
       entityId: sub.entity_id, rankingId: sub.ranking_id, submissionId: sub.id, criteriaIds: ids,
       askPhotos: req.body.ask_photos === 'on', adminNote: String(req.body.note || '').trim().slice(0, 1000), adminId: req.session.admin.id,
+      ...confirmFields(req.body),
     });
     res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Entwurf formuliert – bitte prüfen und senden.')}#anfragen`);
   } catch (err) {
@@ -717,6 +738,24 @@ router.post('/antworten/:answerId/uebernehmen', wrap(async (req, res) => {
 router.post('/antworten/:answerId/verwerfen', wrap(async (req, res) => {
   await inquiries.rejectAnswer(req.params.answerId, req.session.admin.id);
   res.redirect(safeBack(req.body.back));
+}));
+
+// Leistungen laut Betreiber übernehmen oder verwerfen; alle unveränderten Bestätigungen einer Anfrage auf einmal
+router.post('/leistungs-antworten/:answerId/uebernehmen', wrap(async (req, res) => {
+  if (UUID_RE.test(req.params.answerId)) await inquiries.acceptFeatureAnswer(req.params.answerId, req.session.admin.id);
+  res.redirect(safeBack(req.body.back));
+}));
+
+router.post('/leistungs-antworten/:answerId/verwerfen', wrap(async (req, res) => {
+  if (UUID_RE.test(req.params.answerId)) await inquiries.rejectFeatureAnswer(req.params.answerId, req.session.admin.id);
+  res.redirect(safeBack(req.body.back));
+}));
+
+router.post('/anfragen/:inquiryId/bestaetigungen-uebernehmen', wrap(async (req, res) => {
+  const back = safeBack(req.body.back);
+  if (!UUID_RE.test(req.params.inquiryId)) return res.redirect(back);
+  const r = await inquiries.acceptConfirmations(req.params.inquiryId, req.session.admin.id);
+  res.redirect(withParam(back, 'ok', `${r.values} Werte und ${r.features} Leistungen als vom Betreiber bestätigt übernommen.`));
 }));
 
 // Einwilligungen: manuell erfassen (z. B. telefonisch/schriftlich) und widerrufen
@@ -780,7 +819,8 @@ router.get('/anfragen', wrap(async (req, res) => {
   const rows = await db.many(
     `SELECT i.*, e.name AS entity_name, e.city, p.name AS persona_name, u.email AS created_by_email, a.email AS approved_by_email,
             (SELECT array_agg(c.label ORDER BY c.sort_order) FROM criteria c WHERE c.id = ANY(i.criteria_ids)) AS criteria_labels,
-            (SELECT count(*)::int FROM inquiry_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending') AS pending_answers,
+            (SELECT count(*)::int FROM inquiry_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending')
+              + (SELECT count(*)::int FROM inquiry_feature_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending') AS pending_answers,
             COALESCE(i.submission_id, (SELECT s.id FROM submissions s WHERE s.entity_id = i.entity_id ORDER BY s.created_at DESC LIMIT 1)) AS sub_id
        FROM inquiries i JOIN entities e ON e.id = i.entity_id
        LEFT JOIN personas p ON p.id = i.persona_id
@@ -802,6 +842,7 @@ router.post('/anfragen/:inquiryId/formulieren', wrap(async (req, res) => {
       criteriaIds: [].concat(req.body.criteria || []).filter((v) => UUID_RE.test(v)),
       askPhotos: req.body.ask_photos === 'on',
       adminNote: String(req.body.note || '').trim().slice(0, 1000),
+      ...confirmFields(req.body),
     }, req.session.admin.id);
     res.redirect(withParam(back, 'ok', 'Entwurf formuliert – bitte prüfen und senden.'));
   } catch (err) {

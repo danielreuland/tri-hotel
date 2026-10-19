@@ -50,7 +50,9 @@ async function collect() {
   // Antworten von Betreibern
   for (const r of await db.many(
     `SELECT i.id, i.entity_id, e.name, COALESCE(i.submission_id, ${latestSub}) AS sub_id, count(a.id)::int AS n
-       FROM inquiries i JOIN entities e ON e.id = i.entity_id JOIN inquiry_answers a ON a.inquiry_id = i.id AND a.status = 'pending'
+       FROM inquiries i JOIN entities e ON e.id = i.entity_id
+       JOIN (SELECT inquiry_id, id FROM inquiry_answers WHERE status = 'pending'
+             UNION ALL SELECT inquiry_id, id FROM inquiry_feature_answers WHERE status = 'pending') a ON a.inquiry_id = i.id
       GROUP BY i.id, e.id`)) {
     push({ source: 'answers', source_key: `answers:${r.id}`, title: r.name, detail: [{ level: 'todo', text: `${r.n} ${r.n === 1 ? 'Antwort' : 'Antworten'} übernehmen oder verwerfen` }], link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
   }

@@ -30,7 +30,7 @@
     </form>
 
     <section class="card" style="margin-top:16px">
-      <h2 style="margin-top:0">Ausgefüllt <small class="muted">(Beispielobjekt<%= key === 'inquiry' ? ', mit Foto-Abschnitt' : ', mit Beispiel-Anfrage' %>)</small></h2>
+      <h2 style="margin-top:0">Ausgefüllt <small class="muted">(Beispielobjekt<%= key === 'inquiry' ? ', mit Foto- und Bestätigungs-Abschnitt' : ', mit Beispiel-Anfrage' %>)</small></h2>
       <p class="muted" style="margin-top:0"><small>So sieht der Text <%= def.ai ? 'ohne KI aus (Rückfallebene)' : 'beim Versand aus' %>. Der KI-Hinweis wird beim Versand angehängt.</small></p>
       <p><strong><%= fallback.subject %></strong></p>
       <div class="mail-body"><%= fallback.body %></div>

@@ -1,0 +1,35 @@
+<%#
+  Block „Bekannte Angaben bestätigen lassen“ im Anfrage-Formular (Entwurf Schritt 1 und neue Anfrage).
+  Erwartet: criteria, factByCrit, describeValue, confirmFeatureList, offerFeatureCount,
+            sel = { criteriaIds, featureIds }, offerChecked, idPrefix
+%>
+<% var known = criteria.filter(function (c) {
+     var f = factByCrit[c.id];
+     return (c.scoring.type === 'option' || c.scoring.type === 'bool') && f && !f.disputed && describeValue(c, f.value);
+   });
+   var TRUST = { 1: 'vom Betreiber', 2: 'geprüft', 3: 'von Nutzern', 4: 'Vorschlag' };
+   var nSel = sel.criteriaIds.length + sel.featureIds.length; %>
+<details class="confirm-block" style="margin:0 0 10px" <%= nSel ? 'open' : '' %>>
+  <summary><strong>Bekannte Angaben bestätigen lassen</strong> <small class="muted">(<%= nSel %> ausgewählt) – in der Mail steht nur die Anzahl, die Liste im Antwortformular</small></summary>
+  <% if (known.length) { %>
+    <p class="muted" style="margin:8px 0 4px"><small>Werte <small>(vorausgewählt: geprüft und Vorschläge; oben gefragte Werte werden nicht zusätzlich bestätigt)</small></small></p>
+    <div class="grid grid-2" style="gap:2px 16px;margin:0 0 8px">
+      <% known.forEach(function (c) { var f = factByCrit[c.id]; %>
+        <label class="inline" style="margin:0"><input type="checkbox" name="confirm_criteria" value="<%= c.id %>" <%= sel.criteriaIds.indexOf(c.id) >= 0 ? 'checked' : '' %>>
+          <span><%= c.label %>: <%= describeValue(c, f.value) %> <small class="muted"><%= TRUST[f.trust_level] %></small></span></label>
+      <% }) %>
+    </div>
+  <% } else { %><p class="muted" style="margin:8px 0"><small>Noch keine bekannten Werte, die man bestätigen lassen kann.</small></p><% } %>
+  <% if (confirmFeatureList.length) { %>
+    <p class="muted" style="margin:8px 0 4px"><small>Erfasste Leistungen</small></p>
+    <div class="grid grid-2" style="gap:2px 16px;margin:0 0 8px">
+      <% confirmFeatureList.forEach(function (ft) { %>
+        <label class="inline" style="margin:0"><input type="checkbox" name="confirm_features" value="<%= ft.id %>" <%= sel.featureIds.indexOf(ft.id) >= 0 ? 'checked' : '' %>> <span><%= ft.label %></span></label>
+      <% }) %>
+    </div>
+  <% } %>
+  <% if (offerFeatureCount) { %>
+    <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="offer_features" <%= offerChecked ? 'checked' : '' %>>
+      <span>Außerdem fragen „Bieten Sie außerdem …?“ <small class="muted">(<%= offerFeatureCount %> weitere Leistungen aus dem Katalog zum Ankreuzen)</small></span></label>
+  <% } %>
+</details>

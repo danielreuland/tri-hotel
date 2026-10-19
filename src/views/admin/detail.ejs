@@ -33,7 +33,7 @@
 <% } %>
 
 <% if (entity) {
-  var pendingAnswerCount = (inquiryList || []).reduce(function (n, i) { return n + (i.answers || []).filter(function (a) { return a.status === 'pending'; }).length; }, 0);
+  var pendingAnswerCount = (inquiryList || []).reduce(function (n, i) { return n + (i.answers || []).concat(i.featureAnswers || []).filter(function (a) { return a.status === 'pending'; }).length; }, 0);
   var draftCount = (inquiryList || []).filter(function (i) { return i.status === 'draft'; }).length;
   var pendingImageCount = (images || []).filter(function (i) { return !i.approved_at; }).length + (text && text.status !== 'published' ? 1 : 0);
   var detailTabs = [
@@ -373,6 +373,9 @@
                 <span><%= c.label %> <small class="muted"><%= !f ? 'unbekannt' : f.disputed ? 'strittig' : f.trust_level === 4 ? 'Vorschlag' : 'geprüft' %></small></span></label>
             <% }) %>
           </div>
+          <%- include('_confirm-block', {
+                sel: draftInq.body ? { criteriaIds: draftInq.confirm_criteria_ids || [], featureIds: draftInq.confirm_feature_ids || [] } : confirmDefaults(draftIds),
+                offerChecked: draftInq.body ? (draftInq.offer_feature_ids || []).length > 0 : true }) %>
           <label class="inline"><input type="checkbox" name="ask_photos" <%= draftInq.ask_photos ? 'checked' : '' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
           <label for="draft-note">Hinweis an den Agenten <small class="muted">optional</small></label>
           <textarea id="draft-note" name="note" style="min-height:50px"><%= draftInq.admin_note || '' %></textarea>
@@ -417,6 +420,7 @@
               <% }) %>
             </div>
           </details>
+          <%- include('_confirm-block', { sel: confirmDefaults(unclearIds), offerChecked: true }) %>
           <label class="inline"><input type="checkbox" name="ask_photos" <%= hasApprovedImage ? '' : 'checked' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
           <label for="inq-note">Hinweis an den Agenten <small class="muted">optional, z. B. „Bahnzeiten im Winter erfragen“</small></label>
           <textarea id="inq-note" name="note" style="min-height:60px"></textarea>
@@ -428,26 +432,58 @@
         <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:12px">
           <p style="margin:0 0 6px">
             <span class="badge <%= inq.status === 'answered' ? 'good' : inq.status === 'failed' ? 'bad' : inq.status === 'sent' ? 'accent' : '' %>"><%= statusText %></span>
-            <small class="muted">gestartet <%= formatDate(inq.created_at) %><%= inq.sent_at ? ' · versendet ' + formatDate(inq.sent_at) : '' %><%= inq.reminder_sent_at ? ' · erinnert ' + formatDate(inq.reminder_sent_at) : '' %><%= inq.answered_at ? ' · Antwort ' + formatDate(inq.answered_at) : '' %> · <%= inq.criteria_ids.length %> Fragen<%= inq.ask_photos ? ' + Fotos' : '' %> · <%= inq.language.toUpperCase() %><%= personaName ? ' · von ' + personaName + ' (KI)' : '' %></small>
+            <small class="muted">gestartet <%= formatDate(inq.created_at) %><%= inq.sent_at ? ' · versendet ' + formatDate(inq.sent_at) : '' %><%= inq.reminder_sent_at ? ' · erinnert ' + formatDate(inq.reminder_sent_at) : '' %><%= inq.answered_at ? ' · Antwort ' + formatDate(inq.answered_at) : '' %> · <%= inq.criteria_ids.length %> Fragen<% var nConf = (inq.confirm_criteria_ids || []).length + (inq.confirm_feature_ids || []).length; %><%= nConf ? ' + ' + nConf + ' Bestätigungen' : '' %><%= inq.ask_photos ? ' + Fotos' : '' %> · <%= inq.language.toUpperCase() %><%= personaName ? ' · von ' + personaName + ' (KI)' : '' %></small>
           </p>
           <% if (inq.error) { %><p style="color:var(--bad);margin:0 0 6px"><small><%= inq.error %></small></p><% } %>
           <% if (inq.body) { %>
             <details><summary><small>Mail ansehen: <%= inq.subject %></small></summary><pre class="json" style="margin-top:6px"><%= inq.body.replace('{{LINK}}', '[persönlicher Antwortlink]') %></pre></details>
           <% } %>
           <% if (inq.reply_note || inq.reply_name) { %><p style="margin:8px 0"><strong>Nachricht<%= inq.reply_name ? ' von ' + inq.reply_name : '' %>:</strong> <%= inq.reply_note || '–' %></p><% } %>
+          <% var featureAnswers = inq.featureAnswers || [];
+             var sameValue = function (a) { return a.kind === 'confirm' && JSON.stringify(a.value) === JSON.stringify(a.previous); };
+             var bulkN = inq.answers.filter(function (a) { return a.status === 'pending' && sameValue(a); }).length
+               + featureAnswers.filter(function (a) { return a.status === 'pending' && a.known && a.offered; }).length; %>
+          <% if (bulkN) { %>
+            <form method="post" action="/admin/anfragen/<%= inq.id %>/bestaetigungen-uebernehmen" style="margin:8px 0">
+              <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
+              <button class="btn small" type="submit">Alle <%= bulkN %> Bestätigungen übernehmen</button>
+              <small class="muted">unveränderte Werte und weiter angebotene Leistungen als „vom Betreiber“ – Korrekturen und neue Leistungen einzeln prüfen</small>
+            </form>
+          <% } %>
           <% if (inq.answers.length) { %>
             <div class="table-scroll">
             <table>
               <tr><th>Kriterium</th><th>Antwort</th><th>Bisher</th><th></th></tr>
               <% inq.answers.forEach(function (a) { var c = criteria.find(function (x) { return x.id === a.criterion_id }); var f = factByCrit[a.criterion_id]; %>
                 <tr>
-                  <td><%= c ? c.label : '–' %></td>
+                  <td><%= c ? c.label : '–' %><% if (a.kind === 'confirm') { %> <span class="badge <%= sameValue(a) ? 'good' : 'warn' %>"><%= sameValue(a) ? 'bestätigt' : 'korrigiert' %></span><% } %></td>
                   <td><strong><%= a.value ? ((c && describeValue(c, a.value)) || JSON.stringify(a.value)) : 'weiß nicht' %></strong><% if (a.comment) { %><br><small class="muted">„<%= a.comment %>“</small><% } %></td>
                   <td><small class="muted"><%= f && c ? (describeValue(c, f.value) || '') + ' (Stufe ' + f.trust_level + ')' : 'unbekannt' %></small></td>
                   <td style="white-space:nowrap">
                     <% if (a.status === 'pending') { %>
                       <form method="post" action="/admin/antworten/<%= a.id %>/uebernehmen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small" type="submit" <%= a.value ? '' : 'disabled' %>>Übernehmen</button></form>
                       <form method="post" action="/admin/antworten/<%= a.id %>/verwerfen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small secondary" type="submit">Verwerfen</button></form>
+                    <% } else { %><span class="badge <%= a.status === 'accepted' ? 'good' : '' %>"><%= a.status === 'accepted' ? 'übernommen' : 'verworfen' %></span><% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </table>
+            </div>
+          <% } %>
+          <% if (featureAnswers.length) { %>
+            <div class="table-scroll">
+            <table style="margin-top:8px">
+              <tr><th>Leistung</th><th>Laut Betreiber</th><th>Bisher</th><th></th></tr>
+              <% featureAnswers.forEach(function (a) { %>
+                <tr>
+                  <td><%= a.label %></td>
+                  <td><strong><%= a.offered ? 'wird angeboten' : 'wird nicht angeboten' %></strong>
+                    <% if (a.known && !a.offered) { %> <span class="badge warn">entfernen</span><% } else if (!a.known) { %> <span class="badge accent">neu</span><% } else { %> <span class="badge good">bestätigt</span><% } %></td>
+                  <td><small class="muted"><%= a.known ? 'erfasst' : 'nicht erfasst' %></small></td>
+                  <td style="white-space:nowrap">
+                    <% if (a.status === 'pending') { %>
+                      <form method="post" action="/admin/leistungs-antworten/<%= a.id %>/uebernehmen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small" type="submit">Übernehmen</button></form>
+                      <form method="post" action="/admin/leistungs-antworten/<%= a.id %>/verwerfen" style="display:inline"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small secondary" type="submit">Verwerfen</button></form>
                     <% } else { %><span class="badge <%= a.status === 'accepted' ? 'good' : '' %>"><%= a.status === 'accepted' ? 'übernommen' : 'verworfen' %></span><% } %>
                   </td>
                 </tr>
