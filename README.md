@@ -45,7 +45,7 @@ cp .env.example .env            # ausfüllen: DATABASE_URL, SESSION_SECRET, BASE
 npm run migrate                 # db/migrations/*.sql
 npm test
 npm run create-admin -- info@triprep.de
-pm2 start deploy/ecosystem.config.js && pm2 save
+pm2 start deploy/ecosystem.config.js && pm2 save   # Cluster-Modus: pm2 reload ohne Ausfall
 ```
 
 Nginx: `deploy/nginx-tri-hotel.conf` nach `/etc/nginx/sites-available/` kopieren, verlinken, `certbot --nginx -d tri-hotel.de -d www.tri-hotel.de`. Die App läuft auf Port **3010** (triprep-api belegt 3000).
@@ -54,7 +54,7 @@ Nginx: `deploy/nginx-tri-hotel.conf` nach `/etc/nginx/sites-available/` kopieren
 
 ```bash
 git push
-ssh root@87.106.155.249 "cd /var/www/tri-hotel && git pull && npm install --omit=dev && npm run migrate && pm2 restart tri-hotel"
+ssh root@87.106.155.249 "cd /var/www/tri-hotel && git pull && npm install --omit=dev && npm run migrate && npm test && pm2 reload tri-hotel"
 ```
 
 ## Leistungen und Suche

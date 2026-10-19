@@ -88,27 +88,31 @@ Reihenfolge: a) Direktbuchung → b) Hotel-Anfrage → c) Tripadvisor.
   Quelle: Tripadvisor Content API – vorher aktuelle Bedingungen prüfen (Freischaltung, Logo-/Darstellungsvorgaben,
   Zwischenspeicherung). Ohne API: einfacher (ggf. Partner-)Link.
 
-### 11. Offene Punkte aus dem 19.10.2026 (nicht Code, bzw. klein)
-- **Robinson-Anfrage (09:35)**: als „versendet“ markiert, ging aber nie raus (Versand lief da noch nur ins Log).
-  Daniel fragen, ob zurücksetzen (Status → draft, `body` behalten) und neu senden. Ebenso andere Mails vor ~10:00 Uhr
-  mit `email_log.provider_id = 'console'` prüfen (u. a. Bestätigungsmails an Melder).
-- **Tauern Spa Kaprun**: Anfrage unzustellbar (bounce) → Kontakt-E-Mail korrigieren, neu anfragen.
-- **Vorschläge seit dem 19.10. früh** (z. B. Martinhal Sagres) bekamen die Bestätigungsmail ohne Knopf (Fix `fb8014e`):
-  im Admin ohne Bestätigung freischalten, sonst verfallen sie nach 72 h.
-- **Partnerprogramme**: nach Freigabe Awin-Publisher-ID + Programm-ID für HolidayCheck im Admin (Partnerprogramme →
-  „HolidayCheck“) eintragen; Booking-Bewerbung abschicken, sobald Search Console erste indexierte Seiten zeigt;
-  Expedia Group bewerben. Beschreibungstexte für die Bewerbungen hat Daniel.
-- **Inbetriebnahme-Rest**: Ausfallüberwachung (UptimeRobot), PM2 Zero-Downtime-Reload (Cluster-Modus), Plausible-Ziel
-  „Hotelvergleich“ + Eigenschaften `anbieter`/`art` (Daniel), Gewerbeanmeldung vor Provisionen (Daniel),
-  alte ufw-Regel `5678 ALLOW Anywhere` (v4+v6) entfernen – harmlos, n8n lauscht nur auf 127.0.0.1, aber aufräumen
-  (nur mit Daniels OK, Firewall-Änderungen schrittweise).
-- **Server-Konfiguration seit heute** (nur `.env`, nicht im Repo): `MAIL_PROVIDER=smtp` über info@tri-hotel.de (IONOS),
-  `MAIL_INBOUND=imap`, `NOINDEX=false`; Site-Absender `info@tri-hotel.de`. Search Console (Domain-Property, TXT bei
-  IONOS) bestätigt, Sitemap eingereicht.
-- **Erinnerung Off-Site-Backup 04.01.2027** auf dem neuen Mac neu anlegen (geplante Aufgabe in der Claude-App),
-  auf dem Firmen-Mac löschen.
+### 11. Offene Punkte aus dem 19.10.2026 (Stand: am 19.10. abends durchgegangen)
+Erledigt:
+- Robinson Club Fleesensee und Hotel BCL Podium (beide nur ins Log „versendet“) per SQL auf **Entwurf** zurückgesetzt
+  (Text behalten, Hinweis im Feld `error`, Eintrag `reset_inquiry_to_draft` in admin_actions) → **Daniel: prüfen und neu freigeben.**
+  Die übrigen Mails mit `provider_id = 'console'` gingen nur an eigene Adressen/Tests – nichts zu tun.
+- Vorschläge ohne Knopf: keine Meldung mehr im Status „eingegangen“ – nichts zu tun.
+- PM2 im Cluster-Modus (1 Instanz), `pm2 reload` getestet: 60/60 Anfragen ohne Fehler während des Reloads.
+- ufw-Regel 5678 war bereits entfernt (nur 22/80/443); n8n lauscht auf 127.0.0.1.
+- Erinnerung Off-Site-Backup 04.01.2027 auf dem neuen Mac angelegt (geplante Aufgabe „offsite-backup-erinnerung“).
+  → Daniel: alte Erinnerung auf dem Firmen-Mac löschen.
+
+Offen:
+- **Tauern Spa Kaprun**: Adresse office@tauernspakaprun.com ist richtig (steht so auf der Website). Abgelehnt hat der
+  Spamfilter des Empfängers (Cisco IronPort, `550 5.7.1` – Absender abgewiesen), vermutlich wegen der jungen Domain;
+  SPF, DKIM (s1/s2-ionos) und DMARC sind korrekt. Entwurf liegen lassen, **Anfang November erneut senden**.
+- **Partnerprogramme** (Daniel): nach Freigabe Awin-Publisher-ID + Programm-ID für HolidayCheck eintragen
+  (Partnerprogramme → „HolidayCheck“); Booking-Bewerbung, sobald Search Console erste indexierte Seiten zeigt;
+  Expedia Group bewerben.
+- **Daniel**: Ausfallüberwachung (UptimeRobot), Plausible-Ziel „Hotelvergleich“ + Eigenschaften `anbieter`/`art`,
+  Gewerbeanmeldung vor Provisionen.
 - **triprep**: Branch `pwa-nutrition` (Commit 16adf7a, PWA + Nutrition Logs, ändert server.js) nur gesichert –
   vor Übernahme mit Daniel prüfen.
+
+Zur Info – Server-Konfiguration (nur `.env`, nicht im Repo): `MAIL_PROVIDER=smtp` über info@tri-hotel.de (IONOS),
+`MAIL_INBOUND=imap`, `NOINDEX=false`; Site-Absender `info@tri-hotel.de`. Search Console bestätigt, Sitemap eingereicht.
 
 ### 12. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
