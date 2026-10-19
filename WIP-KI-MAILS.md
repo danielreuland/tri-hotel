@@ -70,7 +70,47 @@ Mit Daniel abgestimmt (19.10.2026):
 - Faustregel System vs. n8n: personenbezogene Daten, Einwilligungen, Abrechnung, Kundenmails, Fristen → System;
   fremde Dienste, Social (Lara), Benachrichtigungen an Daniel, Experimente → n8n per Webhook mit minimalen Daten.
 
-### 10. Deploy
+### 10. Hotelseite „Buchen & Anfragen“ (Konzept vom 19.10.2026, von Daniel bestätigt)
+Reihenfolge: a) Direktbuchung → b) Hotel-Anfrage → c) Tripadvisor.
+- **a) Direktbuchung neu anordnen** (bestehende Technik `partner_programs`/`entity_links`, `/go/:slug/:program`):
+  Box „Buchen & Anfragen“ rechts (Handy: schmale feste Leiste unten mit „Preise prüfen“ + „Anfragen“).
+  Ein Hauptknopf „Preise prüfen“ → im Admin festgelegter Standard-Anbieter (voraussichtlich Booking);
+  darunter schlichte Textzeile „Auch bei: Expedia · Hotels.com · HolidayCheck · direkt beim Hotel“ – keine Logo-Knöpfe.
+  „Direkt beim Hotel“ (ohne Provision) immer dabei. Kennzeichnung „Anzeige“ bleibt; Reihenfolge der Anbieter legt
+  der Admin fest, nie Einfluss auf Score/Sortierung. Expedia + Hotels.com = ein Programm (Expedia Group).
+- **b) „Trainingslager anfragen“ beim Hotel**: Formular (Vorname, E-Mail, Zeitraum, Gruppengröße, Bedarf z. B.
+  Bahnzeiten/Radgarage, Nachricht, Einwilligung mit Hotelnamen) → E-Mail-Bestätigung → Admin-Prüfung → Weiterleitung an
+  `entities.contact_email` mit Reply-To. Aufbauend auf `camp_leads`/`services/leads.js` (verallgemeinern: Ziel Hotel oder
+  Camp-Anbieter). Start kostenlos für alle Hotels mit Kontaktadresse; später Baustein für Premium-Partner. Kein WhatsApp.
+  Plausible-Ziel „Hotel-Anfrage“.
+- **c) Tripadvisor**: nur Note (Bubbles), Anzahl und Link „Alle Bewertungen auf Tripadvisor“ im Abschnitt
+  „Bewertungen anderswo“ (zusammen mit Google), getrennt von eigenen Athleten-Bewertungen, nie im Score.
+  Quelle: Tripadvisor Content API – vorher aktuelle Bedingungen prüfen (Freischaltung, Logo-/Darstellungsvorgaben,
+  Zwischenspeicherung). Ohne API: einfacher (ggf. Partner-)Link.
+
+### 11. Offene Punkte aus dem 19.10.2026 (nicht Code, bzw. klein)
+- **Robinson-Anfrage (09:35)**: als „versendet“ markiert, ging aber nie raus (Versand lief da noch nur ins Log).
+  Daniel fragen, ob zurücksetzen (Status → draft, `body` behalten) und neu senden. Ebenso andere Mails vor ~10:00 Uhr
+  mit `email_log.provider_id = 'console'` prüfen (u. a. Bestätigungsmails an Melder).
+- **Tauern Spa Kaprun**: Anfrage unzustellbar (bounce) → Kontakt-E-Mail korrigieren, neu anfragen.
+- **Vorschläge seit dem 19.10. früh** (z. B. Martinhal Sagres) bekamen die Bestätigungsmail ohne Knopf (Fix `fb8014e`):
+  im Admin ohne Bestätigung freischalten, sonst verfallen sie nach 72 h.
+- **Partnerprogramme**: nach Freigabe Awin-Publisher-ID + Programm-ID für HolidayCheck im Admin (Partnerprogramme →
+  „HolidayCheck“) eintragen; Booking-Bewerbung abschicken, sobald Search Console erste indexierte Seiten zeigt;
+  Expedia Group bewerben. Beschreibungstexte für die Bewerbungen hat Daniel.
+- **Inbetriebnahme-Rest**: Ausfallüberwachung (UptimeRobot), PM2 Zero-Downtime-Reload (Cluster-Modus), Plausible-Ziel
+  „Hotelvergleich“ + Eigenschaften `anbieter`/`art` (Daniel), Gewerbeanmeldung vor Provisionen (Daniel),
+  alte ufw-Regel `5678 ALLOW Anywhere` (v4+v6) entfernen – harmlos, n8n lauscht nur auf 127.0.0.1, aber aufräumen
+  (nur mit Daniels OK, Firewall-Änderungen schrittweise).
+- **Server-Konfiguration seit heute** (nur `.env`, nicht im Repo): `MAIL_PROVIDER=smtp` über info@tri-hotel.de (IONOS),
+  `MAIL_INBOUND=imap`, `NOINDEX=false`; Site-Absender `info@tri-hotel.de`. Search Console (Domain-Property, TXT bei
+  IONOS) bestätigt, Sitemap eingereicht.
+- **Erinnerung Off-Site-Backup 04.01.2027** auf dem neuen Mac neu anlegen (geplante Aufgabe in der Claude-App),
+  auf dem Firmen-Mac löschen.
+- **triprep**: Branch `pwa-nutrition` (Commit 16adf7a, PWA + Nutrition Logs, ändert server.js) nur gesichert –
+  vor Übernahme mit Daniel prüfen.
+
+### 12. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
 /admin/sites/<id> aufrufen und einen Entwurf formulieren.
 
