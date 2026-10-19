@@ -119,6 +119,7 @@ test('Sites: Paletten liefern alle Farb-Tokens für Hell und Dunkel, Überschrei
   assert.ok(!css.includes('evil') && !css.includes('body{'));
   assert.match(css, /\[data-theme="dark"\]\{--bg:#11161f/);
   assert.match(sites.themeCss({ theme: {} }), /--header-bg:#12345a/, 'ohne Angabe: Pool & Sonne');
-  assert.equal(sites.mailFrom({ name: 'tri-hotel.de', mail_from: 'hallo@tri-hotel.de' }, { name: 'Mia', email: 'mia@tri-hotel.de' }), '"Mia · tri-hotel.de" <mia@tri-hotel.de>');
+  assert.equal(sites.mailFrom({ name: 'tri-hotel.de', mail_from: 'hallo@tri-hotel.de' }, { name: 'Mia', email: 'mia@tri-hotel.de' }, 'own'), '"Mia · tri-hotel.de" <mia@tri-hotel.de>');
+  assert.equal(sites.mailFrom({ name: 'tri-hotel.de', mail_from: 'info@tri-hotel.de' }, { name: 'Mia', email: 'mia@tri-hotel.de' }, 'site'), '"Mia · tri-hotel.de" <info@tri-hotel.de>');
   assert.equal(sites.mailFrom({ name: 'tri-hotel.de', mail_from: 'hallo@tri-hotel.de' }, null), '"tri-hotel.de" <hallo@tri-hotel.de>');
 });

@@ -1,0 +1,89 @@
+<%- include('../partials/admin-head') %>
+<p class="muted"><a href="/admin/postfach">← Postfach</a></p>
+<h1><%= m.subject || '(ohne Betreff)' %></h1>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+
+<div class="admin-detail">
+  <div>
+    <article class="card">
+      <p style="margin-top:0">
+        <span class="badge <%= m.status === 'new' ? 'warn' : m.status === 'done' ? 'good' : '' %>"><%= STATUS[m.status] %></span>
+        <% if (m.kind !== 'mail') { %><span class="badge <%= m.kind === 'bounce' ? 'bad' : '' %>"><%= KINDS[m.kind] %></span><% } %>
+        <strong><%= m.from_name || m.from_email %></strong> <small class="muted">&lt;<%= m.from_email %>&gt; · <%= new Date(m.sent_at || m.received_at).toLocaleString('de-DE') %></small><br>
+        <small class="muted">an <%= m.to_emails.join(', ') || '–' %><%= m.persona_name ? ' · Persona: ' + m.persona_name : '' %></small>
+      </p>
+      <div class="mail-body"><%= m.body_text || '(kein Text)' %></div>
+      <% if (m.attachments.length) { %>
+        <p style="margin-bottom:0"><strong>Anhänge:</strong>
+          <% m.attachments.forEach(function (a, i) { %>
+            <% if (a.file) { %><a class="chip" href="/admin/postfach/<%= m.id %>/anhang/<%= i %>"><%= a.name %> <small>(<%= Math.max(1, Math.round(a.size / 1024)) %> KB)</small></a>
+            <% } else { %><span class="chip" title="nicht gespeichert (zu groß oder zu viele)"><%= a.name %> – nicht gespeichert</span><% } %>
+          <% }) %></p>
+        <p class="muted" style="margin:4px 0 0"><small>Anhänge werden nur heruntergeladen, nie im Browser geöffnet. Fotos erst nach geklärter Nutzungserlaubnis unter „Bilder“ hochladen.</small></p>
+      <% } %>
+    </article>
+
+    <% if (m.kind !== 'bounce') { %>
+    <section class="card" style="margin-top:16px" id="antworten">
+      <h2 style="margin-top:0">Antworten</h2>
+      <form method="post" action="/admin/postfach/<%= m.id %>/antworten">
+        <label for="r-persona">Absender</label>
+        <select id="r-persona" name="persona">
+          <option value="">Team (ohne Persona)</option>
+          <% personas.forEach(function (p) { %><option value="<%= p.id %>" <%= p.id === defaultPersona ? 'selected' : '' %>><%= p.name %> – <%= p.title %> (<%= p.site_name %>)</option><% }) %>
+        </select>
+        <p class="muted" style="margin:4px 0 8px"><small>An <%= m.from_email %> · Betreff „<%= replySubject(m.subject) %>“ · Signatur der Persona und Zitat der Mail werden angehängt.</small></p>
+        <label for="r-text">Text</label>
+        <textarea id="r-text" name="text" required style="min-height:180px">Hallo<%= m.from_name ? ' ' + m.from_name.split(' ')[0] : '' %>,
+
+
+Viele Grüße</textarea>
+        <p style="margin-bottom:0"><button class="btn" type="submit">Senden</button></p>
+      </form>
+    </section>
+    <% } %>
+
+    <% if (thread.length > 1) { %>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin-top:0">Verlauf mit <%= m.entity_name || m.provider_name %></h2>
+        <%- include('_mail-thread', { thread: thread, current: m.id }) %>
+      </section>
+    <% } %>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h3 style="margin-top:0">Zuordnung</h3>
+      <% if (m.entity_name) { %>
+        <p style="margin:0"><%= m.entity_name %><% if (m.submission_id) { %> · <a href="/admin/meldungen/<%= m.submission_id %>#postfach">öffnen</a><% } %></p>
+      <% } else if (m.provider_name) { %>
+        <p style="margin:0"><%= m.provider_name %> <small class="muted">(Camp-Anbieter)</small></p>
+      <% } else { %><p style="margin:0"><span class="badge warn">nicht zugeordnet</span></p><% } %>
+      <% if (m.matched_by) { %><p class="muted" style="margin:4px 0 0"><small>über: <%= MATCHED_BY[m.matched_by] %><%= m.inquiry_id ? ' · gehört zu einer Anfrage' : '' %></small></p><% } %>
+      <form method="post" action="/admin/postfach/<%= m.id %>/zuordnen" style="margin-top:10px">
+        <label for="a-target">Ändern</label>
+        <select id="a-target" name="target">
+          <option value="">– keine Zuordnung –</option>
+          <optgroup label="Objekte">
+            <% entities.forEach(function (e) { %><option value="e:<%= e.id %>" <%= e.id === m.entity_id ? 'selected' : '' %>><%= e.name %><%= e.city ? ' (' + e.city + ')' : '' %></option><% }) %>
+          </optgroup>
+          <optgroup label="Camp-Anbieter">
+            <% providers.forEach(function (p) { %><option value="p:<%= p.id %>" <%= p.id === m.camp_provider_id ? 'selected' : '' %>><%= p.name %></option><% }) %>
+          </optgroup>
+        </select>
+        <button class="btn small secondary" type="submit" style="margin-top:6px">Speichern</button>
+      </form>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin-top:0">Status</h3>
+      <form method="post" action="/admin/postfach/<%= m.id %>/status" class="filters" style="margin:0">
+        <% if (m.status !== 'done') { %><button class="btn small" name="status" value="done">Erledigt</button><% } %>
+        <% if (m.status !== 'ignored') { %><button class="btn small secondary" name="status" value="ignored">Ignorieren</button><% } %>
+        <% if (m.status !== 'new') { %><button class="btn small secondary" name="status" value="new">Wieder offen</button><% } %>
+      </form>
+      <% if (m.handled_at) { %><p class="muted" style="margin:6px 0 0"><small><%= STATUS[m.status] %> <%= new Date(m.handled_at).toLocaleString('de-DE') %><%= m.handled_by_email ? ' von ' + m.handled_by_email : '' %></small></p><% } %>
+    </div>
+  </aside>
+</div>
+<%- include('../partials/admin-foot') %>

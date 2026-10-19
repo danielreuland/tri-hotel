@@ -1,0 +1,13 @@
+<%# Nachricht aus dem Admin (Klartext), optional als Agent (Mia, Lara, Ben) mit Signatur; darunter das Zitat der beantworteten Mail. %>
+<%- include('_layout_top') %>
+<% function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); } %>
+<% text.split(/\n{2,}/).forEach(function (para) { %>
+  <p><%- para.split('\n').map(esc).join('<br>') %></p>
+<% }) %>
+<% if (locals.persona) { %>
+  <p style="color:#57606a;font-size:14px"><strong style="color:#1b1f24"><%= persona.name %></strong><br><%= persona.title %> · <%= site.name %></p>
+<% } %>
+<% if (locals.quoted) { %>
+  <div style="border-left:3px solid #d0d7de;padding-left:10px;color:#57606a;font-size:13px;margin-top:20px"><%- esc(quoted).replace(/\n/g, '<br>') %></div>
+<% } %>
+<%- include('_layout_bottom') %>

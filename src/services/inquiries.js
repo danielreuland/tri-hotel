@@ -156,6 +156,7 @@ async function send(inquiryId) {
       site,
       persona,
       inquiryId: inq.id,
+      entityId: inq.entity_id,
       data: { subject: draft.subject, text: draft.body.replace(agent.LINK, answerUrl(site, tok.token)), language: inq.language },
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
@@ -294,6 +295,7 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       template: 'inquiry-answered',
       site,
       inquiryId: inq.id,
+      entityId: inq.entity_id,
       data: {
         entityName: entity.name, answers: answers.length, photos: photos.length, consents: granted.map((t) => consentTexts.TYPES[t]),
         link: `${config.baseUrl}/admin/${inq.submission_id ? `meldungen/${inq.submission_id}` : 'aufgaben'}#anfragen`,
@@ -345,8 +347,10 @@ async function close(inquiryId, adminId) {
 async function dailyMaintenance() {
   const expired = await db.query(`UPDATE inquiries SET status = 'expired', updated_at = now() WHERE status = 'sent' AND expires_at < now()`);
   const due = await db.many(
-    `SELECT * FROM inquiries WHERE status = 'sent' AND reminder_sent_at IS NULL
-       AND sent_at < now() - make_interval(days => $1) AND expires_at > now()`,
+    `SELECT * FROM inquiries i WHERE status = 'sent' AND reminder_sent_at IS NULL
+       AND sent_at < now() - make_interval(days => $1) AND expires_at > now()
+       -- keine Erinnerung, wenn der Betreiber per Mail geantwortet hat
+       AND NOT EXISTS (SELECT 1 FROM mail_messages m WHERE m.inquiry_id = i.id AND m.kind = 'mail')`,
     [REMINDER_AFTER_DAYS]
   );
   for (const inq of due) {
@@ -359,6 +363,7 @@ async function dailyMaintenance() {
       site,
       persona,
       inquiryId: inq.id,
+      entityId: inq.entity_id,
       data: {
         subject: (inq.language === 'de' ? 'Erinnerung: ' : 'Reminder: ') + inq.subject,
         text: inq.body.replace(agent.LINK, answerUrl(site, tok.token)),

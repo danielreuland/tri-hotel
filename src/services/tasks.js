@@ -19,6 +19,8 @@ const LABELS = {
   google_place: 'Google Place ID',
   camp_lead: 'Camp-Anfrage',
   contact: 'Kontaktanfrage',
+  mail: 'E-Mail',
+  mail_unassigned: 'E-Mail zuordnen',
   camp_partner: 'Camp-Anbieter',
   manual: 'Eigene Aufgabe',
 };
@@ -121,6 +123,20 @@ async function collect() {
       title: isPartner ? `${m.company} – ${({ korrektur: 'Korrektur', aufnahme: 'Aufnahme', partner: 'Partnerschaft', sonstiges: 'Anfrage' })[m.request] || 'Anfrage'}` : (m.name ? `${m.name} (${m.email})` : m.email),
       detail: [{ level: 'todo', text: m.message.replace(/\s+/g, ' ').slice(0, 300) }], link: `/admin/kontakt#m-${m.id}`, entity_id: null });
   }
+  // Postfach: jede neue Mail eine Karte – zugeordnete unter dem Objekt bzw. Anbieter, sonst „zuordnen“
+  for (const m of await db.many(
+    `SELECT m.id, m.kind, m.from_email, m.from_name, m.subject, m.body_text, m.entity_id, e.name AS entity_name, cp.name AS provider_name, p.name AS persona_name
+       FROM mail_messages m LEFT JOIN entities e ON e.id = m.entity_id LEFT JOIN camp_providers cp ON cp.id = m.camp_provider_id
+       LEFT JOIN personas p ON p.id = m.persona_id
+      WHERE m.status = 'new' ORDER BY m.received_at`)) {
+    const assigned = m.entity_name || m.provider_name;
+    const who = m.from_name ? `${m.from_name} <${m.from_email}>` : m.from_email;
+    const lead = m.kind === 'bounce' ? 'Unzustellbar' : `${who}${m.persona_name ? ` an ${m.persona_name}` : ''}`;
+    push({ source: assigned ? 'mail' : 'mail_unassigned', source_key: `mail:${m.id}`,
+      title: assigned ? `${assigned} – ${m.subject || '(ohne Betreff)'}` : `Neue Mail – zuordnen: ${m.subject || '(ohne Betreff)'}`,
+      detail: [{ level: m.kind === 'bounce' ? 'block' : 'todo', text: `${lead}: ${(m.body_text || '').replace(/\s+/g, ' ').slice(0, 200)}` }],
+      fingerprint: assigned ? 'assigned' : 'open', link: `/admin/postfach/${m.id}`, entity_id: m.entity_id });
+  }
   return out;
 }
 
@@ -192,6 +208,10 @@ async function move(id, status, order, adminId) {
     const ids = (order || []).filter((x) => typeof x === 'string');
     for (let i = 0; i < ids.length; i++) await c.query('UPDATE admin_tasks SET position = $2 WHERE id = $1 AND status = $3', [ids[i], i + 1, status]);
     if (t.status !== status) await logAction(adminId, 'task', id, 'move_task', { from: t.status, to: status, title: t.title }, c);
+    // Mail-Karte erledigt = Mail im Postfach erledigt
+    if (status === 'done' && t.source_key && t.source_key.startsWith('mail:')) {
+      await c.query(`UPDATE mail_messages SET status = 'done', handled_at = now(), handled_by = $2 WHERE id = $1 AND status = 'new'`, [t.source_key.slice(5), adminId]);
+    }
     if (status === 'in_progress' && !t.assignee_id && adminId) {
       await c.query('UPDATE admin_tasks SET assignee_id = $2 WHERE id = $1', [id, adminId]);
       await logAction(adminId, 'task', id, 'assign_task', { assignee: adminId, auto: true }, c);

@@ -102,7 +102,7 @@ async function forward(id, adminId) {
   if (!l.lead_email) throw new Error('Für diesen Anbieter ist keine Empfänger-Adresse für Anfragen hinterlegt.');
   const site = await db.one('SELECT * FROM sites WHERE id = $1', [l.site_id]);
   const sent = await mailer.send({
-    to: l.lead_email, template: 'lead-forward', site, replyTo: l.email,
+    to: l.lead_email, template: 'lead-forward', site, replyTo: l.email, campProviderId: l.provider_id,
     data: { entityName: l.provider_name, lead: l, levelLabel: LEVELS[l.level] || null },
   });
   if (!sent) throw new Error('Mailversand fehlgeschlagen – Anfrage bleibt offen.');

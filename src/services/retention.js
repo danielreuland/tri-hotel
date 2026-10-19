@@ -13,7 +13,8 @@ const RETENTION = {
   reviewUnconfirmedDays: 7,   // unbestätigte Bewertungen (mit Fotos) löschen
   heldReviewDays: 7,          // Bewertung zu einem Vorschlag, der abgelaufen ist (nicht bestätigt)
   leadUnconfirmedDays: 7,     // unbestätigte Camp-Anfragen löschen
-  leadMonths: 12,             // Kontaktdaten aus Camp-Anfragen nach Weitergabe/Ablehnung (Zählung für die Abrechnung bleibt)
+  leadMonths: 12,
+  mailMonths: 24,             // eingegangene Mails im Postfach samt Anhängen (siehe services/mailbox.js)             // Kontaktdaten aus Camp-Anfragen nach Weitergabe/Ablehnung (Zählung für die Abrechnung bleibt)
 };
 
 async function run() {
@@ -50,6 +51,7 @@ async function run() {
     `UPDATE camp_leads SET name = NULL, email = NULL, phone = NULL, message = NULL, period_note = NULL, ip_hash = NULL, anonymized_at = now()
       WHERE anonymized_at IS NULL AND status IN ('forwarded', 'rejected') AND updated_at < now() - make_interval(months => $1)`, [RETENTION.leadMonths]);
   await q('leadIpHashes', `UPDATE camp_leads SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
+  r.mails = await require('./mailbox').purge();
   await q('consents', `DELETE FROM consents WHERE withdrawn_at IS NOT NULL AND withdrawn_at < now() - make_interval(years => $1)`, [RETENTION.consentYearsAfterEnd]);
   return r;
 }

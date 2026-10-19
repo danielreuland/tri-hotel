@@ -69,7 +69,7 @@ app.locals.monthRanges = require('./lib/seo').monthRanges;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
 // Rechtstexte: Löschfristen direkt aus der Konfiguration, Stand der Texte
 app.locals.retention = require('./services/retention').RETENTION;
-app.locals.legalDate = '12. Oktober 2026';
+app.locals.legalDate = '19. Oktober 2026';
 app.locals.googleMapsEnabled = Boolean(config.googleMapsEmbedKey);
 app.locals.entityImgAttrs = require('./services/media').entityImgAttrs;
 
@@ -97,6 +97,7 @@ app.use('/admin/camps', require('./routes/admin-camps'));
 app.use('/admin/bewertungen', require('./routes/admin-reviews'));
 app.use('/admin/partner', require('./routes/admin-partners'));
 app.use('/admin/camp-anfragen', require('./routes/admin-leads'));
+app.use('/admin/postfach', require('./routes/admin-mail'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/contact'));
 app.use('/', require('./routes/camps'));

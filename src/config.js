@@ -34,6 +34,21 @@ module.exports = {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Absender der Agenten (Mia, Lara, Ben): 'site' = Sammeladresse der Site mit Agentennamen
+    // (z. B. "Mia · tri-hotel.de" <info@…>), 'own' = eigene Adresse der Persona (braucht Aliase, z. B. Google Workspace)
+    personaSender: process.env.MAIL_PERSONA_SENDER === 'own' ? 'own' : 'site',
+    // Empfang: 'none' oder 'imap' (später z. B. 'gmail'); IMAP-Zugang ohne Angabe wie SMTP
+    inbound: {
+      provider: process.env.MAIL_INBOUND || 'none',
+      imap: {
+        host: process.env.IMAP_HOST,
+        port: Number(process.env.IMAP_PORT || 993),
+        user: process.env.IMAP_USER || process.env.SMTP_USER,
+        pass: process.env.IMAP_PASS || process.env.SMTP_PASS,
+        folder: process.env.IMAP_FOLDER || 'INBOX',
+        doneFolder: process.env.IMAP_DONE_FOLDER || 'Verarbeitet',
+      },
+    },
   },
   llm: {
     provider: process.env.LLM_PROVIDER || 'none',

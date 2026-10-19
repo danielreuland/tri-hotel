@@ -15,6 +15,7 @@ const SECTIONS = [
   {
     key: 'kommunikation', label: 'Kommunikation',
     tabs: [
+      { href: '/admin/postfach', label: 'Postfach' },
       { href: '/admin/anfragen', label: 'Anfragen' },
       { href: '/admin/bewertungen', label: 'Bewertungen' },
       { href: '/admin/kontakt', label: 'Kontakt' },
@@ -67,7 +68,8 @@ async function middleware(req, res, next) {
                 (SELECT count(*)::int FROM reviews WHERE status = 'pending')
                   + (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL)
                   + (SELECT count(*)::int FROM inquiry_answers WHERE status = 'pending')
-                  + (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed') AS kommunikation`);
+                  + (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed')
+                  + (SELECT count(*)::int FROM mail_messages WHERE status = 'new') AS kommunikation`);
       res.locals.adminNav.counts = { aufgaben: r.aufgaben, kommunikation: r.kommunikation };
       if (r.label) res.locals.adminNav.objectsLabel = r.label;
     }

@@ -40,7 +40,7 @@
     { key: 'pruefung', label: 'Prüfung', anchor: 'pruefliste', n: review.open },
     { key: 'stammdaten', label: 'Stammdaten', anchor: 'stammdaten', n: 0 },
     { key: 'inhalte', label: 'Inhalte', anchor: 'text', n: pendingImageCount },
-    { key: 'kommunikation', label: 'Kommunikation', anchor: 'anfragen', n: pendingAnswerCount + draftCount },
+    { key: 'kommunikation', label: 'Kommunikation', anchor: 'anfragen', n: pendingAnswerCount + draftCount + (mailThread || []).filter(function (t) { return t.direction === 'in' && t.status === 'new'; }).length },
     { key: 'verlauf', label: 'Verlauf', anchor: 'meldung', n: 0 },
   ]; %>
   <nav class="detail-tabs" data-tabs aria-label="Bereiche dieser Seite">
@@ -568,9 +568,36 @@
       <p class="muted" style="margin-bottom:0"><small>Laufender Monat, alle Objekte: <%= usd(llmMonth.usd) %> bei <%= llmMonth.calls %> Aufrufen<%= llmMonth.budget ? ' · Budget ' + usd(llmMonth.budget) : ' · kein Monatsbudget gesetzt' %>. Kosten sind Schätzungen nach Listenpreis; maßgeblich ist die Abrechnung in der Claude Console.</small></p>
     </section>
 
+    <% if (entity) { %>
+    <section class="card" style="margin-top:16px" id="postfach" data-tab="kommunikation">
+      <h2 style="margin-top:0">E-Mail-Verlauf</h2>
+      <% if (mailThread.length) { %><%- include('_mail-thread', { thread: mailThread, current: null }) %>
+      <% } else { %><p class="muted">Noch keine Mails mit diesem <%= ranking.entity_label_sg %>. Antworten auf Anfragen erscheinen hier automatisch.</p><% } %>
+      <details style="margin-top:12px" <%= mailThread.length ? '' : 'open' %>><summary>Neue Nachricht schreiben</summary>
+        <form method="post" action="/admin/postfach/neu" style="margin-top:8px">
+          <input type="hidden" name="entity" value="<%= entity.id %>"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>">
+          <div class="grid grid-2" style="gap:0 16px">
+            <div><label for="nm-to">An</label><input id="nm-to" name="to" type="email" required value="<%= entity.contact_email || '' %>"></div>
+            <div><label for="nm-persona">Absender</label>
+              <select id="nm-persona" name="persona"><option value="">Team (ohne Persona)</option>
+                <% mailPersonas.forEach(function (p) { %><option value="<%= p.id %>" <%= p.id === mailDefaultPersona ? 'selected' : '' %>><%= p.name %> – <%= p.title %></option><% }) %></select></div>
+          </div>
+          <label for="nm-subject">Betreff</label><input id="nm-subject" name="subject" required maxlength="300" value="<%= entity.name %>">
+          <label for="nm-text">Text</label>
+          <textarea id="nm-text" name="text" required style="min-height:160px">Hallo,
+
+
+Viele Grüße</textarea>
+          <p class="muted" style="margin:4px 0 8px"><small>Signatur der Persona wird angehängt. Für Fragen zu einzelnen Angaben besser oben „Anfrage“ nutzen – dann können Betreiber per Link antworten.</small></p>
+          <button class="btn" type="submit">Senden</button>
+        </form>
+      </details>
+    </section>
+    <% } %>
+
     <% if (emails.length) { %>
       <section class="card" style="margin-top:16px" id="mails" data-tab="kommunikation">
-        <h2 style="margin-top:0">Mails</h2>
+        <h2 style="margin-top:0">Mails zur Meldung</h2>
         <ul class="log-list"><% emails.forEach(function (m) { %><li><%= new Date(m.created_at).toLocaleString('de-DE') %> · <%= m.template %> an <%= m.recipient %> · <span class="badge <%= m.status === 'sent' ? 'good' : 'bad' %>"><%= m.status %></span></li><% }) %></ul>
       </section>
     <% } %>

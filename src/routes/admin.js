@@ -249,7 +249,13 @@ async function loadDetail(id) {
   const partnerLinks = entity ? await db.many('SELECT * FROM entity_links WHERE entity_id = $1', [entity.id]) : [];
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
+  // Postfach: Verlauf mit dem Betreiber (gesendete und eingegangene Mails), Absender-Auswahl
+  const mailThread = entity ? await require('../services/mailbox').thread({ entityId: entity.id }) : [];
+  const adminMail = require('./admin-mail');
+  const mailPersonas = entity ? await adminMail.personas() : [];
+  const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
   return {
+    mailThread, mailPersonas, mailDefaultPersona,
     campLinks, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,

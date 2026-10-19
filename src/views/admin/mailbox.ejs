@@ -1,0 +1,37 @@
+<%- include('../partials/admin-head') %>
+<h1>Postfach</h1>
+<p class="muted">Mails an die Sammeladresse – Antworten auf Mia, Lara und Ben und alles andere. Zugeordnet wird automatisch über die beantwortete Mail, die Absenderadresse oder die Website-Domain; was nicht passt, steht unter „zuordnen“. Abwesenheitsnotizen werden ignoriert. Mails werden nach 24 Monaten gelöscht.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% if (inbound === 'none') { %><div class="flash">Der Empfang ist noch nicht eingerichtet (<code>MAIL_INBOUND</code>). Bis dahin erscheinen hier keine Mails.</div><% } %>
+<div class="filters" style="justify-content:space-between">
+  <div class="pill-row">
+    <% var c = function (k) { return counts[k] ? counts[k].n : 0; }; %>
+    <a class="badge <%= filter === 'neu' ? 'good' : '' %>" href="?status=neu">neu (<%= c('new') %>)</a>
+    <a class="badge <%= filter === 'offen' ? 'good' : '' %>" href="?status=offen">zuordnen (<%= counts.new ? counts.new.unassigned : 0 %>)</a>
+    <a class="badge <%= filter === 'erledigt' ? 'good' : '' %>" href="?status=erledigt">erledigt (<%= c('done') %>)</a>
+    <a class="badge <%= filter === 'ignoriert' ? 'good' : '' %>" href="?status=ignoriert">ignoriert (<%= c('ignored') %>)</a>
+    <a class="badge <%= filter === 'alle' ? 'good' : '' %>" href="?status=alle">alle</a>
+  </div>
+  <% if (inbound !== 'none') { %><form method="post" action="/admin/postfach/abrufen"><button class="btn small secondary" type="submit">Jetzt abrufen</button></form><% } %>
+</div>
+<% if (!rows.length) { %><p class="card">Keine Mails in dieser Ansicht.</p><% } else { %>
+<div class="table-scroll">
+<table class="mail-list">
+  <tr><th>Eingang</th><th>Von</th><th>Betreff</th><th>Zuordnung</th></tr>
+  <% rows.forEach(function (m) { %>
+    <tr class="<%= m.status === 'new' ? 'unread' : '' %>">
+      <td><small><%= new Date(m.received_at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) %></small></td>
+      <td><%= m.from_name || m.from_email %><% if (m.from_name) { %><br><small class="muted"><%= m.from_email %></small><% } %></td>
+      <td><a href="/admin/postfach/<%= m.id %>"><%= m.subject || '(ohne Betreff)' %></a>
+        <% if (m.kind !== 'mail') { %> <span class="badge <%= m.kind === 'bounce' ? 'bad' : '' %>"><%= KINDS[m.kind] %></span><% } %>
+        <% if (m.attachments.length) { %> <small class="muted">· <%= m.attachments.length %> Anhang<%= m.attachments.length > 1 ? 'e' : '' %></small><% } %>
+        <% if (m.persona_name) { %><br><small class="muted">an <%= m.persona_name %></small><% } %></td>
+      <td><% if (m.entity_name) { %><%= m.entity_name %><% } else if (m.provider_name) { %><%= m.provider_name %> <small class="muted">(Camp-Anbieter)</small><% } else { %><span class="badge warn">zuordnen</span><% } %>
+        <% if (m.matched_by) { %><br><small class="muted"><%= MATCHED_BY[m.matched_by] %></small><% } %></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<% } %>
+<%- include('../partials/admin-foot') %>

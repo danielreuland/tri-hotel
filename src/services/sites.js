@@ -51,10 +51,12 @@ async function persona(siteId, role) {
 }
 
 // Absender: "Mia · tri-hotel.de" <mia@tri-hotel.de> bzw. "tri-hotel.de" <hallo@tri-hotel.de>
-function mailFrom(site, p) {
+// Absender: Agentenname + Site; Adresse der Persona nur mit personaSender 'own' (sonst Sammeladresse der Site)
+function mailFrom(site, p, personaSender = config.mail.personaSender) {
   if (!site) return config.mail.from;
   const name = p ? `${p.name} · ${site.name}` : site.name;
-  return `"${name.replace(/"/g, '')}" <${(p && p.email) || site.mail_from}>`;
+  const address = personaSender === 'own' && p && p.email ? p.email : site.mail_from;
+  return `"${name.replace(/"/g, '')}" <${address}>`;
 }
 
 // CSS-Variablen der Site-Palette (hell + dunkel), siehe lib/palettes.js und partials/head.ejs

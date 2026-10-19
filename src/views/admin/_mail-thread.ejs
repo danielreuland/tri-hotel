@@ -1,0 +1,21 @@
+<%# Verlauf: unsere Mails (out) und eingegangene (in), älteste zuerst. thread aus services/mailbox.thread() %>
+<ol class="mail-thread">
+  <% thread.forEach(function (t) { var isCurrent = locals.current && t.id === current; %>
+    <li class="<%= t.direction %> <%= isCurrent ? 'current' : '' %>">
+      <p class="mail-meta">
+        <% if (t.direction === 'out') { %>
+          <strong>→ <%= t.persona_name || 'Team' %></strong> an <%= t.address %>
+          <% if (t.status !== 'sent') { %><span class="badge bad"><%= t.status === 'bounced' ? 'unzustellbar' : t.status %></span><% } %>
+          <small class="muted">· <%= new Date(t.at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) %><%= t.template === 'inquiry' ? ' · Anfrage' : '' %><%= t.sent_by_email ? ' · ' + t.sent_by_email : '' %></small>
+        <% } else { %>
+          <strong>← <%= t.from_name || t.address %></strong>
+          <% if (t.kind !== 'mail') { %><span class="badge <%= t.kind === 'bounce' ? 'bad' : '' %>"><%= t.kind === 'bounce' ? 'unzustellbar' : 'Abwesenheit' %></span><% } %>
+          <% if (t.status === 'new') { %><span class="badge warn">neu</span><% } %>
+          <small class="muted">· <%= new Date(t.at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) %></small>
+        <% } %>
+      </p>
+      <% if (t.direction === 'in' && !isCurrent) { %><a href="/admin/postfach/<%= t.id %>"><%= t.subject || '(ohne Betreff)' %></a><% } else { %><span><%= t.subject || '' %></span><% } %>
+      <% if (t.body_text && !isCurrent) { %><details><summary><small>Text</small></summary><div class="mail-body"><%= t.body_text %></div></details><% } %>
+    </li>
+  <% }) %>
+</ol>

@@ -1,9 +1,11 @@
-// Interface "mailer": send({ to, template, data, site, persona, submissionId, inquiryId }).
+// Interface "mailer": send({ to, template, data, site, persona, submissionId, inquiryId, entityId, … }).
+// Jede Mail bekommt eine eigene Message-ID (im Versandprotokoll), damit Antworten im Postfach zugeordnet werden können.
 // Absender, Antwortadresse, Marke und Links kommen aus der Site; Agenten-Mails tragen den Namen der Persona.
 // Anbieter über MAIL_PROVIDER: 'console' (nur Log, Entwicklung) oder 'smtp'
 // (jeder EU-Anbieter mit SMTP, z. B. Brevo, Mailjet, IONOS). Weitere Anbieter als
 // zusätzliche Transport-Funktion ergänzen.
 const path = require('path');
+const crypto = require('crypto');
 const ejs = require('ejs');
 const config = require('../config');
 const db = require('../db');
@@ -24,7 +26,7 @@ async function templateFor(site, key, language = 'de') {
 
 let smtpTransport = null;
 
-async function sendSmtp({ from, to, subject, html, text, replyTo }) {
+async function sendSmtp({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references }) {
   if (!smtpTransport) {
     const nodemailer = require('nodemailer');
     smtpTransport = nodemailer.createTransport({
@@ -34,7 +36,10 @@ async function sendSmtp({ from, to, subject, html, text, replyTo }) {
       auth: { user: config.mail.smtp.user, pass: config.mail.smtp.pass },
     });
   }
-  const info = await smtpTransport.sendMail({ from, to, subject, html, text, replyTo: replyTo || undefined });
+  const info = await smtpTransport.sendMail({
+    from, to, subject, html, text, replyTo: replyTo || undefined, messageId,
+    inReplyTo: inReplyTo || undefined, references: references && references.length ? references : undefined,
+  });
   return info.messageId;
 }
 
@@ -44,6 +49,12 @@ async function sendConsole({ from, to, subject, text }) {
 }
 
 const transports = { console: sendConsole, smtp: sendSmtp };
+
+// Eigene Message-ID mit der Domain des Absenders: <zufall@tri-hotel.de>
+function newMessageId(from) {
+  const m = /@([^\s>]+)>?\s*$/.exec(String(from || ''));
+  return `<${crypto.randomUUID()}@${m ? m[1].toLowerCase() : 'localhost'}>`;
+}
 
 function htmlToText(html) {
   return html
@@ -55,13 +66,19 @@ function htmlToText(html) {
     .trim();
 }
 
-async function send({ to, template, data, site = null, persona = null, submissionId = null, inquiryId = null, replyTo: replyToOverride = null }) {
+// entityId/campProviderId: Bezug für Postfach und Verlauf; inReplyTo/references: Antwort auf eine eingegangene Mail;
+// keepBody: Text im Protokoll speichern (nur für Nachrichten aus dem Admin, nie für Mails mit Bestätigungslinks)
+async function send({
+  to, template, data, site = null, persona = null, submissionId = null, inquiryId = null, replyTo: replyToOverride = null,
+  entityId = null, campProviderId = null, inReplyTo = null, references = null, keepBody = false, sentBy = null, replyToMessage = null,
+}) {
   const transport = transports[config.mail.provider];
   if (!transport) throw new Error(`Unbekannter MAIL_PROVIDER „${config.mail.provider}“`);
   const s = site || (await sites.getDefault());
   const locals = { ...data, site: s, baseUrl: sites.urlFor(s) };
   const from = sites.mailFrom(s, persona);
-  const replyTo = replyToOverride || (s && s.mail_reply_to) || config.mail.replyTo;
+  const ownPersona = config.mail.personaSender === 'own' && persona && persona.email;
+  const replyTo = replyToOverride || (ownPersona ? persona.email : null) || (s && s.mail_reply_to) || config.mail.replyTo;
   // Im Admin gepflegte Vorlage der Site, sonst Standardtext; Agenten-Mails (inquiry) bleiben EJS mit Agententext
   let html;
   let subject;
@@ -74,17 +91,22 @@ async function send({ to, template, data, site = null, persona = null, submissio
   }
   let status = 'sent';
   let providerId = null;
+  const messageId = newMessageId(from);
+  const text = htmlToText(html);
   try {
-    providerId = await transport({ from, to, subject, html, text: htmlToText(html), replyTo });
+    providerId = await transport({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references });
   } catch (err) {
     status = 'failed';
     console.error(`[mail] Versand fehlgeschlagen (${template} an ${to}):`, err.message);
   }
   await db.query(
-    `INSERT INTO email_log (submission_id, inquiry_id, recipient, template, status, provider_id, subject, site_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [submissionId, inquiryId, to, template, status, providerId, subject, s ? s.id : null]
+    `INSERT INTO email_log (submission_id, inquiry_id, recipient, template, status, provider_id, subject, site_id,
+       message_id, entity_id, camp_provider_id, persona_id, body_text, sent_by, reply_to_message)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    [submissionId, inquiryId, to, template, status, providerId, subject, s ? s.id : null,
+      messageId, entityId, campProviderId, persona ? persona.id : null, keepBody ? text : null, sentBy, replyToMessage]
   );
   return status === 'sent';
 }
 
-module.exports = { send, templateFor };
+module.exports = { send, templateFor, newMessageId, htmlToText };

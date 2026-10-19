@@ -18,6 +18,7 @@ async function start() {
   await boss.createQueue('inquiry-daily');
   await boss.createQueue('osm-retry');
   await boss.createQueue('retention');
+  await boss.createQueue('mail-poll');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -55,6 +56,17 @@ async function start() {
     if (n) console.log('[jobs] Löschfristen:', JSON.stringify(r));
   });
   await boss.schedule('retention', '30 3 * * *');
+
+  // Postfach abrufen (alle 5 Minuten), nur wenn ein Empfang konfiguriert ist
+  if (config.mail.inbound.provider !== 'none') {
+    await boss.work('mail-poll', async () => {
+      const r = await require('../services/mailbox').poll();
+      if (r.stored || r.errors) console.log(`[jobs] Postfach: ${r.stored} neu, ${r.errors} Fehler`);
+    });
+    await boss.schedule('mail-poll', '*/5 * * * *', null, { retryLimit: 0 });
+  } else {
+    await boss.unschedule('mail-poll').catch(() => {});
+  }
 
   const enqueue = (name, data, opts = {}) => boss.send(name, data, { retryLimit: 2, retryDelay: 60, ...opts });
   submissions.setEnqueue(enqueue);
