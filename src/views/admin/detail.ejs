@@ -397,6 +397,16 @@
                 <ol style="margin:6px 0"><% draftInq.questions.forEach(function (q) { %><li><small><%= q.question %> <span class="muted">(<%= q.options.map(function (o) { return o.text; }).join(' / ') %>)</span></small></li><% }) %></ol>
               </details>
             <% } %>
+            <% var dc = draftInq.confirmations || {}; var dcCrit = dc.criteria || []; var dcFeat = dc.features || []; %>
+            <% if (dcCrit.length || dcFeat.length) { %>
+              <details style="margin-top:6px"><summary><small>Bestätigungsliste im Antwortformular (<%= dcCrit.length %> Werte, <%= dcFeat.filter(function (f) { return f.known; }).length %> Leistungen<%= dcFeat.some(function (f) { return !f.known; }) ? ', ' + dcFeat.filter(function (f) { return !f.known; }).length + ' zum Ankreuzen' : '' %>)</small></summary>
+                <ul style="margin:6px 0">
+                  <% dcCrit.forEach(function (it) { %><li><small><%= it.label %>: <strong><%= it.current_text %></strong> <span class="muted">(Auswahl: <%= it.options.map(function (o) { return o.text; }).join(' / ') %>)</span></small></li><% }) %>
+                  <% dcFeat.filter(function (f) { return f.known; }).forEach(function (f) { %><li><small>Leistung: <%= f.text %></small></li><% }) %>
+                  <% var offerList = dcFeat.filter(function (f) { return !f.known; }); if (offerList.length) { %><li><small>„Bieten Sie außerdem …?“: <%= offerList.map(function (f) { return f.text; }).join(', ') %></small></li><% } %>
+                </ul>
+              </details>
+            <% } %>
             <p style="margin-bottom:0"><button class="btn" type="submit">Senden</button></p>
           </form>
         <% } %>
