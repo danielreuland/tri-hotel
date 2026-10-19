@@ -41,8 +41,24 @@
   </div>
   <label>Preisbeispiele <small class="muted">eine Zeile je Beispiel: Bezeichnung | Dauer | Preis | enthalten | nicht enthalten</small></label>
   <textarea name="prices" rows="3"><%= pricesText %></textarea>
-  <label>Hotels und Orte <small class="muted">eine Zeile je Hotel: Name | Ort | Region – ist der Name exakt wie im Ranking, wird das Hotel verknüpft</small></label>
-  <textarea name="hotels" rows="5"><%= hotelsText %></textarea>
+  <label for="hotel-entities">Hotels im Ranking <small class="muted">Mehrfachauswahl, Suche nach Name oder Ort</small></label>
+  <select id="hotel-entities" name="hotel_entities" multiple data-combo data-placeholder="Hotel suchen …" size="8">
+    <% entityOptions.forEach(function (o) { %>
+      <option value="<%= o.id %>" data-search="<%= o.city || '' %> <%= o.country || '' %>" data-hint="<%= [o.city, o.country].filter(Boolean).join(', ') %><%= o.live ? '' : ' · nicht live' %>" <%= selectedIds.indexOf(o.id) >= 0 ? 'selected' : '' %>><%= o.name %><%= o.city ? ' (' + o.city + ')' : '' %></option>
+    <% }) %>
+  </select>
+  <label for="hotels-free">Weitere Hotels (nicht im Ranking) <small class="muted">eine Zeile je Hotel: Name | Ort | Region – erscheinen auf dem Anbieterprofil ohne Link</small></label>
+  <textarea id="hotels-free" name="hotels" rows="3"><%= hotelsText %></textarea>
+  <% if (suggestions.length) { %>
+    <div class="card" style="margin-top:8px;padding:10px 14px">
+      <p style="margin:0 0 4px"><strong>Passende Hotels im Ranking gefunden</strong> <small class="muted">anhaken und speichern, um die Zeile zu verknüpfen – nichts wird automatisch verknüpft</small></p>
+      <% suggestions.forEach(function (s) { %>
+        <label class="inline" style="margin:2px 0"><input type="checkbox" name="adopt" value="<%= s.row.hotel_name %>::<%= s.hit.entity.id %>">
+          <span>„<%= s.row.hotel_name %>“<%= s.row.place ? ' (' + s.row.place + ')' : '' %> → <strong><%= s.hit.entity.name %></strong><%= s.hit.entity.city ? ' (' + s.hit.entity.city + ')' : '' %>
+            <small class="muted"><%= s.hit.exact ? 'gleicher Name' : 'ähnlicher Name' %></small></span></label>
+      <% }) %>
+    </div>
+  <% } %>
   <div class="form-row">
     <div><label>Stand der Angaben</label><input name="as_of" type="date" value="<%= p.as_of ? new Date(p.as_of).toISOString().slice(0, 10) : '' %>"></div>
     <div><label>Quelle</label><input name="source_url" type="url" value="<%= p.source_url || '' %>"></div>

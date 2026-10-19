@@ -259,6 +259,9 @@ async function loadDetail(id) {
   const partnerLinks = entity ? await db.many('SELECT * FROM entity_links WHERE entity_id = $1', [entity.id]) : [];
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
+  // Camp-Anbieter in diesem Objekt pflegen (Auswahl aller Anbieter der Site)
+  const campProviderOptions = entity ? await require('../services/camps').providerOptions(ranking.site_id) : [];
+  const campSelectedIds = entity ? (await db.many('SELECT DISTINCT provider_id FROM camp_provider_hotels WHERE entity_id = $1', [entity.id])).map((r) => r.provider_id) : [];
   // Postfach: Verlauf mit dem Betreiber (gesendete und eingegangene Mails), Absender-Auswahl
   const mailThread = entity ? await require('../services/mailbox').thread({ entityId: entity.id }) : [];
   const adminMail = require('./admin-mail');
@@ -266,7 +269,7 @@ async function loadDetail(id) {
   const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
   return {
     mailThread, mailPersonas, mailDefaultPersona,
-    campLinks, heldReview, partnerPrograms, partnerLinks,
+    campLinks, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
     confirmFeatureList, offerFeatureCount, confirmDefaults,
@@ -444,6 +447,22 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
   res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);
+}));
+
+// Camp-Anbieter, die in diesem Objekt Camps durchführen (gleiche Tabelle wie im Anbieter-Formular)
+router.post('/meldungen/:id/camp-anbieter', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const { site_id: siteId } = await db.one('SELECT r.site_id FROM submissions s JOIN rankings r ON r.id = s.ranking_id WHERE s.id = $1', [t.sub.id]);
+  const allowed = new Set((await require('../services/camps').providerOptions(siteId)).map((p) => p.id));
+  const ids = [...new Set([].concat(req.body.providers || []).filter((v) => UUID_RE.test(v) && allowed.has(v)))];
+  const r = await db.tx(async (c) => {
+    const out = await require('../services/camps').setEntityProviders(c, t.entity, ids);
+    if (out.added.length || out.removed.length) await logAction(req.session.admin.id, 'entity', t.entity.id, 'edit_camp_providers', out, c);
+    return out;
+  });
+  const msg = r.added.length || r.removed.length ? `Camp-Anbieter gespeichert (${r.added.length} hinzugefügt, ${r.removed.length} entfernt)` : 'Keine Änderung';
+  res.redirect(`/admin/meldungen/${t.sub.id}?ok=${encodeURIComponent(msg)}#camp-anbieter`);
 }));
 
 // Partnerlinks eines Objekts (Booking.com, HolidayCheck …): je Programm Buchungs- und Bewertungsseite

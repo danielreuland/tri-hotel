@@ -83,6 +83,99 @@ async function matchEntity(hotelName, client = db) {
   return hits.length === 1 ? hits[0].id : null;
 }
 
+// ---------- Verknüpfung Hotel ↔ Camp-Anbieter per Auswahl ----------
+
+// Objekte der aktiven Rankings einer Site für die Auswahl (Name, Ort; live oder nicht)
+async function entityOptions(siteId) {
+  return db.many(
+    `SELECT e.id, e.name, e.city, e.country, bool_or(er.status = 'live') AS live
+       FROM entities e JOIN entity_rankings er ON er.entity_id = e.id JOIN rankings r ON r.id = er.ranking_id
+      WHERE r.status = 'active' AND r.site_id = $1 AND er.status <> 'rejected'
+      GROUP BY e.id ORDER BY lower(e.name)`, [siteId]);
+}
+
+async function providerOptions(siteId) {
+  return db.many(`SELECT id, name, status, seat FROM camp_providers WHERE site_id = $1 AND status <> 'archived' ORDER BY lower(name)`, [siteId]);
+}
+
+// Vorschlag für eine freie Zeile (Hotel nicht verknüpft): bestes Objekt nach Namen, bei Gleichstand der gleiche Ort.
+// Nie automatisch verknüpfen – nur anzeigen. Ergebnis: { entity, exact } oder null
+function suggestEntity(row, entities) {
+  const { nameMatch } = require('./places');
+  const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  let best = null;
+  for (const e of entities) {
+    const m = nameMatch(row.hotel_name, e.name) || nameMatch(e.name, row.hotel_name);
+    if (!m) continue;
+    const samePlace = Boolean(row.place && e.city && norm(row.place) === norm(e.city));
+    const score = m * 2 + (samePlace ? 1 : 0);
+    if (!best || score > best.score) best = { entity: e, exact: m === 2, score };
+    else if (score === best.score) best.ambiguous = true;
+  }
+  return best && !best.ambiguous ? { entity: best.entity, exact: best.exact } : null;
+}
+
+// Hotels eines Anbieters speichern: verknüpfte Objekte (Reihenfolge der Auswahl) + freie Zeilen „Name | Ort | Region“.
+// Bestehende Zeilen behalten ihre ID (gleiches Objekt bzw. gleicher freier Name); Ort/Region verknüpfter Zeilen aus dem Objekt.
+async function saveProviderHotels(client, providerId, { entityIds = [], free = [] }) {
+  const old = (await client.query('SELECT * FROM camp_provider_hotels WHERE provider_id = $1', [providerId])).rows;
+  const ents = entityIds.length ? (await client.query('SELECT id, name, city FROM entities WHERE id = ANY($1::uuid[])', [entityIds])).rows : [];
+  const keep = new Set();
+  let i = 0;
+  for (const id of entityIds) {
+    const e = ents.find((x) => x.id === id);
+    if (!e) continue;
+    const prev = old.find((r) => r.entity_id === id && !keep.has(r.id));
+    if (prev) {
+      await client.query('UPDATE camp_provider_hotels SET hotel_name = $2, place = $3, sort_order = $4 WHERE id = $1', [prev.id, e.name, e.city || prev.place, i++]);
+      keep.add(prev.id);
+    } else {
+      const r = await client.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, sort_order) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+        [providerId, id, e.name, e.city || null, i++]);
+      keep.add(r.rows[0].id);
+    }
+  }
+  for (const h of free) {
+    if (!h.hotel_name) continue;
+    const prev = old.find((r) => !r.entity_id && r.hotel_name === h.hotel_name && !keep.has(r.id));
+    if (prev) {
+      await client.query('UPDATE camp_provider_hotels SET place = $2, region = $3, sort_order = $4 WHERE id = $1', [prev.id, h.place || null, h.region || null, i++]);
+      keep.add(prev.id);
+    } else {
+      const r = await client.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, region, sort_order) VALUES ($1,NULL,$2,$3,$4,$5) RETURNING id',
+        [providerId, h.hotel_name, h.place || null, h.region || null, i++]);
+      keep.add(r.rows[0].id);
+    }
+  }
+  const removed = old.filter((r) => !keep.has(r.id));
+  if (removed.length) await client.query('DELETE FROM camp_provider_hotels WHERE id = ANY($1::uuid[])', [removed.map((r) => r.id)]);
+  return { linked: entityIds.length, free: free.filter((h) => h.hotel_name).length, removed: removed.map((r) => r.hotel_name) };
+}
+
+// Von der Objektseite aus: Anbieter dieses Objekts setzen (fügt Zeilen hinzu bzw. entfernt nur die Verknüpfungen dieses Objekts)
+async function setEntityProviders(client, entity, providerIds) {
+  const old = (await client.query('SELECT id, provider_id FROM camp_provider_hotels WHERE entity_id = $1', [entity.id])).rows;
+  const added = [];
+  for (const pid of providerIds) {
+    if (old.some((r) => r.provider_id === pid)) continue;
+    // freie Zeile mit passendem Namen beim Anbieter übernehmen statt doppelt anzulegen
+    const free = (await client.query('SELECT id, hotel_name FROM camp_provider_hotels WHERE provider_id = $1 AND entity_id IS NULL', [pid])).rows
+      .find((r) => suggestEntity({ hotel_name: r.hotel_name, place: null }, [entity]));
+    if (free) {
+      await client.query('UPDATE camp_provider_hotels SET entity_id = $2, hotel_name = $3, place = COALESCE($4, place) WHERE id = $1', [free.id, entity.id, entity.name, entity.city || null]);
+    } else {
+      await client.query(
+        `INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, sort_order)
+         VALUES ($1, $2, $3, $4, (SELECT COALESCE(max(sort_order), -1) + 1 FROM camp_provider_hotels WHERE provider_id = $1))`,
+        [pid, entity.id, entity.name, entity.city || null]);
+    }
+    added.push(pid);
+  }
+  const removed = old.filter((r) => !providerIds.includes(r.provider_id));
+  if (removed.length) await client.query('DELETE FROM camp_provider_hotels WHERE id = ANY($1::uuid[])', [removed.map((r) => r.id)]);
+  return { added, removed: removed.map((r) => r.provider_id) };
+}
+
 // Noch nicht verknüpfte Anbieter-Hotels zuordnen; Rückgabe: neu verknüpfte Paare
 async function autoLink() {
   const open = await db.many(`SELECT h.id, h.hotel_name, p.name AS provider FROM camp_provider_hotels h JOIN camp_providers p ON p.id = h.provider_id WHERE h.entity_id IS NULL`);
@@ -140,4 +233,4 @@ async function clickStats(siteId) {
 }
 
 module.exports = {
-  matchEntity, autoLink, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };
+  matchEntity, autoLink, entityOptions, providerOptions, suggestEntity, saveProviderHotels, setEntityProviders, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };

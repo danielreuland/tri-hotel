@@ -17,8 +17,12 @@ const TRI = (v) => (v === 'yes' ? true : v === 'no' ? false : null);
 const lines = (t) => String(t || '').split('\n').map((l) => l.trim()).filter(Boolean);
 
 // Preise: eine Zeile je Beispiel „Bezeichnung | Dauer | Preis | enthalten | nicht enthalten“
-// Hotels: eine Zeile je Hotel „Name | Ort | Region“
+// Hotels: Objekte aus dem Ranking per Auswahl (hotel_entities), dazu freie Zeilen „Name | Ort | Region“ für Hotels
+// außerhalb des Rankings; angehakte Vorschläge (adopt = „Name::Objekt-ID“) machen aus einer freien Zeile eine Verknüpfung
 function readForm(b) {
+  const adopt = new Map([].concat(b.adopt || []).map((v) => String(v).split('::')).filter((p) => p.length === 2 && UUID_RE.test(p[1])));
+  const free = lines(b.hotels).map((l) => { const [hotel_name, place, region] = l.split('|').map((x) => (x || '').trim()); return { hotel_name, place, region }; });
+  const entityIds = [...new Set([...[].concat(b.hotel_entities || []).filter((v) => UUID_RE.test(v)), ...free.filter((h) => adopt.has(h.hotel_name)).map((h) => adopt.get(h.hotel_name))])];
   const errors = [];
   const f = {
     name: String(b.name || '').trim().slice(0, 120),
@@ -37,7 +41,8 @@ function readForm(b) {
       family_note: String(b.f_family_note || '').trim() || undefined, max_group: String(b.f_max_group || '').trim() || undefined,
     },
     prices: lines(b.prices).map((l) => { const [label, duration, price, included, excluded] = l.split('|').map((x) => (x || '').trim()); return { label, duration, price, included, excluded }; }),
-    hotels: lines(b.hotels).map((l) => { const [hotel_name, place, region] = l.split('|').map((x) => (x || '').trim()); return { hotel_name, place, region }; }),
+    entityIds,
+    free: free.filter((h) => h.hotel_name && !adopt.has(h.hotel_name)),
     as_of: /^\d{4}-\d{2}-\d{2}$/.test(b.as_of || '') ? b.as_of : null,
     source_url: normalizeUrl(b.source_url),
     partner: b.partner === 'on',
@@ -77,9 +82,14 @@ router.get('/', wrap(async (req, res) => {
 }));
 
 async function renderForm(res, p, extra = {}) {
-  const hotelsText = (p.hotels || []).map((h) => [h.hotel_name, h.place, h.region].filter((x) => x !== undefined).join(' | ')).join('\n');
+  // Verknüpfte Objekte in die Auswahl, freie Zeilen ins Textfeld (mit Vorschlag, falls ein Objekt im Ranking passt)
+  const options = await camps.entityOptions(await siteId());
+  const selectedIds = p.entityIds || (p.hotels || []).filter((h) => h.entity_id).map((h) => h.entity_id);
+  const freeRows = p.free || (p.hotels || []).filter((h) => !h.entity_id);
+  const hotelsText = freeRows.map((h) => [h.hotel_name, h.place, h.region].filter((x) => x !== undefined && x !== null).join(' | ')).join('\n');
+  const suggestions = freeRows.map((h) => ({ row: h, hit: camps.suggestEntity(h, options.filter((o) => !selectedIds.includes(o.id))) })).filter((x) => x.hit);
   const pricesText = (p.prices || []).map((x) => [x.label, x.duration, x.price, x.included, x.excluded].join(' | ')).join('\n');
-  res.render('admin/camp-form', { title: p.id ? `Anbieter: ${p.name}` : 'Neuer Anbieter', p, hotelsText, pricesText, MODELS: camps.MODELS, HOTEL_VALUES: camps.HOTEL_VALUES, FLIGHT_VALUES: camps.FLIGHT_VALUES, errors: [], ...extra });
+  res.render('admin/camp-form', { title: p.id ? `Anbieter: ${p.name}` : 'Neuer Anbieter', p, hotelsText, entityOptions: options, selectedIds, suggestions, pricesText, MODELS: camps.MODELS, HOTEL_VALUES: camps.HOTEL_VALUES, FLIGHT_VALUES: camps.FLIGHT_VALUES, errors: [], ...extra });
 }
 
 router.get('/neu', wrap(async (req, res) => renderForm(res, { status: 'draft', features: {}, prices: [], hotels: [], destinations: [], regions: [] })));
@@ -110,18 +120,9 @@ router.post('/:id?', wrap(async (req, res) => {
             lead_active, lead_email, lead_model, lead_fee, lead_commission, lead_since, lead_notes)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING id`, [sid, ...vals])).rows[0].id;
       }
-      // Hotels neu schreiben; Verknüpfung über gleichen Namen (ohne „Hotel“, Akzente egal, nur eindeutig) (bestehende Verknüpfungen bleiben erhalten)
-      const old = await c.query('SELECT hotel_name, entity_id FROM camp_provider_hotels WHERE provider_id = $1', [pid]);
-      const keep = new Map(old.rows.filter((r) => r.entity_id).map((r) => [r.hotel_name, r.entity_id]));
-      await c.query('DELETE FROM camp_provider_hotels WHERE provider_id = $1', [pid]);
-      let i = 0;
-      for (const h of f.hotels) {
-        if (!h.hotel_name) continue;
-        const match = keep.get(h.hotel_name) || (await camps.matchEntity(h.hotel_name, c));
-        await c.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, region, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
-          [pid, match, h.hotel_name, h.place || null, h.region || null, i++]);
-      }
-      await logAction(req.session.admin.id, 'camp_provider', pid, req.params.id ? 'edit_camp_provider' : 'create_camp_provider', { name: f.name, partner: f.partner, status: f.status, lead_active: f.lead_active, lead_model: f.lead_model, lead_fee: f.lead_fee }, c);
+      // Hotels: Auswahl aus dem Ranking + freie Zeilen; nichts wird über den Namen automatisch verknüpft
+      const hotels = await camps.saveProviderHotels(c, pid, { entityIds: f.entityIds, free: f.free });
+      await logAction(req.session.admin.id, 'camp_provider', pid, req.params.id ? 'edit_camp_provider' : 'create_camp_provider', { name: f.name, partner: f.partner, status: f.status, lead_active: f.lead_active, lead_model: f.lead_model, lead_fee: f.lead_fee, hotels }, c);
       return pid;
     });
     res.redirect(`/admin/camps/${id}?ok=Gespeichert`);
