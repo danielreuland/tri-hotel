@@ -69,6 +69,11 @@ test('Postfach: Zuordnung über Absender, Domain und Persona-Adresse', async () 
   assert.equal(none.matched_by, null);
 });
 
+test('Postfach: Textfassung dekodiert Zeichen', () => {
+  assert.equal(mailer.htmlToText('<p>&gt; Zitat &amp; mehr &lt;x&gt;</p>'), '> Zitat & mehr <x>');
+  assert.equal(mailer.htmlToText('&amp;gt;'), '&gt;', 'doppelt kodiert bleibt einmal kodiert');
+});
+
 test('Postfach: Betreff und Zitat der Antwort', () => {
   assert.equal(mb.replySubject('Angaben zu Ihrem Hotel'), 'Re: Angaben zu Ihrem Hotel');
   assert.equal(mb.replySubject('AW: Angaben'), 'AW: Angaben');
