@@ -75,7 +75,16 @@ In `router.post('/:id/personas/:pid'`:
   Für Leistungen prüfen, wie `entity_features` Herkunft speichert (ggf. Spalten für Bestätigung ergänzen).
 - Knopftext im Mail-Template `views/emails/inquiry.ejs` passend zum Inhalt (nur Fotos → „Fotos hochladen“ / „Upload photos“).
 
-### 7. Deploy
+### 7. Admin-Liste „Hotels“ (`/admin`, Route in `src/routes/admin.js`, View `views/admin/queue.ejs`): Suche + Filter
+- Suchfeld „Name oder Ort“ (Parameter `q`): Name, Ort, Website; ohne Groß-/Kleinschreibung und Akzente
+  (`unaccent` falls verfügbar, sonst `translate()`/ILIKE).
+- Auswahl **Land** (`land`, ISO-Code, Anzeige als Ländername via `seo.countryName`) und **Region** (`region`, aus der
+  Regionen-Verwaltung `/admin/regionen` – vorhandene Zuordnung Objekt↔Region prüfen) neben „alle Rankings“; nur
+  vorkommende Werte, mit Anzahl.
+- Kombinierbar mit den Status-Pillen; Pillen-Zahlen berücksichtigen Suche/Land/Region; Filter bleiben beim Wechsel erhalten.
+- Leerer Treffer: „Keine Hotels gefunden“ + „Filter zurücksetzen“. GET-Formular (Lesezeichen möglich).
+
+### 8. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
 /admin/sites/<id> aufrufen und einen Entwurf formulieren.
 
