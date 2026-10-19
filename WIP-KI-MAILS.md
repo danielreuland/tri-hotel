@@ -84,7 +84,24 @@ In `router.post('/:id/personas/:pid'`:
 - Kombinierbar mit den Status-Pillen; Pillen-Zahlen berücksichtigen Suche/Land/Region; Filter bleiben beim Wechsel erhalten.
 - Leerer Treffer: „Keine Hotels gefunden“ + „Filter zurücksetzen“. GET-Formular (Lesezeichen möglich).
 
-### 8. Deploy
+### 8. Verknüpfung Hotel ↔ Camp-Anbieter per Auswahl statt Schreibweise
+Heute: `camp_provider_hotels (provider_id, entity_id, hotel_name, place, region, sort_order)`, gepflegt über das Textfeld
+„Hotels und Orte – Name | Ort | Region“ in `views/admin/camp-form.ejs` / `routes/admin-camps.js` (Zeile ~114 ff.:
+löschen + neu einfügen, `entity_id` nur bei exakt gleichem Namen). Unverknüpfte Zeilen: `services/camps.js` ~Zeile 88.
+- Camp-Formular: Textfeld ersetzen durch Zeilenliste; je Zeile Auswahlfeld mit kleiner Suche über die Objekte der
+  aktiven Rankings (Name + Ort, akzent- und großschreibungsunabhängig, Teiltreffer) – Wert = `entity_id`; Option
+  „Hotel nicht im Ranking“ mit freien Feldern Name/Ort/Region. Zeilen hinzufügen/entfernen/sortieren. Ohne JS: normales `<select>`.
+  Beim Speichern `hotel_name/place/region` bei verknüpften Zeilen aus dem Objekt übernehmen. Bestehende Zeilen-IDs möglichst
+  erhalten (statt alles löschen), Audit-Log wie bisher.
+- Admin-Detailseite des Objekts: Abschnitt „Camp-Anbieter in diesem Hotel“ (bei den Stammdaten bzw. am Kriterium mit
+  `link_source = 'camp_providers'`): Auswahl mit Suche über alle Camp-Anbieter, hinzufügen/entfernen → dieselbe Tabelle.
+- Kleines wiederverwendbares Skript `public/js/combo.js` (Combobox mit Suchfeld, Tastatur, CSP-tauglich ohne Inline-JS).
+- Aufräumen: für unverknüpfte Zeilen Vorschläge (Name normalisiert ohne Akzente/Satzzeichen/„Hotel“, „Resort“ …, plus Ort),
+  im Camp-Formular und in der Camps-Übersicht „Vorschlag übernehmen“ – nie automatisch verknüpfen. Ebenso beim Anlegen
+  eines neuen Objekts passende freie Zeilen vorschlagen.
+- Tests für die Normalisierung/Vorschläge.
+
+### 9. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
 /admin/sites/<id> aufrufen und einen Entwurf formulieren.
 
