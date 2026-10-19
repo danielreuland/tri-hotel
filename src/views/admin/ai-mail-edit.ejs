@@ -1,0 +1,81 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/emails?site=<%= site.id %>#ki-mails">← E-Mails</a></p>
+<h1><%= def.label %> <small class="muted">· KI-Mail</small></h1>
+<p class="muted">Wann: <%= def.trigger %>. <%= def.ai ? 'Die KI formuliert aus Persona, Mustertext und Pflichtpunkten einen Entwurf, den du vor dem Senden prüfst. Ist die KI nicht verfügbar, wird der Mustertext wörtlich verwendet.' : 'Dieser Text wird ohne KI ausgefüllt und automatisch versendet.' %></p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<% if (locals.unsaved) { %><div class="flash">Vorschau – noch nicht gespeichert.</div><% } %>
+
+<p class="pill-row"><% Object.keys(LANGUAGES).forEach(function (l) { %><a class="badge <%= l === language ? 'accent' : '' %>" href="/admin/emails/ki/<%= key %>?site=<%= site.id %>&sprache=<%= l %>"><%= LANGUAGES[l] %></a> <% }) %>
+  <small class="muted">Englisch gilt für alle Betreiber außerhalb des deutschsprachigen Raums.</small></p>
+
+<div class="admin-detail">
+  <div>
+    <form method="post" action="/admin/emails/ki/<%= key %>" class="card">
+      <input type="hidden" name="site_id" value="<%= site.id %>"><input type="hidden" name="language" value="<%= language %>">
+      <label for="ai-subject">Betreff</label>
+      <input id="ai-subject" name="subject" required maxlength="200" value="<%= tpl.subject %>">
+      <label for="ai-body">Mustertext</label>
+      <textarea id="ai-body" name="body" required style="min-height:320px"><%= tpl.body %></textarea>
+      <% if (def.ai) { %>
+        <label for="ai-must">Pflichtpunkte <small class="muted">einer je Zeile – müssen inhaltlich in jeder Mail vorkommen</small></label>
+        <textarea id="ai-must" name="must" style="min-height:110px"><%= tpl.must || '' %></textarea>
+      <% } %>
+      <div class="filters" style="margin-bottom:0">
+        <button class="btn" type="submit" name="action" value="save">Speichern</button>
+        <button class="btn secondary" type="submit" name="action" value="preview">Vorschau</button>
+        <% if (saved) { %><button class="btn small secondary" type="submit" name="action" value="reset" formnovalidate data-confirm="Eigene Fassung löschen und Standardtext verwenden?">Standardtext wiederherstellen</button><% } %>
+      </div>
+      <p class="muted" style="margin-bottom:0"><small><%= saved ? 'Eigene Fassung, Version ' + saved.version + ' · ' + formatDate(saved.updated_at) + (saved.updated_by_email ? ' · ' + saved.updated_by_email : '') : 'Standardtext (noch nicht angepasst)' %></small></p>
+    </form>
+
+    <section class="card" style="margin-top:16px">
+      <h2 style="margin-top:0">Ausgefüllt <small class="muted">(Beispielobjekt, mit Foto-Abschnitt)</small></h2>
+      <p class="muted" style="margin-top:0"><small>So sieht der Text <%= def.ai ? 'ohne KI aus (Rückfallebene)' : 'beim Versand aus' %>. Der KI-Hinweis wird beim Versand angehängt.</small></p>
+      <p><strong><%= fallback.subject %></strong></p>
+      <div class="mail-body"><%= fallback.body %></div>
+    </section>
+
+    <% if (prompt) { %>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin-top:0">Zusammengesetzter Prompt</h2>
+        <p class="muted" style="margin-top:0"><small>So geht die Anfrage an die KI – hier mit Beispielobjekt und zwei Beispielfragen. Persona, Mustertext, Pflichtpunkte und Stilbeispiel kommen aus den Einstellungen, die festen Regeln aus dem Code.</small></p>
+        <pre class="json" style="white-space:pre-wrap"><%= prompt %></pre>
+      </section>
+    <% } %>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h3 style="margin-top:0">Persona</h3>
+      <% if (persona) { %>
+        <p style="margin:0"><strong><%= persona.name %></strong> · <%= persona.title %><%= persona.active ? '' : ' (inaktiv)' %></p>
+        <p class="muted" style="white-space:pre-wrap;margin:6px 0"><small><%= persona.style || 'Noch keine Definition von Rolle & Stil.' %></small></p>
+        <a class="btn small secondary" href="/admin/sites/<%= site.id %>#personas">Rolle &amp; Stil bearbeiten</a>
+      <% } else { %><p class="muted">Keine Persona für diese Rolle.</p><% } %>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin-top:0">Platzhalter</h3>
+      <ul class="plain" style="margin:0;padding-left:0;list-style:none">
+        <% Object.keys(def.vars).forEach(function (v) { %><li><small><code>{{<%= v %>}}</code> <%= def.vars[v] %></small></li><% }) %>
+        <% Object.keys(def.sections).forEach(function (s) { %><li><small><code>{{#<%= s %>}}…{{/<%= s %>}}</code> <%= def.sections[s] %></small></li><% }) %>
+      </ul>
+    </div>
+    <% if (def.ai) { %>
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-top:0">Feste Regeln</h3>
+        <p class="muted" style="margin-top:0"><small>Gelten für jede KI-Mail und sind nicht änderbar (Neutralität, Transparenz, Recht).</small></p>
+        <ul style="margin:0;padding-left:18px"><% RULES.forEach(function (r) { %><li><small><%= r %></small></li><% }) %></ul>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-top:0">Stilbeispiel</h3>
+        <% if (example) { %>
+          <p class="muted" style="margin-top:0"><small>Deine zuletzt überarbeitete, gesendete Anfrage (<%= LANGUAGES[language] %>). Die KI übernimmt Ton und Länge, keine Inhalte.</small></p>
+          <p style="margin:0"><small><strong><%= example.subject %></strong></small></p>
+          <div class="mail-body" style="font-size:.85rem;max-height:260px"><%= example.body %></div>
+        <% } else { %><p class="muted" style="margin:0"><small>Noch keins. Sobald du einen KI-Entwurf vor dem Senden änderst, dient er als Beispiel für die nächsten.</small></p><% } %>
+      </div>
+    <% } %>
+  </aside>
+</div>
+<%- include('../partials/admin-foot') %>

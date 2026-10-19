@@ -9,6 +9,7 @@
 //   wird immer im Code angehängt (Transparenzpflicht, EU AI Act Art. 50)
 const config = require('../config');
 const consents = require('../lib/consents');
+const aimail = require('./aimail');
 
 const LINK = '{{LINK}}';
 const GERMAN_SPEAKING = ['DE', 'AT', 'CH', 'LI', 'LU'];
@@ -90,11 +91,21 @@ function personaOr(persona, brand) {
   return persona || { name: `${brand}`, title: 'KI-Assistenz' };
 }
 
-function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona }) {
-  const t = T[language] || T.de;
+// Werte für die Platzhalter im Mustertext (services/aimail.js)
+function templateVars({ entity, ranking, brand, persona, language }) {
   return {
-    subject: t.subject(entity),
-    body: t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
+    marke: brand, objekt: entity.name, objekt_art: ranking.entity_label_sg, name: personaOr(persona, brand).name,
+    objekte: language === 'en' ? String(ranking.entity_label_pl || '').toLowerCase() : ranking.entity_label_pl,
+  };
+}
+
+// Ohne KI: Mustertext des Anlasses (template) wörtlich ausgefüllt, sonst die eingebaute Vorlage
+function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template }) {
+  const t = T[language] || T.de;
+  const vars = template ? templateVars({ entity, ranking, brand, persona, language }) : null;
+  return {
+    subject: template ? aimail.fill(template.subject, vars).slice(0, 150) : t.subject(entity),
+    body: template ? aimail.fill(template.body, vars, { fotos: askPhotos }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
     questions: criteria.map((c) => ({
       criterion_id: c.id,
       question: c.label,
@@ -116,8 +127,8 @@ function sanitizeDraft(draft, ctx) {
   return { ...out, body: withDisclosure(out.body, ctx.language, ctx.persona, ctx.brand) };
 }
 
-function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona }) {
-  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona });
+function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona, template }) {
+  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template });
   if (!draft || typeof draft !== 'object') return { ...fb, usedFallback: true };
 
   let body = String(draft.body || '').trim();
@@ -146,11 +157,50 @@ function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPh
   return { subject, body, questions, usedFallback: false };
 }
 
+// Prompt = feste Regeln + Rolle & Stil der Persona + Mustertext/Pflichtpunkte des Anlasses + Angaben + Stilbeispiel.
+// ctx.template: { subject, body, must } aus aimail.get(); ctx.example: { subject, body } oder null
+function buildPrompt(ctx) {
+  const { entity, ranking, criteria, facts = {}, language, brand, adminNote, askPhotos, persona, template, example } = ctx;
+  const p = personaOr(persona, brand);
+  const vars = templateVars({ entity, ranking, brand, persona, language });
+  const lines = criteria.map((c) => {
+    const f = facts[c.id];
+    const known = f ? `bisher: ${JSON.stringify(f.value)} (Vertrauensstufe ${f.trust_level}${f.disputed ? ', strittig' : ''})` : 'bisher: unbekannt';
+    const opts = answerOptions(c).map((o) => `"${o.value}" = ${o.text}`).join('; ');
+    return `- ${c.code}: ${c.label}. Antwortwerte: ${opts}. ${known}`;
+  });
+  const must = template ? aimail.mustList(template.must) : [];
+  const parts = [
+    `Du bist ${p.name}${p.title ? `, ${p.title}` : ''} bei ${brand}, einer unabhängigen Übersicht „${ranking.name}“.`,
+    persona && persona.style ? `Rolle und Stil:\n${persona.style.trim()}` : null,
+    `Aufgabe: eine Mail an den Betreiber von „${entity.name}“ (${entity.city || ''}, ${entity.country || ''}), damit unklare Angaben im Profil vom Betreiber bestätigt werden.
+Sprache von Mail und Fragen: ${language === 'de' ? 'Deutsch (Sie-Form)' : 'Englisch'}.`,
+    `Unklare Punkte:\n${lines.length ? lines.join('\n') : '(keine – es geht nur um Fotos)'}`,
+    adminNote ? `Hinweis der Redaktion: ${adminNote}` : null,
+    template ? `Mustertext – Aufbau und Inhalte übernehmen, Formulierung im Stil der Rolle (${LINK} unverändert lassen):
+"""
+Betreff: ${aimail.fill(template.subject, vars)}
+
+${aimail.fill(template.body, vars, { fotos: askPhotos })}
+"""` : null,
+    must.length ? `Pflichtpunkte (müssen inhaltlich vorkommen):\n${must.map((m) => `- ${m}`).join('\n')}` : null,
+    example ? `Stilbeispiel – eine frühere Mail, die die Redaktion überarbeitet hat. Übernimm Ton, Länge und Aufbau, keine Inhalte:
+"""
+Betreff: ${example.subject}
+
+${example.body}
+"""` : null,
+    `Feste Regeln:\n${aimail.rules({ askPhotos }).map((r) => `- ${r}`).join('\n')}
+- Unterschrift: „${p.name}“.
+- questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.`,
+  ];
+  return parts.filter(Boolean).join('\n\n');
+}
+
 async function draftAnthropic(ctx) {
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
-  const { entity, ranking, criteria, facts, language, brand, adminNote, askPhotos, persona } = ctx;
-  const signer = personaOr(persona, brand).name;
+  const { criteria } = ctx;
 
   const Schema = z.object({
     subject: z.string(),
@@ -164,28 +214,7 @@ async function draftAnthropic(ctx) {
     ),
   });
 
-  const lines = criteria.map((c) => {
-    const f = facts[c.id];
-    const known = f ? `bisher: ${JSON.stringify(f.value)} (Vertrauensstufe ${f.trust_level}${f.disputed ? ', strittig' : ''})` : 'bisher: unbekannt';
-    const opts = answerOptions(c).map((o) => `"${o.value}" = ${o.text}`).join('; ');
-    return `- ${c.code}: ${c.label}. Antwortwerte: ${opts}. ${known}`;
-  });
-
-  const prompt = `Du schreibst im Auftrag von ${brand} eine sachliche Anfrage an den Betreiber von „${entity.name}“ (${entity.city || ''}, ${entity.country || ''}).
-${brand} ist eine unabhängige Übersicht „${ranking.name}“. Ziel: unklare Angaben im Profil vom Betreiber bestätigen lassen.
-
-Sprache von Mail und Fragen: ${language === 'de' ? 'Deutsch (Sie-Form)' : 'Englisch'}.
-
-Unklare Punkte:
-${lines.length ? lines.join('\n') : '(keine – es geht nur um Fotos)'}
-${adminNote ? `\nHinweis der Redaktion: ${adminNote}\n` : ''}
-Anforderungen:
-- body: höflich, kurz (max. 150 Wörter), keine Werbung, keine Angebote, keine Preise, keine Versprechen zur Platzierung.
-- Erkläre in einem Satz, warum wir fragen, und dass die Antworten als „vom Betreiber bestätigt“ gekennzeichnet werden.
-- Der persönliche Antwortlink steht im body genau als ${LINK} auf einer eigenen Zeile. Keine anderen Links oder URLs.
-${askPhotos ? '- Bitte zusätzlich höflich um Fotos des Hauses mit Nutzungserlaubnis, die über denselben Link hochgeladen werden können; sie erscheinen mit Urhebervermerk auf dem Profil. Keine Pflicht.\n' : ''}- Erwähne, dass man auch einfach auf die Mail antworten kann. Unterschreibe nur mit dem Vornamen „${signer}“. Einen Hinweis auf KI fügen wir selbst an, schreibe keinen.
-- Gib dich nicht als Mensch aus und behaupte keine persönlichen Erfahrungen.
-- questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.`;
+  const prompt = buildPrompt(ctx);
 
   const llm = require('../lib/llm');
   await llm.assertBudget();
@@ -219,4 +248,4 @@ async function draftInquiry(ctx) {
   return { language: full.language, ...sanitizeDraft(draft, full), usage };
 }
 
-module.exports = { draftInquiry, sanitizeDraft, fallbackDraft, answerOptions, isAskable, unclearCriteria, toFactValue, languageFor, LINK };
+module.exports = { draftInquiry, buildPrompt, templateVars, sanitizeDraft, fallbackDraft, answerOptions, isAskable, unclearCriteria, toFactValue, languageFor, LINK };
