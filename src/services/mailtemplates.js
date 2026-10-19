@@ -24,7 +24,9 @@ danke, dass du **{{hotel}}** für das Ranking „{{ranking}}“ vorgeschlagen ha
 Bitte bestätige deinen Vorschlag mit einem Klick:
 
 [Vorschlag bestätigen]({{link}})
+
 {{bewertung}}
+
 Der Link ist {{stunden}} Stunden gültig. Danach prüfen wir die Angaben automatisch und von Hand und melden uns, sobald die Seite online ist.
 
 Du hast nichts vorgeschlagen? Dann ignoriere diese Mail einfach – ohne Bestätigung wird nichts veröffentlicht.`,
