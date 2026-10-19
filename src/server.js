@@ -114,8 +114,9 @@ app.use((err, req, res, next) => {
   res.status(500).render('public/error', { title: 'Fehler', message: 'Da ist etwas schiefgelaufen. Bitte versuche es später noch einmal.' });
 });
 
-if (require.main === module) {
-  app.listen(config.port, config.host, async () => {
+// PM2 im Cluster-Modus lädt das Skript über einen eigenen Container – dann ist require.main nicht dieses Modul
+if (require.main === module || process.env.pm_id !== undefined) {
+  const server = app.listen(config.port, config.host, async () => {
     console.log(`Server läuft auf Port ${config.port}`);
     try {
       await jobs.start();
@@ -123,6 +124,23 @@ if (require.main === module) {
       console.error('[jobs] Start fehlgeschlagen:', err.message);
     }
   });
+
+  // Sauber beenden (PM2 schickt beim Reload SIGINT): keine neuen Verbindungen, laufende Jobs fertig, dann Ende
+  let stopping = false;
+  const shutdown = async (signal) => {
+    if (stopping) return;
+    stopping = true;
+    console.log(`[server] ${signal} – fahre herunter`);
+    server.close();
+    try {
+      await jobs.stop();
+    } catch (err) {
+      console.error('[jobs] Stopp fehlgeschlagen:', err.message);
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
 module.exports = app;
