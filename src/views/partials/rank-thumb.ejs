@@ -1,0 +1,9 @@
+<%# Vorschaubild in Ranking-Listen (e.thumb aus rankings.listLive), Urhebervermerk immer sichtbar; ohne Bild ein neutraler Platzhalter %>
+<span class="thumb">
+  <% if (e.thumb) { %>
+    <img src="<%= e.thumb.src %>" srcset="<%= e.thumb.srcset %>" sizes="112px" width="<%= e.thumb.width %>" height="<%= e.thumb.height %>" alt="" loading="lazy">
+    <small class="thumb-credit" title="<%= e.thumb.credit %>"><%= e.thumb.credit %></small>
+  <% } else { %>
+    <span class="thumb-empty" aria-hidden="true"><%= String(e.name || '').trim().charAt(0).toUpperCase() %></span>
+  <% } %>
+</span>

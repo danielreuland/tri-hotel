@@ -124,6 +124,40 @@ async function recomputeRanking(rankingId) {
 
 // Live-Objekte eines Rankings mit fester Bewertung und „bester Reisezeit“ (nur Info).
 // Mit Monat: nur Objekte, deren beste Reisezeit diesen Monat enthält – der Score ändert sich nicht.
+// Ein Bild je Objekt für Listen: eigenes Objektbild (Hauptbild zuerst), sonst ein freigegebenes Gastfoto aus einer
+// veröffentlichten Bewertung (nur wenn Bewertungen eingeschaltet sind). Beispielbilder der Region nicht – in einer
+// Liste sähen sie wie ein Foto des Objekts aus. Ergebnis: Map(entityId -> { src, srcset, width, height, credit })
+async function listThumbs(ranking, entityIds) {
+  const out = new Map();
+  if (!entityIds.length) return out;
+  const variantSrc = (prefix, id, variants) => {
+    const w = variants.includes(640) ? 640 : variants[0];
+    return { src: `${prefix}/${id}-${w}.webp`, srcset: variants.filter((v) => v <= 1280).map((v) => `${prefix}/${id}-${v}.webp ${v}w`).join(', ') };
+  };
+  const own = await db.many(
+    `SELECT DISTINCT ON (entity_id) entity_id, id, variants, width, height, credit FROM entity_images
+      WHERE entity_id = ANY($1::uuid[]) AND approved_at IS NOT NULL AND (valid_until IS NULL OR valid_until >= current_date)
+        AND cardinality(variants) > 0
+      ORDER BY entity_id, is_primary DESC, sort_order, created_at`, [entityIds]);
+  for (const i of own) {
+    out.set(i.entity_id, { ...variantSrc('/media', i.id, i.variants), width: i.width, height: i.height,
+      credit: `© ${String(i.credit || '').replace(/^\s*(©|\(c\))\s*/i, '')}` });
+  }
+  const missing = entityIds.filter((id) => !out.has(id));
+  if (missing.length && require('./reviews').config(ranking).enabled) {
+    const guest = await db.many(
+      `SELECT DISTINCT ON (r.entity_id) r.entity_id, i.id, i.variants, i.width, i.height, r.author_name
+         FROM review_images i JOIN reviews r ON r.id = i.review_id
+        WHERE r.entity_id = ANY($1::uuid[]) AND r.ranking_id = $2 AND r.status = 'published' AND i.approved_at IS NOT NULL
+          AND cardinality(i.variants) > 0
+        ORDER BY r.entity_id, r.published_at DESC, i.sort_order`, [missing, ranking.id]);
+    for (const i of guest) {
+      out.set(i.entity_id, { ...variantSrc('/media/review', i.id, i.variants), width: i.width, height: i.height, credit: `Gastfoto: ${i.author_name}` });
+    }
+  }
+  return out;
+}
+
 async function listLive(ranking, { month } = {}) {
   const rows = await db.many(
     `SELECT e.*, er.score, er.fact_score, er.completeness, er.is_provisional, er.ko_reason, er.published_at
@@ -145,6 +179,9 @@ async function listLive(ranking, { month } = {}) {
     const eligible = !row.ko_reason && score !== null && completeness >= formula.min_completeness;
     list.push({ ...row, score, completeness, eligible, bestMonths: best, label: scoring.labelFor(score, ranking.labels) });
   }
+  // Vorschaubild je Objekt (wie auf der Objektseite: nur freigegeben und mit gültigen Rechten)
+  const thumbs = await listThumbs(ranking, list.map((e) => e.id));
+  for (const e of list) e.thumb = thumbs.get(e.id) || null;
   // Sortierung ausschließlich nach Score – Partner-Status spielt keine Rolle.
   list.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.name.localeCompare(b.name, 'de'));
   return { ranked: list.filter((e) => e.eligible), incomplete: list.filter((e) => !e.eligible) };

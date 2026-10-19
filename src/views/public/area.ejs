@@ -40,6 +40,7 @@
         <li>
           <a class="rank-item" href="<%= entityPath(e) %>">
             <span class="pos"><%= e.rank %></span>
+            <%- include('../partials/rank-thumb', { e: e }) %>
             <span class="info">
               <span class="name"><%= e.name %></span><br>
               <small><%= e.city %> · <%= e.label %></small>

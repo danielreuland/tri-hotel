@@ -121,6 +121,7 @@
             <label class="compare-pick" hidden><input type="checkbox" data-compare-pick value="<%= e.slug %>" data-name="<%= e.name %>"><span class="sr-only"><%= e.name %> zum Vergleich auswählen</span></label>
             <a class="rank-item" href="<%= entityPath(e) %>">
               <span class="pos"><%= e.rank %></span>
+              <%- include('../partials/rank-thumb', { e: e }) %>
               <span class="info">
                 <span class="name"><%= e.name %></span><br>
                 <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %><% if (e.bestMonths && e.bestMonths.length) { %> · beste Reisezeit <%= monthRanges(e.bestMonths, MONTHS) %><% } %></small>
