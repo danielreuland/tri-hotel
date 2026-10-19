@@ -2,7 +2,7 @@
 
 Neutrale, filterbare Rankings (erstes Ranking: Triathlon-Hotels). Konzept: `docs/konzept.pdf`, Projektregeln: `CLAUDE.md`.
 
-**Stand:** Entwurf von Version 1 (MVP) – alle sechs Umsetzungsschritte als erster Wurf, noch nicht auf dem Server getestet.
+**Stand (Okt. 2026):** live auf https://tri-hotel.de. Version 1 vollständig, dazu Bewertungen, Direktvergleich, Partnerlinks und Camp-Anfragen.
 
 ## Aufbau
 
@@ -74,11 +74,9 @@ ssh root@87.106.155.249 "cd /var/www/tri-hotel && git pull && npm install --omit
 In der Prüfansicht startet „Anfrage ans Hotel“ einen Agenten (`services/inquiry-agent.js`), der eine sachliche Anfrage zu unklaren Werten – und auf Wunsch Fotos mit Nutzungserlaubnis – an die Kontakt-E-Mail des Betreibers schickt. Der Betreiber antwortet über `/anfrage/:token`; Antworten und Fotos werden erst nach Bestätigung im Admin übernommen (Werte als Vertrauensstufe 1, Fotos über die normale Bildfreigabe). Erinnerung nach 7 Tagen, Ablauf nach 30 Tagen. Ohne `LLM_PROVIDER` nutzt der Agent eine feste Vorlage (Fragen dann nur mit den deutschen Bezeichnungen).
 Konfiguration: `MAIL_REPLY_TO` (Antworten per Mail), `ADMIN_NOTIFY_EMAIL` (Hinweis bei eingehender Antwort).
 
-## Offen vor dem Livegang
+## Offen
 
-- Mail-Anbieter (EU) wählen → `MAIL_PROVIDER=smtp` + SMTP-Zugang
-- LLM-Anbieter festlegen → `LLM_PROVIDER=anthropic` + `LLM_API_KEY` (sonst läuft die Auto-Prüfung ohne Website-Extraktion)
-- Impressum und Datenschutz vervollständigen und rechtlich prüfen lassen
+- LLM-Anbieter fest eintragen → `LLM_PROVIDER=anthropic` + `LLM_API_KEY` (sonst läuft die Auto-Prüfung ohne Website-Extraktion)
 - Anfragen an Betreiber, Einwilligungstexte (`src/lib/consents.js`) und KI-Kennzeichnung rechtlich prüfen lassen
-- Absender-Adressen der virtuellen Mitarbeiter (mia@, lara@, ben@) beim Mail-Anbieter einrichten
-- DNS für tri-hotel.de auf den VPS zeigen lassen
+
+Erledigt: Mail-Anbieter (IONOS, SMTP) · Impressum und Datenschutz · Absender der virtuellen Mitarbeiter (mia@, lara@, ben@; vorerst per Workaround) · DNS

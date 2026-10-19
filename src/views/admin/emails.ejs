@@ -1,6 +1,6 @@
 <%- include('../partials/admin-head') %>
 <h1>E-Mails</h1>
-<p class="muted">Texte der automatischen Mails je Site. Kopf (Marke) und Fuß (Impressum, Datenschutz) sind fest. Die Anfragen an Betreiber formuliert der Agent je Anfrage selbst – sie stehen nur im Protokoll.</p>
+<p class="muted">Texte der automatischen Mails je Site. Kopf (Marke) und Fuß (Impressum, Datenschutz) sind fest. Mails der Personas (z. B. Anfragen an Betreiber) stehen unten unter <a href="#ki-mails">KI-Mails</a>.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (provider === 'console') { %>
   <div class="flash" style="border-color:var(--ok)"><strong>Mailversand noch nicht eingerichtet.</strong> Mails werden nur protokolliert und ins Server-Log geschrieben (MAIL_PROVIDER=console). Mit SMTP-Zugang gehen sie wirklich raus.</div>
@@ -25,6 +25,23 @@
     <% }) %>
   </table>
 </div>
+
+<h2 id="ki-mails">KI-Mails der Personas</h2>
+<p class="muted">Mails, die Mia, Lara und Ben formulieren. Je Anlass gibt es einen Mustertext mit Pflichtpunkten; beim Formulieren mischt die KI ihn mit der Definition der Persona (Rolle &amp; Stil). Feste Regeln (keine Preise, genau ein Link, KI-Hinweis …) gelten immer.</p>
+<div class="table-scroll">
+  <table>
+    <tr><th>Anlass</th><th>Persona</th><th>Wann</th><th>Text</th></tr>
+    <% Object.keys(AI_KEYS).forEach(function (k) { var d = AI_KEYS[k]; var p = personas.find(function (x) { return x.role === d.persona; }); %>
+      <tr>
+        <td><strong><%= d.label %></strong><br><small><% Object.keys(AI_LANGUAGES).forEach(function (l, i) { %><%= i ? ' · ' : '' %><a href="/admin/emails/ki/<%= k %>?site=<%= site.id %>&sprache=<%= l %>"><%= AI_LANGUAGES[l] %></a><% }) %></small></td>
+        <td><small><%= p ? p.name : '–' %><%= d.ai ? ' (KI)' : ' (ohne KI)' %></small></td>
+        <td><small><%= d.trigger %></small></td>
+        <td><% var custom = aiRows.filter(function (r) { return r.key === k; }); %><% if (custom.length) { %><span class="badge good">angepasst</span> <small class="muted"><%= custom.map(function (r) { return AI_LANGUAGES[r.language] + ' v' + r.version; }).join(', ') %></small><% } else { %><span class="badge">Standardtext</span><% } %></td>
+      </tr>
+    <% }) %>
+  </table>
+</div>
+<p class="muted"><small>Rolle &amp; Stil der Personas: <% personas.forEach(function (p, i) { %><%= i ? ' · ' : '' %><%= p.name %> <%= p.style ? '✓' : '(fehlt)' %><% }) %> – bearbeiten unter <a href="/admin/sites/<%= site.id %>#personas">Sites → Virtuelle Mitarbeiter</a>.</small></p>
 
 <h2 id="protokoll">Versandprotokoll</h2>
 <%

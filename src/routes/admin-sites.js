@@ -143,12 +143,13 @@ router.post('/:id/personas/:pid', wrap(async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 40);
   const title = String(req.body.title || '').trim().slice(0, 80);
   const email = String(req.body.email || '').trim().toLowerCase() || null;
+  const style = String(req.body.style || '').replace(/\r/g, '').trim().slice(0, 2000) || null;
   if (!name || !title || (email && !isEmail(email))) return res.redirect(`/admin/sites/${req.params.id}?ok=Name%2C+Titel+und+g%C3%BCltige+E-Mail+angeben#personas`);
   await db.query(
-    `UPDATE personas SET name = $3, title = $4, email = $5, active = $6 WHERE id = $2 AND site_id = $1`,
-    [req.params.id, req.params.pid, name, title, email, req.body.active === 'on']
+    `UPDATE personas SET name = $3, title = $4, email = $5, active = $6, style = $7 WHERE id = $2 AND site_id = $1`,
+    [req.params.id, req.params.pid, name, title, email, req.body.active === 'on', style]
   );
-  await logAction(req.session.admin.id, 'persona', req.params.pid, 'edit_persona', { name, title, email });
+  await logAction(req.session.admin.id, 'persona', req.params.pid, 'edit_persona', { name, title, email, style });
   res.redirect(`/admin/sites/${req.params.id}?ok=Mitarbeiter+gespeichert#personas`);
 }));
 

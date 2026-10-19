@@ -49,7 +49,7 @@
 
 <% if (!isNew) { %>
   <h2 id="personas">Virtuelle Mitarbeiter</h2>
-  <p class="muted">KI-Assistenz für automatisierte Aufgaben. Mails sind immer mit Namen und dem Hinweis „von unserer KI-Assistenz verfasst“ gekennzeichnet; Aktionen stehen unter diesem Namen im Log.</p>
+  <p class="muted">KI-Assistenz für automatisierte Aufgaben. Mails sind immer mit Namen und dem Hinweis „von unserer KI-Assistenz verfasst“ gekennzeichnet; Aktionen stehen unter diesem Namen im Log. Die Mustertexte je Anlass liegen unter <a href="/admin/emails?site=<%= siteId %>#ki-mails">E-Mail-Vorlagen → KI-Mails</a>.</p>
   <div class="grid grid-3">
     <% personas.forEach(function (p) { %>
       <form method="post" action="/admin/sites/<%= siteId %>/personas/<%= p.id %>" class="card">
@@ -57,6 +57,8 @@
         <label>Name</label><input name="name" type="text" value="<%= p.name %>" required>
         <label>Titel</label><input name="title" type="text" value="<%= p.title %>" required>
         <label>Absender</label><input name="email" type="email" value="<%= p.email || '' %>" placeholder="sonst Absender der Site">
+        <label>Rolle &amp; Stil <small class="muted">Aufgabe, Ton, Anrede, Länge, was sie/er nie tut – fließt in jede KI-Mail ein</small></label>
+        <textarea name="style" style="min-height:150px" maxlength="2000"><%= p.style || '' %></textarea>
         <label class="inline"><input type="checkbox" name="active" <%= p.active ? 'checked' : '' %>> aktiv</label>
         <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
       </form>
