@@ -102,20 +102,78 @@ async function createDraft({ entityId, rankingId, submissionId }) {
   }
 }
 
-// Entwurf (ggf. angepasst) freigeben -> Agent formuliert und versendet
-async function approveDraft(inquiryId, { criteriaIds, askPhotos, adminNote }, adminId) {
+// Neue Anfrage aus dem Admin: als Entwurf anlegen und gleich formulieren (gesendet wird erst nach Prüfung)
+async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askPhotos, adminNote, adminId }) {
+  const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
+  if (!entity) throw new Error('Objekt nicht gefunden.');
+  if (!isEmail(entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers in den Stammdaten eintragen.');
+  const open = await db.one(`SELECT status FROM inquiries WHERE entity_id = $1 AND ranking_id = $2 AND status IN ('draft','queued','sent')`, [entityId, rankingId]);
+  if (open) throw new Error(open.status === 'draft' ? 'Es gibt schon einen Entwurf.' : 'Es läuft bereits eine offene Anfrage an diesen Betreiber.');
+  const ranking = await rankings.getRanking(rankingId);
+  const persona = await sites.persona(ranking.site_id, 'data_inquiry');
+  const row = await db.one(
+    `INSERT INTO inquiries (entity_id, ranking_id, submission_id, recipient, language, criteria_ids, ask_photos, created_by, persona_id, status)
+     VALUES ($1,$2,$3,$4,$5,'{}',false,$6,$7,'draft') RETURNING *`,
+    [entity.id, rankingId, submissionId || null, entity.contact_email, agent.languageFor(entity.country), adminId, persona ? persona.id : null]
+  );
+  await logAction(adminId, 'inquiry', row.id, 'draft_inquiry', { recipient: entity.contact_email });
+  try {
+    return await formulate(row.id, { criteriaIds, askPhotos, adminNote }, adminId);
+  } catch (err) {
+    // ohne gültige Auswahl keinen leeren Entwurf stehen lassen
+    await db.query(`DELETE FROM inquiries WHERE id = $1 AND status = 'draft' AND body IS NULL`, [row.id]);
+    throw err;
+  }
+}
+
+// Entwurf formulieren: Auswahl speichern, Agent schreibt Betreff, Text und Fragen. Der Entwurf bleibt Entwurf.
+async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote }, adminId) {
   const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
   if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
-  const entity = await db.one('SELECT contact_email FROM entities WHERE id = $1', [inq.entity_id]);
+  const entity = await db.one('SELECT * FROM entities WHERE id = $1', [inq.entity_id]);
   if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  const ranking = await rankings.getRanking(inq.ranking_id);
   const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
   if (!criteria.length && !askPhotos) throw new Error('Bitte mindestens einen Wert oder die Fotos auswählen.');
-  await db.query(
-    `UPDATE inquiries SET status = 'queued', criteria_ids = $2, ask_photos = $3, admin_note = $4, recipient = $5,
-       approved_by = $6, approved_at = now(), created_by = COALESCE(created_by, $6), updated_at = now() WHERE id = $1`,
-    [inq.id, criteria.map((c) => c.id), Boolean(askPhotos), adminNote || null, entity.contact_email, adminId]
+  const site = await sites.forRanking(ranking);
+  const persona = await personaOf(inq);
+  const facts = Object.fromEntries((await rankings.getFacts(entity.id, ranking.id)).map((f) => [f.criterion_id, f]));
+  const language = agent.languageFor(entity.country);
+  const draft = await agent.draftInquiry({
+    entity, ranking, criteria, facts, language, adminNote: adminNote || null, askPhotos: Boolean(askPhotos), persona, brand: site.name,
+  });
+  if (draft.usage) {
+    await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
+  }
+  const row = await db.one(
+    `UPDATE inquiries SET criteria_ids = $2, ask_photos = $3, admin_note = $4, recipient = $5, language = $6,
+       subject = $7, body = $8, questions = $9, error = $10, updated_at = now() WHERE id = $1 RETURNING *`,
+    [inq.id, criteria.map((c) => c.id), Boolean(askPhotos), adminNote || null, entity.contact_email, language,
+      draft.subject, draft.body, JSON.stringify(draft.questions),
+      draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
   );
-  await logAction(adminId, 'inquiry', inq.id, 'approve_inquiry_draft', { criteria: criteria.map((c) => c.code), askPhotos: Boolean(askPhotos) });
+  await logAction(adminId, 'inquiry', inq.id, 'formulate_inquiry', { criteria: criteria.map((c) => c.code), askPhotos: Boolean(askPhotos) });
+  return row;
+}
+
+// Formulierten Entwurf (ggf. bearbeitet) freigeben und versenden
+async function approveDraft(inquiryId, { subject, body }, adminId) {
+  const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
+  if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
+  if (!inq.body) throw new Error('Bitte zuerst den Entwurf formulieren.');
+  const entity = await db.one('SELECT contact_email FROM entities WHERE id = $1', [inq.entity_id]);
+  if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  const subj = String(subject || '').trim().slice(0, 150);
+  let text = String(body || '').replace(/\r\n/g, '\n').trim();
+  if (!subj || text.length < 20) throw new Error('Betreff und Text dürfen nicht leer sein.');
+  // genau ein Antwortlink: Platzhalter muss drinbleiben (sonst ans Ende setzen)
+  if (!text.includes(agent.LINK)) text = `${text}\n\n${agent.LINK}`;
+  await db.query(
+    `UPDATE inquiries SET status = 'queued', subject = $2, body = $3, recipient = $4,
+       approved_by = $5, approved_at = now(), created_by = COALESCE(created_by, $5), updated_at = now() WHERE id = $1`,
+    [inq.id, subj, text, entity.contact_email, adminId]
+  );
+  await logAction(adminId, 'inquiry', inq.id, 'approve_inquiry_draft', { edited: subj !== inq.subject || text !== inq.body });
   await enqueue('inquiry-send', { inquiryId: inq.id });
 }
 
@@ -142,10 +200,13 @@ async function send(inquiryId) {
     const persona = await personaOf(inq);
     const criteria = (await rankings.getCriteria(inq.ranking_id)).filter((c) => inq.criteria_ids.includes(c.id));
     const facts = Object.fromEntries((await rankings.getFacts(entity.id, ranking.id)).map((f) => [f.criterion_id, f]));
-    const draft = await agent.draftInquiry({
-      entity, ranking, criteria, facts, language: inq.language, adminNote: inq.admin_note, askPhotos: inq.ask_photos,
-      persona, brand: site.name,
-    });
+    // Im Admin formulierter und freigegebener Text wird unverändert versendet; sonst formuliert der Agent jetzt
+    const draft = inq.body
+      ? { subject: inq.subject, body: inq.body, questions: inq.questions || [], usedFallback: false }
+      : await agent.draftInquiry({
+        entity, ranking, criteria, facts, language: inq.language, adminNote: inq.admin_note, askPhotos: inq.ask_photos,
+        persona, brand: site.name,
+      });
     if (draft.usage) {
       await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
     }
@@ -165,7 +226,7 @@ async function send(inquiryId) {
       `UPDATE inquiries SET status = 'sent', subject = $2, body = $3, questions = $4, token_hash = $5, sent_at = now(),
          expires_at = now() + make_interval(days => $6), error = $7, updated_at = now() WHERE id = $1`,
       [inq.id, draft.subject, draft.body, JSON.stringify(draft.questions), tok.hash, VALID_DAYS,
-        draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
+        inq.body ? null : draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
     );
     await logAction(null, 'inquiry', inq.id, 'send_inquiry', { recipient: inq.recipient, persona: persona && persona.name }, db, persona && persona.id);
   } catch (err) {
@@ -409,6 +470,8 @@ async function withdrawConsent(consentId, adminId, note) {
 
 module.exports = {
   createDraft,
+  startDraft,
+  formulate,
   approveDraft,
   discardDraft,
   draftCriteria,

@@ -699,11 +699,11 @@ router.post('/meldungen/:id/anfrage', wrap(async (req, res, next) => {
   if (!sub || !sub.entity_id) return next();
   const ids = [].concat(req.body.criteria || []).filter((v) => UUID_RE.test(v));
   try {
-    await inquiries.start({
+    await inquiries.startDraft({
       entityId: sub.entity_id, rankingId: sub.ranking_id, submissionId: sub.id, criteriaIds: ids,
       askPhotos: req.body.ask_photos === 'on', adminNote: String(req.body.note || '').trim().slice(0, 1000), adminId: req.session.admin.id,
     });
-    res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Anfrage gestartet – der Agent formuliert und versendet sie.')}#anfragen`);
+    res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Entwurf formuliert – bitte prüfen und senden.')}#anfragen`);
   } catch (err) {
     res.redirect(`/admin/meldungen/${sub.id}?fehler=${encodeURIComponent(err.message)}#anfragen`);
   }
@@ -794,16 +794,28 @@ router.get('/anfragen', wrap(async (req, res) => {
   res.render('admin/inquiries', { title: 'Anfragen', rows, status, q, counts, INQUIRY_FILTERS, INQUIRY_STATUS, mailProvider: config.mail.provider });
 }));
 
-// Entwurf freigeben (Fragen, Fotos und Hinweis können vorher angepasst werden) oder verwerfen
-router.post('/anfragen/:inquiryId/freigeben', wrap(async (req, res) => {
+// Entwurf formulieren (Fragen, Fotos und Hinweis aus dem Formular), dann geprüften Text senden, oder verwerfen
+router.post('/anfragen/:inquiryId/formulieren', wrap(async (req, res) => {
   const back = backOrNull(req.body.back) || '/admin/anfragen';
   try {
-    await inquiries.approveDraft(req.params.inquiryId, {
+    await inquiries.formulate(req.params.inquiryId, {
       criteriaIds: [].concat(req.body.criteria || []).filter((v) => UUID_RE.test(v)),
       askPhotos: req.body.ask_photos === 'on',
       adminNote: String(req.body.note || '').trim().slice(0, 1000),
     }, req.session.admin.id);
-    res.redirect(withParam(back, 'ok', 'Anfrage freigegeben – der Agent formuliert und versendet sie.'));
+    res.redirect(withParam(back, 'ok', 'Entwurf formuliert – bitte prüfen und senden.'));
+  } catch (err) {
+    res.redirect(withParam(back, 'fehler', err.message));
+  }
+}));
+
+router.post('/anfragen/:inquiryId/freigeben', wrap(async (req, res) => {
+  const back = backOrNull(req.body.back) || '/admin/anfragen';
+  try {
+    await inquiries.approveDraft(req.params.inquiryId, {
+      subject: String(req.body.subject || ''), body: String(req.body.body || '').slice(0, 6000),
+    }, req.session.admin.id);
+    res.redirect(withParam(back, 'ok', 'Anfrage wird versendet.'));
   } catch (err) {
     res.redirect(withParam(back, 'fehler', err.message));
   }

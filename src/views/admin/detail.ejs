@@ -362,11 +362,11 @@
       <% if (!entity.contact_email) { %>
         <p class="errors" style="margin:0">Für Anfragen fehlt die Kontakt-E-Mail des Betreibers (Stammdaten).</p>
       <% } else if (draftInq) { var draftIds = draftInq.criteria_ids; %>
-        <form method="post" action="/admin/anfragen/<%= draftInq.id %>/freigeben" class="draft-box">
+        <form method="post" action="/admin/anfragen/<%= draftInq.id %>/formulieren" class="draft-box" data-busy="Der Agent formuliert …">
           <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
           <p style="margin-top:0"><span class="badge warn">Entwurf</span> <strong>Anfrage an <%= draftInq.recipient %></strong>
             <small class="muted">· <%= draftInq.auto_created ? 'automatisch angelegt' : 'angelegt' %> <%= formatDate(draftInq.created_at) %><%= draftInq.persona_id && personas[draftInq.persona_id] ? ' · schreibt: ' + personas[draftInq.persona_id] + ' (KI)' : '' %></small></p>
-          <p class="muted" style="margin:0 0 6px"><small>Auswahl anpassen und freigeben. Erst dann formuliert der Agent die Mail in der Sprache des Betreibers (<%= draftInq.language.toUpperCase() %>) und verschickt sie.</small></p>
+          <p class="muted" style="margin:0 0 6px"><small><strong>Schritt 1:</strong> Auswahl anpassen und formulieren lassen – der Agent schreibt die Mail in der Sprache des Betreibers (<%= draftInq.language.toUpperCase() %>). Gesendet wird erst in Schritt 2.</small></p>
           <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
             <% askable.filter(function (c) { return draftIds.indexOf(c.id) >= 0 || unclearIds.indexOf(c.id) >= 0 }).forEach(function (c) { var f = factByCrit[c.id]; %>
               <label class="inline" style="margin:0"><input type="checkbox" name="criteria" value="<%= c.id %>" <%= draftIds.indexOf(c.id) >= 0 && unclearIds.indexOf(c.id) >= 0 ? 'checked' : '' %>>
@@ -377,15 +377,31 @@
           <label for="draft-note">Hinweis an den Agenten <small class="muted">optional</small></label>
           <textarea id="draft-note" name="note" style="min-height:50px"><%= draftInq.admin_note || '' %></textarea>
           <div class="filters" style="margin-bottom:0">
-            <button class="btn" type="submit">Freigeben &amp; senden</button>
+            <button class="btn <%= draftInq.body ? 'secondary' : '' %>" type="submit"><%= draftInq.body ? 'Neu formulieren' : 'Entwurf formulieren' %></button>
             <button class="btn small secondary" type="submit" formaction="/admin/anfragen/<%= draftInq.id %>/verwerfen" formnovalidate>Entwurf verwerfen</button>
           </div>
         </form>
+        <% if (draftInq.body) { %>
+          <form method="post" action="/admin/anfragen/<%= draftInq.id %>/freigeben" class="draft-box" style="margin-top:12px" data-confirm="Anfrage jetzt an <%= draftInq.recipient %> senden?">
+            <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
+            <p class="muted" style="margin-top:0"><small><strong>Schritt 2:</strong> Text prüfen, bei Bedarf anpassen und senden. <code>{{LINK}}</code> wird beim Versand durch den persönlichen Antwortlink ersetzt – bitte stehen lassen.<% if (draftInq.error) { %> <span style="color:var(--bad)"><%= draftInq.error %></span><% } %></small></p>
+            <label for="draft-subject">Betreff</label>
+            <input id="draft-subject" name="subject" required maxlength="150" value="<%= draftInq.subject %>">
+            <label for="draft-body">Text</label>
+            <textarea id="draft-body" name="body" required style="min-height:260px"><%= draftInq.body %></textarea>
+            <% if ((draftInq.questions || []).length) { %>
+              <details style="margin-top:6px"><summary><small>Fragen im Antwortformular (<%= draftInq.questions.length %>)</small></summary>
+                <ol style="margin:6px 0"><% draftInq.questions.forEach(function (q) { %><li><small><%= q.question %> <span class="muted">(<%= q.options.map(function (o) { return o.text; }).join(' / ') %>)</span></small></li><% }) %></ol>
+              </details>
+            <% } %>
+            <p style="margin-bottom:0"><button class="btn" type="submit">Senden</button></p>
+          </form>
+        <% } %>
       <% } else if (openInq) { %>
         <p class="muted">Es läuft eine offene Anfrage an <strong><%= openInq.recipient %></strong>. Eine neue ist erst nach Antwort oder Abschluss möglich.</p>
       <% } else { %>
-        <form method="post" action="/admin/meldungen/<%= sub.id %>/anfrage">
-          <p class="muted" style="margin-top:0">Der Agent schreibt eine sachliche Anfrage in der Sprache des Betreibers und schickt einen persönlichen Antwortlink an <strong><%= entity.contact_email %></strong>. Antworten werden erst nach deiner Bestätigung übernommen.</p>
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/anfrage" data-busy="Der Agent formuliert …">
+          <p class="muted" style="margin-top:0">Der Agent schreibt eine sachliche Anfrage in der Sprache des Betreibers mit persönlichem Antwortlink an <strong><%= entity.contact_email %></strong>. Du prüfst den Text vor dem Senden; Antworten werden erst nach deiner Bestätigung übernommen.</p>
           <strong>Unklare Werte (<%= unclear.length %>)</strong> <small class="muted">unbekannt, strittig oder nur automatisch ermittelt</small>
           <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
             <% unclear.forEach(function (c) { %>
@@ -404,7 +420,7 @@
           <label class="inline"><input type="checkbox" name="ask_photos" <%= hasApprovedImage ? '' : 'checked' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
           <label for="inq-note">Hinweis an den Agenten <small class="muted">optional, z. B. „Bahnzeiten im Winter erfragen“</small></label>
           <textarea id="inq-note" name="note" style="min-height:60px"></textarea>
-          <p style="margin-bottom:0"><button class="btn" type="submit">Anfrage ans <%= ranking.entity_label_sg %> senden</button></p>
+          <p style="margin-bottom:0"><button class="btn" type="submit">Entwurf formulieren</button></p>
         </form>
       <% } %>
 
