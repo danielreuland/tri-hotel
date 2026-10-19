@@ -1,7 +1,10 @@
-<%# Vorschaubild in Ranking-Listen (e.thumb aus rankings.listLive), Urhebervermerk immer sichtbar; ohne Bild ein neutraler Platzhalter %>
-<span class="thumb">
+<%# Vorschaubild in Ranking-Listen (e.thumb aus rankings.listLive), Urhebervermerk immer sichtbar.
+    Beispielbilder der Region sind als „Beispiel Region“ gekennzeichnet; ohne Bild ein neutraler Platzhalter %>
+<span class="thumb<%= e.thumb && e.thumb.example ? ' example' : '' %>">
   <% if (e.thumb) { %>
-    <img src="<%= e.thumb.src %>" srcset="<%= e.thumb.srcset %>" sizes="112px" width="<%= e.thumb.width %>" height="<%= e.thumb.height %>" alt="" loading="lazy">
+    <img src="<%= e.thumb.src %>" srcset="<%= e.thumb.srcset %>" sizes="112px" width="<%= e.thumb.width %>" height="<%= e.thumb.height %>" alt=""
+      loading="lazy"<% if (e.thumb.focal) { %> style="object-position:<%= String(e.thumb.focal).replace(/[^0-9% .a-z-]/gi, '') %>"<% } %>>
+    <% if (e.thumb.example) { %><span class="thumb-badge" title="Beispielbild der Region <%= e.thumb.example %>, kein Foto dieses Eintrags">Beispiel Region</span><% } %>
     <small class="thumb-credit" title="<%= e.thumb.credit %>"><%= e.thumb.credit %></small>
   <% } else { %>
     <span class="thumb-empty" aria-hidden="true"><%= String(e.name || '').trim().charAt(0).toUpperCase() %></span>

@@ -158,6 +158,27 @@ async function listThumbs(ranking, entityIds) {
   return out;
 }
 
+// Ohne eigenes Bild und Gastfoto: Beispielbild der Region (wie auf der Objektseite: erste passende Region),
+// in der Liste als „Beispiel Region“ gekennzeichnet. entities: Zeilen mit id, lat, lng
+async function regionThumbs(ranking, entities) {
+  const out = new Map();
+  if (!entities.length || !ranking.site_id) return out;
+  const media = require('./media');
+  const seo = require('../lib/seo');
+  const [regionList, siteMedia] = await Promise.all([require('./areas').regions(ranking.site_id), media.forSite(ranking.site_id)]);
+  for (const e of entities) {
+    const region = regionList.find((r) => seo.inRegion(e, r));
+    const m = region && media.regionExamples(siteMedia, region.id).find((x) => (x.variants || []).length);
+    if (!m) continue;
+    const w = m.variants.includes(640) ? 640 : m.variants[0];
+    out.set(e.id, {
+      src: `/bild/${m.id}-${w}.webp`, srcset: m.variants.filter((v) => v <= 1280).map((v) => `/bild/${m.id}-${v}.webp ${v}w`).join(', '),
+      width: m.width, height: m.height, focal: m.focal || null, credit: m.credit, example: region.name,
+    });
+  }
+  return out;
+}
+
 async function listLive(ranking, { month } = {}) {
   const rows = await db.many(
     `SELECT e.*, er.score, er.fact_score, er.completeness, er.is_provisional, er.ko_reason, er.published_at
@@ -181,7 +202,8 @@ async function listLive(ranking, { month } = {}) {
   }
   // Vorschaubild je Objekt (wie auf der Objektseite: nur freigegeben und mit gültigen Rechten)
   const thumbs = await listThumbs(ranking, list.map((e) => e.id));
-  for (const e of list) e.thumb = thumbs.get(e.id) || null;
+  const examples = await regionThumbs(ranking, list.filter((e) => !thumbs.has(e.id)));
+  for (const e of list) e.thumb = thumbs.get(e.id) || examples.get(e.id) || null;
   // Sortierung ausschließlich nach Score – Partner-Status spielt keine Rolle.
   list.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.name.localeCompare(b.name, 'de'));
   return { ranked: list.filter((e) => e.eligible), incomplete: list.filter((e) => !e.eligible) };
