@@ -70,7 +70,13 @@ async function renderAiEdit(req, res, site, key, language, draft, extra = {}) {
   const sampleEntity = { name: `${ranking ? ranking.entity_label_sg : 'Objekt'} Beispiel`, city: 'Playa Blanca', country: language === 'de' ? 'DE' : 'ES' };
   const criteria = ranking ? (await rankingsService.getCriteria(ranking.id)).filter(agent.isAskable).slice(0, 2) : [];
   const ctx = { entity: sampleEntity, ranking: ranking || { name: site.name, entity_label_sg: 'Objekt', entity_label_pl: 'Objekte' }, criteria, facts: {}, language, brand: site.name, askPhotos: true, persona, template: tpl };
-  const fallback = agent.fallbackDraft(ctx);
+  let fallback = agent.fallbackDraft(ctx);
+  if (key === 'inquiry_reminder') {
+    // Erinnerung: Beispiel-Anfrage (Mustertext der Datenanfrage) als ursprüngliche Nachricht einsetzen
+    const original = agent.fallbackDraft({ ...ctx, template: await aimail.get(site.id, 'inquiry', language) });
+    const vars = { ...agent.templateVars(ctx), betreff: original.subject, text: original.body };
+    fallback = { subject: aimail.fill(tpl.subject, vars), body: aimail.fill(tpl.body, vars) };
+  }
   const example = key === 'inquiry' ? await aimail.inquiryExample(language) : null;
   const prompt = def.ai ? agent.buildPrompt({ ...ctx, example }) : null;
   res.render('admin/ai-mail-edit', {
