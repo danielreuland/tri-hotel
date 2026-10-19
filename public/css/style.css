@@ -17,14 +17,14 @@
 .rank-item .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rank-item .thumb-credit { position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 5px; font-size: .58rem; line-height: 1.4;
   color: #fff; background: rgba(0, 0, 0, .55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rank-item .thumb-badge { position: absolute; left: 4px; top: 4px; padding: 1px 6px; border-radius: 999px; font-size: .58rem; font-weight: 700;
+.rank-item .thumb-badge { position: absolute; left: 0; right: 0; top: 0; padding: 1px 2px; font-size: .56rem; font-weight: 700; text-align: center;
   line-height: 1.5; color: #102a43; background: rgba(255, 255, 255, .92); white-space: nowrap; }
 .rank-item .thumb-empty { display: grid; place-items: center; width: 100%; height: 100%; font: 400 2rem var(--head); color: var(--muted); }
 @media (max-width: 560px) {
   .rank-item { gap: 10px; padding: 10px 12px; }
   .rank-item .pos { width: 20px; font-size: 1.3rem; }
   .rank-item .thumb { flex-basis: 72px; width: 72px; height: 60px; }
-  .rank-item .thumb-badge { left: 0; right: 0; top: 0; border-radius: 0; text-align: center; white-space: normal; line-height: 1.2; padding: 2px 3px; }
+  .rank-item .thumb-badge { white-space: normal; line-height: 1.2; padding: 2px; }
   .rank-item .score { min-width: 48px; height: 48px; font-size: 1.5rem; }
 }
 
