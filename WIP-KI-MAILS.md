@@ -101,7 +101,28 @@ löschen + neu einfügen, `entity_id` nur bei exakt gleichem Namen). Unverknüpf
   eines neuen Objekts passende freie Zeilen vorschlagen.
 - Tests für die Normalisierung/Vorschläge.
 
-### 9. Deploy
+### 9. Camp-Sammelanfrage („Lass dir Camp-Angebote schicken“)
+Mit Daniel abgestimmt (19.10.2026):
+- Fragebogen (eine Seite): Zeitraum/Monat oder flexibel, Regionen (oder „egal, warm“), Dauer, Personen, Niveau,
+  Schwerpunkt (Rad/Schwimmen/Lauf/Wettkampfvorbereitung), Betreuung (Coach/Gruppe/nur Organisation), Hotel inkl.,
+  Flug inkl., Budget p. P. (optional), Freitext, Kontakt.
+- Passende Anbieter nach Profil-Abgleich; **3 vorausgewählt + bis zu 2 weitere nach Wahl des Kunden (max. 5)**.
+  Reihenfolge nur nach Passung, nie nach Bezahlung. Weiterleiten nur an Anbieter mit Vereinbarung (`lead_active`);
+  andere passende Anbieter trotzdem zeigen mit „direkt anfragen“ (Website).
+- Einwilligung nennt die gewählten Anbieter namentlich (DSGVO, kein „an alle“). Danach wie Camp-Anfragen:
+  E-Mail-Bestätigung → Admin-Prüfung → Weiterleitung mit Reply-To. Technisch: Sammelanfrage (neue Tabelle) erzeugt je
+  Anbieter einen `camp_leads`-Eintrag (Abrechnung, Board, Löschfristen wie bisher).
+- Anbieter-Profile um Abgleichsfelder ergänzen (Monate, Niveaus, Gruppengrößen, Preisrahmen …).
+- Platzierung: Camp-Übersicht, Regionsseiten, Hotelseiten („Kein passendes Camp? Lass dir Angebote schicken“);
+  Plausible-Ziel „Camp-Sammelanfrage“.
+- **Nachfrage nach 7 Tagen im System, nicht in n8n**: täglicher pg-boss-Job wie `inquiry-daily`, Mail-Vorlage
+  „Hast du Angebote bekommen?“ (pro Anbieter ja/nein, Knopf-Links mit Token), Ergebnis intern je Anbieter
+  (Reaktionsquote, nie öffentlich/in Rankings). Nur bei bestätigten + weitergeleiteten Anfragen, einmalig.
+- **Offen:** Preis je geteilter Anfrage (Vorschlag: günstiger als Einzelanfrage, z. B. halber Preis) – Daniel fragen.
+- Faustregel System vs. n8n: personenbezogene Daten, Einwilligungen, Abrechnung, Kundenmails, Fristen → System;
+  fremde Dienste, Social (Lara), Benachrichtigungen an Daniel, Experimente → n8n per Webhook mit minimalen Daten.
+
+### 10. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
 /admin/sites/<id> aufrufen und einen Entwurf formulieren.
 
