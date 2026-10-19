@@ -63,7 +63,19 @@ In `router.post('/:id/personas/:pid'`:
 `stripDisclosure`, `buildPrompt` enthält Persona-Stil, Pflichtpunkte, Mustertext, Stilbeispiel und feste Regeln,
 `fallbackDraft` mit `template` ergibt ausgefüllten Mustertext. Bestehende Tests (inquiry.test.js) müssen grün bleiben.
 
-### 6. Deploy
+### 6. Danach (mit Daniel abgestimmt): Bekannte Angaben und Leistungen bestätigen lassen
+- Entwurf Schritt 1: zusätzlicher Block „Bekannte Angaben bestätigen lassen“ – vorausgewählt alle Fakten mit
+  Vertrauensstufe 2 oder 4 sowie die vorhandenen Leistungen; abwählbar. Speichern z. B. in `inquiries.confirm_criteria_ids`
+  und `inquiries.confirm_features` (Migration).
+- Mail: nur ein Satz mit Anzahl („Außerdem haben wir 14 Angaben erfasst – bitte kurz prüfen“), als Pflichtpunkt/Abschnitt
+  `{{#bestaetigen}}…{{/bestaetigen}}` im Mustertext; die Liste steht im Formular (150-Wörter-Grenze).
+- Antwortformular `/anfrage/:token`: Abschnitt „Das wissen wir bereits“ – je Angabe Wert + stimmt / stimmt nicht
+  (dann Auswahl der richtigen Option) / weiß nicht; Leistungen als Häkchenliste, optional „Bieten Sie außerdem …?“ aus dem Katalog.
+- Antworten in den bestehenden Ablauf (`inquiry_answers`, Admin übernimmt); übernommen = Vertrauensstufe 1 mit Quelle/Datum.
+  Für Leistungen prüfen, wie `entity_features` Herkunft speichert (ggf. Spalten für Bestätigung ergänzen).
+- Knopftext im Mail-Template `views/emails/inquiry.ejs` passend zum Inhalt (nur Fotos → „Fotos hochladen“ / „Upload photos“).
+
+### 7. Deploy
 `git pull && npm run migrate && npm test && pm2 reload tri-hotel`; danach /admin/emails, /admin/emails/ki/inquiry,
 /admin/sites/<id> aufrufen und einen Entwurf formulieren.
 
