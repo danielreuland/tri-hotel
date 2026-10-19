@@ -9,6 +9,7 @@ const config = require('../config');
 const mailer = require('./mailer');
 const rankings = require('./rankings');
 const agent = require('./inquiry-agent');
+const aimail = require('./aimail');
 const sites = require('./sites');
 const consentTexts = require('../lib/consents');
 const { logAction } = require('../lib/audit');
@@ -139,15 +140,19 @@ async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote }, admin
   const persona = await personaOf(inq);
   const facts = Object.fromEntries((await rankings.getFacts(entity.id, ranking.id)).map((f) => [f.criterion_id, f]));
   const language = agent.languageFor(entity.country);
+  const template = await aimail.get(site.id, 'inquiry', language);
+  const example = await aimail.inquiryExample(language, inq.id);
   const draft = await agent.draftInquiry({
     entity, ranking, criteria, facts, language, adminNote: adminNote || null, askPhotos: Boolean(askPhotos), persona, brand: site.name,
+    template, example,
   });
   if (draft.usage) {
     await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
   }
   const row = await db.one(
     `UPDATE inquiries SET criteria_ids = $2, ask_photos = $3, admin_note = $4, recipient = $5, language = $6,
-       subject = $7, body = $8, questions = $9, error = $10, updated_at = now() WHERE id = $1 RETURNING *`,
+       subject = $7, body = $8, questions = $9, error = $10, generated_subject = $7, generated_body = $8, updated_at = now()
+      WHERE id = $1 RETURNING *`,
     [inq.id, criteria.map((c) => c.id), Boolean(askPhotos), adminNote || null, entity.contact_email, language,
       draft.subject, draft.body, JSON.stringify(draft.questions),
       draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null]
@@ -206,6 +211,8 @@ async function send(inquiryId) {
       : await agent.draftInquiry({
         entity, ranking, criteria, facts, language: inq.language, adminNote: inq.admin_note, askPhotos: inq.ask_photos,
         persona, brand: site.name,
+        template: await aimail.get(site.id, 'inquiry', inq.language),
+        example: await aimail.inquiryExample(inq.language, inq.id),
       });
     if (draft.usage) {
       await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
@@ -218,7 +225,7 @@ async function send(inquiryId) {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
-      data: { subject: draft.subject, text: draft.body.replace(agent.LINK, answerUrl(site, tok.token)), language: inq.language },
+      data: { subject: draft.subject, text: draft.body.split(agent.LINK).join(answerUrl(site, tok.token)), language: inq.language },
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
@@ -418,6 +425,10 @@ async function dailyMaintenance() {
     const tok = newToken();
     const site = await sites.forRanking(await rankings.getRanking(inq.ranking_id));
     const persona = await personaOf(inq);
+    const entity = await db.one('SELECT name FROM entities WHERE id = $1', [inq.entity_id]);
+    const tpl = await aimail.get(site.id, 'inquiry_reminder', inq.language);
+    const vars = { marke: site.name, objekt: entity ? entity.name : '', name: persona ? persona.name : site.name, betreff: inq.subject, text: inq.body };
+    const url = answerUrl(site, tok.token);
     const ok = await mailer.send({
       to: inq.recipient,
       template: 'inquiry',
@@ -426,8 +437,8 @@ async function dailyMaintenance() {
       inquiryId: inq.id,
       entityId: inq.entity_id,
       data: {
-        subject: (inq.language === 'de' ? 'Erinnerung: ' : 'Reminder: ') + inq.subject,
-        text: inq.body.replace(agent.LINK, answerUrl(site, tok.token)),
+        subject: aimail.fill(tpl.subject, vars).slice(0, 200),
+        text: aimail.fill(tpl.body, vars).split(agent.LINK).join(url),
         language: inq.language,
       },
     });
