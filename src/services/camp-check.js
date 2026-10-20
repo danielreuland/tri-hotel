@@ -265,6 +265,24 @@ async function run(providerId) {
     // 3. Prüfregeln
     const result = qualify(x, { pagesRead: pages.length });
 
+    // 3b. Keine E-Mail auf der Website: Hunter.io (nur allgemeine Adresse, Vorschlag im Bericht; Ergebnis 180 Tage wiederverwenden)
+    let hunterLookup = (p.check_report || {}).hunter || null;
+    if (pages.length && !(x.contact && x.contact.email)) {
+      const hunter = require('./hunter');
+      const fresh = hunterLookup && Date.now() - new Date(hunterLookup.at).getTime() < 180 * 86400000;
+      if (!fresh && hunter.enabled()) {
+        const { suggestion, reason } = await hunter.findGenericEmail(p.website, { campProviderId: p.id });
+        hunterLookup = { at: new Date().toISOString(), suggestion, reason: reason || null };
+      }
+      if (hunterLookup) {
+        const s = hunterLookup.suggestion;
+        note('Kontakt (Hunter.io)', Boolean(s), s ? `Vorschlag ${s.email} (${s.confidence} %)` : hunterLookup.reason);
+        const rule = result.rules.find((r) => r.key === 'contact');
+        if (s && rule) rule.text = `${rule.level === 'ok' ? `${rule.text} · ` : ''}Vorschlag Hunter.io: ${s.email} (${s.confidence} %) – bitte prüfen`;
+        if (s && rule && !rule.evidence_url) rule.evidence_url = s.evidenceUrl;
+      }
+    }
+
     // 4. Hotels abgleichen bzw. als Hotel-Meldung anlegen
     const hotelLog = await matchHotels(p, x.hotels, note);
 
@@ -273,7 +291,7 @@ async function run(providerId) {
 
     await db.query(
       `UPDATE camp_providers SET check_status = 'done', qualification = $2, check_report = $3, checked_at = now(), updated_at = now() WHERE id = $1`,
-      [p.id, result.qualification, JSON.stringify({ rules: result.rules, completeness: result.completeness, log, hotels: hotelLog, extracted: x, pages: pages.length })]
+      [p.id, result.qualification, JSON.stringify({ rules: result.rules, completeness: result.completeness, log, hotels: hotelLog, extracted: x, pages: pages.length, hunter: hunterLookup })]
     );
     await require('../lib/audit').logAction(null, 'camp_provider', p.id, 'camp_check', { qualification: result.qualification, completeness: result.completeness });
   } catch (err) {

@@ -129,7 +129,22 @@
           <div>
             <label>Kontakt-E-Mail des Betreibers</label>
             <input name="contact_email" type="email" value="<%= entity.contact_email || '' %>" placeholder="für Anfragen und Freigaben">
-            <small class="muted"><% if (!entity.contact_email) { %><span style="color:var(--ok)">fehlt – nötig für Anfragen an das <%= ranking.entity_label_sg %></span><% } else if (entity.contact_email_source === 'website') { %>automatisch gefunden<% if (entity.contact_email_evidence) { %> · <a href="<%= entity.contact_email_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %> – bitte prüfen<% } else { %>vom Admin eingetragen<% } %></small>
+            <% var CSRC = { website: 'von der Website', osm: 'aus OpenStreetMap', hunter: 'über Hunter.io (allgemeine Adresse)' };
+               var csug = (entity.attributes || {}).contact_suggestion; var clook = (entity.attributes || {}).contact_lookup; %>
+            <small class="muted"><% if (!entity.contact_email) { %><span style="color:var(--ok)">fehlt – nötig für Anfragen an das <%= ranking.entity_label_sg %></span><% } else if (CSRC[entity.contact_email_source]) { %>automatisch gefunden <%= CSRC[entity.contact_email_source] %><% if (entity.contact_email_evidence) { %> · <a href="<%= entity.contact_email_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %><%= entity.contact_email_source === 'hunter' ? ' – vom Admin bestätigt' : ' – bitte prüfen' %><% } else { %>vom Admin eingetragen<% } %></small>
+            <% if (csug) { %>
+              <div class="card" style="margin-top:6px;padding:8px 12px">
+                <small><strong>Vorschlag von Hunter.io:</strong> <%= csug.email %> <span class="muted">(Trefferwahrscheinlichkeit <%= csug.confidence %> %<%= csug.stillOnPage ? '' : ', Seite evtl. veraltet' %>)</span>
+                  · <a href="<%= csug.evidenceUrl %>" target="_blank" rel="noopener">Fundstelle ↗</a></small><br>
+                <button class="btn small" type="submit" form="contact-accept">Übernehmen</button>
+                <button class="btn small secondary" type="submit" form="contact-dismiss">Verwerfen</button>
+              </div>
+            <% } else if (!entity.contact_email) { %>
+              <div style="margin-top:6px">
+                <button class="btn small secondary" type="submit" form="contact-search" <%= hunterInfo.enabled && !hunterInfo.left ? 'disabled' : '' %>>Kontaktadresse suchen</button>
+                <small class="muted">OpenStreetMap<%= hunterInfo.enabled ? ', dann Hunter.io (' + hunterInfo.left + ' von ' + hunterInfo.limit + ' Abfragen diesen Monat frei)' : '' %><%= clook && clook.hunter_at ? ' · zuletzt gesucht ' + formatDate(clook.hunter_at) + (clook.reason ? ': ' + clook.reason : '') : '' %></small>
+              </div>
+            <% } %>
           </div>
         </div>
         <div class="form-row">
@@ -139,6 +154,9 @@
         </div>
         <p><button class="btn small" type="submit">Stammdaten speichern</button> <small class="muted">Slug: <%= entity.slug %></small></p>
       </form>
+      <form id="contact-search" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-suche" data-busy="Suche läuft …"></form>
+      <form id="contact-accept" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/uebernehmen"></form>
+      <form id="contact-dismiss" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/verwerfen"></form>
       <% var ea = entity.attributes || {}; var sug = ea.google_place_suggestion; %>
       <% if (sug && sug.status === 'found' && !ea.google_place_id) { %>
         <div class="flash" style="margin-top:12px">

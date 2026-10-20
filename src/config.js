@@ -77,6 +77,11 @@ module.exports = {
   googleMapsEmbedKey: process.env.GOOGLE_MAPS_EMBED_KEY || null,
   // Places API (New) nur serverseitig für die Suche nach der Place ID; Schlüssel auf die Server-IP beschränken
   googlePlacesKey: process.env.GOOGLE_PLACES_KEY || null,
+  // Hunter.io: dritte Quelle für die Kontaktadresse (nur allgemeine Firmenadressen), mit Monatsgrenze je Abfrage
+  hunter: {
+    apiKey: process.env.HUNTER_API_KEY || null,
+    monthlyLimit: Number(process.env.HUNTER_MONTHLY_LIMIT) || 40,
+  },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || null,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,

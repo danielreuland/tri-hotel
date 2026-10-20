@@ -262,6 +262,8 @@ async function loadDetail(id) {
   // Camp-Anbieter in diesem Objekt pflegen (Auswahl aller Anbieter der Site)
   // Herkunft: Hotel-Meldung aus der automatischen Camp-Prüfung
   const campSource = sub.source_camp_provider_id ? await db.one('SELECT id, name FROM camp_providers WHERE id = $1', [sub.source_camp_provider_id]) : null;
+  const hunterSvc = require('../services/hunter');
+  const hunterInfo = hunterSvc.enabled() ? { enabled: true, ...(await hunterSvc.quota()) } : { enabled: false };
   const campProviderOptions = entity ? await require('../services/camps').providerOptions(ranking.site_id) : [];
   const campSelectedIds = entity ? (await db.many('SELECT DISTINCT provider_id FROM camp_provider_hotels WHERE entity_id = $1', [entity.id])).map((r) => r.provider_id) : [];
   // Postfach: Verlauf mit dem Betreiber (gesendete und eingegangene Mails), Absender-Auswahl
@@ -271,7 +273,7 @@ async function loadDetail(id) {
   const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
   return {
     mailThread, mailPersonas, mailDefaultPersona,
-    campLinks, campSource, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
+    campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
     confirmFeatureList, offerFeatureCount, confirmDefaults,
@@ -449,6 +451,29 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
   res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);
+}));
+
+// Kontaktadresse suchen (OpenStreetMap, dann Hunter.io), Vorschlag übernehmen oder verwerfen
+router.post('/meldungen/:id/kontakt-suche', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const msg = await require('../services/contacts').fallback(t.entity, { force: true });
+  await logAction(req.session.admin.id, 'entity', t.entity.id, 'search_contact_email', { result: msg });
+  res.redirect(backTo(t.sub.id, 'ok', msg));
+}));
+
+router.post('/meldungen/:id/kontakt-vorschlag/uebernehmen', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const s = await require('../services/contacts').acceptSuggestion(t.entity.id, req.session.admin.id);
+  res.redirect(backTo(t.sub.id, 'ok', s ? `Kontaktadresse ${s.email} übernommen` : 'Kein Vorschlag vorhanden'));
+}));
+
+router.post('/meldungen/:id/kontakt-vorschlag/verwerfen', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  await require('../services/contacts').dismissSuggestion(t.entity.id, req.session.admin.id);
+  res.redirect(backTo(t.sub.id, 'ok', 'Vorschlag verworfen'));
 }));
 
 // Camp-Anbieter, die in diesem Objekt Camps durchführen (gleiche Tabelle wie im Anbieter-Formular)

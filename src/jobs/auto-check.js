@@ -156,7 +156,7 @@ async function run(submissionId, { refresh = false } = {}) {
         );
         if (r.rowCount) parts.push(`Kontakt-E-Mail: ${hit.email}.`);
       } else {
-        parts.push('Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.');
+        parts.push('Keine Kontakt-E-Mail auf der Website.');
       }
       // Anschrift merken (Stammdaten-Zusatz, mit Fundstelle)
       const address = site.addresses.find((a) => a.street) || found.address;
@@ -234,7 +234,12 @@ async function run(submissionId, { refresh = false } = {}) {
     ? `K.O.: ${result.koReason}`
     : `Vorläufiger ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`;
   await submissions.appendLog(sub.id, 'Score', !result.ko, summary);
-  // 7. Offene Punkte als Anfrage-Entwurf an den Betreiber vorbereiten (Versand erst nach Freigabe im Admin)
+  // 7. Kontaktadresse, wenn die Website keine liefert: OpenStreetMap, dann Hunter.io (nur Vorschlag, Admin bestätigt)
+  if (!result.ko) {
+    const current = await db.one('SELECT * FROM entities WHERE id = $1', [entity.id]);
+    if (!current.contact_email) await step(sub.id, 'Kontaktadresse', () => require('../services/contacts').fallback(current));
+  }
+  // 8. Offene Punkte als Anfrage-Entwurf an den Betreiber vorbereiten (Versand erst nach Freigabe im Admin)
   if (!result.ko) {
     await step(sub.id, 'Anfrage-Entwurf', async () => {
       const r = await require('../services/inquiries').createDraft({ entityId: entity.id, rankingId: ranking.id, submissionId: sub.id });

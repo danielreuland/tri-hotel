@@ -64,24 +64,32 @@ async function geocode({ name, city, country }) {
   return hitOf((await nominatim(params))[0]) || null;
 }
 
-// Website einer Unterkunft aus OpenStreetMap (Tag website / contact:website), nur bei passendem Namen.
-// Ergebnis: { website, osmUrl, display } oder null
-async function findWebsite({ name, city, country }) {
+// Website und E-Mail einer Unterkunft aus OpenStreetMap (Tags website/contact:website, email/contact:email),
+// nur bei passendem Namen und Unterkunfts-Kategorie. Ergebnis: { website, email, osmUrl, display } oder null
+async function findOsmContact({ name, city, country }) {
   const { nameMatch } = require('./places');
   const params = { q: [name, city].filter(Boolean).join(', '), limit: '5', extratags: '1' };
   if (country) params.countrycodes = country.toLowerCase();
   for (const h of await nominatim(params)) {
     const tags = h.extratags || {};
-    const site = tags.website || tags['contact:website'] || tags.url;
     const lodging = LODGING_CATEGORY.test(`${h.category || h.class || ''}=${h.type || ''}`);
-    if (!site || !lodging || !nameMatch(name, h.name || h.display_name)) continue;
+    if (!lodging || !nameMatch(name, h.name || h.display_name)) continue;
+    let website = null;
+    const site = tags.website || tags['contact:website'] || tags.url;
     try {
-      return { website: new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`).toString(), osmUrl: `https://www.openstreetmap.org/${h.osm_type}/${h.osm_id}`, display: h.display_name };
-    } catch {
-      // ungültige URL im Tag – nächster Treffer
-    }
+      website = site ? new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`).toString() : null;
+    } catch { website = null; }
+    const mail = String(tags.email || tags['contact:email'] || '').split(';')[0].trim().toLowerCase();
+    const email = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(mail) ? mail : null;
+    if (!website && !email) continue;
+    return { website, email, osmUrl: `https://www.openstreetmap.org/${h.osm_type}/${h.osm_id}`, display: h.display_name };
   }
   return null;
+}
+
+async function findWebsite(args) {
+  const r = await findOsmContact(args);
+  return r && r.website ? r : null;
 }
 
 // Photon (Komoot, OSM-Daten): unscharfe Suche nach Unterkünften
@@ -301,4 +309,4 @@ async function suggestFacts(point, criteria) {
 
 module.exports = {
   locate,
-  coreName, geocode, findWebsite, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };
+  coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };
