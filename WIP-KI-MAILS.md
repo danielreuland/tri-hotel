@@ -9,6 +9,17 @@ Ziel (mit Daniel abgestimmt): Beim Formulieren mischt die KI
 (zuletzt von Hand überarbeitete, gesendete Anfrage). Ohne KI wird der ausgefüllte Mustertext wörtlich verwendet.
 Anlässe jetzt: `inquiry` (Datenanfrage, KI) und `inquiry_reminder` (Erinnerung, ohne KI), je Deutsch/Englisch.
 
+## Agenda für den 21.10.2026 (mit Daniel vereinbart)
+1. **Camp-Anfrage für Einzelpersonen und Gruppen/Vereine** – baut auf Punkt 9 (Camp-Sammelanfrage) auf; Felder je Zielgruppe
+   (Verein: Ansprechpartner, Gruppengröße, Leistungsniveaus, Betreuung, Budget je Person), Abgleich mit Anbieterprofilen.
+2. **SEO prüfen, bewerten und optimieren** – Search Console (erste indexierte Seiten), Titel/Beschreibungen, interne Links,
+   strukturierte Daten, Ladezeit, Inhalte je Region/Land.
+3. **Konzept: aus E-Mail-Anfragen mit Erinnerungen vollständige Workflows** – Anfrage → Erinnerung → nächste Stufe bis zur Klärung,
+   inklusive **Voice-Agents, die anrufen**. Vorab klären: Telefon-Kontakt zu Unternehmen (UWG § 7 Abs. 2: mutmaßliche Einwilligung),
+   KI-Kennzeichnung am Telefon (EU AI Act Art. 50), Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
+Stand Ende 20.10.: Hunter-Fix (gescheiterte Abfragen nicht merken) lokal committet, noch nicht deployt;
+geo-refresh für live-Objekte lief zuletzt noch – Ergebnis im Log /tmp/geo-refresh-live.log auf dem Server.
+
 ## Noch zu tun
 
 ### 6. Bekannte Angaben und Leistungen bestätigen lassen – umgesetzt (19.10.2026)
