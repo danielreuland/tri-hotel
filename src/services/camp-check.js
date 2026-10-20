@@ -366,7 +366,8 @@ async function createHotelSubmission(p, h, ranking, note) {
 // Belegte Angaben in leere Profilfelder des Entwurfs übernehmen (Admin-Eingaben werden nie überschrieben)
 async function fillProfile(p, x) {
   if (p.status !== 'draft') return;
-  const firstRun = !p.checked_at;
+  // Vorgabe „coach“ ersetzen, solange noch keine Prüfung selbst einen Typ ermittelt hat (auch nach abgebrochenem Lauf)
+  const firstRun = !(((p.check_report || {}).extracted || {}).model);
   const features = { ...(p.features || {}) };
   for (const [k, v] of Object.entries(x.features)) {
     if (!v) continue;
