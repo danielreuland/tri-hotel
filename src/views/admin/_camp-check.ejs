@@ -21,7 +21,7 @@
         <% rules.forEach(function (r) { var l = LEVEL[r.level] || LEVEL.warn; %>
           <tr>
             <td style="width:28px"><span class="badge <%= l[0] %>"><%= l[1] %></span></td>
-            <td><strong><%= r.label %></strong><%= r.required ? '' : r.review ? ' <small class="muted">(bei Fehlen prüfen)</small>' : ' <small class="muted">(Hinweis)</small>' %><br>
+            <td><strong><%= r.label %></strong><% if (!r.required) { %> <small class="muted"><%= r.review ? '(bei Fehlen prüfen)' : '(Hinweis)' %></small><% } %><br>
               <small><%= r.text %></small>
               <% if (r.evidence_text) { %><br><small class="evidence">„<%= r.evidence_text.slice(0, 200) %>“<% if (r.evidence_url) { %> <a href="<%= r.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %></td>
           </tr>

@@ -140,26 +140,39 @@ function qualify(x, { pagesRead, now = new Date() }) {
 
 // ---------- Auswertung per KI (festes Schema, jede Angabe mit Fundstelle) ----------
 
+// Flache Liste statt verschachtelter Objekte: ein Eintragstyp hält das Antwortschema klein (strukturierte Ausgabe).
+// kind: topic | imprint | contact | profile | destination | feature | price | date | hotel – Felder je kind siehe Prompt.
+const KINDS = ['topic', 'imprint', 'contact', 'profile', 'destination', 'feature', 'price', 'date', 'hotel'];
+
+// Einträge der KI in die Form bringen, die sanitize() erwartet (erster Eintrag je Einzelangabe zählt)
+function fromItems(items) {
+  const raw = { topic: null, imprint: null, contact: null, profile: null, destinations: [], features: {}, prices: [], dates: [], hotels: [] };
+  const evd = (i) => ({ evidence_url: i.evidence_url, evidence_text: i.evidence_text });
+  for (const i of items || []) {
+    if (i.kind === 'topic' && !raw.topic && ['yes', 'no'].includes(i.value)) raw.topic = { on_topic: i.value === 'yes', reason: i.detail, ...evd(i) };
+    if (i.kind === 'imprint' && !raw.imprint) raw.imprint = { company: i.name, address: i.detail, ...evd(i) };
+    if (i.kind === 'contact' && !raw.contact) raw.contact = { email: i.value, form: /form/i.test(i.detail || ''), phone: i.place, ...evd(i) };
+    if (i.kind === 'profile' && !raw.profile) raw.profile = { model: i.value, seat: i.place, summary: i.detail, ...evd(i) };
+    if (i.kind === 'destination') raw.destinations.push({ name: i.name, ...evd(i) });
+    if (i.kind === 'feature' && !raw.features[i.name]) {
+      const v = FLAG_KEYS.includes(i.name) ? (i.value === 'yes' ? true : i.value === 'no' ? false : null) : i.value;
+      if (v !== null && v !== undefined && v !== '') raw.features[i.name] = { value: v, ...evd(i) };
+    }
+    if (i.kind === 'price') raw.prices.push({ label: i.name, duration: i.place, price: i.value, included: i.detail, ...evd(i) });
+    if (i.kind === 'date') raw.dates.push({ label: i.name, start: i.start, end: i.end, ...evd(i) });
+    if (i.kind === 'hotel') raw.hotels.push({ name: i.name, place: i.place, country: i.country, website: i.website, ...evd(i) });
+  }
+  return raw;
+}
+
 async function extractCamp({ provider, topic, pages }) {
   const { z } = require('zod');
   const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
-  const E = { evidence_url: z.string(), evidence_text: z.string() };
-  const Schema = z.object({
-    topic: z.object({ on_topic: z.boolean(), reason: z.string(), ...E }).nullable(),
-    imprint: z.object({ company: z.string(), address: z.string(), ...E }).nullable(),
-    contact: z.object({ email: z.string(), form: z.boolean(), phone: z.string(), ...E }).nullable(),
-    profile: z.object({ model: z.enum(MODELS), seat: z.string(), summary: z.string(), ...E }).nullable(),
-    destinations: z.array(z.object({ name: z.string(), ...E })),
-    features: z.object({
-      hotel: z.object({ value: z.enum(HOTEL), ...E }).nullable(),
-      flight: z.object({ value: z.enum(FLIGHT), ...E }).nullable(),
-      ...Object.fromEntries(FLAG_KEYS.map((k) => [k, z.object({ value: z.boolean(), ...E }).nullable()])),
-      max_group: z.object({ value: z.string(), ...E }).nullable(),
-    }),
-    prices: z.array(z.object({ label: z.string(), duration: z.string(), price: z.string(), included: z.string(), ...E })),
-    dates: z.array(z.object({ label: z.string(), start: z.string(), end: z.string(), ...E })),
-    hotels: z.array(z.object({ name: z.string(), place: z.string(), country: z.string(), website: z.string(), ...E })),
+  const Item = z.object({
+    kind: z.enum(KINDS), name: z.string(), value: z.string(), detail: z.string(), place: z.string(), country: z.string(),
+    website: z.string(), start: z.string(), end: z.string(), evidence_url: z.string(), evidence_text: z.string(),
   });
+  const Schema = z.object({ items: z.array(Item) });
   const pageBlock = pages.map((p, i) => {
     const links = (p.links || []).length ? `\nExterne Links: ${p.links.map((l) => `${l.text || '–'} → ${l.url}`).join(' | ')}` : '';
     return `<page index="${i + 1}" url="${p.url}">\n${p.text}${links}\n</page>`;
@@ -167,20 +180,20 @@ async function extractCamp({ provider, topic, pages }) {
   const prompt = `Du prüfst die Website des Camp-Anbieters „${provider.name}“ (${provider.website}) für eine neutrale Übersicht von Trainingscamps.
 Thema der Übersicht: ${topic}
 
-Ermittle nur, was auf den Seiten ausdrücklich steht – im Zweifel null bzw. leere Liste:
-- topic: Passt das Angebot zum Thema? on_topic true/false mit kurzer Begründung. false nur, wenn klar ein anderes Angebot vorliegt.
-- imprint: Firma (bzw. Name) und Postanschrift aus dem Impressum.
-- contact: Kontakt-E-Mail, ob es ein Kontaktformular gibt, Telefon (leer, wenn nicht vorhanden).
-- profile: Art des Anbieters (operator = Reiseveranstalter, coach = Coach-Camp, resort = Sportresort/Trainingszentrum, community = Spezial-/Community-Camp, group = Vereins-/Gruppenreise), Sitz (Ort), Kurzprofil in 2–3 eigenen, sachlichen Sätzen ohne Werbesprache.
-- destinations: Zielorte bzw. Regionen der Camps (z. B. „Lanzarote“, „Mallorca“).
-- features: hotel (yes = im Paket, optional, partner = über Partner, required = Pflicht/Resort, no = nicht enthalten), flight (yes, partner, no), beginner/women/swim/family/camp_only (true nur bei ausdrücklichem Angebot, false nur bei ausdrücklichem Ausschluss), max_group (maximale Gruppengröße als Text).
-- prices: Preisbeispiele (Bezeichnung, Dauer, Preis wie angegeben, was enthalten ist).
-- dates: Camp-Termine mit start/end im Format JJJJ-MM-TT (end leer, wenn nicht angegeben).
-- hotels: Unterkünfte, in denen Camps stattfinden: Name, Ort, Land als ISO-Code (z. B. ES), website nur, wenn die Seite das Hotel verlinkt (aus „Externe Links“, sonst leer).
+Gib unter "items" je Angabe einen Eintrag zurück – nur, was auf den Seiten ausdrücklich steht. Nicht benötigte Felder leer ("").
+- kind "topic" (genau einer): value "yes" oder "no" – passt das Angebot zum Thema? "no" nur, wenn klar ein anderes Angebot vorliegt; detail = kurze Begründung.
+- kind "imprint": name = Firma bzw. Name, detail = Postanschrift (aus dem Impressum).
+- kind "contact": value = Kontakt-E-Mail, place = Telefon, detail = "form", wenn es ein Kontaktformular gibt.
+- kind "profile" (einer): value = operator (Reiseveranstalter) | coach (Coach-Camp) | resort (Sportresort/Trainingszentrum) | community (Spezial-/Community-Camp) | group (Vereins-/Gruppenreise); place = Sitz (Ort); detail = Kurzprofil in 2–3 eigenen, sachlichen Sätzen ohne Werbesprache.
+- kind "destination": name = Zielort bzw. Region der Camps (z. B. „Mallorca“).
+- kind "feature": name = hotel (value yes = im Paket | optional | partner = über Partner | required = Pflicht/Resort | no), flight (value yes | partner | no), beginner | women | swim | family | camp_only (value yes nur bei ausdrücklichem Angebot, no nur bei ausdrücklichem Ausschluss), max_group (value = maximale Gruppengröße als Text).
+- kind "price": name = Bezeichnung, place = Dauer, value = Preis wie angegeben, detail = was enthalten ist.
+- kind "date": name = Bezeichnung, start/end = Termin im Format JJJJ-MM-TT (end leer, wenn nicht angegeben).
+- kind "hotel": Unterkunft, in der Camps stattfinden: name, place = Ort, country = ISO-Code (z. B. ES), website nur, wenn die Seite das Hotel verlinkt (aus „Externe Links“), sonst leer.
 
 Regeln:
 - evidence_url: url der Seite mit dem Beleg; evidence_text: wörtliches Zitat (max. 300 Zeichen) von dieser Seite.
-- Nichts erfinden, nichts aus Allgemeinwissen ergänzen.
+- Nichts erfinden, nichts aus Allgemeinwissen ergänzen. Kurzprofil und Begründung auf Deutsch.
 
 ${pageBlock}`;
   const llm = require('../lib/llm');
@@ -197,7 +210,7 @@ ${pageBlock}`;
   );
   const usage = { model: response.model, raw: response.usage };
   if (response.stop_reason === 'refusal' || !response.parsed_output) return { raw: null, usage };
-  return { raw: response.parsed_output, usage };
+  return { raw: fromItems(response.parsed_output.items), usage };
 }
 
 // ---------- Prüflauf (Job „camp-check“) ----------
@@ -374,4 +387,4 @@ async function fillProfile(p, x) {
   );
 }
 
-module.exports = { QUALIFICATION, RULES, sanitize, qualify, upcomingDates, evidenceOk, extractCamp, setEnqueue, queue, run, matchHotels, fillProfile };
+module.exports = { QUALIFICATION, RULES, sanitize, qualify, upcomingDates, evidenceOk, fromItems, extractCamp, setEnqueue, queue, run, matchHotels, fillProfile };

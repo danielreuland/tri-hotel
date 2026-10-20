@@ -75,3 +75,24 @@ test('upcomingDates: laufende Saison zählt (Ende in der Zukunft), mehr als 18 M
   const d = [{ start: '2026-10-15', end: '2026-10-25' }, { start: '2029-01-01', end: null }, { start: '2026-01-01', end: '2026-01-08' }];
   assert.deepEqual(check.upcomingDates(d, now).map((x) => x.start), ['2026-10-15']);
 });
+
+test('fromItems: flache KI-Einträge → Form für sanitize, erster Eintrag je Einzelangabe zählt', () => {
+  const q = { evidence_url: 'https://camp.example/', evidence_text: 'Triathlon-Trainingscamps auf Lanzarote' };
+  const raw = check.fromItems([
+    { kind: 'topic', value: 'yes', detail: 'Triathlon-Camps', ...q },
+    { kind: 'topic', value: 'no', detail: 'zweiter Eintrag zählt nicht', ...q },
+    { kind: 'feature', name: 'beginner', value: 'yes', ...q },
+    { kind: 'feature', name: 'women', value: 'unklar', ...q },
+    { kind: 'feature', name: 'hotel', value: 'partner', ...q },
+    { kind: 'date', name: 'März', start: '2027-03-14', end: '', ...q },
+    { kind: 'hotel', name: 'Club La Santa', place: 'Tinajo', country: 'ES', website: '', ...q },
+  ]);
+  assert.equal(raw.topic.on_topic, true);
+  assert.deepEqual(Object.keys(raw.features).sort(), ['beginner', 'hotel']);
+  assert.equal(raw.features.beginner.value, true);
+  assert.equal(raw.dates[0].start, '2027-03-14');
+  const x = check.sanitize(raw, pages);
+  assert.equal(x.topic.on_topic, true);
+  assert.equal(x.features.hotel.value, 'partner');
+  assert.equal(x.hotels[0].name, 'Club La Santa');
+});
