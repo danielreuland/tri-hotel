@@ -2,7 +2,8 @@
 <h1>Camp-Anbieter</h1>
 <p class="muted">Neutral gelistet unter <a href="/trainingscamp#anbieter" target="_blank">/trainingscamp</a>, alphabetisch, ohne Score. „Klicks“ zählt Weiterleitungen zum Anbieter (ohne personenbezogene Daten) – Grundlage für Partnergespräche.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
-<p><a class="btn small" href="/admin/camps/neu">+ Anbieter anlegen und prüfen</a></p>
+<div class="filters"><a class="btn small" href="/admin/camps/neu">+ Anbieter anlegen und prüfen</a>
+  <form method="post" action="/admin/camps/alle-pruefen" data-confirm="Alle Anbieter erneut automatisch prüfen? Genannte Hotels, die noch nicht im Ranking sind, werden als Hotel-Meldung angelegt."><button class="btn small secondary" type="submit">Alle prüfen</button></form></div>
 <div class="table-scroll"><table>
   <tr><th>Anbieter</th><th>Typ</th><th>Ziele</th><th class="num">Hotels</th><th class="num">Klicks 30 T.</th><th class="num">gesamt</th><th>Status</th></tr>
   <% rows.forEach(function (p) { var s = stats[p.id] || { last30: 0, total: 0 }; %>

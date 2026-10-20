@@ -121,6 +121,15 @@ router.post('/anlegen', wrap(async (req, res) => {
   res.redirect(`/admin/camps/${row.id}?ok=${encodeURIComponent('Angelegt – die automatische Prüfung läuft (etwa 1–2 Minuten).')}`);
 }));
 
+// Alle Anbieter (in Prüfung oder freigegeben) erneut automatisch prüfen – nacheinander im Hintergrund
+router.post('/alle-pruefen', wrap(async (req, res) => {
+  const sid = await siteId();
+  const rows = await db.many(`SELECT id FROM camp_providers WHERE site_id = $1 AND status IN ('draft', 'active') AND COALESCE(check_status, '') NOT IN ('queued', 'running')`, [sid]);
+  for (const r of rows) await campCheck.queue(r.id);
+  await logAction(req.session.admin.id, 'site', sid, 'requeue_all_camp_checks', { count: rows.length });
+  res.redirect(`/admin/camps?ok=${encodeURIComponent(`${rows.length} Anbieter werden geprüft – die Ampeln erscheinen nach und nach.`)}`);
+}));
+
 // Prüfung erneut starten, Freigeben, Ablehnen
 router.post('/:id/pruefen', wrap(async (req, res) => {
   await campCheck.queue(req.params.id);
