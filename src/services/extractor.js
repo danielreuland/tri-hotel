@@ -128,6 +128,23 @@ function hintsFrom(labels) {
   return [...words];
 }
 
+// PDF (z. B. Sport- oder Trainingsprospekt) als Text. Ergebnis wie eine Seite ({ url, text, data, links }) oder null
+const MAX_PDFS = 3;
+const MAX_PDF_BYTES = 8 * 1024 * 1024;
+async function fetchPdf(url) {
+  const res = await fetch(url, { headers: { 'User-Agent': config.userAgent, Accept: 'application/pdf' }, redirect: 'follow', signal: AbortSignal.timeout(20000) });
+  if (!res.ok || !(res.headers.get('content-type') || '').includes('pdf')) return null;
+  if (Number(res.headers.get('content-length') || 0) > MAX_PDF_BYTES) return null;
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if (buf.byteLength > MAX_PDF_BYTES) return null;
+  const { extractText, getDocumentProxy } = await import('unpdf');
+  const doc = await getDocumentProxy(buf);
+  const { text } = await extractText(doc, { mergePages: true });
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (clean.length < 200) return null; // Scan ohne Textebene o. Ä.
+  return { url: res.url, text: clean.slice(0, MAX_CHARS_PER_PAGE), data: sitedata.fromHtml(''), links: [], pdf: true };
+}
+
 // Externe Links einer Seite (andere Domain), z. B. Hotels, die ein Camp-Anbieter verlinkt
 function externalLinks(html, base) {
   const out = [];
@@ -168,11 +185,20 @@ async function fetchSite(website, { labels = [] } = {}) {
   const hints = hintsFrom(labels);
 
   const links = new Map(); // url -> { score, text }
+  const pdfs = new Map(); // url -> { score, text }
+  const baseHost = new URL(start.url).hostname.replace(/^www\./, '');
   const consider = (href, text) => {
     try {
       const u = new URL(href, start.url);
       u.hash = '';
-      if (u.origin !== origin || /\.(pdf|jpe?g|png|gif|svg|webp|zip|ics|xml)$/i.test(u.pathname) || u.toString() === start.url) return;
+      if (/\.pdf$/i.test(u.pathname)) {
+        const host = u.hostname.replace(/^www\./, '');
+        if (host !== baseHost && !host.endsWith(`.${baseHost}`)) return;
+        const score = scoreLink(u, text, startPath, hints);
+        if (!pdfs.has(u.toString()) || pdfs.get(u.toString()).score < score) pdfs.set(u.toString(), { score, text });
+        return;
+      }
+      if (u.origin !== origin || /\.(jpe?g|png|gif|svg|webp|zip|ics|xml)$/i.test(u.pathname) || u.toString() === start.url) return;
       const key = u.toString();
       const score = scoreLink(u, text, startPath, hints);
       if (!links.has(key) || links.get(key).score < score) links.set(key, { score, text });
@@ -187,8 +213,24 @@ async function fetchSite(website, { labels = [] } = {}) {
   for (const url of take) {
     try {
       const page = await fetchText(url);
-      if (page && !pages.some((p) => p.url === page.url)) pages.push(pageOf(page));
+      if (page && !pages.some((p) => p.url === page.url)) {
+        pages.push(pageOf(page));
+        // Prospekte liegen meist auf Unterseiten: deren PDF-Links ebenfalls vormerken
+        for (const m of page.html.matchAll(/<a\b[^>]*href="([^"#]+\.pdf[^"#]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+          try {
+            consider(new URL(m[1], page.url).toString(), htmlToText(m[2]).slice(0, 120));
+          } catch { /* ungültiger Link */ }
+        }
+      }
     } catch { /* Seite überspringen */ }
+  }
+  // PDFs: nur passende (Link-Text oder Dateiname enthält einen Hinweis), höchstens MAX_PDFS
+  const pdfTake = [...pdfs.entries()].filter(([u, l]) => l.score > 0 && allowed(u)).sort((a, b) => b[1].score - a[1].score).slice(0, MAX_PDFS);
+  for (const [url] of pdfTake) {
+    try {
+      const doc = await fetchPdf(url);
+      if (doc && !pages.some((p) => p.url === doc.url)) pages.push(doc);
+    } catch { /* PDF überspringen */ }
   }
   return Object.assign(pages, { more: ranked.slice(MAX_PAGES - 1, 60).map(([url, l]) => ({ url, text: l.text })), origin, startPath });
 }
@@ -389,4 +431,4 @@ async function extract(args) {
   return provider(args);
 }
 
-module.exports = { extract, fetchSite, fetchMore, findContactEmail, externalLinks, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };
+module.exports = { extract, fetchSite, fetchMore, fetchPdf, findContactEmail, externalLinks, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };

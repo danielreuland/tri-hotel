@@ -12,7 +12,8 @@
     "create-admin": "node scripts/create-admin.js",
     "recompute": "node scripts/recompute.js",
     "compare-models": "node scripts/compare-models.js",
-    "import-camps": "node scripts/import-camps.js"
+    "import-camps": "node scripts/import-camps.js",
+    "geo-refresh": "node scripts/geo-refresh.js"
   },
   "engines": {
     "node": ">=20"
@@ -36,6 +37,7 @@
     "pg": "^8.13.1",
     "pg-boss": "^10.4.2",
     "sharp": "^0.35.5",
+    "unpdf": "^1.9.1",
     "zod": "^4.6.5"
   }
 }

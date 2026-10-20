@@ -286,27 +286,174 @@ function applyRule(auto, hit) {
   return auto.if_unmatched ? { option: auto.if_unmatched } : null;
 }
 
-// Ermittelt Vorschläge für alle Kriterien mit "auto.source = osm".
-async function suggestFacts(point, criteria) {
-  const out = [];
-  for (const c of criteria) {
-    const auto = c.scoring && c.scoring.auto;
-    if (!auto || auto.source !== 'osm') continue;
+// ---------- Weitere Quellen für auto-Regeln ----------
+
+// Längste Ausdehnung einer Fläche in Metern (größter Abstand zweier Eckpunkte; bei Becken ≈ Diagonale)
+function spanM(geometry) {
+  const pts = (geometry || []).filter((g) => g && g.lat !== undefined && g.lon !== undefined);
+  let best = 0;
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      best = Math.max(best, distanceKm({ lat: pts[i].lat, lng: pts[i].lon }, { lat: pts[j].lat, lng: pts[j].lon }) * 1000);
+    }
+  }
+  return best;
+}
+
+// Beckenlänge aus OSM: Tag length (z. B. "50" oder "50 m"), sonst aus der Geometrie. Diagonale eines 50×25-m-Beckens ≈ 56 m,
+// eines 25×12,5-m-Beckens ≈ 28 m – daher Länge ≈ Diagonale × 0,9 (konservativ).
+function poolLengthM(el) {
+  const tag = String((el.tags || {}).length || (el.tags || {})['swimming_pool:length'] || '').replace(',', '.');
+  const n = parseFloat(tag);
+  if (Number.isFinite(n) && n > 5 && n < 200) return { lengthM: Math.round(n), from: 'tag' };
+  const span = spanM(el.geometry);
+  return span ? { lengthM: Math.round(span * 0.9), from: 'geometry' } : null;
+}
+
+// Becken mit Länge im Radius: Overpass mit Geometrie, je Becken Entfernung und Länge
+async function poolsWithLength(point, selectors, radiusKm) {
+  const valid = selectors.filter((s) => SELECTOR_RE.test(s));
+  if (!valid.length) return [];
+  const m = Math.round(radiusKm * 1000);
+  const body = `[out:json][timeout:25];(${valid.map((s) => `way${s}(around:${m},${point.lat},${point.lng});`).join('')});out geom 200;`;
+  const { elements = [] } = await overpass(body);
+  return elements.map((el) => {
+    const len = poolLengthM(el);
+    const c = (el.geometry || [])[0];
+    if (!len || !c) return null;
+    return { distanceKm: Math.round(distanceKm(point, { lat: c.lat, lng: c.lon }) * 10) / 10, lengthM: len.lengthM, from: len.from,
+      name: (el.tags || {}).name || null, url: `https://www.openstreetmap.org/${el.type}/${el.id}` };
+  }).filter(Boolean);
+}
+
+// length_options: [{min_m, option}] – bestes Becken (längste passende Klasse, dann das nächste)
+function applyLengthRule(auto, pools) {
+  for (const o of auto.length_options || []) {
+    const hits = pools.filter((p) => p.lengthM >= o.min_m).sort((a, b) => a.distanceKm - b.distanceKm);
+    if (hits.length) return { value: { option: o.option }, hit: hits[0] };
+  }
+  return null;
+}
+
+// EU-Badegewässer (EEA, amtliche Badestellen mit Qualitätsklasse) – nächste Stelle im Radius
+const EEA_BATHING = 'https://water.discomap.eea.europa.eu/arcgis/rest/services/BathingWater/BathingWater_Dyna_WM_2025/MapServer/3/query';
+const QUALITY = { Excellent: 'ausgezeichnet', Good: 'gut', Sufficient: 'ausreichend', Poor: 'mangelhaft' };
+async function bathingWaters(point, radiusKm) {
+  const params = new URLSearchParams({
+    geometry: `${point.lng},${point.lat}`, geometryType: 'esriGeometryPoint', inSR: '4326', distance: String(Math.round(radiusKm * 1000)),
+    units: 'esriSRUnit_Meter', outFields: 'bathingWaterName,bwWaterCategory,qualityStatus,bwProfileLink,latitude,longitude', returnGeometry: 'false', f: 'json',
+  });
+  const res = await fetch(`${EEA_BATHING}?${params}`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`EEA ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(`EEA: ${data.error.message || 'Fehler'}`);
+  return (data.features || []).map((f) => f.attributes).filter((a) => a && a.latitude && a.longitude).map((a) => ({
+    distanceKm: Math.round(distanceKm(point, { lat: a.latitude, lng: a.longitude }) * 10) / 10,
+    name: a.bathingWaterName, category: a.bwWaterCategory, quality: a.qualityStatus, qualityText: QUALITY[a.qualityStatus] || a.qualityStatus || 'nicht eingestuft',
+    url: a.bwProfileLink || 'https://www.eea.europa.eu/en/topics/in-depth/bathing-water',
+  })).sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
+// Gelände: Höhen auf einem Raster um den Punkt (OpenTopoData, Datensatz mapzen, eine Anfrage je Objekt)
+const TOPO = 'https://api.opentopodata.org/v1/mapzen';
+async function terrain(point, radiusKm) {
+  const pts = [];
+  const steps = 3; // 7×7 Raster im Quadrat, nur Punkte im Kreis
+  for (let i = -steps; i <= steps; i++) {
+    for (let j = -steps; j <= steps; j++) {
+      const dLat = (i / steps) * (radiusKm / 111.32);
+      const dLng = (j / steps) * (radiusKm / (111.32 * Math.cos((point.lat * Math.PI) / 180)));
+      const p = { lat: point.lat + dLat, lng: point.lng + dLng };
+      if (distanceKm(point, p) <= radiusKm + 0.01) pts.push(p);
+    }
+  }
+  const res = await fetch(`${TOPO}?locations=${pts.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|')}`,
+    { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`OpenTopoData ${res.status}`);
+  const data = await res.json();
+  const elev = (data.results || []).map((r) => r.elevation).filter((e) => typeof e === 'number');
+  // Meer (≤ 0 m) zählt nicht als Gelände
+  const land = elev.filter((e) => e > 0);
+  if (land.length < 5) return null;
+  const center = (data.results || []).find((r) => Math.abs(r.location.lat - point.lat) < 1e-4 && Math.abs(r.location.lng - point.lng) < 1e-4);
+  return { radiusKm, points: land.length, minM: Math.round(Math.min(...land)), maxM: Math.round(Math.max(...land)),
+    reliefM: Math.round(Math.max(...land) - Math.min(...land)), centerM: center ? Math.round(center.elevation) : null };
+}
+
+// terrain-Regel: relief_max_m (≤ → true) bzw. relief_min_m (≥ → true); sonst kein Vorschlag (eine flache Runde kann es
+// auch in hügeligem Gelände geben). info_only: nur Kennzahlen anzeigen (z. B. für Admin-Einstufungen)
+function applyTerrainRule(auto, t) {
+  if (!t || auto.info_only) return null;
+  if (auto.relief_max_m !== undefined && t.reliefM <= auto.relief_max_m) return { bool: true };
+  if (auto.relief_min_m !== undefined && t.reliefM >= auto.relief_min_m) return { bool: true };
+  return null;
+}
+
+const terrainText = (t) => `Höhen im Umkreis von ${t.radiusKm} km: ${t.minM}–${t.maxM} m (Unterschied ${t.reliefM} m${t.centerM !== null ? `, am Objekt ${t.centerM} m` : ''}), OpenTopoData/Mapzen, ${t.points} Messpunkte.`;
+
+// Eine Regel auswerten. Ergebnis: { value?, evidenceUrl, evidenceText, info? } oder null
+async function evaluateRule(point, auto) {
+  if (auto.source === 'osm') {
+    if (auto.length_options) {
+      const pools = await poolsWithLength(point, auto.selectors || [], auto.radius_km || 5);
+      const r = applyLengthRule(auto, pools);
+      if (!r) return null;
+      return { value: r.value, evidenceUrl: r.hit.url,
+        evidenceText: [auto.note, `${r.hit.name || 'Becken ohne Namen'}, ca. ${r.hit.lengthM} m lang (${r.hit.from === 'tag' ? 'Angabe in OSM' : 'aus der Kartengeometrie gemessen'}), ${r.hit.distanceKm} km Luftlinie.`].filter(Boolean).join(' ') };
+    }
     const hit = await nearest(point, auto.selectors || [], auto.radius_km || 5);
     const value = applyRule(auto, hit);
-    if (!value) continue;
+    if (!value) return null;
     const found = hit ? `Nächster Treffer: ${hit.name || 'ohne Namen'}, ${hit.distanceKm} km Luftlinie.` : `Kein Treffer im Umkreis von ${auto.radius_km} km.`;
-    out.push({
-      criterionId: c.id,
-      value,
-      evidenceUrl: hit ? hit.url : 'https://www.openstreetmap.org',
-      evidenceText: [auto.note, found].filter(Boolean).join(' '),
-    });
-    await new Promise((r) => setTimeout(r, 1000)); // Overpass schonen
+    return { value, evidenceUrl: hit ? hit.url : 'https://www.openstreetmap.org', evidenceText: [auto.note, found].filter(Boolean).join(' ') };
+  }
+  if (auto.source === 'eea_bathing') {
+    const list = await bathingWaters(point, auto.radius_km || 5);
+    const ok = list.filter((b) => !(auto.exclude_quality || ['Poor']).includes(b.quality));
+    const hit = ok[0];
+    if (!hit) return null; // EEA deckt nur EU-Badestellen ab – kein Treffer ist kein „nein“
+    const value = applyRule({ options: auto.options, if_unmatched: auto.if_unmatched }, hit);
+    if (!value) return null;
+    return { value, evidenceUrl: hit.url,
+      evidenceText: [auto.note, `Amtliche Badestelle „${hit.name}“ (${hit.category === 'Lake' ? 'See' : hit.category === 'River' ? 'Fluss' : hit.category === 'Coastal' ? 'Küste' : hit.category}), Wasserqualität ${hit.qualityText}, ${hit.distanceKm} km Luftlinie (EEA).`].filter(Boolean).join(' ') };
+  }
+  if (auto.source === 'terrain') {
+    const t = await terrain(point, auto.radius_km || 2);
+    if (!t) return null;
+    const value = applyTerrainRule(auto, t);
+    const text = [auto.note, terrainText(t)].filter(Boolean).join(' ');
+    return value ? { value, evidenceUrl: 'https://www.opentopodata.org', evidenceText: text, info: t } : { info: t, infoText: text };
+  }
+  return null;
+}
+
+// Ermittelt Vorschläge für alle Kriterien mit auto-Regel. auto kann eine Regel oder eine Liste sein (erste mit Ergebnis zählt).
+// Ergebnis: [{criterionId, value, evidenceUrl, evidenceText}] und je Kriterium Kennzahlen ohne Wert in .infos
+async function suggestFacts(point, criteria) {
+  const out = [];
+  out.infos = {};
+  for (const c of criteria) {
+    const auto = c.scoring && c.scoring.auto;
+    if (!auto) continue;
+    for (const rule of [].concat(auto)) {
+      let r = null;
+      try {
+        r = await evaluateRule(point, rule);
+      } catch (err) {
+        console.error('[geo]', c.code, rule.source, err.message);
+      }
+      if (r && r.info) out.infos[c.code] = { ...r.info, text: r.infoText || r.evidenceText };
+      if (r && r.value) {
+        out.push({ criterionId: c.id, value: r.value, evidenceUrl: r.evidenceUrl, evidenceText: r.evidenceText });
+        break;
+      }
+      await new Promise((res) => setTimeout(res, 1000)); // externe Dienste schonen
+    }
   }
   return out;
 }
 
 module.exports = {
   locate,
-  coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };
+  coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, applyLengthRule, applyTerrainRule, poolLengthM, spanM,
+  bathingWaters, terrain, evaluateRule, distanceKm, suggestFacts, SELECTOR_RE };

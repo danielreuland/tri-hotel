@@ -252,9 +252,15 @@ async function run(submissionId, { refresh = false } = {}) {
 async function osmStep(subId, entity, ranking, criteria, label) {
   return step(subId, label, async () => {
     const existing = new Set((await rankings.getFacts(entity.id, ranking.id)).map((f) => f.criterion_id));
-    const facts = await geo.suggestFacts({ lat: Number(entity.lat), lng: Number(entity.lng) }, criteria.filter((c) => !existing.has(c.id)));
-    const n = await insertAutoFacts(entity.id, facts);
-    return `${n} Werte aus OpenStreetMap vorgeschlagen.`;
+    // Kennzahlen (z. B. Gelände) auch für schon belegte Kriterien neu ermitteln – sie stehen nur als Info im Admin
+    const withInfo = criteria.filter((c) => !existing.has(c.id) || [].concat((c.scoring || {}).auto || []).some((r) => r.info_only));
+    const facts = await geo.suggestFacts({ lat: Number(entity.lat), lng: Number(entity.lng) }, withInfo);
+    const n = await insertAutoFacts(entity.id, facts.filter((x) => !existing.has(x.criterionId)));
+    if (Object.keys(facts.infos || {}).length) {
+      await db.query(`UPDATE entities SET attributes = attributes || jsonb_build_object('geo_info', $2::jsonb), updated_at = now() WHERE id = $1`,
+        [entity.id, JSON.stringify(facts.infos)]);
+    }
+    return `${n} Werte vorgeschlagen (OpenStreetMap, EU-Badegewässer, Höhendaten).`;
   });
 }
 

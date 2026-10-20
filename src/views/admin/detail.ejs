@@ -267,6 +267,7 @@
                 <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %>
                   <% if (state === 'auto') { %> <span class="badge warn" data-state-badge>Vorschlag</span> <button type="button" class="btn small" data-accept-fact title="Wert unverändert als „Admin geprüft“ übernehmen – wird sofort gespeichert">✓ Übernehmen</button><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
                   <br><small class="muted"><%= c.code %> · max <%= c.max_points %></small>
+                  <% var ginfo = ((entity && entity.attributes) || {}).geo_info || {}; if (ginfo[c.code]) { %><br><small class="muted">ℹ <%= ginfo[c.code].text %></small><% } %>
                   <% if (c.link_source === 'camp_providers') { %><br><small><%= campLinks.length ? 'Camp-Anbieter hier: ' + campLinks.map(function (p) { return p.name; }).join(', ') : 'keine Camp-Anbieter verknüpft' %> · <a href="#camp-anbieter">verwalten</a></small><% } %>
                   <% if (state === 'auto' && f.evidence_text) { %><br><small class="evidence">„<%= f.evidence_text.slice(0, 160) %><%= f.evidence_text.length > 160 ? '…' : '' %>“<% if (f.evidence_url) { %> <a href="<%= f.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %>
                 </td>
