@@ -47,6 +47,13 @@ Offen (klein): Reihenfolge der verknüpften Hotels folgt der Liste (alphabetisch
 - Admin: Prüfbericht oben im Anbieter-Formular, Freigeben/Ablehnen/Erneut prüfen, Ampel in der Liste, Board-Karte „Camp-Anbieter prüfen“.
 - Migration 045, Tests test/camp-check.test.js. Offen: jährliche Nachprüfung aktiver Anbieter als Board-Aufgabe.
 
+### 8c. Hotelqualifizierung erweitert – umgesetzt (20.10.2026)
+- PDF-Prospekte in der Website-Auswertung (unpdf), EU-Badegewässer (EEA), Höhendaten (OpenTopoData), Beckenlänge und Radverleih
+  aus OSM; Regeln in criteria.scoring.auto (Migration 047), Kennzahlen in entities.attributes.geo_info.
+- Kontaktadresse: Website → OSM → Hunter.io (nur Vorschlag). Hunter-Konto meldete am 20.10. „account restricted“ → Daniel prüft bei hunter.io.
+- Offen: geo-refresh für live-Objekte (würde ungeprüfte Vorschläge sofort in den Score bringen – Daniel entscheidet);
+  Impressum wird bei Camp-Anbietern oft nicht gefunden (Impressum-/Kontaktseite gezielt mitladen); Trivolution-Website 404.
+
 ### 9. Camp-Sammelanfrage („Lass dir Camp-Angebote schicken“)
 Mit Daniel abgestimmt (19.10.2026):
 - Fragebogen (eine Seite): Zeitraum/Monat oder flexibel, Regionen (oder „egal, warm“), Dauer, Personen, Niveau,
