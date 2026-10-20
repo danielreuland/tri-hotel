@@ -125,7 +125,7 @@ async function run(submissionId, { refresh = false } = {}) {
   if (entity.website) {
     await step(sub.id, 'Website-Auswertung', async () => {
       const catalog = await featureService.catalog(ranking.entity_type);
-      const labels = [...criteria.map((c) => c.label), ...catalog.map((f) => f.label)];
+      const labels = [...criteria.flatMap(extractor.criterionTerms), ...catalog.map((f) => f.label)];
       const pages = await extractor.fetchSite(entity.website, { labels });
       if (!pages.length) throw new Error('Website nicht erreichbar.');
       site = sitedata.merge(pages);
@@ -136,8 +136,8 @@ async function run(submissionId, { refresh = false } = {}) {
       // Zweiter, gezielter Durchgang für noch fehlende Kriterien (weitere Seiten passend zu deren Begriffen)
       const missing = await missingExtractable(entity.id, ranking.id, criteria);
       if (missing.length >= MIN_MISSING_FOR_SECOND_PASS && config.llm.provider !== 'none') {
-        const more = await extractor.fetchMore(pages, missing.map((c) => c.label));
-        const focus = rankPages([...more, ...pages], missing.map((c) => c.label)).slice(0, 10);
+        const more = await extractor.fetchMore(pages, missing.flatMap(extractor.criterionTerms));
+        const focus = rankPages([...more, ...pages], missing.flatMap(extractor.criterionTerms)).slice(0, 10);
         const missingFeatures = await missingCatalogFeatures(entity.id, catalog);
         const res2 = await extractRound(sub.id, ranking, missing, entity, focus, missingFeatures);
         if (!found.address && res2.address) found.address = res2.address;

@@ -286,17 +286,23 @@ function findContactEmail(pages, website) {
 
 // ---------- Prompt und Antwort ----------
 
+// Bezeichnung plus Suchbegriffe (scoring.search_terms, z. B. Synonyme oder andere Sprachen) – für Prompt und Seitenauswahl
+function criterionTerms(c) {
+  return [c.label, ...(((c.scoring || {}).search_terms) || [])].filter(Boolean);
+}
+
 function describeCriterion(c) {
   const s = c.scoring || {};
+  const aka = (s.search_terms || []).length ? ` (auch genannt: ${s.search_terms.join(', ')})` : '';
   switch (s.type) {
     case 'option': {
       const opts = Object.keys(s.points || {}).map((k) => `"${k}"${s.labels && s.labels[k] ? ` (${s.labels[k]})` : ''}`);
-      return `- ${c.code}: ${c.label}. Wert ist genau eine dieser Optionen: ${opts.join(', ')}`;
+      return `- ${c.code}: ${c.label}${aka}. Wert ist genau eine dieser Optionen: ${opts.join(', ')}`;
     }
     case 'bool':
-      return `- ${c.code}: ${c.label}. Wert "true" oder "false"`;
+      return `- ${c.code}: ${c.label}${aka}. Wert "true" oder "false"`;
     case 'bands':
-      return `- ${c.code}: ${c.label}. Wert ist eine Zahl${s.unit ? ` in ${s.unit}` : ''}`;
+      return `- ${c.code}: ${c.label}${aka}. Wert ist eine Zahl${s.unit ? ` in ${s.unit}` : ''}`;
     default:
       return null; // rating = Admin-Einstufung, climate = Klimadaten
   }
@@ -431,4 +437,4 @@ async function extract(args) {
   return provider(args);
 }
 
-module.exports = { extract, fetchSite, fetchMore, fetchPdf, findContactEmail, externalLinks, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };
+module.exports = { extract, fetchSite, fetchMore, fetchPdf, criterionTerms, findContactEmail, externalLinks, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };

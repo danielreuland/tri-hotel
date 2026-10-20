@@ -23,7 +23,8 @@
 {"type":"rating","min":0,"max":6}
 {"type":"bands","unit":"m²","bands":[{"min":300,"points":8},{"min":150,"max":299.9,"points":4}]}
 {"type":"climate","metric":"avg_high_c|avg_low_c|rain_days","bands":[{"min":15,"max":30,"points":4}]}
-Optional "auto" (OpenStreetMap): {"source":"osm","selectors":["[\"leisure\"=\"track\"]"],"radius_km":5,"bool_within_km":5}</pre>
+Optional "auto" (OpenStreetMap): {"source":"osm","selectors":["[\"leisure\"=\"track\"]"],"radius_km":5,"bool_within_km":5}
+Optional "search_terms" (Synonyme für die Website-Auswertung): ["Kältebad","Kryotherapie","cold plunge"]</pre>
   </details>
   <label for="c-link">Verknüpfte Quelle <small class="muted">optional – wird neben dem Wert angezeigt und in der Prüfliste abgeglichen</small></label>
   <select id="c-link" name="link_source"><option value="">keine</option><% Object.keys(LINK_SOURCES).forEach(function (k) { %><option value="<%= k %>" <%= c.link_source === k ? 'selected' : '' %>><%= LINK_SOURCES[k] %></option><% }) %></select>
