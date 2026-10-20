@@ -73,7 +73,8 @@
       <h2 style="margin-top:0">Meldung</h2>
       <div class="form-row">
         <div><strong>Ort:</strong> <%= sub.city %>, <%= sub.country %></div>
-        <div style="overflow-wrap:anywhere"><strong>Website:</strong> <a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a></div>
+        <% if (campSource) { %><div><strong>Herkunft:</strong> automatisch angelegt aus der Prüfung von <a href="/admin/camps/<%= campSource.id %>"><%= campSource.name %></a> – nach Freigabe wird das <%= ranking.entity_label_sg %> dort verknüpft</div><% } %>
+        <div style="overflow-wrap:anywhere"><strong>Website:</strong> <% if (sub.website) { %><a href="<%= sub.website %>" target="_blank" rel="noopener"><%= sub.website %></a><% } else { %><span class="badge warn">fehlt</span> <small class="muted">bitte in den Stammdaten eintragen</small><% } %></div>
         <div style="overflow-wrap:anywhere"><strong><%= sub.created_by_admin ? 'Angelegt von:' : 'Eingereicht von:' %></strong> <%= sub.created_by_admin ? (sub.created_by_email || 'Admin') + ' (Admin)' : (sub.submitter_email || '–') %> <%= sub.submitter_role ? '(' + sub.submitter_role + ')' : '' %></div>
         <div><strong>Bestätigt:</strong> <%= sub.verified_at ? formatDate(sub.verified_at) : 'nein' %></div>
       </div>

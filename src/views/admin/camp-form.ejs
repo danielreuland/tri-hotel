@@ -3,12 +3,15 @@
    var triSel = function (name, v) { return '<select name="' + name + '"><option value="">nicht erkennbar</option><option value="yes"' + (tri(v) === 'yes' ? ' selected' : '') + '>ja</option><option value="no"' + (tri(v) === 'no' ? ' selected' : '') + '>nein</option></select>'; }; %>
 <p><a href="/admin/camps">← Camp-Anbieter</a><% if (p.id && p.status === 'active') { %> · <a href="/trainingscamp/anbieter/<%= p.slug %>" target="_blank">Öffentliche Seite ↗</a><% } %></p>
 <h1><%= p.id ? p.name : 'Neuer Anbieter' %></h1>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (flashError) { %><div class="errors"><%= flashError %></div><% } %>
+<% if (p.id) { %><%- include('_camp-check') %><% } %>
 <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
 <form method="post" action="/admin/camps<%= p.id ? '/' + p.id : '' %>" class="card">
   <div class="form-row">
     <div><label>Name *</label><input name="name" type="text" required value="<%= p.name || '' %>"></div>
     <div><label>Slug</label><input name="slug" type="text" value="<%= p.slug || '' %>"></div>
-    <div><label>Status</label><select name="status"><% ['active', 'draft', 'archived'].forEach(function (s) { %><option value="<%= s %>" <%= p.status === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+    <div><label>Status</label><select name="status"><% var SL = { draft: 'in Prüfung', active: 'freigegeben', rejected: 'abgelehnt', archived: 'archiviert' }; ['draft', 'active', 'rejected', 'archived'].forEach(function (s) { %><option value="<%= s %>" <%= p.status === s ? 'selected' : '' %>><%= SL[s] %></option><% }) %></select></div>
   </div>
   <div class="form-row">
     <div><label>Typ</label><select name="model"><% Object.keys(MODELS).forEach(function (k) { %><option value="<%= k %>" <%= p.model === k ? 'selected' : '' %>><%= MODELS[k] %></option><% }) %></select></div>

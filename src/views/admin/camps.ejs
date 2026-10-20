@@ -2,7 +2,7 @@
 <h1>Camp-Anbieter</h1>
 <p class="muted">Neutral gelistet unter <a href="/trainingscamp#anbieter" target="_blank">/trainingscamp</a>, alphabetisch, ohne Score. „Klicks“ zählt Weiterleitungen zum Anbieter (ohne personenbezogene Daten) – Grundlage für Partnergespräche.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
-<p><a class="btn small" href="/admin/camps/neu">+ Anbieter</a></p>
+<p><a class="btn small" href="/admin/camps/neu">+ Anbieter anlegen und prüfen</a></p>
 <div class="table-scroll"><table>
   <tr><th>Anbieter</th><th>Typ</th><th>Ziele</th><th class="num">Hotels</th><th class="num">Klicks 30 T.</th><th class="num">gesamt</th><th>Status</th></tr>
   <% rows.forEach(function (p) { var s = stats[p.id] || { last30: 0, total: 0 }; %>
@@ -12,7 +12,8 @@
       <td><small><%= p.destinations.join(', ') %></small></td>
       <td class="num"><%= p.hotels %><% if (p.linked) { %> <small class="muted">(<%= p.linked %> im Ranking)</small><% } %></td>
       <td class="num"><%= s.last30 %></td><td class="num"><%= s.total %></td>
-      <td><span class="badge <%= p.status === 'active' ? 'good' : '' %>"><%= p.status %></span></td>
+      <td><% var SL = { draft: 'in Prüfung', active: 'freigegeben', rejected: 'abgelehnt', archived: 'archiviert' }; var QC = { qualified: ['good', 'grün'], review: ['warn', 'gelb'], not_qualified: ['bad', 'rot'] }; %><span class="badge <%= p.status === 'active' ? 'good' : p.status === 'rejected' ? 'bad' : '' %>"><%= SL[p.status] || p.status %></span>
+        <% if (p.check_status === 'queued' || p.check_status === 'running') { %><br><small class="muted">Prüfung läuft</small><% } else if (p.qualification && p.status === 'draft') { %><br><span class="badge <%= QC[p.qualification][0] %>" title="Automatische Prüfung">Prüfung <%= QC[p.qualification][1] %></span><% } %></td>
     </tr>
   <% }) %>
 </table></div>

@@ -1,0 +1,13 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/camps">← Camp-Anbieter</a></p>
+<h1>Camp-Anbieter anlegen</h1>
+<p class="muted">Name und Website genügen. Danach prüft das System automatisch: Website lesen, Angebot und Impressum auswerten, Termine, Preise und Hotels mit Fundstelle erfassen. Genannte Hotels, die noch nicht im Ranking sind, werden als Hotel-Meldung angelegt. Öffentlich wird der Anbieter erst nach deiner Freigabe.</p>
+<% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+<form method="post" action="/admin/camps/anlegen" class="card" style="max-width:640px" data-busy="Wird angelegt …">
+  <label for="cn-name" style="margin-top:0">Name *</label>
+  <input id="cn-name" name="name" type="text" required maxlength="120" value="<%= form.name || '' %>">
+  <label for="cn-website">Website *</label>
+  <input id="cn-website" name="website" type="url" required placeholder="https://" value="<%= form.website || '' %>">
+  <p style="margin-bottom:0"><button class="btn" type="submit">Anlegen und prüfen</button></p>
+</form>
+<%- include('../partials/admin-foot') %>

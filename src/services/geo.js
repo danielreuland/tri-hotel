@@ -64,6 +64,26 @@ async function geocode({ name, city, country }) {
   return hitOf((await nominatim(params))[0]) || null;
 }
 
+// Website einer Unterkunft aus OpenStreetMap (Tag website / contact:website), nur bei passendem Namen.
+// Ergebnis: { website, osmUrl, display } oder null
+async function findWebsite({ name, city, country }) {
+  const { nameMatch } = require('./places');
+  const params = { q: [name, city].filter(Boolean).join(', '), limit: '5', extratags: '1' };
+  if (country) params.countrycodes = country.toLowerCase();
+  for (const h of await nominatim(params)) {
+    const tags = h.extratags || {};
+    const site = tags.website || tags['contact:website'] || tags.url;
+    const lodging = LODGING_CATEGORY.test(`${h.category || h.class || ''}=${h.type || ''}`);
+    if (!site || !lodging || !nameMatch(name, h.name || h.display_name)) continue;
+    try {
+      return { website: new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`).toString(), osmUrl: `https://www.openstreetmap.org/${h.osm_type}/${h.osm_id}`, display: h.display_name };
+    } catch {
+      // ungültige URL im Tag – nächster Treffer
+    }
+  }
+  return null;
+}
+
 // Photon (Komoot, OSM-Daten): unscharfe Suche nach Unterkünften
 async function photon(q, { near, tag = 'tourism' } = {}) {
   const params = new URLSearchParams({ q, limit: '8', lang: 'de' });
@@ -281,4 +301,4 @@ async function suggestFacts(point, criteria) {
 
 module.exports = {
   locate,
-  coreName, geocode, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };
+  coreName, geocode, findWebsite, nearest, applyRule, distanceKm, suggestFacts, SELECTOR_RE };

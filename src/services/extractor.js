@@ -128,8 +128,31 @@ function hintsFrom(labels) {
   return [...words];
 }
 
+// Externe Links einer Seite (andere Domain), z. B. Hotels, die ein Camp-Anbieter verlinkt
+function externalLinks(html, base) {
+  const out = [];
+  let origin;
+  try {
+    origin = new URL(base).origin;
+  } catch {
+    return out;
+  }
+  for (const m of String(html || '').matchAll(/<a\b[^>]*href="(https?:\/\/[^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    try {
+      const u = new URL(m[1]);
+      if (u.origin === origin || out.some((l) => l.url === u.toString())) continue;
+      out.push({ url: u.toString(), text: htmlToText(m[2]).slice(0, 120) });
+    } catch { /* ungültiger Link */ }
+    if (out.length >= 80) break;
+  }
+  return out;
+}
+
 function pageOf(fetched) {
-  return { url: fetched.url, text: htmlToText(fetched.html).slice(0, MAX_CHARS_PER_PAGE), data: sitedata.fromHtml(fetched.html) };
+  return {
+    url: fetched.url, text: htmlToText(fetched.html).slice(0, MAX_CHARS_PER_PAGE), data: sitedata.fromHtml(fetched.html),
+    links: externalLinks(fetched.html, fetched.url),
+  };
 }
 
 // Startseite + passende Unterseiten derselben Domain (Links der Startseite und Sitemap).
@@ -366,4 +389,4 @@ async function extract(args) {
   return provider(args);
 }
 
-module.exports = { extract, fetchSite, fetchMore, findContactEmail, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };
+module.exports = { extract, fetchSite, fetchMore, findContactEmail, externalLinks, htmlToText, parseValue, describeCriterion, scoreLink, hintsFrom, parseSitemap };

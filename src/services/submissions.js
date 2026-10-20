@@ -45,20 +45,20 @@ async function create(ranking, fields, { ip, adminId } = {}) {
   const row = await db.one(
     `INSERT INTO submissions (ranking_id, entity_name, city, country, website, hints, notes,
         submitter_email, submitter_role, created_by_admin, verify_token_hash, token_expires_at,
-        verified_at, status, ip_hash, created_by)
+        verified_at, status, ip_hash, created_by, source_camp_provider_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
         CASE WHEN $11::text IS NULL THEN NULL ELSE now() + make_interval(hours => $12) END,
-        CASE WHEN $10 THEN now() END, $13, $14, $15)
+        CASE WHEN $10 THEN now() END, $13, $14, $15, $16)
      RETURNING *`,
     [
       ranking.id, fields.name, fields.city, fields.country, fields.website,
       JSON.stringify(fields.hints || {}), fields.notes || null,
       fields.email || null, fields.role || null, byAdmin, tok ? tok.hash : null, config.verifyTokenHours,
-      byAdmin ? 'verified' : 'received', ip ? ipHash(ip) : null, adminId || null,
+      byAdmin ? 'verified' : 'received', ip ? ipHash(ip) : null, adminId || null, fields.sourceCampProviderId || null,
     ]
   );
   if (byAdmin) {
-    await logAction(adminId, 'submission', row.id, 'create');
+    await logAction(adminId, 'submission', row.id, fields.sourceCampProviderId ? 'create_from_camp_check' : 'create', fields.sourceCampProviderId ? { camp_provider: fields.sourceCampProviderId } : null);
     await enqueue('auto-check', { submissionId: row.id });
   } else {
     const site = await sites.forRanking(ranking);
@@ -123,7 +123,8 @@ async function expireOld() {
 
 // Gleiches Objekt = gleicher Objekttyp und gleiche Website-Domain oder gleicher Slug.
 async function findDuplicate(ranking, sub) {
-  const key = websiteKey(sub.website);
+  // ohne Website (z. B. Hotel aus der Camp-Prüfung) nur über den Namen
+  const key = sub.website ? websiteKey(sub.website) : null;
   return db.one(
     `SELECT e.*, er.status AS ranking_status
        FROM entities e LEFT JOIN entity_rankings er ON er.entity_id = e.id AND er.ranking_id = $4
@@ -152,6 +153,15 @@ async function createEntity(ranking, sub) {
   return entity;
 }
 
+// Hotels aus der Camp-Prüfung: nach Freigabe (bzw. bestätigter Dublette) mit dem Camp-Anbieter verknüpfen
+async function linkCampHotels(submissionId, entityId) {
+  await db.query(
+    `UPDATE camp_provider_hotels h SET entity_id = $2, hotel_name = e.name, place = COALESCE(e.city, h.place)
+       FROM entities e WHERE e.id = $2 AND h.submission_id = $1 AND h.entity_id IS NULL`,
+    [submissionId, entityId]
+  );
+}
+
 // ---------- Admin-Entscheidungen ----------
 
 async function approve(submissionId, adminId) {
@@ -171,6 +181,7 @@ async function approve(submissionId, adminId) {
     await logAction(adminId, 'submission', sub.id, 'approve', { score: result.score, completeness: result.completeness }, c);
   });
   await heldReviews().releaseHeld(sub.id, sub.entity_id);
+  await linkCampHotels(sub.id, sub.entity_id);
 
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]);
   if (mayMailSubmitter(sub)) {
@@ -221,6 +232,7 @@ async function confirmDuplicate(submissionId, adminId) {
   );
   await setStatus(sub.id, 'duplicate', { entity_id: dup.id, possible_duplicate_of: null });
   await heldReviews().releaseHeld(sub.id, dup.id);
+  await linkCampHotels(sub.id, dup.id);
   await logAction(adminId, 'submission', sub.id, 'confirm_duplicate', { entity: dup.name });
   if (sub.submitter_email) {
     const ranking = await rankings.getRanking(sub.ranking_id);

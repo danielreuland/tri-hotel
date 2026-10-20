@@ -260,6 +260,8 @@ async function loadDetail(id) {
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
   // Camp-Anbieter in diesem Objekt pflegen (Auswahl aller Anbieter der Site)
+  // Herkunft: Hotel-Meldung aus der automatischen Camp-Prüfung
+  const campSource = sub.source_camp_provider_id ? await db.one('SELECT id, name FROM camp_providers WHERE id = $1', [sub.source_camp_provider_id]) : null;
   const campProviderOptions = entity ? await require('../services/camps').providerOptions(ranking.site_id) : [];
   const campSelectedIds = entity ? (await db.many('SELECT DISTINCT provider_id FROM camp_provider_hotels WHERE entity_id = $1', [entity.id])).map((r) => r.provider_id) : [];
   // Postfach: Verlauf mit dem Betreiber (gesendete und eingegangene Mails), Absender-Auswahl
@@ -269,7 +271,7 @@ async function loadDetail(id) {
   const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
   return {
     mailThread, mailPersonas, mailDefaultPersona,
-    campLinks, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
+    campLinks, campSource, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
     confirmFeatureList, offerFeatureCount, confirmDefaults,

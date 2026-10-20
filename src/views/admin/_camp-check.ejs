@@ -1,0 +1,66 @@
+<%# Prüfbericht eines Camp-Anbieters (automatische Qualifikation) mit Freigabe/Ablehnung. Erwartet: p, QUALIFICATION, pendingHotels %>
+<% var rep = p.check_report || {}; var rules = rep.rules || [];
+   var Q = { qualified: 'good', review: 'warn', not_qualified: 'bad' };
+   var LEVEL = { ok: ['good', '✓'], warn: ['warn', '?'], fail: ['bad', '✗'] };
+   var STATUS = { draft: 'in Prüfung', active: 'freigegeben', rejected: 'abgelehnt', archived: 'archiviert' };
+   var running = p.check_status === 'queued' || p.check_status === 'running'; %>
+<section class="card" id="pruefung" style="margin-bottom:16px">
+  <h2 style="margin-top:0">Automatische Prüfung
+    <% if (p.qualification && !running) { %><span class="badge <%= Q[p.qualification] %>"><%= QUALIFICATION[p.qualification] %></span><% } %>
+    <span class="badge <%= p.status === 'active' ? 'good' : p.status === 'rejected' ? 'bad' : '' %>"><%= STATUS[p.status] || p.status %></span>
+  </h2>
+  <% if (running) { %>
+    <p style="margin:0"><strong>Prüfung läuft …</strong> <small class="muted">Website lesen, auswerten, Hotels abgleichen – dauert etwa 1–2 Minuten. Seite danach neu laden.</small></p>
+  <% } else if (!p.check_status) { %>
+    <p class="muted" style="margin:0">Noch nicht automatisch geprüft.</p>
+  <% } else { %>
+    <p class="muted" style="margin:0 0 8px"><small>Stand <%= p.checked_at ? formatDate(p.checked_at) : '–' %><%= rep.pages !== undefined ? ' · ' + rep.pages + ' Seiten gelesen' : '' %><%= rep.completeness !== undefined ? ' · Profil ' + rep.completeness + ' % belegt' : '' %><%= p.check_status === 'failed' ? ' · Prüfung abgebrochen' : '' %>
+      · „?“ heißt nicht gefunden (kein Nein) – bitte selbst ansehen.</small></p>
+    <% if (rules.length) { %>
+      <div class="table-scroll"><table>
+        <% rules.forEach(function (r) { var l = LEVEL[r.level] || LEVEL.warn; %>
+          <tr>
+            <td style="width:28px"><span class="badge <%= l[0] %>"><%= l[1] %></span></td>
+            <td><strong><%= r.label %></strong><%= r.required ? '' : r.review ? ' <small class="muted">(bei Fehlen prüfen)</small>' : ' <small class="muted">(Hinweis)</small>' %><br>
+              <small><%= r.text %></small>
+              <% if (r.evidence_text) { %><br><small class="evidence">„<%= r.evidence_text.slice(0, 200) %>“<% if (r.evidence_url) { %> <a href="<%= r.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %></td>
+          </tr>
+        <% }) %>
+      </table></div>
+    <% } %>
+    <% if ((rep.hotels || []).length) { var H = { linked: 'verknüpft (unten in der Auswahl)', suggested: 'Vorschlag – unten anhaken', submitted: 'als Hotel-Meldung angelegt', skipped: 'übersprungen' }; %>
+      <h3 style="margin:14px 0 4px">Genannte Hotels</h3>
+      <ul style="margin:0;padding-left:18px">
+        <% rep.hotels.forEach(function (h) { %>
+          <li><small><strong><%= h.name %></strong> – <%= H[h.result] %><%= h.entity ? ': ' + h.entity : '' %><%= h.reason ? ' (' + h.reason + ')' : '' %>
+            <% if (h.submission) { %> · <a href="/admin/meldungen/<%= h.submission %>">Meldung ansehen</a><% } %></small></li>
+        <% }) %>
+      </ul>
+    <% } %>
+    <% if (pendingHotels.length) { var SUB = { received: 'eingegangen', verified: 'bestätigt', auto_check: 'Auto-Prüfung läuft', admin_review: 'wartet auf Freigabe', live: 'live', rejected: 'abgelehnt', duplicate: 'Dublette', expired: 'verfallen' }; %>
+      <p style="margin:10px 0 0"><small><strong>Noch nicht verknüpft:</strong> <% pendingHotels.forEach(function (h, i) { %><%= i ? ' · ' : '' %><a href="/admin/meldungen/<%= h.submission_id %>"><%= h.hotel_name %></a> (<%= SUB[h.status] || h.status %><%= h.website ? '' : ', ohne Website' %>)<% }) %>
+        – wird nach Freigabe des Hotels automatisch verknüpft.</small></p>
+    <% } %>
+    <% if ((rep.log || []).length) { %>
+      <details style="margin-top:10px"><summary><small>Protokoll</small></summary>
+        <ul style="margin:6px 0;padding-left:18px"><% rep.log.forEach(function (l) { %><li><small><%= l.ok ? '✓' : '✗' %> <strong><%= l.step %>:</strong> <%= l.info %></small></li><% }) %></ul>
+      </details>
+    <% } %>
+  <% } %>
+  <% if (p.reject_reason) { %><p style="margin:10px 0 0"><small><strong>Abgelehnt:</strong> <%= p.reject_reason %></small></p><% } %>
+  <div class="filters" style="margin:12px 0 0;align-items:flex-start">
+    <% if (p.status === 'draft' || p.status === 'rejected') { %>
+      <form method="post" action="/admin/camps/<%= p.id %>/freigeben" data-confirm="„<%= p.name %>“ freigeben und öffentlich zeigen?<%= p.qualification === 'qualified' ? '' : ' Die automatische Prüfung ist nicht grün.' %>"><button class="btn small" type="submit">Freigeben</button></form>
+    <% } %>
+    <form method="post" action="/admin/camps/<%= p.id %>/pruefen"><button class="btn small secondary" type="submit" <%= running ? 'disabled' : '' %>>Erneut prüfen</button></form>
+    <% if (p.status !== 'rejected') { %>
+      <details><summary class="btn small secondary" style="list-style:none">Ablehnen …</summary>
+        <form method="post" action="/admin/camps/<%= p.id %>/ablehnen" style="margin-top:8px;min-width:260px">
+          <label for="cc-reason" style="margin-top:0">Begründung (intern)</label>
+          <textarea id="cc-reason" name="reason" required style="min-height:60px"></textarea>
+          <button class="btn small" type="submit">Ablehnen</button>
+        </form>
+      </details>
+    <% } %>
+  </div>
+</section>

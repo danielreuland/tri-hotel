@@ -19,6 +19,7 @@ async function start() {
   await boss.createQueue('osm-retry');
   await boss.createQueue('retention');
   await boss.createQueue('mail-poll');
+  await boss.createQueue('camp-check');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -46,6 +47,11 @@ async function start() {
   });
   await boss.schedule('inquiry-daily', '0 8 * * *');
 
+  // Camp-Anbieter automatisch qualifizieren (Website, KI-Auswertung, Hotelabgleich)
+  await boss.work('camp-check', async (jobs) => {
+    for (const job of jobs) await require('../services/camp-check').run(job.data.providerId);
+  });
+
   // Löschfristen (täglich 3:30 Uhr)
   await boss.work('retention', async () => {
     const r = await require('../services/retention').run();
@@ -71,6 +77,7 @@ async function start() {
   const enqueue = (name, data, opts = {}) => boss.send(name, data, { retryLimit: 2, retryDelay: 60, ...opts });
   submissions.setEnqueue(enqueue);
   inquiries.setEnqueue(enqueue);
+  require('../services/camp-check').setEnqueue(enqueue);
   console.log('[jobs] gestartet');
 }
 

@@ -36,6 +36,17 @@ Objektseite (Admin, Stammdaten): Karte „Camp-Anbieter in diesem …“ mit der
 (camps.saveProviderHotels / setEntityProviders), Audit-Log. Tests: test/camp-links.test.js.
 Offen (klein): Reihenfolge der verknüpften Hotels folgt der Liste (alphabetisch), nicht der Klickreihenfolge.
 
+### 8b. Camp-Anbieter automatisch qualifizieren – umgesetzt (20.10.2026, mit Daniel abgestimmt)
+- Nur der Admin legt an (/admin/camps/neu: Name + Website), kein öffentliches Formular. Status draft (in Prüfung) → active | rejected.
+- Job „camp-check“ (services/camp-check.js): Website lesen (extractor.fetchSite, externe Links je Seite), KI-Auswertung mit
+  festem Schema und wörtlicher Fundstelle (Thema aus sites.camp_topic, Impressum, Kontakt, Typ, Sitz, Kurzprofil, Zielorte,
+  Merkmale, Preise, Termine, Hotels). Regeln mit Ampel: Pflicht = Website, Thema, Impressum, Kontakt; Termine fehlen → gelb
+  (kein Ausschluss); Preise/Zielorte nur Hinweis. „Nicht gefunden“ = gelb, nur Gegenbelege = rot.
+- Hotels: gleicher Name → verknüpft (vorausgewählt), ähnlich → Vorschlag, unbekannt → Hotel-Meldung (Website vom Anbieter-Link,
+  sonst OpenStreetMap, sonst ohne); nach Freigabe/Dublette automatisch verknüpft (submissions.linkCampHotels).
+- Admin: Prüfbericht oben im Anbieter-Formular, Freigeben/Ablehnen/Erneut prüfen, Ampel in der Liste, Board-Karte „Camp-Anbieter prüfen“.
+- Migration 045, Tests test/camp-check.test.js. Offen: jährliche Nachprüfung aktiver Anbieter als Board-Aufgabe.
+
 ### 9. Camp-Sammelanfrage („Lass dir Camp-Angebote schicken“)
 Mit Daniel abgestimmt (19.10.2026):
 - Fragebogen (eine Seite): Zeitraum/Monat oder flexibel, Regionen (oder „egal, warm“), Dauer, Personen, Niveau,

@@ -18,6 +18,7 @@ const LABELS = {
   user_review: 'Bewertung',
   google_place: 'Google Place ID',
   camp_lead: 'Camp-Anfrage',
+  camp_check: 'Camp-Anbieter prüfen',
   contact: 'Kontaktanfrage',
   mail: 'E-Mail',
   mail_unassigned: 'E-Mail zuordnen',
@@ -105,6 +106,15 @@ async function collect() {
     push({ source: 'camp_lead', source_key: `lead:${l.id}`, title: `${l.provider} – Anfrage ${l.name}`,
       detail: [{ level: 'todo', text: `${l.persons} Person(en)${l.period_month ? `, ${new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' })}` : ''} – prüfen und weiterleiten` }],
       link: `/admin/camp-anfragen#l-${l.id}`, entity_id: null });
+  }
+  // Camp-Anbieter in Prüfung: Ergebnis der automatischen Qualifikation freigeben oder ablehnen
+  const Q = { qualified: ['todo', 'Automatische Prüfung grün – freigeben?'], review: ['todo', 'Automatische Prüfung gelb – Punkte ansehen'], not_qualified: ['block', 'Automatische Prüfung rot – ablehnen oder klären'] };
+  for (const c of await db.many(
+    `SELECT id, name, qualification, check_status, check_report FROM camp_providers WHERE status = 'draft' AND check_status IN ('done', 'failed')`)) {
+    const open = ((c.check_report || {}).rules || []).filter((r) => r.level !== 'ok' && (r.required || r.review)).map((r) => r.label);
+    const [level, text] = c.check_status === 'failed' ? ['block', 'Automatische Prüfung abgebrochen – erneut starten'] : Q[c.qualification] || Q.review;
+    push({ source: 'camp_check', source_key: `camp-check:${c.id}`, title: c.name,
+      detail: [{ level, text }, ...open.slice(0, 3).map((t) => ({ level: 'todo', text: t }))], link: `/admin/camps/${c.id}#pruefung`, entity_id: null });
   }
   // Google Place IDs: eine Sammelkarte für alle offenen Vorschläge
   const places = await db.many(
