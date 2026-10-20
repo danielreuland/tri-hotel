@@ -31,3 +31,12 @@ test('pick: ohne Fundstelle kein Vorschlag; noch auf der Seite wird bevorzugt', 
   assert.equal(r.evidenceUrl, 'https://hotel-mar.es/neu');
   assert.equal(hunter.pick(null, 'x.de'), null);
 });
+
+test('lookupFailed: Fehler (auch ältere Einträge ohne Kennzeichen) zählen nicht als „gesucht“', () => {
+  assert.equal(hunter.lookupFailed({ reason: 'Hunter.io: Your account was restricted.' }), true);
+  assert.equal(hunter.lookupFailed({ reason: 'Monatsgrenze erreicht (40 von 40 Abfragen).' }), true);
+  assert.equal(hunter.lookupFailed({ failed: true }), true);
+  assert.equal(hunter.lookupFailed({ reason: 'Keine allgemeine Adresse mit Fundstelle gefunden.' }), false);
+  assert.equal(hunter.lookupFailed({ suggestion: { email: 'info@x.de' }, reason: null }), false);
+  assert.equal(hunter.lookupFailed(null), false);
+});

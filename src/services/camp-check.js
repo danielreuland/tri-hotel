@@ -269,10 +269,10 @@ async function run(providerId) {
     let hunterLookup = (p.check_report || {}).hunter || null;
     if (pages.length && !(x.contact && x.contact.email)) {
       const hunter = require('./hunter');
-      const fresh = hunterLookup && Date.now() - new Date(hunterLookup.at).getTime() < 180 * 86400000;
+      const fresh = hunterLookup && !hunter.lookupFailed(hunterLookup) && Date.now() - new Date(hunterLookup.at).getTime() < 180 * 86400000;
       if (!fresh && hunter.enabled()) {
-        const { suggestion, reason } = await hunter.findGenericEmail(p.website, { campProviderId: p.id });
-        hunterLookup = { at: new Date().toISOString(), suggestion, reason: reason || null };
+        const { suggestion, reason, failed } = await hunter.findGenericEmail(p.website, { campProviderId: p.id });
+        hunterLookup = { at: new Date().toISOString(), suggestion, reason: reason || null, failed: Boolean(failed) };
       }
       if (hunterLookup) {
         const s = hunterLookup.suggestion;

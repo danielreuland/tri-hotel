@@ -10,8 +10,9 @@ const { logAction } = require('../lib/audit');
 const LOOKUP_DAYS = 180;
 
 function recentlySearched(entity) {
-  const at = ((entity.attributes || {}).contact_lookup || {}).hunter_at;
-  return Boolean(at && Date.now() - new Date(at).getTime() < LOOKUP_DAYS * 86400000);
+  const l = (entity.attributes || {}).contact_lookup || {};
+  // gescheiterte Abfragen (z. B. Konto gesperrt) zählen nicht – beim nächsten Mal erneut fragen
+  return Boolean(l.hunter_at && !hunter.lookupFailed(l) && Date.now() - new Date(l.hunter_at).getTime() < LOOKUP_DAYS * 86400000);
 }
 
 // force: Hunter auch abfragen, wenn kürzlich schon gesucht (Knopf im Admin). Ergebnis: Text fürs Protokoll
@@ -34,8 +35,8 @@ async function fallback(entity, { force = false } = {}) {
   if (!hunter.enabled()) return 'Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.';
   if (!entity.website) return 'Keine Kontakt-E-Mail gefunden; ohne Website keine Hunter-Suche – bitte ergänzen.';
   if (!force && recentlySearched(entity)) return 'Keine Kontakt-E-Mail gefunden (Hunter kürzlich ohne Ergebnis gefragt).';
-  const { suggestion, reason } = await hunter.findGenericEmail(entity.website, { entityId: entity.id });
-  const lookup = { hunter_at: new Date().toISOString(), result: suggestion ? 'found' : 'none', reason: reason || null };
+  const { suggestion, reason, failed } = await hunter.findGenericEmail(entity.website, { entityId: entity.id });
+  const lookup = { hunter_at: new Date().toISOString(), result: suggestion ? 'found' : failed ? 'failed' : 'none', reason: reason || null, failed: Boolean(failed) };
   await db.query(
     `UPDATE entities SET attributes = (attributes - 'contact_suggestion') || jsonb_build_object('contact_lookup', $2::jsonb)
        || CASE WHEN $3::jsonb IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('contact_suggestion', $3::jsonb) END, updated_at = now()

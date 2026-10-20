@@ -49,13 +49,14 @@ async function quota() {
   return { used, limit: config.hunter.monthlyLimit, left: Math.max(0, config.hunter.monthlyLimit - used) };
 }
 
-// Domain Search für eine Website. Ergebnis: { suggestion: {email, confidence, evidenceUrl, stillOnPage} | null, reason }
+// Domain Search für eine Website. Ergebnis: { suggestion: {email, confidence, evidenceUrl, stillOnPage} | null, reason, failed }
+// failed = Abfrage gescheitert (Konto gesperrt, Grenze, Netz) – zählt nicht als „gesucht, nichts gefunden“
 async function findGenericEmail(website, { entityId = null, campProviderId = null } = {}) {
   if (!enabled()) return { suggestion: null, reason: 'Hunter.io ist nicht eingerichtet (HUNTER_API_KEY).' };
   const domain = website ? websiteKey(website) : null;
   if (!domain) return { suggestion: null, reason: 'Keine Website – Hunter braucht eine Domain.' };
   const q = await quota();
-  if (!q.left) return { suggestion: null, reason: `Monatsgrenze erreicht (${q.used} von ${q.limit} Abfragen).` };
+  if (!q.left) return { suggestion: null, reason: `Monatsgrenze erreicht (${q.used} von ${q.limit} Abfragen).`, failed: true };
   const params = new URLSearchParams({ domain, type: 'generic', limit: '10', api_key: config.hunter.apiKey });
   let data = null;
   let ok = true;
@@ -65,11 +66,11 @@ async function findGenericEmail(website, { entityId = null, campProviderId = nul
     if (!res.ok) {
       ok = false;
       const msg = (data.errors && data.errors[0] && (data.errors[0].details || data.errors[0].id)) || res.status;
-      return { suggestion: null, reason: `Hunter.io: ${msg}` };
+      return { suggestion: null, reason: `Hunter.io: ${msg}`, failed: true };
     }
   } catch (err) {
     ok = false;
-    return { suggestion: null, reason: `Hunter.io nicht erreichbar: ${err.message}` };
+    return { suggestion: null, reason: `Hunter.io nicht erreichbar: ${err.message}`, failed: true };
   } finally {
     const emails = (data && data.data && data.data.emails) || [];
     await db.query(
@@ -78,7 +79,12 @@ async function findGenericEmail(website, { entityId = null, campProviderId = nul
     );
   }
   const suggestion = pick(data.data && data.data.emails, domain);
-  return { suggestion, reason: suggestion ? null : 'Keine allgemeine Adresse mit Fundstelle gefunden.' };
+  return { suggestion, reason: suggestion ? null : 'Keine allgemeine Adresse mit Fundstelle gefunden.', failed: false };
 }
 
-module.exports = { enabled, pick, quota, findGenericEmail, PREFERRED };
+// Frühere Abfrage gescheitert? (auch für ältere Einträge ohne failed-Kennzeichen: Fehlermeldungen von Hunter/Grenze)
+function lookupFailed(l) {
+  return Boolean(l && (l.failed || /^(Hunter\.io|Monatsgrenze)/.test(l.reason || '')));
+}
+
+module.exports = { enabled, pick, quota, findGenericEmail, lookupFailed, PREFERRED };
