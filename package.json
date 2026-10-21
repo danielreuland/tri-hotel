@@ -13,7 +13,8 @@
     "recompute": "node scripts/recompute.js",
     "compare-models": "node scripts/compare-models.js",
     "import-camps": "node scripts/import-camps.js",
-    "geo-refresh": "node scripts/geo-refresh.js"
+    "geo-refresh": "node scripts/geo-refresh.js",
+    "camp-requalify": "node scripts/camp-requalify.js"
   },
   "engines": {
     "node": ">=20"

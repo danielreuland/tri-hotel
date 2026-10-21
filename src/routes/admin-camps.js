@@ -33,6 +33,8 @@ function readForm(b) {
     seat: String(b.seat || '').trim().slice(0, 120) || null,
     summary: String(b.summary || '').trim().slice(0, 1500) || null,
     website: normalizeUrl(b.website),
+    contact_email: String(b.contact_email || '').trim().toLowerCase().slice(0, 200) || null,
+    contact_phone: String(b.contact_phone || '').trim().slice(0, 60) || null,
     destinations: String(b.destinations || '').split(',').map((x) => x.trim()).filter(Boolean),
     regions: String(b.regions || '').split(',').map((x) => x.trim()).filter(Boolean),
     features: {
@@ -60,6 +62,7 @@ function readForm(b) {
   };
   if (!f.name || !f.slug) errors.push('Name ist Pflicht.');
   if (!f.website) errors.push('Website ist Pflicht (https://…).');
+  if (f.contact_email && !isEmail(f.contact_email)) errors.push('Kontakt-E-Mail ist ungültig.');
   if (f.partner && !f.partner_url && !f.lead_active) errors.push('Für Partner bitte den Partner-Link angeben oder Anfragen aktivieren.');
   if (f.lead_active && !isEmail(f.lead_email || '')) errors.push('Für Anfragen bitte eine gültige Empfänger-Adresse angeben.');
   if (f.lead_active && !f.lead_model) errors.push('Für Anfragen bitte das Vergütungsmodell wählen.');
@@ -130,6 +133,18 @@ router.post('/alle-pruefen', wrap(async (req, res) => {
   res.redirect(`/admin/camps?ok=${encodeURIComponent(`${rows.length} Anbieter werden geprüft – die Ampeln erscheinen nach und nach.`)}`);
 }));
 
+// Hunter-Vorschlag aus dem Prüfbericht als Kontakt-E-Mail übernehmen
+router.post('/:id/kontakt-vorschlag', wrap(async (req, res) => {
+  const p = await db.one('SELECT id, contact_email, check_report FROM camp_providers WHERE id = $1', [req.params.id]);
+  const s = p && ((p.check_report || {}).hunter || {}).suggestion;
+  if (s) {
+    await db.query(`UPDATE camp_providers SET contact_email = $2, contact_source = 'hunter', contact_evidence = $3 WHERE id = $1`, [p.id, s.email, s.evidenceUrl]);
+    await logAction(req.session.admin.id, 'camp_provider', p.id, 'accept_contact_suggestion', { email: s.email, previous: p.contact_email || null });
+    await campCheck.requalify(p.id);
+  }
+  res.redirect(`/admin/camps/${req.params.id}?ok=${encodeURIComponent(s ? `Kontakt-E-Mail ${s.email} übernommen` : 'Kein Vorschlag vorhanden')}`);
+}));
+
 // Prüfung erneut starten, Freigeben, Ablehnen
 router.post('/:id/pruefen', wrap(async (req, res) => {
   await campCheck.queue(req.params.id);
@@ -187,9 +202,18 @@ router.post('/:id?', wrap(async (req, res) => {
       }
       // Hotels: Auswahl aus dem Ranking + freie Zeilen; nichts wird über den Namen automatisch verknüpft
       const hotels = await camps.saveProviderHotels(c, pid, { entityIds: f.entityIds, free: f.free });
+      // Kontakt: geänderte Werte gelten als vom Admin eingetragen
+      await c.query(
+        `UPDATE camp_providers SET
+           contact_source = CASE WHEN contact_email IS DISTINCT FROM $2 OR contact_phone IS DISTINCT FROM $3 THEN CASE WHEN $2::text IS NULL AND $3::text IS NULL THEN NULL ELSE 'admin' END ELSE contact_source END,
+           contact_evidence = CASE WHEN contact_email IS DISTINCT FROM $2 OR contact_phone IS DISTINCT FROM $3 THEN NULL ELSE contact_evidence END,
+           contact_email = $2, contact_phone = $3 WHERE id = $1`,
+        [pid, f.contact_email, f.contact_phone]);
       await logAction(req.session.admin.id, 'camp_provider', pid, req.params.id ? 'edit_camp_provider' : 'create_camp_provider', { name: f.name, partner: f.partner, status: f.status, lead_active: f.lead_active, lead_model: f.lead_model, lead_fee: f.lead_fee, hotels }, c);
       return pid;
     });
+    // Ampel neu bewerten (z. B. Kontakt jetzt eingetragen) – ohne neue Prüfung
+    await campCheck.requalify(id);
     res.redirect(`/admin/camps/${id}?ok=Gespeichert`);
   } catch (err) {
     if (err.code === '23505') return renderForm(res, { ...f, id: req.params.id }, { errors: ['Der Slug ist schon vergeben.'] });

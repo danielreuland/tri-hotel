@@ -96,3 +96,18 @@ test('fromItems: flache KI-Einträge → Form für sanitize, erster Eintrag je E
   assert.equal(x.features.hotel.value, 'partner');
   assert.equal(x.hotels[0].name, 'Club La Santa');
 });
+
+test('withProfileContact + qualificationOf: Kontakt im Profil erfüllt die Regel, Ampel springt ggf. auf grün', () => {
+  const rules = [
+    { key: 'website', required: true, level: 'ok' },
+    { key: 'contact', required: true, level: 'warn', text: 'Kein Kontaktweg gefunden' },
+    { key: 'prices', level: 'warn' },
+  ];
+  assert.equal(check.qualificationOf(rules), 'review');
+  const next = check.withProfileContact(rules, { contact_email: 'info@camp.example', contact_phone: null });
+  assert.equal(next.find((r) => r.key === 'contact').level, 'ok');
+  assert.match(next.find((r) => r.key === 'contact').text, /info@camp\.example/);
+  assert.equal(check.qualificationOf(next), 'qualified');
+  assert.deepEqual(check.withProfileContact(rules, {}), rules, 'ohne Kontakt unverändert');
+  assert.equal(check.qualificationOf([{ key: 'topic', required: true, level: 'fail' }]), 'not_qualified');
+});

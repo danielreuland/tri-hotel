@@ -130,12 +130,27 @@ function qualify(x, { pagesRead, now = new Date() }) {
     : rule('destinations', 'warn', 'Keine Zielorte oder Hotels gefunden'));
   rules.push(x.prices.length ? rule('prices', 'ok', x.prices.map((p) => p.price).slice(0, 3).join(' · '), x.prices[0]) : rule('prices', 'warn', 'Keine Preise gefunden'));
 
-  const failed = rules.some((r) => r.required && r.level === 'fail');
-  const open = rules.some((r) => (r.required || r.review) && r.level !== 'ok');
+  const qualification = qualificationOf(rules);
   // Vollständigkeit des Profils: Anteil der belegten Profilangaben
   const fields = [x.model, x.seat, x.summary, x.destinations.length, x.prices.length, x.features.hotel, x.features.flight, upcoming.length, x.contact, x.imprint];
   const completeness = Math.round((100 * fields.filter(Boolean).length) / fields.length);
-  return { rules, qualification: failed ? 'not_qualified' : open ? 'review' : 'qualified', completeness };
+  return { rules, qualification, completeness };
+}
+
+// Ampel aus den Regeln: Pflicht verletzt → rot; Pflicht oder „bei Fehlen prüfen“ offen → gelb; sonst grün
+function qualificationOf(rules) {
+  if (rules.some((r) => r.required && r.level === 'fail')) return 'not_qualified';
+  if (rules.some((r) => (r.required || r.review) && r.level !== 'ok')) return 'review';
+  return 'qualified';
+}
+
+// Kontakt im Profil (vom Admin eingetragen oder übernommen) erfüllt die Regel „Kontaktweg“
+function withProfileContact(rules, p) {
+  const contact = [p.contact_email, p.contact_phone].filter(Boolean);
+  if (!contact.length) return rules;
+  return rules.map((r) => (r.key === 'contact' && r.level !== 'ok'
+    ? { ...r, level: 'ok', text: `Im Profil: ${contact.join(' · ')}`, evidence_url: p.contact_evidence || r.evidence_url || null, evidence_text: null }
+    : r));
 }
 
 // ---------- Auswertung per KI (festes Schema, jede Angabe mit Fundstelle) ----------
@@ -288,6 +303,11 @@ async function run(providerId) {
 
     // 5. Profil des Entwurfs mit belegten Angaben füllen (nur leere Felder; beim ersten Lauf auch die Vorgabe „coach“)
     await fillProfile(p, x);
+    // 5b. Kontakt (auch bei freigegebenen Anbietern, nur leere Felder) – danach zählt der Kontakt im Profil für die Regel
+    await fillContact(p, x);
+    const fresh = await db.one('SELECT contact_email, contact_phone, contact_evidence FROM camp_providers WHERE id = $1', [p.id]);
+    result.rules = withProfileContact(result.rules, fresh);
+    result.qualification = qualificationOf(result.rules);
 
     await db.query(
       `UPDATE camp_providers SET check_status = 'done', qualification = $2, check_report = $3, checked_at = now(), updated_at = now() WHERE id = $1`,
@@ -381,6 +401,31 @@ async function createHotelSubmission(p, h, ranking, note) {
   }, { adminId: p.created_by || (await db.one('SELECT id FROM admin_users ORDER BY created_at LIMIT 1')).id });
 }
 
+// Kontakt-E-Mail und Telefon von der Website (mit Fundstelle) in leere Felder übernehmen
+async function fillContact(p, x) {
+  if (!x.contact || (!x.contact.email && !x.contact.phone)) return;
+  await db.query(
+    `UPDATE camp_providers SET
+       contact_email = COALESCE(contact_email, $2), contact_phone = COALESCE(contact_phone, $3),
+       contact_source = CASE WHEN contact_email IS NULL AND contact_phone IS NULL THEN 'website' ELSE contact_source END,
+       contact_evidence = CASE WHEN contact_email IS NULL AND contact_phone IS NULL THEN $4 ELSE contact_evidence END
+     WHERE id = $1`,
+    [p.id, x.contact.email || null, x.contact.phone || null, x.contact.evidence_url]
+  );
+}
+
+// Nach Änderungen am Profil (Kontakt eingetragen): gespeicherte Regeln und Ampel neu bewerten, ohne neue Prüfung
+async function requalify(providerId) {
+  const p = await db.one('SELECT id, check_report, contact_email, contact_phone, contact_evidence FROM camp_providers WHERE id = $1', [providerId]);
+  const rules = (p && p.check_report && p.check_report.rules) || [];
+  if (!rules.length) return null;
+  const next = withProfileContact(rules, p);
+  const qualification = qualificationOf(next);
+  await db.query(`UPDATE camp_providers SET check_report = jsonb_set(check_report, '{rules}', $2::jsonb), qualification = $3 WHERE id = $1`,
+    [p.id, JSON.stringify(next), qualification]);
+  return qualification;
+}
+
 // Belegte Angaben in leere Profilfelder des Entwurfs übernehmen (Admin-Eingaben werden nie überschrieben)
 async function fillProfile(p, x) {
   if (p.status !== 'draft') return;
@@ -406,4 +451,4 @@ async function fillProfile(p, x) {
   );
 }
 
-module.exports = { QUALIFICATION, RULES, sanitize, qualify, upcomingDates, evidenceOk, fromItems, extractCamp, setEnqueue, queue, run, matchHotels, fillProfile };
+module.exports = { QUALIFICATION, RULES, sanitize, qualify, qualificationOf, withProfileContact, requalify, upcomingDates, evidenceOk, fromItems, extractCamp, setEnqueue, queue, run, matchHotels, fillProfile, fillContact };

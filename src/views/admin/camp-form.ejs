@@ -21,6 +21,17 @@
   <label>Kurzprofil <small class="muted">in eigenen Worten, keine Werbetexte übernehmen</small></label><textarea name="summary" rows="3"><%= p.summary || '' %></textarea>
   <div class="form-row">
     <div><label>Website *</label><input name="website" type="url" required value="<%= p.website || '' %>"></div>
+  </div>
+  <% var CSRC = { website: 'von der Website', hunter: 'über Hunter.io', admin: 'vom Admin eingetragen' }; var hsug = ((p.check_report || {}).hunter || {}).suggestion; %>
+  <div class="form-row">
+    <div><label for="cp-email">Kontakt-E-Mail <small class="muted">allgemein, nicht der Empfänger von Anfragen</small></label>
+      <input id="cp-email" name="contact_email" type="email" value="<%= p.contact_email || '' %>" placeholder="info@anbieter.de">
+      <small class="muted"><%= p.contact_source ? CSRC[p.contact_source] || p.contact_source : 'noch keine' %><% if (p.contact_evidence) { %> · <a href="<%= p.contact_evidence %>" target="_blank" rel="noopener">Fundstelle</a><% } %></small>
+      <% if (hsug && hsug.email !== p.contact_email) { %><br><small>Vorschlag Hunter.io: <strong><%= hsug.email %></strong> (<%= hsug.confidence %> %) · <a href="<%= hsug.evidenceUrl %>" target="_blank" rel="noopener">Fundstelle</a></small>
+        <button class="btn small secondary" type="submit" form="cp-hunter-accept">Übernehmen</button><% } %></div>
+    <div><label for="cp-phone">Telefon</label><input id="cp-phone" name="contact_phone" type="text" maxlength="60" value="<%= p.contact_phone || '' %>"></div>
+  </div>
+  <div class="form-row">
     <div><label>Ziele <small class="muted">kommagetrennt</small></label><input name="destinations" type="text" value="<%= (p.destinations || []).join(', ') %>"></div>
     <div><label>Regionen (Filter) <small class="muted">kommagetrennt</small></label><input name="regions" type="text" value="<%= (p.regions || []).join(', ') %>" placeholder="Kanaren, Mallorca, Alpen"></div>
   </div>
@@ -90,4 +101,5 @@
   </div>
   <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button></p>
 </form>
+<% if (p.id) { %><form id="cp-hunter-accept" method="post" action="/admin/camps/<%= p.id %>/kontakt-vorschlag"></form><% } %>
 <%- include('../partials/admin-foot') %>
