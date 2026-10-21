@@ -12,7 +12,7 @@ const OVERPASS = [
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function overpass(query) {
+async function overpass(query, { timeoutMs = 45000 } = {}) {
   let lastError = null;
   for (let attempt = 0; attempt < OVERPASS.length * 2; attempt++) {
     const url = OVERPASS[attempt % OVERPASS.length];
@@ -21,7 +21,7 @@ async function overpass(query) {
         method: 'POST',
         headers: { 'User-Agent': config.userAgent, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (res.ok) return res.json();
       lastError = new Error(`Overpass ${res.status} (${new URL(url).hostname})`);

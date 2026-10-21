@@ -138,8 +138,9 @@ function describe(area, merged, rule) {
 
 async function computeArea(a, rule) {
   const r = Math.round(a.radiusKm * 1000);
-  const q = `[out:json][timeout:120];(way["highway"~"${ROAD_RE}"](around:${r},${a.lat},${a.lng}););out tags geom;rel["route"="bicycle"](around:${r},${a.lat},${a.lng});out ids;`;
-  const { elements = [] } = await geo.overpass(q);
+  const q = `[out:json][timeout:170];(way["highway"~"${ROAD_RE}"](around:${r},${a.lat},${a.lng}););out tags geom;rel["route"="bicycle"](around:${r},${a.lat},${a.lng});out ids;`;
+  // große Abfrage (dichtes Straßennetz): mehr Zeit als die üblichen 45 s
+  const { elements = [] } = await geo.overpass(q, { timeoutMs: 180000 });
   const roads = roadMetrics(elements);
   let terrain = null;
   try {
