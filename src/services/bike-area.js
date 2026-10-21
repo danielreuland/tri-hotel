@@ -8,7 +8,6 @@
 const db = require('../db');
 const geo = require('./geo');
 
-const ROAD_RE = '^(motorway|trunk|primary|secondary|tertiary|unclassified|cycleway)$';
 const QUIET = ['tertiary', 'unclassified', 'cycleway'];
 const MAIN = ['motorway', 'trunk', 'primary'];
 
@@ -28,15 +27,15 @@ const paved = (tags) => !tags.surface || /asphalt|paved|concrete|chipseal/.test(
 function areaFor(point, regions, rule) {
   const region = (regions || []).find((r) => geo.distanceKm(point, { lat: Number(r.lat), lng: Number(r.lng) }) <= Number(r.radius_km));
   if (region) {
-    const [min, max] = rule.region_radius_km || [15, 40];
+    const [min, max] = rule.region_radius_km || [50, 50];
     return { key: `region:${region.id}`, regionId: region.id, name: region.name, lat: Number(region.lat), lng: Number(region.lng),
       radiusKm: Math.min(max, Math.max(min, Number(region.radius_km))) };
   }
-  const deg = rule.tile_deg || 0.25;
+  const deg = rule.tile_deg || 0.5;
   const lat = Math.round((Math.floor(point.lat / deg) * deg + deg / 2) * 1e4) / 1e4;
   const lng = Math.round((Math.floor(point.lng / deg) * deg + deg / 2) * 1e4) / 1e4;
   return { key: `tile:${lat}:${lng}`, regionId: null, name: `Gebiet um ${String(lat).replace('.', ',')} / ${String(lng).replace('.', ',')}`,
-    lat, lng, radiusKm: rule.tile_radius_km || 20 };
+    lat, lng, radiusKm: rule.tile_radius_km || 50 };
 }
 
 // Straßenkennzahlen aus Overpass-Elementen (ways mit Geometrie, relations = Radrouten)
@@ -60,6 +59,21 @@ function roadMetrics(elements) {
     km: Object.fromEntries(Object.entries(km).map(([k, v]) => [k, round(v)])),
     quietKm: round(quietKm), secondaryKm: round(secondaryKm), mainKm: round(mainKm),
     networkKm: round(quietKm + secondaryKm / 2), quietShare: total ? Math.round((quietKm / total) * 100) / 100 : 0, routes,
+  };
+}
+
+// Straßenkennzahlen aus Server-Summen (Overpass „make stat“, Längen in Metern) – kleine Antwort auch bei 50 km Radius
+function statsMetrics(stats) {
+  const km = (v) => Math.round(Number(v || 0) / 1000);
+  const quietKm = km(stats.quiet);
+  const secondaryKm = km(stats.secondary);
+  const mainKm = km(stats.main);
+  const total = quietKm + secondaryKm + mainKm;
+  const num = (v) => (v === undefined || v === null || v === '' || Number.isNaN(Number(v)) ? null : Math.round(Number(v)));
+  return {
+    quietKm, secondaryKm, mainKm, networkKm: Math.round(quietKm + secondaryKm / 2),
+    quietShare: total ? Math.round((quietKm / total) * 100) / 100 : 0, routes: Number(stats.routes) || 0,
+    passes: Number(stats.passes) || 0, passMaxM: num(stats.pass_max), peakMaxM: num(stats.peak_max),
   };
 }
 
@@ -95,11 +109,15 @@ function subscores(metrics, rule) {
   const r = metrics.roads || {};
   const t = metrics.terrain;
   const flat = Boolean(t && t.flatShare >= (rule.flat_share || 0.2));
-  const climbs = Boolean(t && t.reliefM >= (rule.climb_m || 300));
+  // Anstiege: Höhenunterschied im Raster oder höchster Pass/Gipfel aus OSM über dem tiefsten Punkt (das Raster trifft Gipfel selten)
+  const climb = rule.climb_m || 300;
+  const relief = t ? Number(t.reliefM) || 0 : 0;
+  const peakRise = t && (r.passMaxM || r.peakMaxM) ? Math.max(r.passMaxM || 0, r.peakMaxM || 0) - (Number(t.minM) || 0) : 0;
+  const climbs = relief >= climb || peakRise >= climb || (r.passes || 0) >= (rule.min_passes || 3);
   return {
     network: step(r.networkKm || 0, rule.network_km || [150, 400], max.network),
     traffic: step(r.quietShare || 0, rule.quiet_share || [0.6, 0.8], max.traffic),
-    terrain: t ? (flat && climbs ? max.terrain : flat || climbs ? max.terrain / 2 : 0) : null,
+    terrain: t || r.passes ? (flat && climbs ? max.terrain : flat || climbs ? max.terrain / 2 : 0) : null,
     routes: step(r.routes || 0, rule.routes || [1, 5], max.routes),
   };
 }
@@ -128,7 +146,7 @@ function describe(area, merged, rule) {
   const parts = [
     `${labels.network} ${merged.network} (${r.networkKm ?? '?'} km ruhige Straßen)`,
     `${labels.traffic} ${merged.traffic} (ruhiger Anteil ${Math.round((r.quietShare || 0) * 100)} %)`,
-    `${labels.terrain} ${merged.terrain ?? '–'}${t ? ` (${t.minM}–${t.maxM} m, flach ${Math.round(t.flatShare * 100)} %)` : ''}`,
+    `${labels.terrain} ${merged.terrain ?? '–'}${t ? ` (${t.minM}–${Math.max(t.maxM, r.peakMaxM || 0)} m, flach ${Math.round(t.flatShare * 100)} %${r.passes ? `, ${r.passes} Pässe${r.passMaxM ? ` bis ${r.passMaxM} m` : ''}` : ''})` : ''}`,
     `${labels.routes} ${merged.routes} (${r.routes ?? 0} Radrouten)`,
   ];
   return `Radrevier ${area.name} (${area.radius_km} km): ${parts.join(' · ')}${area.override && area.override.note ? ` – Hinweis: ${area.override.note}` : ''}.`;
@@ -136,15 +154,31 @@ function describe(area, merged, rule) {
 
 // ---------- Abruf und Zwischenspeicher ----------
 
+const UNPAVED = 'gravel|dirt|unpaved|ground|sand|grass|compacted|fine_gravel|pebblestone|earth|mud|wood';
+
+// Overpass-Abfrage mit Summen je Gruppe (ruhig asphaltiert, secondary, Hauptstraßen, Radrouten, Pässe, Gipfel)
+function statsQuery(lat, lng, radiusKm) {
+  const R = Math.round(radiusKm * 1000);
+  const at = `(around:${R},${lat},${lng})`;
+  return `[out:json][timeout:240];
+way["highway"~"^(${QUIET.join('|')})$"]${at}->.q;
+way.q["surface"~"^(${UNPAVED})$"]->.u;
+(.q; - .u;)->.p;
+.p; make stat quiet=sum(length()); out;
+way["highway"="secondary"]${at}; make stat secondary=sum(length()); out;
+way["highway"~"^(${MAIN.join('|')})$"]${at}; make stat main=sum(length()); out;
+rel["route"="bicycle"]${at}; make stat routes=count(relations); out;
+node["mountain_pass"="yes"]${at}; make stat passes=count(nodes), pass_max=max(number(t["ele"])); out;
+node["natural"="peak"]["ele"]${at}; make stat peak_max=max(number(t["ele"])); out;`;
+}
+
 async function computeArea(a, rule) {
-  const r = Math.round(a.radiusKm * 1000);
-  const q = `[out:json][timeout:170];(way["highway"~"${ROAD_RE}"](around:${r},${a.lat},${a.lng}););out tags geom;rel["route"="bicycle"](around:${r},${a.lat},${a.lng});out ids;`;
-  // große Abfrage (dichtes Straßennetz): mehr Zeit als die üblichen 45 s
-  const { elements = [] } = await geo.overpass(q, { timeoutMs: 180000 });
-  const roads = roadMetrics(elements);
+  // Summen rechnet der Server – auch bei 50 km Radius nur wenige Bytes, dauert aber 1–3 Minuten
+  const { elements = [] } = await geo.overpass(statsQuery(a.lat, a.lng, a.radiusKm), { timeoutMs: 280000 });
+  const roads = statsMetrics(Object.assign({}, ...elements.map((e) => e.tags || {})));
   let terrain = null;
   try {
-    const t = await geo.terrain({ lat: a.lat, lng: a.lng }, a.radiusKm, { steps: 4 });
+    const t = await geo.terrain({ lat: a.lat, lng: a.lng }, a.radiusKm, { steps: 5 });
     terrain = t && terrainMetrics(t.grid, rule);
   } catch (err) {
     console.error('[bike-area] Höhen', a.key, err.message);
@@ -250,4 +284,4 @@ async function applyToEntities(area, adminId) {
   return changed;
 }
 
-module.exports = { areaFor, roadMetrics, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };
+module.exports = { areaFor, roadMetrics, statsMetrics, statsQuery, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };

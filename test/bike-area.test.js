@@ -63,3 +63,27 @@ test('hotelAdjust: kaum ruhige Straßen am Hotel → −1, sonst 0', () => {
   assert.equal(bike.hotelAdjust(8, rule).value, 0);
   assert.equal(bike.hotelAdjust(null, rule).value, 0);
 });
+
+test('statsMetrics: Server-Summen (Meter) → km, Anteil, Pässe und Gipfel', () => {
+  const m = bike.statsMetrics({ quiet: '3903000', secondary: '519000', main: '842000', routes: '45', passes: '12', pass_max: '1015', peak_max: '1436.5' });
+  assert.equal(m.quietKm, 3903);
+  assert.equal(m.networkKm, 4163);
+  assert.equal(m.quietShare, 0.74);
+  assert.deepEqual([m.routes, m.passes, m.passMaxM, m.peakMaxM], [45, 12, 1015, 1437]);
+  assert.equal(bike.statsMetrics({}).quietShare, 0);
+});
+
+test('subscores: Anstiege zählen auch über Pässe/Gipfel aus OSM, wenn das Höhenraster sie verfehlt', () => {
+  const r = { ...rule, climb_m: 300, min_passes: 3 };
+  const flatGrid = { flatShare: 0.5, reliefM: 120, minM: 1, maxM: 121 };
+  assert.equal(bike.subscores({ roads: { networkKm: 0, quietShare: 0, routes: 0, peakMaxM: 1436 }, terrain: flatGrid }, r).terrain, 2, 'Gipfel 1436 m');
+  assert.equal(bike.subscores({ roads: { networkKm: 0, quietShare: 0, routes: 0, passes: 5 }, terrain: flatGrid }, r).terrain, 2, '5 Pässe');
+  assert.equal(bike.subscores({ roads: { networkKm: 0, quietShare: 0, routes: 0 }, terrain: flatGrid }, r).terrain, 1, 'nur flach');
+});
+
+test('statsQuery: Summen statt Geometrie, alle Gruppen enthalten', () => {
+  const q = bike.statsQuery(39.84, 3.12, 50);
+  assert.match(q, /around:50000,39\.84,3\.12/);
+  for (const k of ['quiet=sum(length())', 'secondary=sum(length())', 'main=sum(length())', 'routes=count(relations)', 'passes=count(nodes)', 'peak_max=max']) assert.ok(q.includes(k), k);
+  assert.ok(!/out tags geom/.test(q));
+});
