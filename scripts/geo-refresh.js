@@ -13,16 +13,16 @@ async function main() {
   // Standard: nur Objekte in Prüfung – bei live-Objekten würden ungeprüfte Vorschläge sofort in den öffentlichen Score eingehen
   const statuses = arg ? arg.slice(9).split(',') : ['in_review'];
   const rows = await db.many(
-    `SELECT e.*, er.ranking_id FROM entities e JOIN entity_rankings er ON er.entity_id = e.id
+    `SELECT e.*, er.ranking_id, r.site_id FROM entities e JOIN entity_rankings er ON er.entity_id = e.id JOIN rankings r ON r.id = er.ranking_id
       WHERE er.status::text = ANY($1::text[]) AND e.lat IS NOT NULL ORDER BY e.name`, [statuses]);
   console.log(`${rows.length} Objekte`);
   let total = 0;
   for (const e of rows) {
     const criteria = (await rankings.getCriteria(e.ranking_id)).filter((c) => c.scoring && c.scoring.auto);
     const existing = new Set((await rankings.getFacts(e.id, e.ranking_id)).map((f) => f.criterion_id));
-    const todo = criteria.filter((c) => !existing.has(c.id) || [].concat(c.scoring.auto).some((r) => r.info_only));
+    const todo = criteria.filter((c) => !existing.has(c.id) || [].concat(c.scoring.auto).some((r) => r.info_only || r.source === 'bike_area'));
     try {
-      const facts = await geo.suggestFacts({ lat: Number(e.lat), lng: Number(e.lng) }, todo);
+      const facts = await geo.suggestFacts({ lat: Number(e.lat), lng: Number(e.lng) }, todo, { siteId: e.site_id });
       const n = await insertAutoFacts(e.id, facts.filter((f) => !existing.has(f.criterionId)));
       if (Object.keys(facts.infos || {}).length) {
         await db.query(`UPDATE entities SET attributes = attributes || jsonb_build_object('geo_info', $2::jsonb), updated_at = now() WHERE id = $1`,

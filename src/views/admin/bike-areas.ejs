@@ -1,0 +1,42 @@
+<%- include('../partials/admin-head') %>
+<h1>Radreviere</h1>
+<p class="muted">Das Radrevier wird je Gebiet bewertet (deine Regionen, sonst Kacheln von ca. 25 km) – Hotels im selben Gebiet bekommen dieselbe Grundwertung, dazu höchstens −1 bei kaum ruhigen Straßen direkt am Hotel. Quellen: OpenStreetMap (Straßennetz, Radrouten) und Höhendaten (OpenTopoData). Übersteuerst du eine Teilwertung, werden die noch unbestätigten Vorschläge aller Hotels des Gebiets angeglichen; von dir bestätigte Werte bleiben, die Abweichung siehst du unten.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (flashError) { %><div class="errors"><%= flashError %></div><% } %>
+<% var L = rule.labels || { network: 'Netz', traffic: 'Verkehr', terrain: 'Flach & Berg', routes: 'Routen' }; var MAX = rule.max || { network: 2, traffic: 1, terrain: 2, routes: 1 }; %>
+<% if (!areas.length) { %><div class="card"><p style="margin:0">Noch keine Gebiete berechnet. Sie entstehen bei der Auto-Prüfung eines Hotels bzw. mit <code>npm run geo-refresh</code>.</p></div><% } %>
+<% areas.forEach(function (a) { var m = a.metrics || {}; var r = m.roads || {}; var t = m.terrain; var o = a.override || {}; %>
+  <section class="card" id="a-<%= a.id %>" style="margin-top:16px">
+    <h2 style="margin-top:0"><%= a.name %> <span class="badge <%= a.score >= 5 ? 'good' : a.score >= 3 ? '' : 'warn' %>"><%= a.score === null ? '–' : String(a.score).replace('.', ',') %> von 6</span>
+      <small class="muted"><%= a.key.indexOf('region:') === 0 ? 'Region' : 'Kachel' %> · <%= a.radius_km %> km · <%= a.computed_at ? 'berechnet ' + formatDate(a.computed_at) : 'noch nicht berechnet' %></small></h2>
+    <% if (a.error) { %><p class="errors" style="margin:0 0 8px">Letzte Berechnung fehlgeschlagen: <%= a.error %></p><% } %>
+    <p class="muted" style="margin:0 0 8px"><small>
+      <%= r.networkKm !== undefined ? r.networkKm + ' km ruhige Straßen (davon ' + r.quietKm + ' km Nebenstraßen/Radwege)' : '' %>
+      <%= r.quietShare !== undefined ? ' · ruhiger Anteil ' + Math.round(r.quietShare * 100) + ' % · Hauptstraßen ' + r.mainKm + ' km' : '' %>
+      <%= r.routes !== undefined ? ' · ' + r.routes + ' Radrouten' : '' %>
+      <%= t ? ' · Höhen ' + t.minM + '–' + t.maxM + ' m, flache Abschnitte ' + Math.round(t.flatShare * 100) + ' %' : ' · keine Höhendaten' %></small></p>
+    <form method="post" action="/admin/radreviere/<%= a.id %>/uebersteuern" class="filters" style="align-items:flex-end;margin:0">
+      <% KEYS.forEach(function (k) { %>
+        <div style="min-width:110px"><label for="o-<%= a.id %>-<%= k %>" style="margin-top:0"><%= L[k] %> <small class="muted">(0–<%= MAX[k] %>, auto <%= a.subscores && a.subscores[k] !== null && a.subscores[k] !== undefined ? String(a.subscores[k]).replace('.', ',') : '–' %>)</small></label>
+          <input id="o-<%= a.id %>-<%= k %>" name="<%= k %>" type="text" inputmode="decimal" style="width:80px" value="<%= o[k] !== undefined ? String(o[k]).replace('.', ',') : '' %>" placeholder="auto"></div>
+      <% }) %>
+      <div style="flex:1;min-width:220px"><label for="o-<%= a.id %>-note" style="margin-top:0">Begründung</label><input id="o-<%= a.id %>-note" name="note" type="text" maxlength="500" value="<%= o.note || '' %>" placeholder="z. B. viel Verkehr in der Saison"></div>
+      <button class="btn small" type="submit">Speichern</button>
+    </form>
+    <form method="post" action="/admin/radreviere/<%= a.id %>/neu-berechnen" style="margin-top:8px" data-busy="Wird berechnet (bis zu 1 Minute) …"><button class="btn small secondary" type="submit">Neu berechnen</button></form>
+    <% if (a.entities.length) { %>
+      <div class="table-scroll" style="margin-top:10px"><table>
+        <tr><th>Hotel</th><th class="num">Vorschlag</th><th class="num">Aktueller Wert</th><th></th></tr>
+        <% a.entities.forEach(function (e) { var info = e.info || {}; var cur = e.fact_value && e.fact_value.number; var differs = cur !== null && cur !== undefined && Number(cur) !== Number(info.suggestion); %>
+          <tr>
+            <td><a href="/admin/meldungen/<%= e.sub_id %>#fakten"><%= e.name %></a><% if (info.adjust) { %><br><small class="muted">am Hotel <%= info.adjust %>: <%= info.adjustReason %></small><% } %></td>
+            <td class="num"><%= info.suggestion %></td>
+            <td class="num"><%= cur === undefined || cur === null ? '–' : cur %> <small class="muted"><%= e.trust_level === 4 ? 'Vorschlag' : e.trust_level ? 'bestätigt' : '' %></small></td>
+            <td><% if (differs && e.trust_level !== 4) { %><span class="badge warn">weicht ab</span><% } %></td>
+          </tr>
+        <% }) %>
+      </table></div>
+    <% } %>
+  </section>
+<% }) %>
+<%- include('../partials/admin-foot') %>

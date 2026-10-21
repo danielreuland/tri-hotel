@@ -170,6 +170,9 @@ async function renderEntity(req, res, ranking, slug) {
         evidenceUrl: fact && fact.evidence_url,
         disputed: fact && fact.disputed,
         linkSource: c.link_source || null,
+        // Gebietswertung (Radrevier): Teilwertungen aus dem letzten Abgleich, Beschriftungen aus der Regel
+        areaInfo: [].concat((c.scoring || {}).auto || []).some((r) => r.source === 'bike_area')
+          ? ((entity.attributes || {}).geo_info || {})[c.code] || null : null,
       };
     });
     const known = items.filter((i) => i.points !== null);

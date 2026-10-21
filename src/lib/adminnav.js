@@ -29,6 +29,7 @@ const SECTIONS = [
       { href: '/admin/medien', label: 'Seitenbilder' },
       { href: '/admin/camps', label: 'Camps' },
       { href: '/admin/regionen', label: 'Regionen' },
+      { href: '/admin/radreviere', label: 'Radreviere' },
       { href: '/admin/leistungen', label: 'Leistungen' },
       { href: '/admin/ki-texte', label: 'KI-Texte' },
     ],

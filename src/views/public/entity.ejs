@@ -126,6 +126,9 @@
           <div class="fact">
             <span><%= it.label %></span>
             <span class="val <%= it.value === null ? 'unknown' : '' %>"><%= it.value === null ? 'unbekannt' : it.value %><% if (it.points !== null) { %> <small>(<%= it.points %>)</small><% } else if (it.imputed !== null && it.imputed !== undefined) { %> <small title="Unbekannt: zählt mit dem Durchschnitt aller geprüften <%= ranking.entity_label_pl %>">(Ø <%= String(Math.round(it.imputed * 10) / 10).replace('.', ',') %>)</small><% } %></span>
+            <% if (it.areaInfo && it.areaInfo.subscores) { var ai = it.areaInfo; var AL = ai.labels || {}; var AM = ai.max || {}; %>
+              <span class="src">Gebiet <%= ai.areaName %>: <% ['network', 'traffic', 'terrain', 'routes'].forEach(function (k, i) { if (ai.subscores[k] === null || ai.subscores[k] === undefined) return; %><%= i ? ' · ' : '' %><%= AL[k] || k %> <%= String(ai.subscores[k]).replace('.', ',') %>/<%= AM[k] %><% }) %><%= ai.adjust ? ' · am Hotel ' + ai.adjust : '' %> <small>(OpenStreetMap, Höhendaten)</small></span>
+            <% } %>
             <% if (it.linkSource === 'camp_providers' && campProviders.length) { %>
               <span class="src">Camps von <% campProviders.forEach(function (c, i) { %><%= i ? ', ' : '' %><a href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %></a><% }) %></span>
             <% } %>

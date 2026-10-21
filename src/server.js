@@ -91,6 +91,7 @@ app.use('/admin/rankings', require('./routes/admin-rankings'));
 app.use('/admin/sites', require('./routes/admin-sites'));
 app.use('/admin/leistungen', require('./routes/admin-features'));
 app.use('/admin/regionen', require('./routes/admin-regions'));
+app.use('/admin/radreviere', require('./routes/admin-bike'));
 app.use('/admin/medien', require('./routes/admin-media'));
 app.use('/admin/emails', require('./routes/admin-emails'));
 app.use('/admin/camps', require('./routes/admin-camps'));

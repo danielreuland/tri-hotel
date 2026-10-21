@@ -356,15 +356,15 @@ async function bathingWaters(point, radiusKm) {
 
 // Gelände: Höhen auf einem Raster um den Punkt (OpenTopoData, Datensatz mapzen, eine Anfrage je Objekt)
 const TOPO = 'https://api.opentopodata.org/v1/mapzen';
-async function terrain(point, radiusKm) {
+async function terrain(point, radiusKm, { steps = 3 } = {}) {
   const pts = [];
-  const steps = 3; // 7×7 Raster im Quadrat, nur Punkte im Kreis
+  // steps 3 = 7×7 Raster im Quadrat (4 = 9×9), nur Punkte im Kreis; höchstens 100 Punkte je Anfrage
   for (let i = -steps; i <= steps; i++) {
     for (let j = -steps; j <= steps; j++) {
       const dLat = (i / steps) * (radiusKm / 111.32);
       const dLng = (j / steps) * (radiusKm / (111.32 * Math.cos((point.lat * Math.PI) / 180)));
       const p = { lat: point.lat + dLat, lng: point.lng + dLng };
-      if (distanceKm(point, p) <= radiusKm + 0.01) pts.push(p);
+      if (distanceKm(point, p) <= radiusKm + 0.01) pts.push({ ...p, i, j });
     }
   }
   const res = await fetch(`${TOPO}?locations=${pts.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join('|')}`,
@@ -377,7 +377,9 @@ async function terrain(point, radiusKm) {
   if (land.length < 5) return null;
   const center = (data.results || []).find((r) => Math.abs(r.location.lat - point.lat) < 1e-4 && Math.abs(r.location.lng - point.lng) < 1e-4);
   return { radiusKm, points: land.length, minM: Math.round(Math.min(...land)), maxM: Math.round(Math.max(...land)),
-    reliefM: Math.round(Math.max(...land) - Math.min(...land)), centerM: center ? Math.round(center.elevation) : null };
+    reliefM: Math.round(Math.max(...land) - Math.min(...land)), centerM: center ? Math.round(center.elevation) : null, elevations: land.map(Math.round),
+    // Raster mit Lage (i, j) für Nachbarvergleiche; Meer bleibt als null erhalten
+    grid: pts.map((p, k) => ({ i: p.i, j: p.j, e: typeof (data.results || [])[k]?.elevation === 'number' && data.results[k].elevation > 0 ? Math.round(data.results[k].elevation) : null })) };
 }
 
 // terrain-Regel: relief_max_m (≤ → true) bzw. relief_min_m (≥ → true); sonst kein Vorschlag (eine flache Runde kann es
@@ -392,7 +394,8 @@ function applyTerrainRule(auto, t) {
 const terrainText = (t) => `Höhen im Umkreis von ${t.radiusKm} km: ${t.minM}–${t.maxM} m (Unterschied ${t.reliefM} m${t.centerM !== null ? `, am Objekt ${t.centerM} m` : ''}), OpenTopoData/Mapzen, ${t.points} Messpunkte.`;
 
 // Eine Regel auswerten. Ergebnis: { value?, evidenceUrl, evidenceText, info? } oder null
-async function evaluateRule(point, auto) {
+async function evaluateRule(point, auto, ctx = {}) {
+  if (auto.source === 'bike_area') return require('./bike-area').evaluate(point, auto, ctx);
   if (auto.source === 'osm') {
     if (auto.length_options) {
       const pools = await poolsWithLength(point, auto.selectors || [], auto.radius_km || 5);
@@ -418,8 +421,9 @@ async function evaluateRule(point, auto) {
       evidenceText: [auto.note, `Amtliche Badestelle „${hit.name}“ (${hit.category === 'Lake' ? 'See' : hit.category === 'River' ? 'Fluss' : hit.category === 'Coastal' ? 'Küste' : hit.category}), Wasserqualität ${hit.qualityText}, ${hit.distanceKm} km Luftlinie (EEA).`].filter(Boolean).join(' ') };
   }
   if (auto.source === 'terrain') {
-    const t = await terrain(point, auto.radius_km || 2);
-    if (!t) return null;
+    const full = await terrain(point, auto.radius_km || 2);
+    if (!full) return null;
+    const { elevations, ...t } = full; // Rohwerte nicht speichern
     const value = applyTerrainRule(auto, t);
     const text = [auto.note, terrainText(t)].filter(Boolean).join(' ');
     return value ? { value, evidenceUrl: 'https://www.opentopodata.org', evidenceText: text, info: t } : { info: t, infoText: text };
@@ -429,7 +433,7 @@ async function evaluateRule(point, auto) {
 
 // Ermittelt Vorschläge für alle Kriterien mit auto-Regel. auto kann eine Regel oder eine Liste sein (erste mit Ergebnis zählt).
 // Ergebnis: [{criterionId, value, evidenceUrl, evidenceText}] und je Kriterium Kennzahlen ohne Wert in .infos
-async function suggestFacts(point, criteria) {
+async function suggestFacts(point, criteria, ctx = {}) {
   const out = [];
   out.infos = {};
   for (const c of criteria) {
@@ -438,7 +442,7 @@ async function suggestFacts(point, criteria) {
     for (const rule of [].concat(auto)) {
       let r = null;
       try {
-        r = await evaluateRule(point, rule);
+        r = await evaluateRule(point, rule, ctx);
       } catch (err) {
         console.error('[geo]', c.code, rule.source, err.message);
       }
@@ -456,4 +460,4 @@ async function suggestFacts(point, criteria) {
 module.exports = {
   locate,
   coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, applyLengthRule, applyTerrainRule, poolLengthM, spanM,
-  bathingWaters, terrain, evaluateRule, distanceKm, suggestFacts, SELECTOR_RE };
+  bathingWaters, terrain, evaluateRule, distanceKm, suggestFacts, overpass, SELECTOR_RE };
