@@ -19,6 +19,8 @@ const LABELS = {
   google_place: 'Google Place ID',
   camp_lead: 'Camp-Anfrage',
   camp_check: 'Camp-Anbieter prüfen',
+  camp_pitch: 'Partnerschaft anbieten',
+  camp_call: 'Anbieter anrufen',
   contact: 'Kontaktanfrage',
   mail: 'E-Mail',
   mail_unassigned: 'E-Mail zuordnen',
@@ -106,6 +108,24 @@ async function collect() {
     push({ source: 'camp_lead', source_key: `lead:${l.id}`, title: `${l.provider} – Anfrage ${l.name}`,
       detail: [{ level: 'todo', text: `${l.persons} Person(en)${l.period_month ? `, ${new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' })}` : ''} – prüfen und weiterleiten` }],
       link: `/admin/camp-anfragen#l-${l.id}`, entity_id: null });
+  }
+  // Camp-Anfragen an Anbieter ohne Vereinbarung: positive Rückmeldung → Ben bietet die Partnerschaft an (je Anbieter eine Karte)
+  for (const r of await db.many(
+    `SELECT p.id, p.name, p.contact_email, p.contact_phone, count(*)::int AS n FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+      WHERE l.outcome = 'offer_sent' AND l.partner_at_forward = false AND NOT p.lead_active GROUP BY p.id`)) {
+    push({ source: 'camp_pitch', source_key: `camp-pitch:${r.id}`, title: r.name,
+      detail: [{ level: 'todo', text: `${r.n} ${r.n === 1 ? 'Anfrage' : 'Anfragen'} mit Angebot beantwortet – Ben bietet eine Partnerschaft an` },
+        { level: 'todo', text: [r.contact_email, r.contact_phone].filter(Boolean).join(' · ') || 'Kontakt im Profil ergänzen' }],
+      link: `/admin/camps/${r.id}`, entity_id: null });
+  }
+  // Keine Rückmeldung 5 Tage nach der Nachfrage → anrufen (je Anbieter eine Karte)
+  for (const r of await db.many(
+    `SELECT p.id, p.name, p.contact_phone, count(*)::int AS n, min(l.followup_sent_at) AS since FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+      WHERE l.status = 'forwarded' AND l.outcome IS NULL AND l.followup_sent_at < now() - interval '5 days' AND l.anonymized_at IS NULL GROUP BY p.id`)) {
+    push({ source: 'camp_call', source_key: `camp-call:${r.id}`, title: r.name,
+      detail: [{ level: 'todo', text: `${r.n} ${r.n === 1 ? 'Anfrage' : 'Anfragen'} ohne Rückmeldung seit ${new Date(r.since).toLocaleDateString('de-DE')} – anrufen und nachfragen` },
+        { level: r.contact_phone ? 'todo' : 'block', text: r.contact_phone ? `Telefon: ${r.contact_phone}` : 'Keine Telefonnummer im Profil' }],
+      link: `/admin/camps/${r.id}`, entity_id: null });
   }
   // Camp-Anbieter in Prüfung: Ergebnis der automatischen Qualifikation freigeben oder ablehnen
   const Q = { qualified: ['todo', 'Automatische Prüfung grün – freigeben?'], review: ['todo', 'Automatische Prüfung gelb – Punkte ansehen'], not_qualified: ['block', 'Automatische Prüfung rot – ablehnen oder klären'] };

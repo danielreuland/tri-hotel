@@ -85,7 +85,7 @@ async function verify(token) {
 
 async function load(id) {
   return db.one(
-    `SELECT l.*, p.name AS provider_name, p.lead_email, p.lead_model, p.lead_fee, p.lead_active, p.site_id AS provider_site, e.name AS entity_name
+    `SELECT l.*, p.name AS provider_name, p.lead_email, p.contact_email AS provider_contact_email, p.lead_model, p.lead_fee, p.lead_active, p.site_id AS provider_site, e.name AS entity_name
        FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id WHERE l.id = $1`, [id]);
 }
 
@@ -95,21 +95,28 @@ async function verifyByAdmin(id, adminId) {
   if (r.rowCount) await logAction(adminId, 'camp_lead', id, 'verify_lead_by_admin');
 }
 
-// Weitergabe an den Anbieter: Mail mit allen Angaben, Antwort direkt an den Interessenten; Konditionen festhalten
+// Weitergabe an den Anbieter: Mail mit allen Angaben, Antwort direkt an den Interessenten; Konditionen festhalten.
+// Empfänger: Adresse aus der Vereinbarung, sonst die Kontaktadresse (Sammelanfragen gehen auch an Anbieter ohne Vereinbarung –
+// dann ohne Abrechnung). Bei Sammelanfragen kommen Zimmer, Gruppe, Schwerpunkt usw. dazu.
 async function forward(id, adminId) {
   const l = await load(id);
   if (!l || l.status !== 'confirmed') throw new Error('Nur bestätigte Anfragen können weitergeleitet werden.');
-  if (!l.lead_email) throw new Error('Für diesen Anbieter ist keine Empfänger-Adresse für Anfragen hinterlegt.');
+  const partner = Boolean(l.lead_active && l.lead_email);
+  const to = partner ? l.lead_email : l.provider_contact_email || l.lead_email;
+  if (!to) throw new Error(`Für ${l.provider_name} ist keine Adresse hinterlegt (Vereinbarung oder Kontakt-E-Mail).`);
   const site = await db.one('SELECT * FROM sites WHERE id = $1', [l.site_id]);
+  const request = l.request_id ? await db.one('SELECT * FROM camp_requests WHERE id = $1', [l.request_id]) : null;
+  const extra = request ? require('./camp-requests').detailLines(request) : [];
   const sent = await mailer.send({
-    to: l.lead_email, template: 'lead-forward', site, replyTo: l.email, campProviderId: l.provider_id,
-    data: { entityName: l.provider_name, lead: l, levelLabel: LEVELS[l.level] || null },
+    to, template: 'lead-forward', site, replyTo: l.email, campProviderId: l.provider_id,
+    data: { entityName: l.provider_name, lead: l, levelLabel: LEVELS[l.level] || null, extraLines: extra },
   });
-  if (!sent) throw new Error('Mailversand fehlgeschlagen – Anfrage bleibt offen.');
+  if (!sent) throw new Error(`Mailversand an ${l.provider_name} fehlgeschlagen – Anfrage bleibt offen.`);
   await db.query(
-    `UPDATE camp_leads SET status = 'forwarded', forwarded_at = now(), forwarded_by = $2, billed_model = $3, billed_fee = $4, updated_at = now() WHERE id = $1`,
-    [id, adminId, l.lead_model, l.lead_model === 'per_lead' ? l.lead_fee : null]);
-  await logAction(adminId, 'camp_lead', id, 'forward_lead', { provider: l.provider_name, model: l.lead_model, fee: l.lead_fee });
+    `UPDATE camp_leads SET status = 'forwarded', forwarded_at = now(), forwarded_by = $2, billed_model = $3, billed_fee = $4,
+       recipient = $5, partner_at_forward = $6, updated_at = now() WHERE id = $1`,
+    [id, adminId, partner ? l.lead_model : null, partner && l.lead_model === 'per_lead' ? l.lead_fee : null, to, partner]);
+  await logAction(adminId, 'camp_lead', id, 'forward_lead', { provider: l.provider_name, model: partner ? l.lead_model : null, fee: partner ? l.lead_fee : null, partner, request: l.request_id || null });
 }
 
 async function reject(id, adminId, reason) {
@@ -123,8 +130,55 @@ async function billing(siteId, monthsBack = 6) {
     `SELECT date_trunc('month', l.forwarded_at)::date AS month, p.name AS provider, l.billed_model AS model,
             count(*)::int AS leads, COALESCE(sum(l.billed_fee), 0)::numeric(10,2) AS amount
        FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
-      WHERE l.site_id = $1 AND l.status = 'forwarded' AND l.forwarded_at > date_trunc('month', now()) - make_interval(months => $2)
+      WHERE l.site_id = $1 AND l.status = 'forwarded' AND l.partner_at_forward IS NOT FALSE AND l.forwarded_at > date_trunc('month', now()) - make_interval(months => $2)
       GROUP BY 1, 2, 3 ORDER BY 1 DESC, 2`, [siteId, monthsBack]);
 }
 
-module.exports = { VERIFY_HOURS, LEVELS, MODELS, STATUS, consentText, months, validate, create, recentCountByIp, isDuplicate, verify, load, verifyByAdmin, forward, reject, billing };
+// ---------- Nachfrage beim Anbieter (nur zum Ergebnis; Partnerschaft spricht Ben getrennt an) ----------
+const FOLLOWUP_AFTER_DAYS = 7;
+const OUTCOMES = { offer_sent: 'Angebot geschickt', no_offer: 'kein Angebot möglich', not_relevant: 'passt nicht zum Angebot' };
+
+// Täglich: weitergeleitete Anfragen ohne Rückmeldung nach 7 Tagen einmal nachfragen
+async function sendFollowups() {
+  const due = await db.many(
+    `SELECT l.*, p.name AS provider_name, p.lead_email, p.contact_email AS provider_contact_email
+       FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+      WHERE l.status = 'forwarded' AND l.outcome IS NULL AND l.followup_sent_at IS NULL AND l.anonymized_at IS NULL
+        AND l.forwarded_at < now() - make_interval(days => $1)`, [FOLLOWUP_AFTER_DAYS]);
+  let sent = 0;
+  for (const l of due) {
+    const to = l.recipient || l.lead_email || l.provider_contact_email;
+    if (!to) continue;
+    const site = await db.one('SELECT * FROM sites WHERE id = $1', [l.site_id]);
+    const tok = newToken();
+    const base = `${sites.urlFor(site)}/anbieter-rueckmeldung/${tok.token}`;
+    const period = [l.period_month ? new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : null, l.period_note].filter(Boolean).join(', ');
+    const ok = await mailer.send({
+      to, template: 'lead-followup', site, campProviderId: l.provider_id,
+      data: { entityName: l.provider_name, name: l.name, period, links: Object.fromEntries(Object.keys(OUTCOMES).map((k) => [k, `${base}/${k}`])) },
+    });
+    if (!ok) continue;
+    await db.query(`UPDATE camp_leads SET followup_sent_at = now(), followup_token_hash = $2, updated_at = now() WHERE id = $1`, [l.id, tok.hash]);
+    sent++;
+  }
+  return sent;
+}
+
+async function findByFollowupToken(token) {
+  return db.one(
+    `SELECT l.*, p.name AS provider_name FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id WHERE l.followup_token_hash = $1`, [sha256(token)]);
+}
+
+// Rückmeldung speichern (nur per Formular-Absenden, nicht schon beim Öffnen des Links – Mailscanner öffnen Links automatisch)
+async function recordOutcome(token, outcome) {
+  if (!OUTCOMES[outcome]) return null;
+  const l = await findByFollowupToken(token);
+  if (!l) return null;
+  if (!l.outcome) {
+    await db.query(`UPDATE camp_leads SET outcome = $2, outcome_at = now(), updated_at = now() WHERE id = $1`, [l.id, outcome]);
+    await logAction(null, 'camp_lead', l.id, 'provider_outcome', { provider: l.provider_name, outcome });
+  }
+  return { ...l, outcome: l.outcome || outcome };
+}
+
+module.exports = { FOLLOWUP_AFTER_DAYS, OUTCOMES, sendFollowups, findByFollowupToken, recordOutcome, VERIFY_HOURS, LEVELS, MODELS, STATUS, consentText, months, validate, create, recentCountByIp, isDuplicate, verify, load, verifyByAdmin, forward, reject, billing };

@@ -20,6 +20,7 @@ async function start() {
   await boss.createQueue('retention');
   await boss.createQueue('mail-poll');
   await boss.createQueue('camp-check');
+  await boss.createQueue('lead-followup');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -51,6 +52,13 @@ async function start() {
   await boss.work('camp-check', async (jobs) => {
     for (const job of jobs) await require('../services/camp-check').run(job.data.providerId);
   });
+
+  // Camp-Anfragen: 7 Tage nach der Weitergabe beim Anbieter nach dem Ergebnis fragen (täglich 9 Uhr)
+  await boss.work('lead-followup', async () => {
+    const n = await require('../services/leads').sendFollowups();
+    if (n) console.log(`[jobs] Camp-Anfragen: ${n} Nachfragen an Anbieter`);
+  });
+  await boss.schedule('lead-followup', '0 9 * * *');
 
   // Löschfristen (täglich 3:30 Uhr)
   await boss.work('retention', async () => {

@@ -50,6 +50,14 @@ async function run() {
   await q('leadsAnonymized',
     `UPDATE camp_leads SET name = NULL, email = NULL, phone = NULL, message = NULL, period_note = NULL, ip_hash = NULL, anonymized_at = now()
       WHERE anonymized_at IS NULL AND status IN ('forwarded', 'rejected') AND updated_at < now() - make_interval(months => $1)`, [RETENTION.leadMonths]);
+  // Sammelanfragen: unbestätigte löschen (Leads hängen daran), erledigte nach derselben Frist wie Einzelanfragen anonymisieren
+  await q('requestsUnconfirmed', `DELETE FROM camp_requests WHERE status = 'received' AND created_at < now() - make_interval(days => $1)
+      AND NOT EXISTS (SELECT 1 FROM camp_leads l WHERE l.request_id = camp_requests.id AND l.verified_by IS NOT NULL)`, [RETENTION.leadUnconfirmedDays]);
+  await q('requestsAnonymized',
+    `UPDATE camp_requests SET name = NULL, email = NULL, phone = NULL, message = NULL, period_note = NULL, club_name = NULL, contact_role = NULL,
+       ip_hash = NULL, anonymized_at = now()
+      WHERE anonymized_at IS NULL AND status IN ('forwarded', 'rejected') AND updated_at < now() - make_interval(months => $1)`, [RETENTION.leadMonths]);
+  await q('requestIpHashes', `UPDATE camp_requests SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
   await q('leadIpHashes', `UPDATE camp_leads SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
   r.mails = await require('./mailbox').purge();
   await q('consents', `DELETE FROM consents WHERE withdrawn_at IS NOT NULL AND withdrawn_at < now() - make_interval(years => $1)`, [RETENTION.consentYearsAfterEnd]);

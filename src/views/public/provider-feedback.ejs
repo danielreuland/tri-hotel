@@ -1,0 +1,19 @@
+<%- include('../partials/head') %>
+<% if (!lead) { %>
+  <h1>Link ungültig</h1>
+  <div class="card"><p style="margin:0">Bitte prüft, ob ihr den vollständigen Link aus der E-Mail verwendet habt – oder antwortet einfach auf unsere Mail.</p></div>
+<% } else if (saved || lead.outcome) { %>
+  <h1>Danke für eure Rückmeldung</h1>
+  <div class="card"><p style="margin:0">Gespeichert: <strong><%= OUTCOMES[lead.outcome] %></strong> zur Anfrage von <%= lead.name %>. Damit sehen wir, ob die Anfragen bei euch richtig ankommen.</p></div>
+<% } else { %>
+  <h1>Rückmeldung zur Anfrage</h1>
+  <div class="card">
+    <p style="margin-top:0"><%= lead.provider_name %> – Anfrage von <strong><%= lead.name %></strong>.</p>
+    <form method="post">
+      <p style="margin:0 0 8px">Bitte bestätigt: <strong><%= OUTCOMES[outcome] %></strong></p>
+      <button class="btn cta" type="submit">Rückmeldung senden</button>
+    </form>
+    <p class="muted" style="margin-bottom:0"><small>Falsch geklickt? Die anderen Antworten stehen in der Mail.</small></p>
+  </div>
+<% } %>
+<%- include('../partials/foot') %>

@@ -35,6 +35,14 @@ function readForm(b) {
     website: normalizeUrl(b.website),
     contact_email: String(b.contact_email || '').trim().toLowerCase().slice(0, 200) || null,
     contact_phone: String(b.contact_phone || '').trim().slice(0, 60) || null,
+    // Abgleich für Sammelanfragen (leer = keine Einschränkung)
+    match_months: [].concat(b.match_months || []).map(Number).filter((m) => m >= 1 && m <= 12),
+    match_levels: [].concat(b.match_levels || []).filter((l) => ['beginner', 'intermediate', 'ambitious'].includes(l)),
+    group_min: Number(b.group_min) >= 1 ? Math.round(Number(b.group_min)) : null,
+    group_max: Number(b.group_max) >= 1 ? Math.round(Number(b.group_max)) : null,
+    exclusive_groups: b.exclusive_groups === 'yes' ? true : b.exclusive_groups === 'no' ? false : null,
+    price_min: Number(String(b.price_min || '').replace(',', '.')) > 0 ? Number(String(b.price_min).replace(',', '.')) : null,
+    price_max: Number(String(b.price_max || '').replace(',', '.')) > 0 ? Number(String(b.price_max).replace(',', '.')) : null,
     destinations: String(b.destinations || '').split(',').map((x) => x.trim()).filter(Boolean),
     regions: String(b.regions || '').split(',').map((x) => x.trim()).filter(Boolean),
     features: {
@@ -202,6 +210,9 @@ router.post('/:id?', wrap(async (req, res) => {
       }
       // Hotels: Auswahl aus dem Ranking + freie Zeilen; nichts wird über den Namen automatisch verknüpft
       const hotels = await camps.saveProviderHotels(c, pid, { entityIds: f.entityIds, free: f.free });
+      await c.query(
+        `UPDATE camp_providers SET match_months = $2, match_levels = $3, group_min = $4, group_max = $5, exclusive_groups = $6, price_min = $7, price_max = $8 WHERE id = $1`,
+        [pid, f.match_months, f.match_levels, f.group_min, f.group_max, f.exclusive_groups, f.price_min, f.price_max]);
       // Kontakt: geänderte Werte gelten als vom Admin eingetragen
       await c.query(
         `UPDATE camp_providers SET

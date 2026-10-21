@@ -65,26 +65,16 @@ Offen (klein): Reihenfolge der verknüpften Hotels folgt der Liste (alphabetisch
 - Offen: geo-refresh für live-Objekte (würde ungeprüfte Vorschläge sofort in den Score bringen – Daniel entscheidet);
   Impressum wird bei Camp-Anbietern oft nicht gefunden (Impressum-/Kontaktseite gezielt mitladen); Trivolution-Website 404.
 
-### 9. Camp-Sammelanfrage („Lass dir Camp-Angebote schicken“)
-Mit Daniel abgestimmt (19.10.2026):
-- Fragebogen (eine Seite): Zeitraum/Monat oder flexibel, Regionen (oder „egal, warm“), Dauer, Personen, Niveau,
-  Schwerpunkt (Rad/Schwimmen/Lauf/Wettkampfvorbereitung), Betreuung (Coach/Gruppe/nur Organisation), Hotel inkl.,
-  Flug inkl., Budget p. P. (optional), Freitext, Kontakt.
-- Passende Anbieter nach Profil-Abgleich; **3 vorausgewählt + bis zu 2 weitere nach Wahl des Kunden (max. 5)**.
-  Reihenfolge nur nach Passung, nie nach Bezahlung. Weiterleiten nur an Anbieter mit Vereinbarung (`lead_active`);
-  andere passende Anbieter trotzdem zeigen mit „direkt anfragen“ (Website).
-- Einwilligung nennt die gewählten Anbieter namentlich (DSGVO, kein „an alle“). Danach wie Camp-Anfragen:
-  E-Mail-Bestätigung → Admin-Prüfung → Weiterleitung mit Reply-To. Technisch: Sammelanfrage (neue Tabelle) erzeugt je
-  Anbieter einen `camp_leads`-Eintrag (Abrechnung, Board, Löschfristen wie bisher).
-- Anbieter-Profile um Abgleichsfelder ergänzen (Monate, Niveaus, Gruppengrößen, Preisrahmen …).
-- Platzierung: Camp-Übersicht, Regionsseiten, Hotelseiten („Kein passendes Camp? Lass dir Angebote schicken“);
-  Plausible-Ziel „Camp-Sammelanfrage“.
-- **Nachfrage nach 7 Tagen im System, nicht in n8n**: täglicher pg-boss-Job wie `inquiry-daily`, Mail-Vorlage
-  „Hast du Angebote bekommen?“ (pro Anbieter ja/nein, Knopf-Links mit Token), Ergebnis intern je Anbieter
-  (Reaktionsquote, nie öffentlich/in Rankings). Nur bei bestätigten + weitergeleiteten Anfragen, einmalig.
-- **Offen:** Preis je geteilter Anfrage (Vorschlag: günstiger als Einzelanfrage, z. B. halber Preis) – Daniel fragen.
-- Faustregel System vs. n8n: personenbezogene Daten, Einwilligungen, Abrechnung, Kundenmails, Fristen → System;
-  fremde Dienste, Social (Lara), Benachrichtigungen an Daniel, Experimente → n8n per Webhook mit minimalen Daten.
+### 9. Camp-Sammelanfrage – umgesetzt (21.10.2026, Entscheidungen A1–A6)
+- /trainingscamp/angebote: ein Formular mit Schalter „allein/Freunde“ vs. „Gruppe/Verein“ (Gruppenfelder per CSS :has, ohne JS),
+  Zimmer (EZ/DZ) auch für Freunde; Budget optional. Schritt 2: passende Anbieter nur nach Passung (services/camp-requests.js),
+  3 vorausgewählt + bis zu 2 weitere, Einwilligung mit Namen; Bestätigungsmail listet alle Anbieter (Vorlage request-verify).
+- Weitergabe auch an Anbieter ohne Vereinbarung (Kontaktadresse, keine Abrechnung); je Anbieter ein camp_leads-Eintrag.
+- Nachfrage 7 Tage nach Weitergabe nur zum Ergebnis (Vorlage lead-followup, Bestätigungsknopf wegen Mailscannern);
+  Board: „Partnerschaft anbieten“ (positive Rückmeldung, ohne Vereinbarung) und „Anbieter anrufen“ (5 Tage ohne Antwort).
+- Hotelseite: „Vereinscamp in diesem Hotel anfragen“ / „Mit Freunden anfragen“ (nur wenn Camp-Anbieter verknüpft).
+- Abgleichsfelder im Anbieter-Formular (Monate, Niveaus, Gruppengröße, Vereinscamps, Preis). Migration 052, Tests.
+- Offen: Preis je geteilter Anfrage (A3, zurückgestellt); Landingpage „Trainingslager für Vereine“ (später); Abgleichsfelder per Camp-Prüfung vorschlagen.
 
 ### 10. Hotelseite „Buchen & Anfragen“ (Konzept vom 19.10.2026, von Daniel bestätigt)
 Reihenfolge: a) Direktbuchung → b) Hotel-Anfrage → c) Tripadvisor.

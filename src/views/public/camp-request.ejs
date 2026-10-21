@@ -1,0 +1,97 @@
+<%- include('../partials/head') %>
+<% var f = form || {}; var checked = function (name, value) { return [].concat(f[name] || []).indexOf(value) >= 0 ? 'checked' : ''; }; %>
+<p class="eyebrow">Trainingscamp · kostenlos und unverbindlich</p>
+<h1><%= step === 1 ? 'Lass dir Camp-Angebote schicken' : 'Diese Anbieter passen zu dir' %></h1>
+<% if (hotel) { %><p class="lead">Für ein Camp im <strong><%= hotel.name %></strong><%= hotel.city ? ' (' + hotel.city + ')' : '' %>.</p><% } %>
+<% if (errors.length) { %><div class="errors" id="fehler" tabindex="-1" data-focus><strong>Noch nicht abgeschickt – bitte korrigieren:</strong><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
+
+<% if (step === 1) { %>
+  <p class="lead" style="max-width:720px">Beschreib kurz, was du suchst. Im nächsten Schritt schlagen wir dir die passendsten Anbieter vor – sortiert nur danach, wie gut sie passen, nie nach Bezahlung. Du wählst bis zu fünf aus.</p>
+  <form method="post" action="/trainingscamp/angebote" class="card cr-form" novalidate data-sending="Anbieter werden gesucht …">
+    <input type="hidden" name="hotel" value="<%= f.hotel || '' %>">
+    <fieldset class="chip-row" style="border:0;padding:0;margin:0 0 8px">
+      <legend style="font-weight:800;margin-bottom:6px">Wer reist?</legend>
+      <label class="chip"><input type="radio" name="kind" value="private" <%= f.kind !== 'group' ? 'checked' : '' %>> Allein, zu zweit oder mit Freunden</label>
+      <label class="chip"><input type="radio" name="kind" value="group" <%= f.kind === 'group' ? 'checked' : '' %>> Gruppe / Verein</label>
+    </fieldset>
+
+    <div class="form-row">
+      <div><label for="cr-month">Wann? *</label>
+        <select id="cr-month" name="period_month"><option value="">Monat wählen</option><% months.forEach(function (m) { %><option value="<%= m.value %>" <%= f.period_month === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %></select></div>
+      <div><label for="cr-note">Zeitraum genauer <small class="muted">oder „flexibel“</small></label><input id="cr-note" name="period_note" type="text" maxlength="120" value="<%= f.period_note || '' %>" placeholder="z. B. Osterferien"></div>
+      <div><label for="cr-days">Dauer in Tagen</label><input id="cr-days" name="duration_days" type="number" min="2" max="42" value="<%= f.duration_days || '' %>" placeholder="z. B. 8"></div>
+    </div>
+    <div class="form-row">
+      <div><label for="cr-dest">Wohin?</label>
+        <select id="cr-dest" name="destination"><option value="">egal – Hauptsache gute Bedingungen</option><% regions.forEach(function (r) { %><option value="<%= r.slug %>" <%= f.destination === r.slug ? 'selected' : '' %>><%= r.name %></option><% }) %></select></div>
+      <div><label for="cr-level">Niveau</label>
+        <select id="cr-level" name="level"><option value="">keine Angabe</option><% Object.keys(LEVELS).forEach(function (k) { %><option value="<%= k %>" <%= f.level === k ? 'selected' : '' %>><%= LEVELS[k] %></option><% }) %></select></div>
+      <div><label for="cr-support">Betreuung</label>
+        <select id="cr-support" name="support"><option value="">egal</option><% Object.keys(SUPPORT).forEach(function (k) { %><option value="<%= k %>" <%= f.support === k ? 'selected' : '' %>><%= SUPPORT[k] %></option><% }) %></select></div>
+    </div>
+    <fieldset style="border:0;padding:0;margin:12px 0 0"><legend style="font-weight:700">Schwerpunkt <small class="muted">mehrere möglich</small></legend>
+      <div class="chip-row"><% Object.keys(FOCUS).forEach(function (k) { %><label class="chip"><input type="checkbox" name="focus" value="<%= k %>" <%= checked('focus', k) %>> <%= FOCUS[k] %></label><% }) %></div>
+    </fieldset>
+    <div class="form-row">
+      <div><label for="cr-persons">Personen *</label><input id="cr-persons" name="persons" type="number" min="1" max="80" value="<%= f.persons || '' %>"></div>
+      <div><label for="cr-double">Doppelzimmer</label><input id="cr-double" name="rooms_double" type="number" min="0" max="40" value="<%= f.rooms_double || '' %>" placeholder="0"></div>
+      <div><label for="cr-single">Einzelzimmer</label><input id="cr-single" name="rooms_single" type="number" min="0" max="40" value="<%= f.rooms_single || '' %>" placeholder="0"></div>
+    </div>
+    <p class="muted" style="margin:4px 0 0"><small>Z. B. zwei Paare: 4 Personen, 2 Doppelzimmer.</small></p>
+    <div class="form-row">
+      <div><label for="cr-hotel">Hotel inklusive?</label><select id="cr-hotel" name="hotel_wanted"><% Object.keys(YES_NO_ANY).forEach(function (k) { %><option value="<%= k %>" <%= (f.hotel_wanted || 'any') === k ? 'selected' : '' %>><%= YES_NO_ANY[k] %></option><% }) %></select></div>
+      <div><label for="cr-flight">Flug inklusive?</label><select id="cr-flight" name="flight_wanted"><% Object.keys(YES_NO_ANY).forEach(function (k) { %><option value="<%= k %>" <%= (f.flight_wanted || 'any') === k ? 'selected' : '' %>><%= YES_NO_ANY[k] %></option><% }) %></select></div>
+      <div><label for="cr-budget">Budget pro Person <small class="muted">optional, in €</small></label><input id="cr-budget" name="budget_pp" type="text" inputmode="numeric" maxlength="8" value="<%= f.budget_pp || '' %>"></div>
+    </div>
+
+    <fieldset class="cr-group" style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:16px 0 0">
+      <legend style="font-weight:800;padding:0 6px">Gruppe / Verein</legend>
+      <div class="form-row">
+        <div><label for="cr-club">Name des Vereins bzw. der Gruppe *</label><input id="cr-club" name="club_name" type="text" maxlength="120" value="<%= f.club_name || '' %>"></div>
+        <div><label for="cr-role">Deine Rolle <small class="muted">z. B. Trainer, Vorstand</small></label><input id="cr-role" name="contact_role" type="text" maxlength="80" value="<%= f.contact_role || '' %>"></div>
+      </div>
+      <div class="form-row">
+        <div><label for="cr-range">Leistungsniveaus in der Gruppe</label><input id="cr-range" name="level_range" type="text" maxlength="120" value="<%= f.level_range || '' %>" placeholder="z. B. Einsteiger bis Langdistanz"></div>
+        <div><label for="cr-own">Eigene Trainer dabei?</label><select id="cr-own" name="own_coaches"><option value="">keine Angabe</option><option value="yes" <%= f.own_coaches === 'yes' ? 'selected' : '' %>>ja</option><option value="no" <%= f.own_coaches === 'no' ? 'selected' : '' %>>nein</option></select></div>
+        <div><label for="cr-excl">Camp-Form</label><select id="cr-excl" name="exclusive"><% Object.keys(EXCLUSIVE).forEach(function (k) { %><option value="<%= k %>" <%= (f.exclusive || 'any') === k ? 'selected' : '' %>><%= EXCLUSIVE[k] %></option><% }) %></select></div>
+      </div>
+      <label class="inline"><input type="checkbox" name="invoice_to_club" <%= f.invoice_to_club === 'on' ? 'checked' : '' %>> <span>Rechnung an den Verein</span></label>
+    </fieldset>
+
+    <label for="cr-msg">Was ist dir sonst wichtig? <small class="muted">optional</small></label>
+    <textarea id="cr-msg" name="message" rows="3" maxlength="3000" placeholder="z. B. Schwimmtechnik, Radgruppen nach Tempo, Anreise mit eigenem Rad …"><%= f.message || '' %></textarea>
+    <p style="margin-bottom:0"><button class="btn cta" type="submit">Passende Anbieter zeigen</button></p>
+  </form>
+<% } else { %>
+  <% var sel = [].concat(preselected || []); %>
+  <% if (!ranked.length) { %>
+    <div class="card"><p style="margin:0">Leider passt gerade kein Anbieter zu deinen Wünschen. <a href="/trainingscamp/angebote">Wünsche ändern</a> oder <a href="/trainingscamp">alle Anbieter ansehen</a>.</p></div>
+  <% } else { %>
+    <p class="lead" style="max-width:720px">Die ersten <%= Math.min(3, ranked.length) %> passen am besten und sind schon ausgewählt. Du kannst bis zu <%= MAX %> Anbieter wählen – jeder bekommt deine Anfrage und antwortet dir direkt.</p>
+    <form method="post" action="/trainingscamp/angebote/senden" class="card" novalidate data-sending="Wird gesendet …">
+      <input type="hidden" name="wishes" value="<%= wishesJson %>">
+      <ul class="cr-providers" style="list-style:none;padding:0;margin:0 0 12px">
+        <% ranked.forEach(function (p) { %>
+          <li style="border-top:1px solid var(--border);padding:10px 0">
+            <label class="inline" style="margin:0;align-items:flex-start"><input type="checkbox" name="providers" value="<%= p.id %>" <%= sel.indexOf(p.id) >= 0 ? 'checked' : '' %>>
+              <span><strong><%= p.name %></strong><%= p.seat ? ' · ' + p.seat : '' %><br>
+                <small class="muted"><%= (p.destinations || []).slice(0, 4).join(', ') %><%= p.match.reasons.length ? ' · passt: ' + p.match.reasons.join(', ') : '' %></small>
+                <br><small><a href="/trainingscamp/anbieter/<%= p.slug %>" target="_blank">Profil ansehen</a></small></span></label>
+          </li>
+        <% }) %>
+      </ul>
+      <div class="form-row">
+        <div><label for="cr-name">Dein Name *</label><input id="cr-name" name="name" type="text" maxlength="80" autocomplete="name" value="<%= form.name || '' %>"></div>
+        <div><label for="cr-email">E-Mail *</label><input id="cr-email" name="email" type="email" maxlength="200" autocomplete="email" value="<%= form.email || '' %>"></div>
+        <div><label for="cr-phone">Telefon <small class="muted">optional</small></label><input id="cr-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" value="<%= form.phone || '' %>"></div>
+      </div>
+      <div class="hp" aria-hidden="true"><label for="cr-hp">Bitte leer lassen</label><input id="cr-hp" name="company_url" type="text" tabindex="-1" autocomplete="off"></div>
+      <label class="inline"><input type="checkbox" name="consent" <%= form.consent === 'on' ? 'checked' : '' %>>
+        <span>Ich bin einverstanden, dass tri-hotel.de meine Anfrage mit Name, E-Mail-Adresse, Telefon (falls angegeben) und den Angaben oben an die <strong>oben angehakten Anbieter</strong> weitergibt, damit sie mir Angebote schicken können. Die Anbieter dürfen mir dazu antworten; eine Buchung ist damit nicht verbunden. *</span></label>
+      <p class="muted"><small>Wir schicken dir zuerst einen Bestätigungslink; in der Mail stehen alle Anbieter noch einmal mit Namen. <a href="/datenschutz#camp-anfragen" target="_blank">Datenschutz</a> · Einige Anbieter zahlen uns eine Vergütung für vermittelte Anfragen; auf Auswahl und Reihenfolge hat das keinen Einfluss.</small></p>
+      <p style="margin-bottom:0"><button class="btn cta" type="submit">Anfrage senden</button> <a class="btn secondary" href="/trainingscamp/angebote">Wünsche ändern</a></p>
+    </form>
+  <% } %>
+<% } %>
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>

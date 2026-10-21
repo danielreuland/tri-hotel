@@ -101,6 +101,7 @@ app.use('/admin/camp-anfragen', require('./routes/admin-leads'));
 app.use('/admin/postfach', require('./routes/admin-mail'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/contact'));
+app.use('/', require('./routes/camp-requests'));
 app.use('/', require('./routes/camps'));
 app.use('/', require('./routes/partners'));
 app.use('/', require('./routes/reviews'));

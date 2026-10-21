@@ -35,6 +35,18 @@
     <div><label>Ziele <small class="muted">kommagetrennt</small></label><input name="destinations" type="text" value="<%= (p.destinations || []).join(', ') %>"></div>
     <div><label>Regionen (Filter) <small class="muted">kommagetrennt</small></label><input name="regions" type="text" value="<%= (p.regions || []).join(', ') %>" placeholder="Kanaren, Mallorca, Alpen"></div>
   </div>
+  <h3>Abgleich für Sammelanfragen <small class="muted">leer = keine Einschränkung; sortiert wird nur nach Passung</small></h3>
+  <% var MN = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']; var mm = (p.match_months || []).map(Number); var ml = p.match_levels || []; %>
+  <fieldset style="border:0;padding:0;margin:0"><legend>Monate mit Camps</legend>
+    <div class="chip-row"><% MN.forEach(function (n, i) { %><label class="chip"><input type="checkbox" name="match_months" value="<%= i + 1 %>" <%= mm.indexOf(i + 1) >= 0 ? 'checked' : '' %>> <%= n %></label><% }) %></div></fieldset>
+  <fieldset style="border:0;padding:0;margin:8px 0 0"><legend>Niveaus</legend>
+    <div class="chip-row"><% [['beginner', 'Einsteiger'], ['intermediate', 'Fortgeschritten'], ['ambitious', 'Ambitioniert / Langdistanz']].forEach(function (l) { %><label class="chip"><input type="checkbox" name="match_levels" value="<%= l[0] %>" <%= ml.indexOf(l[0]) >= 0 ? 'checked' : '' %>> <%= l[1] %></label><% }) %></div></fieldset>
+  <div class="form-row">
+    <div><label>Gruppe min.</label><input name="group_min" type="number" min="1" value="<%= p.group_min || '' %>"></div>
+    <div><label>Gruppe max.</label><input name="group_max" type="number" min="1" value="<%= p.group_max || '' %>"></div>
+    <div><label>Eigene Vereins-/Gruppencamps</label><select name="exclusive_groups"><option value="">unbekannt</option><option value="yes" <%= p.exclusive_groups === true ? 'selected' : '' %>>ja</option><option value="no" <%= p.exclusive_groups === false ? 'selected' : '' %>>nein</option></select></div>
+    <div><label>Preis je Person von – bis (€)</label><div style="display:flex;gap:6px"><input name="price_min" type="text" inputmode="numeric" value="<%= p.price_min || '' %>" style="width:90px"><input name="price_max" type="text" inputmode="numeric" value="<%= p.price_max || '' %>" style="width:90px"></div></div>
+  </div>
   <h3>Leistungen</h3>
   <div class="form-row">
     <div><label>Hotel</label><select name="f_hotel"><% Object.keys(HOTEL_VALUES).forEach(function (k) { %><option value="<%= k %>" <%= (f.hotel || 'unknown') === k ? 'selected' : '' %>><%= HOTEL_VALUES[k] %></option><% }) %></select></div>

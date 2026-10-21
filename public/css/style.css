@@ -527,3 +527,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .combo-list li small { color: var(--muted); }
 .combo-list li.on, .combo-list li:hover { background: var(--accent-soft); }
 .combo-list li.none { color: var(--muted); cursor: default; background: none; }
+
+/* ---------- Sammelanfrage Camps ---------- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Gruppenfelder nur, wenn „Gruppe / Verein“ gewählt ist (ohne JavaScript) */
+.cr-form:has(input[name="kind"][value="private"]:checked) .cr-group { display: none; }

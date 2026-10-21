@@ -1,0 +1,18 @@
+<%- include('../partials/head') %>
+<%
+  var list = (names || []).join(', ');
+  var texts = {
+    sent: ['✓ Deine Anfrage ist angekommen', 'Jetzt fehlt nur noch ein Klick: Wir haben dir einen Bestätigungslink per E-Mail geschickt – darin stehen alle gewählten Anbieter. Sobald du bestätigt hast, geben wir deine Anfrage weiter.'],
+    ok: ['Danke – deine Anfrage ist bestätigt.', 'Wir geben sie in Kürze weiter' + (list ? ' an: ' + list : '') + '. Die Anbieter melden sich direkt bei dir.'],
+    already: ['Diese Anfrage ist schon bestätigt.', 'Sie wird gerade weitergegeben oder ist bereits bei den Anbietern.'],
+    expired: ['Der Link ist abgelaufen.', 'Bitte schick deine Anfrage noch einmal ab.'],
+    invalid: ['Der Link ist ungültig.', 'Bitte prüf, ob du den vollständigen Link aus der E-Mail verwendet hast.'],
+  };
+  var t = texts[status] || texts.invalid;
+%>
+<h1 <%- status === 'sent' ? 'data-goal="Camp-Sammelanfrage"' : '' %>><%= t[0] %></h1>
+<div class="card"><p style="margin:0"><%= t[1] %></p>
+  <% if (status === 'sent') { %><p class="muted" style="margin-bottom:0"><small>Keine Mail bekommen? Schau bitte auch im Spam-Ordner nach. Der Link ist 72 Stunden gültig.</small></p><% } %>
+  <p style="margin-bottom:0"><a href="/trainingscamp">Zum Camp-Ratgeber</a></p></div>
+<% locals.scripts = ['/static/js/site.js'] %>
+<%- include('../partials/foot') %>
