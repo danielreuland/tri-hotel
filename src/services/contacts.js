@@ -16,7 +16,7 @@ function recentlySearched(entity) {
 }
 
 // force: Hunter auch abfragen, wenn kürzlich schon gesucht (Knopf im Admin). Ergebnis: Text fürs Protokoll
-async function fallback(entity, { force = false } = {}) {
+async function fallback(entity, { force = false, noHunter = false } = {}) {
   if (entity.contact_email) return 'Kontaktadresse ist schon eingetragen.';
   // 2. OpenStreetMap
   try {
@@ -33,6 +33,7 @@ async function fallback(entity, { force = false } = {}) {
   }
   // 3. Hunter.io
   if (!hunter.enabled()) return 'Keine Kontakt-E-Mail gefunden – bitte in den Stammdaten ergänzen.';
+  if (noHunter) return 'Keine Kontakt-E-Mail gefunden (Import ohne Hunter.io) – bei Bedarf „Kontaktadresse suchen“ in den Stammdaten.';
   if (!entity.website) return 'Keine Kontakt-E-Mail gefunden; ohne Website keine Hunter-Suche – bitte ergänzen.';
   if (!force && recentlySearched(entity)) return 'Keine Kontakt-E-Mail gefunden (Hunter kürzlich ohne Ergebnis gefragt).';
   const { suggestion, reason, failed } = await hunter.findGenericEmail(entity.website, { entityId: entity.id });

@@ -3,8 +3,8 @@ module.exports = [
   ['ES', 'Spanien'], ['PT', 'Portugal'], ['IT', 'Italien'], ['GR', 'Griechenland'], ['CY', 'Zypern'], ['TR', 'Türkei'],
   ['FR', 'Frankreich'], ['HR', 'Kroatien'], ['MT', 'Malta'], ['DE', 'Deutschland'], ['AT', 'Österreich'], ['CH', 'Schweiz'],
   ['AE', 'Vereinigte Arabische Emirate'], ['AU', 'Australien'], ['BE', 'Belgien'], ['BG', 'Bulgarien'], ['CZ', 'Tschechien'],
-  ['DK', 'Dänemark'], ['EG', 'Ägypten'], ['GB', 'Vereinigtes Königreich'], ['HU', 'Ungarn'], ['IE', 'Irland'], ['IL', 'Israel'],
+  ['DK', 'Dänemark'], ['EE', 'Estland'], ['EG', 'Ägypten'], ['GB', 'Vereinigtes Königreich'], ['HU', 'Ungarn'], ['IE', 'Irland'], ['IL', 'Israel'],
   ['LU', 'Luxemburg'], ['MA', 'Marokko'], ['ME', 'Montenegro'], ['MX', 'Mexiko'], ['NL', 'Niederlande'], ['NO', 'Norwegen'],
-  ['NZ', 'Neuseeland'], ['PL', 'Polen'], ['RO', 'Rumänien'], ['SE', 'Schweden'], ['SI', 'Slowenien'], ['TH', 'Thailand'],
+  ['NZ', 'Neuseeland'], ['PL', 'Polen'], ['RO', 'Rumänien'], ['SE', 'Schweden'], ['SG', 'Singapur'], ['SI', 'Slowenien'], ['SK', 'Slowakei'], ['TH', 'Thailand'],
   ['TN', 'Tunesien'], ['US', 'USA'], ['ZA', 'Südafrika'],
 ];

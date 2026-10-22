@@ -237,7 +237,8 @@ async function run(submissionId, { refresh = false } = {}) {
   // 7. Kontaktadresse, wenn die Website keine liefert: OpenStreetMap, dann Hunter.io (nur Vorschlag, Admin bestätigt)
   if (!result.ko) {
     const current = await db.one('SELECT * FROM entities WHERE id = $1', [entity.id]);
-    if (!current.contact_email) await step(sub.id, 'Kontaktadresse', () => require('../services/contacts').fallback(current));
+    // Sammelimporte (hints.no_hunter) ohne Hunter.io, damit das Monatskontingent nicht sofort aufgebraucht ist
+    if (!current.contact_email) await step(sub.id, 'Kontaktadresse', () => require('../services/contacts').fallback(current, { noHunter: Boolean((sub.hints || {}).no_hunter) }));
   }
   // 8. Offene Punkte als Anfrage-Entwurf an den Betreiber vorbereiten (Versand erst nach Freigabe im Admin)
   if (!result.ko) {

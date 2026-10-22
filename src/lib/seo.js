@@ -6,7 +6,7 @@ const { slugify } = require('./util');
 // Länder mit Artikel (für „Triathlon-Hotels in der Türkei“)
 const COUNTRY_IN = {
   CH: 'in der Schweiz', TR: 'in der Türkei', US: 'in den USA', NL: 'in den Niederlanden', AE: 'in den Vereinigten Arabischen Emiraten',
-  GB: 'im Vereinigten Königreich', CZ: 'in Tschechien', DO: 'in der Dominikanischen Republik',
+  GB: 'im Vereinigten Königreich', CZ: 'in Tschechien', SK: 'in der Slowakei', DO: 'in der Dominikanischen Republik',
 };
 
 function countryName(code) {
