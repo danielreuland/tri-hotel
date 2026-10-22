@@ -123,3 +123,10 @@ test('defaultConfirmSelection: Stufe 2 und 4, nicht strittig, nicht gefragt, kei
   assert.deepEqual(inquiries.defaultConfirmSelection([gym], factRows, ['g'], []).criteriaIds, [], 'gefragte Werte nicht doppelt');
   assert.deepEqual(inquiries.defaultConfirmSelection([gym], [{ ...factRows[0], disputed: true }], [], []).criteriaIds, []);
 });
+
+test('formValue: Mehrfachauswahl mit mehreren Becken wird nicht als Einzelwert zur Bestätigung angeboten', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const c = { scoring: { type: 'option', multi: true, points: { a: 2, b: 1 } } };
+  assert.equal(agent.formValue(c, { option: 'a', options: ['a', 'b'] }), null);
+  assert.equal(agent.formValue(c, { option: 'a', options: ['a'] }), 'a');
+});

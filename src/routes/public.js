@@ -284,7 +284,7 @@ function explainScoring(c) {
       return Object.entries(s.points)
         .filter(([k, p]) => p > 0 || (s.ko || []).includes(k))
         .map(([k, p]) => `${(s.labels && s.labels[k]) || k} = ${(s.ko || []).includes(k) && c.is_ko ? 'K.O.' : p}`)
-        .join(' · ');
+        .join(' · ') + (s.multi ? ' (mehrere möglich, es zählt die beste Angabe)' : '');
     case 'bool':
       return `ja = ${s.points_true}`;
     case 'rating':

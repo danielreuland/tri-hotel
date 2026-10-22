@@ -316,12 +316,11 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
 
 // Formularwert -> Wert-JSON. Ergebnis: undefined = unbekannt, null = ungültig
 function parseAdminValue(c, raw) {
+  const s = c.scoring;
+  if (s.type === 'option') return scoring.optionValue(s, raw); // eine Ausprägung oder Liste (Mehrfachauswahl)
   const v = raw === undefined || raw === null ? '' : String(raw).trim();
   if (v === '') return undefined;
-  const s = c.scoring;
   switch (s.type) {
-    case 'option':
-      return Object.prototype.hasOwnProperty.call(s.points || {}, v) ? { option: v } : null;
     case 'bool':
       return v === 'true' ? { bool: true } : v === 'false' ? { bool: false } : null;
     case 'rating':

@@ -1,8 +1,9 @@
 // Leistungen (einheitlicher Katalog je Objekttyp) und Suchfilter. Reine Funktionen, ohne DB.
 
-// Passt ein Faktenwert zu den Werten einer Ableitungsregel? {"option":"x"} / {"bool":true}
+// Passt ein Faktenwert zu den Werten einer Ableitungsregel? {"option":"x"} / {"options":[…]} / {"bool":true}
 function valueMatches(value, values) {
   if (!value || !Array.isArray(values)) return false;
+  if (Array.isArray(value.options)) return value.options.some((o) => values.includes(o));
   if (value.option !== undefined) return values.includes(value.option);
   if (typeof value.bool === 'boolean') return values.includes(value.bool);
   return false;

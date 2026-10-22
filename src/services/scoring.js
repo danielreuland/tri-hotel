@@ -6,6 +6,8 @@
 //
 // Scoring-Typen (criteria.scoring.type):
 //   option  {"points":{"<opt>":n,...},"ko":["<opt>"],"labels":{"<opt>":"Text"}}  Wert {"option":"<opt>"}
+//           mit "multi":true Mehrfachauswahl: Wert {"option":"<beste>","options":["<opt>",...]}; es zählt die beste
+//           Ausprägung (Ausprägungen mit 0 Punkten nur allein, z. B. „keines“). „option“ bleibt für alle Leser erhalten.
 //   bool    {"points_true":n,"points_false":0}                                   Wert {"bool":true}
 //   rating  {"min":0,"max":n}                                                     Wert {"number":x}
 //   bands   {"bands":[{"min":a,"max":b,"points":n}]}                              Wert {"number":x}
@@ -74,6 +76,29 @@ function maxFromScoring(scoring) {
   }
 }
 
+// Auswahl (eine oder mehrere Ausprägungen) -> Wert-JSON. undefined = nichts gewählt, null = unbekannte Ausprägung.
+// Ohne "multi" zählt nur die erste Ausprägung.
+function optionValue(scoring, list) {
+  const s = scoring || {};
+  const pts = s.points || {};
+  const keys = Object.keys(pts);
+  let opts = [...new Set([].concat(list === undefined || list === null ? [] : list).map((v) => String(v).trim()).filter(Boolean))];
+  if (!opts.length) return undefined;
+  if (opts.some((k) => !Object.prototype.hasOwnProperty.call(pts, k))) return null;
+  if (!s.multi) return { option: opts[0] };
+  const positive = opts.filter((k) => Number(pts[k]) > 0);
+  opts = positive.length ? positive : opts.slice(0, 1);
+  opts.sort((a, b) => Number(pts[b]) - Number(pts[a]) || keys.indexOf(a) - keys.indexOf(b));
+  return { option: opts[0], options: opts };
+}
+
+// Gewählte Ausprägungen eines Werts (Mehrfachauswahl oder einzeln)
+function selectedOptions(value) {
+  if (!value) return [];
+  if (Array.isArray(value.options) && value.options.length) return value.options.map(String);
+  return value.option === undefined || value.option === null || value.option === '' ? [] : [String(value.option)];
+}
+
 // Punkte eines Kriteriums. climateRow nur für Typ 'climate'.
 // Ergebnis: { known, points, ko, invalid }
 function pointsFor(criterion, value, climateRow) {
@@ -84,11 +109,12 @@ function pointsFor(criterion, value, climateRow) {
 
   switch (s.type) {
     case 'option': {
-      const opt = value && value.option;
-      if (opt === undefined || opt === null || opt === '') return unknown;
-      if (!s.points || !(opt in s.points)) return { ...unknown, invalid: true };
-      points = Number(s.points[opt]) || 0;
-      koHit = Array.isArray(s.ko) ? s.ko.includes(opt) : points === 0;
+      const opts = selectedOptions(value);
+      if (!opts.length) return unknown;
+      if (!s.points || opts.some((o) => !(o in s.points))) return { ...unknown, invalid: true };
+      // Mehrfachauswahl: die beste Ausprägung zählt; K.O. nur, wenn alle gewählten K.O. sind
+      points = Math.max(...opts.map((o) => Number(s.points[o]) || 0));
+      koHit = opts.every((o) => (Array.isArray(s.ko) ? s.ko.includes(o) : (Number(s.points[o]) || 0) === 0));
       break;
     }
     case 'bool': {
@@ -164,9 +190,9 @@ function describeValue(criterion, value, climateRow) {
   const s = criterion.scoring || {};
   switch (s.type) {
     case 'option': {
-      const opt = value && value.option;
-      if (!opt) return null;
-      return (s.labels && s.labels[opt]) || opt;
+      const opts = selectedOptions(value);
+      if (!opts.length) return null;
+      return opts.map((o) => (s.labels && s.labels[o]) || o).join(' · ');
     }
     case 'bool':
       if (!value || typeof value.bool !== 'boolean') return null;
@@ -338,6 +364,7 @@ function validateCriterion({ value_type, scoring, max_points }) {
       if (!scoring.points || typeof scoring.points !== 'object' || !Object.keys(scoring.points).length) {
         errors.push('Typ option braucht "points" mit mindestens einer Ausprägung.');
       }
+      if (scoring.multi !== undefined && typeof scoring.multi !== 'boolean') errors.push('"multi" muss true oder false sein.');
       for (const k of scoring.ko || []) {
         if (!scoring.points || !(k in scoring.points)) errors.push(`K.O.-Ausprägung „${k}“ fehlt in "points".`);
       }
@@ -404,6 +431,8 @@ module.exports = {
   DEFAULT_FORMULA,
   withDefaults,
   pointsFor,
+  optionValue,
+  selectedOptions,
   maxFromScoring,
   bestMonth,
   labelFor,

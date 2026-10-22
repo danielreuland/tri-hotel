@@ -103,6 +103,8 @@ function confirmCount(confirm) {
 function formValue(c, value) {
   if (!value) return null;
   if (c.scoring.type === 'bool') return typeof value.bool === 'boolean' ? String(value.bool) : null;
+  // mehrere Ausprägungen lassen sich im Antwortformular (eine Auswahl) nicht bestätigen, ohne welche zu verlieren
+  if (Array.isArray(value.options) && value.options.length > 1) return null;
   return value.option && Object.prototype.hasOwnProperty.call(c.scoring.points || {}, value.option) ? value.option : null;
 }
 

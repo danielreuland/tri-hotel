@@ -33,7 +33,7 @@ Ausführliches Konzept (Score-Formel, Kriterien, Prozesse, Phase 2): https://cla
 - `entity_rankings`: Status, Score, Vollständigkeit, K.O.-Grund **je Ranking**.
 - `entity_facts`: Faktenwerte je Objekt und Kriterium (mit Quelle, Vertrauensstufe, Fundstelle).
 - `entity_images`: Bilder mit Quelle, Lizenz, Urhebervermerk, Freigabe-Nachweis, Ablaufdatum. Öffentlich nur anzeigen, wenn `approved_at` gesetzt und `valid_until` leer oder in der Zukunft.
-- Scoring-Typen (`option`, `bool`, `rating`, `climate`) sind für alle Rankings gleich; neue Typen nur als Erweiterung von `services/scoring.js` mit Tests.
+- Scoring-Typen (`option` – optional mit `multi` für Mehrfachauswahl, `bool`, `rating`, `climate`) sind für alle Rankings gleich; neue Typen nur als Erweiterung von `services/scoring.js` mit Tests.
 
 URLs: Das Standard-Ranking liegt auf `/` und `/hotel/:slug`; jedes weitere unter `/rankings/:ranking-slug` und `/rankings/:ranking-slug/:entity-slug`. Optional zusätzlich eine Subdomain je Ranking (`rankings.subdomain`, z. B. rad.tri-hotel.de), die per Host-Header dasselbe Ranking ausliefert.
 
@@ -78,13 +78,13 @@ Reihenfolge der Umsetzung:
 ## Meldeprozess (Status in `submissions.status`)
 
 `received` → (Mail mit Link) → `verified` → `auto_check` → `admin_review` → `live`
-Nebenausgänge: `expired` (nicht bestätigt nach 72 h), `duplicate` (an bestehendes Hotel angehängt, Melder bekommt dessen Link), `rejected` (K.O. oder Admin, Mail mit Begründung).
+Nebenausgänge: `expired` (nicht bestätigt nach 72 h), `duplicate` (an bestehendes Hotel angehängt, Melder bekommt dessen Link), `rejected` (Admin oder – in Rankings mit K.O.-Kriterium – K.O., Mail mit Begründung).
 
 Auto-Prüfung:
 1. Hotelwebseite abrufen, Kriterien per LLM extrahieren – jede Angabe mit Fundstelle (URL + Textausschnitt). Kein Wert ohne Fundstelle.
 2. Geodaten: Koordinaten, Flughafen-Distanz, nächstes 25/50-m-Becken, 400-m-Bahn, Strand.
 3. Klimadaten je Monat.
-4. K.O.-Regel + Vollständigkeit prüfen, vorläufigen Score berechnen.
+4. Vollständigkeit (und K.O.-Kriterien, falls ein Ranking welche hat) prüfen, vorläufigen Score berechnen.
 5. Hotelseite als Entwurf, Meldung in Admin-Warteschlange.
 
 Mails: (1) Danke + Bestätigungslink, (2) Absage mit Begründung, (3) „Deine Hotelseite ist online“ mit Link.
@@ -94,7 +94,8 @@ Mails: (1) Danke + Bestätigungslink, (2) Absage mit Begründung, (3) „Deine H
 - `TriScore = round(0.6 * F + 0.4 * A)`; in Version 1 ohne Bewertungen gilt `TriScore = round(F)` und der Score ist als **vorläufig** markiert.
 - **F (Fakten-Score):** Punkte aus `criteria` des jeweiligen Rankings (Summe derzeit 106, Score wird normiert), normiert auf die maximal erreichbaren Punkte der *bekannten* Kriterien.
 - **Vollständigkeit:** Ins Ranking nur, wenn ≥ 70 % der Punktegewichte bekannt sind; sonst „Profil unvollständig“.
-- **K.O.:** Kein Becken ≥ 25 m im Umkreis von 5 km → kein Score, Meldung wird abgelehnt.
+- **Kein K.O. im Triathlon-Ranking** (seit Migration 054): Hotels ohne Becken ≥ 25 m im Umkreis von 5 km bleiben im Ranking, „Becken“ bekommt dann 0 Punkte. Der K.O.-Mechanismus (`criteria.is_ko`) bleibt generisch für andere Rankings.
+- **Becken** ist eine Mehrfachauswahl (`scoring.multi`): 50 m / 25 m im Hotel, 50 m / 25 m ≤ 5 km, Gegenstromanlage im Hotel – es zählt die beste Angabe, keine Addition.
 - **Klima:** Punkte abhängig vom Reisemonat; ohne Monat zählt der beste Monat.
 - **A (Athleten-Score, ab Version 2):** Bayes-Mittel `A = (C*m + Σ w_i*r_i) / (C + Σ w_i)`, C = 5, m = Plattformmittel (Start 70), Gewicht nach Alter (1,0 / 0,7 / 0,4 / 0).
 - Labels: 85–100 Top-Trainingshotel · 70–84 Sehr gut geeignet · 55–69 Geeignet · < 55 Eingeschränkt geeignet.

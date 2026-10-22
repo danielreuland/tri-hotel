@@ -27,9 +27,10 @@ INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring,
 SELECT r.id, c.id, v.code, v.label, v.value_type::criterion_value_type, v.scoring::jsonb, v.max_points, v.is_ko, v.sort_order
 FROM rankings r
 JOIN (VALUES
+-- Becken: Mehrfachauswahl, es zählt die beste Angabe; kein K.O. – ohne Becken gibt es 0 Punkte (Migration 054)
 ('swim_pool', 'swim', 'Becken', 'option',
- '{"type":"option","points":{"pool_50_hotel":15,"pool_25_hotel":10,"pool_50_within_5km":8,"pool_25_within_5km":5,"none":0},"ko":["none"]}',
- 15, true, 10),
+ '{"type":"option","multi":true,"points":{"pool_50_hotel":12,"pool_25_hotel":8,"pool_50_within_5km":6,"pool_25_within_5km":4,"counter_current_hotel":3,"none":0},"labels":{"pool_50_hotel":"50-m-Becken im Hotel","pool_25_hotel":"25-m-Becken im Hotel","pool_50_within_5km":"50-m-Becken ≤ 5 km","pool_25_within_5km":"25-m-Becken ≤ 5 km","counter_current_hotel":"Gegenstromanlage im Hotel","none":"kein Becken ≥ 25 m im Umkreis von 5 km"}}',
+ 12, false, 10),
 ('swim_lanes', 'swim', 'Reservierte Sportler-Bahnen / Leinen zu Randzeiten', 'option',
  '{"type":"option","points":{"reserved_guaranteed":6,"on_request":3,"none":0}}',
  6, false, 20),

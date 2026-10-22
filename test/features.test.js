@@ -61,3 +61,10 @@ test('Suche filtert nach Text, Land, Mindest-Score und allen gewählten Leistung
   assert.deepEqual(run({ features: ['sauna', 'pool_50'] }), ['a'], 'alle Leistungen müssen vorhanden sein');
   assert.deepEqual(run({}), ['a', 'b', 'c'], 'Reihenfolge bleibt (nur nach Score)');
 });
+
+test('valueMatches: Mehrfachauswahl – jede gewählte Ausprägung zählt (z. B. 50- und 25-m-Becken im Hotel)', () => {
+  const v = { option: 'pool_50_hotel', options: ['pool_50_hotel', 'pool_25_hotel'] };
+  assert.ok(lib.valueMatches(v, ['pool_25_hotel']));
+  assert.ok(lib.valueMatches(v, ['pool_50_hotel']));
+  assert.ok(!lib.valueMatches(v, ['counter_current_hotel']));
+});

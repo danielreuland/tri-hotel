@@ -224,3 +224,57 @@ test('Athleten-Score: Bayes-Mittel, Altersgewichte, Schalter und Mindestzahl', (
   assert.equal(on.score, 80); // 0,6*100 + 0,4*50
   assert.equal(on.provisional, false);
 });
+
+// --- Mehrfachauswahl (option + multi) und Becken ohne K.O. ---
+const poolMulti = {
+  id: 'poolm', code: 'swim_pool', label: 'Becken', max_points: 12, is_ko: false,
+  scoring: { type: 'option', multi: true,
+    points: { pool_50_hotel: 12, pool_25_hotel: 8, pool_50_within_5km: 6, pool_25_within_5km: 4, counter_current_hotel: 3, none: 0 },
+    labels: { pool_50_hotel: '50-m-Becken im Hotel', pool_25_hotel: '25-m-Becken im Hotel', pool_50_within_5km: '50-m-Becken ≤ 5 km', counter_current_hotel: 'Gegenstromanlage im Hotel', none: 'kein Becken' } },
+};
+
+test('optionValue: Mehrfachauswahl sortiert nach Punkten, beste als option; 0-Punkte-Ausprägung nur allein', () => {
+  assert.deepEqual(s.optionValue(poolMulti.scoring, ['pool_50_within_5km', 'pool_25_hotel']),
+    { option: 'pool_25_hotel', options: ['pool_25_hotel', 'pool_50_within_5km'] });
+  assert.deepEqual(s.optionValue(poolMulti.scoring, ['none', 'counter_current_hotel']), { option: 'counter_current_hotel', options: ['counter_current_hotel'] });
+  assert.deepEqual(s.optionValue(poolMulti.scoring, 'none'), { option: 'none', options: ['none'] });
+  assert.equal(s.optionValue(poolMulti.scoring, []), undefined);
+  assert.equal(s.optionValue(poolMulti.scoring, ''), undefined);
+  assert.equal(s.optionValue(poolMulti.scoring, ['pool_50_hotel', 'erfunden']), null);
+  // ohne multi: nur eine Ausprägung, Wertform wie bisher
+  assert.deepEqual(s.optionValue({ type: 'option', points: { a: 2, b: 1 } }, ['b', 'a']), { option: 'b' });
+});
+
+test('pointsFor (multi): es zählt die beste Angabe, keine Addition; alte Einzelwerte gelten weiter', () => {
+  assert.equal(s.pointsFor(poolMulti, { option: 'pool_25_hotel', options: ['pool_25_hotel', 'pool_50_within_5km'] }).points, 8);
+  assert.equal(s.pointsFor(poolMulti, { option: 'pool_50_hotel', options: ['pool_50_hotel', 'pool_25_hotel'] }).points, 12);
+  assert.equal(s.pointsFor(poolMulti, { option: 'counter_current_hotel', options: ['counter_current_hotel'] }).points, 3);
+  assert.equal(s.pointsFor(poolMulti, { option: 'pool_25_within_5km' }).points, 4);
+  assert.equal(s.pointsFor(poolMulti, { options: ['pool_25_hotel', 'erfunden'] }).invalid, true);
+  assert.equal(s.pointsFor(poolMulti, { options: [] }).known, false);
+});
+
+test('Becken ohne K.O.: kein Becken = 0 Punkte, Hotel bleibt im Ranking', () => {
+  const crit = [poolMulti, tri.find((c) => c.id === 'heated')];
+  const r = s.computeScore(crit, { poolm: { option: 'none', options: ['none'] }, heated: { bool: true } }, [], { formula: { min_completeness: 0 } });
+  assert.equal(r.ko, false);
+  assert.equal(r.koReason, null);
+  assert.equal(r.details.find((d) => d.criterionId === 'poolm').points, 0);
+  assert.ok(r.score > 0 && r.eligible, JSON.stringify({ score: r.score, eligible: r.eligible }));
+});
+
+test('K.O. bei Mehrfachauswahl (anderes Ranking, z. B. Hyrox): nur wenn alle gewählten Ausprägungen K.O. sind', () => {
+  const sled = { id: 'sled', code: 'sled_track', label: 'Schlittenbahn', max_points: 5, is_ko: true,
+    scoring: { type: 'option', multi: true, points: { indoor_25m: 5, outdoor: 3, none: 0 }, ko: ['none'] } };
+  assert.equal(s.pointsFor(sled, { options: ['none'] }).ko, true);
+  assert.equal(s.pointsFor(sled, { options: ['outdoor', 'indoor_25m'] }).ko, false);
+  assert.equal(s.pointsFor(sled, { options: ['outdoor', 'indoor_25m'] }).points, 5);
+  assert.equal(s.describeValue(sled, { options: ['indoor_25m', 'outdoor'] }), 'indoor_25m · outdoor');
+});
+
+test('describeValue/validateCriterion: Mehrfachauswahl', () => {
+  assert.equal(s.describeValue(poolMulti, { option: 'pool_50_hotel', options: ['pool_50_hotel', 'pool_25_hotel'] }), '50-m-Becken im Hotel · 25-m-Becken im Hotel');
+  assert.equal(s.describeValue(poolMulti, { option: 'none' }), 'kein Becken');
+  assert.deepEqual(s.validateCriterion({ value_type: 'option', scoring: poolMulti.scoring, max_points: 12 }).errors, []);
+  assert.ok(s.validateCriterion({ value_type: 'option', scoring: { ...poolMulti.scoring, multi: 'ja' }, max_points: 12 }).errors.length);
+});

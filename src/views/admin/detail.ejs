@@ -3,6 +3,7 @@
   function valueString(c, fact) {
     if (!fact) return '';
     var v = fact.value || {};
+    if (Array.isArray(v.options)) return v.options;
     if (v.option !== undefined) return v.option;
     if (v.bool !== undefined) return String(v.bool);
     if (v.number !== undefined) return String(v.number);
@@ -274,6 +275,11 @@
                 <td style="min-width:190px">
                   <% if (s.type === 'climate') { %>
                     <%= describeValue(c, null, climateRow) || 'keine Klimadaten' %><br><small class="muted"><%= result.month ? 'bester Monat: ' + MONTHS[result.month - 1] : '' %></small>
+                  <% } else if (s.type === 'option' && s.multi) { var curList = [].concat(cur || []); %>
+                    <div class="multi-opts" data-multi>
+                      <% Object.keys(s.points).forEach(function (k) { %><label class="inline" style="display:block;margin:0"><input type="checkbox" name="<%= name %>[value][]" value="<%= k %>" data-value <%= curList.indexOf(k) >= 0 ? 'checked' : '' %>> <%= (s.labels && s.labels[k]) || k %> (<%= s.points[k] %>)</label><% }) %>
+                      <small class="muted">mehrere möglich – es zählt die beste Angabe; nichts angehakt = unbekannt</small>
+                    </div>
                   <% } else if (s.type === 'option') { %>
                     <select name="<%= name %>[value]" data-value>
                       <option value="">unbekannt</option>

@@ -25,6 +25,11 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
   function collect() {
     var facts = {};
     form.querySelectorAll('tr[data-crit]').forEach(function (row) {
+      var multi = row.querySelector('[data-multi]');
+      if (multi) {
+        facts[row.dataset.crit] = Array.prototype.map.call(multi.querySelectorAll('[data-value]:checked'), function (b) { return b.value; });
+        return;
+      }
       var input = row.querySelector('[data-value]');
       if (input) facts[row.dataset.crit] = input.value;
     });
