@@ -219,7 +219,16 @@ async function nearQuietKm(point, radiusKm) {
   return elements.filter((el) => paved(el.tags || {})).reduce((s, el) => s + lengthKm(el.geometry), 0);
 }
 
-// auto-Regel „bike_area“ für ein Objekt. ctx.siteId: Regionen der Site
+// Gebietswertung (0 bis Summe der Teilwertungen, Standard 6) auf die Skala des Kriteriums umrechnen (z. B. Admin-Einstufung 0–10)
+function toCriterionScale(total, rule, scoring) {
+  const max = rule.max || { network: 2, traffic: 1, terrain: 2, routes: 1 };
+  const full = Object.values(max).reduce((s, v) => s + Number(v), 0) || 6;
+  const lo = Number((scoring || {}).min ?? 0);
+  const hi = Number((scoring || {}).max ?? full);
+  return Math.max(lo, Math.min(hi, Math.round(lo + (total / full) * (hi - lo))));
+}
+
+// auto-Regel „bike_area“ für ein Objekt. ctx.siteId: Regionen der Site, ctx.criterion: Kriterium (für die Skala)
 async function evaluate(point, rule, ctx = {}) {
   const regions = ctx.siteId ? await require('./areas').regions(ctx.siteId) : [];
   const a = areaFor(point, regions, rule);
@@ -231,8 +240,9 @@ async function evaluate(point, rule, ctx = {}) {
   } catch (err) {
     console.error('[bike-area] Umkreis', err.message);
   }
-  const value = Math.max(0, Math.min(6, Math.round(score + adjust.value)));
-  const text = `${describe(area, merged, rule)} Gebiet ${score} von 6${adjust.value ? `, am Hotel ${adjust.value} (${adjust.reason})` : ''} → Vorschlag ${value}.`;
+  const scoring = (ctx.criterion && ctx.criterion.scoring) || {};
+  const value = toCriterionScale(score + adjust.value, rule, scoring);
+  const text = `${describe(area, merged, rule)} Gebiet ${score} von 6${adjust.value ? `, am Hotel ${adjust.value} (${adjust.reason})` : ''} → Vorschlag ${value} (Skala ${scoring.min ?? 0}–${scoring.max ?? 6}).`;
   const info = { areaKey: area.key, areaName: area.name, subscores: merged, labels: rule.labels, max: rule.max, areaScore: score, adjust: adjust.value, adjustReason: adjust.reason, suggestion: value };
   return { value: { number: value }, evidenceUrl: 'https://www.openstreetmap.org', evidenceText: text, info, infoText: text };
 }
@@ -267,8 +277,8 @@ async function applyToEntities(area, adminId) {
     const c = crits.find((x) => x.ranking_id === e.ranking_id);
     if (!c) continue;
     const info = e.info || {};
-    const value = Math.max(0, Math.min(6, Math.round(score + (Number(info.adjust) || 0))));
-    const text = `${describe(area, merged, c.rule)} Gebiet ${score} von 6${info.adjust ? `, am Hotel ${info.adjust} (${info.adjustReason})` : ''} → Vorschlag ${value}.`;
+    const value = toCriterionScale(score + (Number(info.adjust) || 0), c.rule, c.scoring);
+    const text = `${describe(area, merged, c.rule)} Gebiet ${score} von 6${info.adjust ? `, am Hotel ${info.adjust} (${info.adjustReason})` : ''} → Vorschlag ${value} (Skala ${(c.scoring || {}).min ?? 0}–${(c.scoring || {}).max ?? 6}).`;
     await db.query(
       `UPDATE entities SET attributes = jsonb_set(attributes, '{geo_info,bike_terrain}', $2::jsonb), updated_at = now() WHERE id = $1`,
       [e.id, JSON.stringify({ ...info, subscores: merged, areaScore: score, suggestion: value, text })]);
@@ -284,4 +294,4 @@ async function applyToEntities(area, adminId) {
   return changed;
 }
 
-module.exports = { areaFor, roadMetrics, statsMetrics, statsQuery, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };
+module.exports = { toCriterionScale, areaFor, roadMetrics, statsMetrics, statsQuery, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };

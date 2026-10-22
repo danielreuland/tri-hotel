@@ -442,7 +442,7 @@ async function suggestFacts(point, criteria, ctx = {}) {
     for (const rule of [].concat(auto)) {
       let r = null;
       try {
-        r = await evaluateRule(point, rule, ctx);
+        r = await evaluateRule(point, rule, { ...ctx, criterion: c });
       } catch (err) {
         console.error('[geo]', c.code, rule.source, err.message);
       }

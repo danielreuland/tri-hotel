@@ -87,3 +87,11 @@ test('statsQuery: Summen statt Geometrie, alle Gruppen enthalten', () => {
   for (const k of ['quiet=sum(length())', 'secondary=sum(length())', 'main=sum(length())', 'routes=count(relations)', 'passes=count(nodes)', 'peak_max=max']) assert.ok(q.includes(k), k);
   assert.ok(!/out tags geom/.test(q));
 });
+
+test('toCriterionScale: Gebietswertung 0–6 auf die Skala des Kriteriums (z. B. 0–10), begrenzt', () => {
+  assert.equal(bike.toCriterionScale(6, rule, { min: 0, max: 10 }), 10);
+  assert.equal(bike.toCriterionScale(3, rule, { min: 0, max: 10 }), 5);
+  assert.equal(bike.toCriterionScale(4.5, rule, { min: 0, max: 10 }), 8);
+  assert.equal(bike.toCriterionScale(-1, rule, { min: 0, max: 10 }), 0);
+  assert.equal(bike.toCriterionScale(5, rule, {}), 5, 'ohne Skala bleibt es 0–6');
+});
