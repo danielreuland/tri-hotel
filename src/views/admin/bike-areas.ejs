@@ -1,6 +1,6 @@
 <%- include('../partials/admin-head') %>
 <h1>Radreviere</h1>
-<p class="muted">Das Radrevier wird je Gebiet bewertet (deine Regionen, sonst Kacheln von ca. 25 km) – Hotels im selben Gebiet bekommen dieselbe Grundwertung, dazu höchstens −1 bei kaum ruhigen Straßen direkt am Hotel. Quellen: OpenStreetMap (Straßennetz, Radrouten) und Höhendaten (OpenTopoData). Übersteuerst du eine Teilwertung, werden die noch unbestätigten Vorschläge aller Hotels des Gebiets angeglichen; von dir bestätigte Werte bleiben, die Abweichung siehst du unten.</p>
+<p class="muted">Das Radrevier wird je Gebiet bewertet (deine Regionen, sonst Kacheln mit 50 km Radius) – Hotels im selben Gebiet bekommen dieselbe Grundwertung, dazu höchstens −1 bei kaum ruhigen Straßen direkt am Hotel. Quellen: OpenStreetMap (Straßennetz, Radrouten) und Höhendaten (OpenTopoData). Übersteuerst du eine Teilwertung, werden die noch unbestätigten Vorschläge aller Hotels des Gebiets angeglichen; von dir bestätigte Werte bleiben, die Abweichung siehst du unten.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (flashError) { %><div class="errors"><%= flashError %></div><% } %>
 <% var L = rule.labels || { network: 'Netz', traffic: 'Verkehr', terrain: 'Flach & Berg', routes: 'Routen' }; var MAX = rule.max || { network: 2, traffic: 1, terrain: 2, routes: 1 }; %>
@@ -13,6 +13,7 @@
     <p class="muted" style="margin:0 0 8px"><small>
       <%= r.networkKm !== undefined ? r.networkKm + ' km ruhige Straßen (davon ' + r.quietKm + ' km Nebenstraßen/Radwege)' : '' %>
       <%= r.quietShare !== undefined ? ' · ruhiger Anteil ' + Math.round(r.quietShare * 100) + ' % · Hauptstraßen ' + r.mainKm + ' km' : '' %>
+      <%= m.population ? ' · ' + m.population.density + ' Einwohner/km² Land (' + m.population.population.toLocaleString('de-DE') + ' in ' + m.population.places + ' Orten)' : '' %>
       <%= r.routes !== undefined ? ' · ' + r.routes + ' Radrouten' : '' %>
       <%= t ? ' · Höhen ' + t.minM + '–' + t.maxM + ' m, flache Abschnitte ' + Math.round(t.flatShare * 100) + ' %' : ' · keine Höhendaten' %></small></p>
     <form method="post" action="/admin/radreviere/<%= a.id %>/uebersteuern" class="filters" style="align-items:flex-end;margin:0">

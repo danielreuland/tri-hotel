@@ -95,3 +95,42 @@ test('toCriterionScale: Gebietswertung 0–6 auf die Skala des Kriteriums (z. B.
   assert.equal(bike.toCriterionScale(-1, rule, { min: 0, max: 10 }), 0);
   assert.equal(bike.toCriterionScale(5, rule, {}), 5, 'ohne Skala bleibt es 0–6');
 });
+
+test('parsePopulation: Schreibweisen aus OSM, nicht lesbar → null', () => {
+  assert.equal(bike.parsePopulation('12345'), 12345);
+  assert.equal(bike.parsePopulation('12 345'), 12345);
+  assert.equal(bike.parsePopulation('1.234.567'), 1234567);
+  assert.equal(bike.parsePopulation('8500 (2021)'), 8500);
+  assert.equal(bike.parsePopulation('ca. 500'), null);
+  assert.equal(bike.parsePopulation(undefined), null);
+});
+
+test('populationMetrics: Dichte je km² Landfläche, Meer zählt nicht', () => {
+  const places = [{ tags: { population: '50000' } }, { tags: { population: '28 540' } }, { tags: { population: 'unbekannt' } }];
+  const land = bike.populationMetrics(places, 10, 1);
+  assert.equal(land.population, 78540);
+  assert.equal(land.places, 2);
+  assert.equal(land.density, 250);
+  assert.equal(bike.populationMetrics(places, 10, 0.5).density, 500, 'Insel: halbe Landfläche, doppelte Dichte');
+});
+
+test('subscores: Verkehr über Bevölkerungsdichte (kleiner ist besser), ohne Dichte über ruhigen Anteil', () => {
+  const r = { ...rule, density: [50, 300], max: { network: 1, traffic: 2, terrain: 2, routes: 1 } };
+  const roads = { networkKm: 0, quietShare: 0.8, routes: 0 };
+  assert.equal(bike.subscores({ roads, terrain: null, population: { density: 27 } }, r).traffic, 2, 'Fuerteventura');
+  assert.equal(bike.subscores({ roads, terrain: null, population: { density: 223 } }, r).traffic, 1, 'Mallorca');
+  assert.equal(bike.subscores({ roads, terrain: null, population: { density: 400 } }, r).traffic, 0, 'Ballungsraum');
+  assert.equal(bike.subscores({ roads, terrain: null, population: { density: null } }, r).traffic, 2, 'Ersatz: ruhiger Anteil 80 %');
+  assert.equal(bike.subscores({ roads, terrain: null }, rule).traffic, rule.max ? rule.max.traffic : 1, 'Regel ohne density: wie bisher');
+});
+
+test('subscores: gleiches Schema für ein zweites Ranking mit eigenen Schwellen (nichts Triathlon-spezifisch)', () => {
+  const gravel = { density: [10, 40], max: { network: 3, traffic: 3, terrain: 0, routes: 0 }, network_km: [100, 300] };
+  const s = bike.subscores({ roads: { networkKm: 350, quietShare: 0.1, routes: 0 }, terrain: null, population: { density: 25 } }, gravel);
+  assert.equal(s.network, 3);
+  assert.equal(s.traffic, 1.5);
+});
+
+test('statsQuery: Orte mit Einwohnerzahl als Knoten', () => {
+  assert.match(bike.statsQuery(39.84, 3.12, 50), /node\["place"~"\^\(city\|town\|village\)\$"\]\["population"\]\(around:50000,39\.84,3\.12\); out tags;/);
+});

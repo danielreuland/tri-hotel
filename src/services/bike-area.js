@@ -1,7 +1,8 @@
 // Radrevier je Gebiet (Region, sonst Rasterkachel): Profil aus OpenStreetMap und Höhendaten, zwischengespeichert in bike_areas.
 // Teilwertungen (Schwellen aus der Regel in criteria.scoring.auto, source „bike_area“):
 //   network  – km ruhiger, asphaltierter Nebenstraßen (tertiary, unclassified, cycleway) + halbe Länge der secondary
-//   traffic  – Anteil ruhiger Straßen am gesamten befahrbaren Netz (Ersatz für Verkehrszählungen, die OSM nicht hat)
+//   traffic  – Bevölkerungsdichte je km² Landfläche (OSM-Orte mit Einwohnerzahl; dünn besiedelt = wenig Verkehr). Ohne Dichte:
+//              Anteil ruhiger Straßen am befahrbaren Netz (Ersatz für Verkehrszählungen, die OSM nicht hat)
 //   terrain  – flache Strecken vorhanden UND Anstiege vorhanden
 //   routes   – ausgeschilderte Radrouten (route=bicycle)
 // Hotel-Anpassung: kaum ruhige Straßen im direkten Umkreis → −1. Ergebnis ist ein Vorschlag (Vertrauensstufe 4).
@@ -103,11 +104,38 @@ function step(value, [low, high], points) {
   return value >= high ? points : value >= low ? points / 2 : 0;
 }
 
+// kleiner ist besser (z. B. Bevölkerungsdichte)
+function stepDown(value, [low, high], points) {
+  return value <= low ? points : value <= high ? points / 2 : 0;
+}
+
+// Einwohnerzahl aus OSM-Tag („12345“, „12 345“, „1.234.567“, „12345 (2021)“) – nicht lesbar → null
+function parsePopulation(v) {
+  const m = String(v || '').match(/^\s*(\d{1,3}(?:[ .,'’]\d{3})+|\d+)/);
+  return m ? Number(m[1].replace(/[ .,'’]/g, '')) : null;
+}
+
+// Bevölkerung im Gebiet: Summe der Orte (city/town/village) mit Einwohnerzahl, Dichte je km² Landfläche (Meer zählt nicht)
+function populationMetrics(places, radiusKm, landShare) {
+  let pop = 0;
+  let count = 0;
+  for (const p of places || []) {
+    const n = parsePopulation((p.tags || {}).population);
+    if (n === null) continue;
+    pop += n;
+    count++;
+  }
+  const share = landShare === null || landShare === undefined ? 1 : Math.max(0.05, Number(landShare));
+  const landKm2 = Math.PI * radiusKm * radiusKm * share;
+  return { population: pop, places: count, landShare: Math.round(share * 100) / 100, density: Math.round(pop / landKm2) };
+}
+
 // Teilwertungen aus den Kennzahlen (Schwellen aus der Regel)
 function subscores(metrics, rule) {
   const max = rule.max || { network: 2, traffic: 1, terrain: 2, routes: 1 };
   const r = metrics.roads || {};
   const t = metrics.terrain;
+  const p = metrics.population;
   const flat = Boolean(t && t.flatShare >= (rule.flat_share || 0.2));
   // Anstiege: Höhenunterschied im Raster oder höchster Pass/Gipfel aus OSM über dem tiefsten Punkt (das Raster trifft Gipfel selten)
   const climb = rule.climb_m || 300;
@@ -116,7 +144,9 @@ function subscores(metrics, rule) {
   const climbs = relief >= climb || peakRise >= climb || (r.passes || 0) >= (rule.min_passes || 3);
   return {
     network: step(r.networkKm || 0, rule.network_km || [150, 400], max.network),
-    traffic: step(r.quietShare || 0, rule.quiet_share || [0.6, 0.8], max.traffic),
+    traffic: p && p.density !== null && p.density !== undefined && rule.density
+      ? stepDown(Number(p.density), rule.density, max.traffic)
+      : step(r.quietShare || 0, rule.quiet_share || [0.6, 0.8], max.traffic),
     terrain: t || r.passes ? (flat && climbs ? max.terrain : flat || climbs ? max.terrain / 2 : 0) : null,
     routes: step(r.routes || 0, rule.routes || [1, 5], max.routes),
   };
@@ -145,7 +175,7 @@ function describe(area, merged, rule) {
   const t = m.terrain;
   const parts = [
     `${labels.network} ${merged.network} (${r.networkKm ?? '?'} km ruhige Straßen)`,
-    `${labels.traffic} ${merged.traffic} (ruhiger Anteil ${Math.round((r.quietShare || 0) * 100)} %)`,
+    `${labels.traffic} ${merged.traffic} (${m.population && rule.density ? `${m.population.density} Einwohner/km²` : `ruhiger Anteil ${Math.round((r.quietShare || 0) * 100)} %`})`,
     `${labels.terrain} ${merged.terrain ?? '–'}${t ? ` (${t.minM}–${Math.max(t.maxM, r.peakMaxM || 0)} m, flach ${Math.round(t.flatShare * 100)} %${r.passes ? `, ${r.passes} Pässe${r.passMaxM ? ` bis ${r.passMaxM} m` : ''}` : ''})` : ''}`,
     `${labels.routes} ${merged.routes} (${r.routes ?? 0} Radrouten)`,
   ];
@@ -169,21 +199,26 @@ way["highway"="secondary"]${at}; make stat secondary=sum(length()); out;
 way["highway"~"^(${MAIN.join('|')})$"]${at}; make stat main=sum(length()); out;
 rel["route"="bicycle"]${at}; make stat routes=count(relations); out;
 node["mountain_pass"="yes"]${at}; make stat passes=count(nodes), pass_max=max(number(t["ele"])); out;
-node["natural"="peak"]["ele"]${at}; make stat peak_max=max(number(t["ele"])); out;`;
+node["natural"="peak"]["ele"]${at}; make stat peak_max=max(number(t["ele"])); out;
+node["place"~"^(city|town|village)$"]["population"]${at}; out tags;`;
 }
 
 async function computeArea(a, rule) {
   // Summen rechnet der Server – auch bei 50 km Radius nur wenige Bytes, dauert aber 1–3 Minuten
   const { elements = [] } = await geo.overpass(statsQuery(a.lat, a.lng, a.radiusKm), { timeoutMs: 280000 });
-  const roads = statsMetrics(Object.assign({}, ...elements.map((e) => e.tags || {})));
+  // Einwohnerzahlen kommen als Ortsknoten (Summe auf unserer Seite – „number()“ scheitert an Werten wie „12 345“)
+  const places = elements.filter((e) => e.type === 'node');
+  const roads = statsMetrics(Object.assign({}, ...elements.filter((e) => e.type !== 'node').map((e) => e.tags || {})));
   let terrain = null;
+  let landShare = null;
   try {
     const t = await geo.terrain({ lat: a.lat, lng: a.lng }, a.radiusKm, { steps: 5 });
     terrain = t && terrainMetrics(t.grid, rule);
+    if (t && t.grid && t.grid.length) landShare = t.grid.filter((g) => g.e !== null).length / t.grid.length;
   } catch (err) {
     console.error('[bike-area] Höhen', a.key, err.message);
   }
-  return { roads, terrain };
+  return { roads, terrain, population: populationMetrics(places, a.radiusKm, landShare) };
 }
 
 async function getArea(a, rule, { force = false } = {}) {
@@ -294,4 +329,4 @@ async function applyToEntities(area, adminId) {
   return changed;
 }
 
-module.exports = { toCriterionScale, areaFor, roadMetrics, statsMetrics, statsQuery, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };
+module.exports = { parsePopulation, populationMetrics, toCriterionScale, areaFor, roadMetrics, statsMetrics, statsQuery, terrainMetrics, subscores, areaScore, hotelAdjust, describe, getArea, evaluate, lengthKm, bikeCriteria, entitiesOf, applyToEntities };
