@@ -102,14 +102,15 @@ async function collect() {
   if (paying.length) {
     for (const r of await db.many(
       `SELECT e.id AS entity_id, e.name, ${latestSub} AS sub_id,
-              COALESCE(array_agg(DISTINCT l.program_id) FILTER (WHERE l.kind = 'booking'), '{}') AS have
+              COALESCE(array_agg(DISTINCT l.program_id) FILTER (WHERE l.kind = 'booking'), '{}')
+                || COALESCE((SELECT array_agg(a.program_id) FROM entity_link_absences a WHERE a.entity_id = e.id), '{}') AS have
          FROM entities e JOIN entity_rankings er ON er.entity_id = e.id AND er.status = 'live'
          LEFT JOIN entity_links l ON l.entity_id = e.id
         GROUP BY e.id ORDER BY lower(e.name)`)) {
       const missing = paying.filter((p) => !p.auto_search && !r.have.includes(p.id));
       if (!missing.length) continue;
       push({ source: 'partner_link', source_key: `partner-link:${r.entity_id}`, title: `${r.name} – Partnerlink prüfen / generieren`,
-        detail: [{ level: 'todo', text: `${missing.map((p) => p.name).join(', ')}: Link fehlt – Seite des Hotels suchen und eintragen (gibt es keine: Karte auf „Erledigt“)` }],
+        detail: [{ level: 'todo', text: `${missing.map((p) => p.name).join(', ')}: Link fehlt – Seite des Hotels suchen und eintragen; gibt es keine: beim Hotel „nicht vorhanden“ anhaken` }],
         fingerprint: `partner:${missing.map((p) => p.code).join(',')}`, link: detailLink(r.sub_id, 'partnerlinks'), entity_id: r.entity_id });
     }
   }

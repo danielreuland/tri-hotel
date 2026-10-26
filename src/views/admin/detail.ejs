@@ -300,6 +300,7 @@
               <div><label>Seite mit Preisen / Buchung<% if (p.id_url) { %> <small class="muted">– Adresse oder nur die Nummer</small><% } %></label><input name="links[<%= p.id %>][booking]" type="<%= p.id_url ? 'text' : 'url' %>" placeholder="<%= p.id_url ? 'https://… oder z. B. 793891' : 'https://' %>" value="<%= get('booking') %>"></div>
               <div><label>Bewertungsseite <small class="muted">optional</small></label><input name="links[<%= p.id %>][reviews]" type="url" placeholder="https://" value="<%= get('reviews') %>"></div>
             </div>
+            <% if (!get('booking')) { %><label class="inline" style="margin:4px 0"><input type="checkbox" name="links[<%= p.id %>][absent]" <%= partnerAbsent.indexOf(p.id) >= 0 ? 'checked' : '' %>> <span><small>Bei <%= p.name %> nicht vorhanden – nicht mehr nachfragen</small></span></label><% } %>
             <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener"><%= /google\./.test(p.search_url) ? p.name + '-Seite des Hotels suchen ↗' : 'Bei ' + p.name + ' suchen ↗' %></a></small><% } %>
           </fieldset>
         <% }) %>

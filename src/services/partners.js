@@ -85,7 +85,8 @@ function groupLinks(links, slug) {
   return groups;
 }
 
-// Admin: Links eines Objekts speichern (leer = löschen). input: { [programId]: { booking, reviews } }
+// Admin: Links eines Objekts speichern (leer = löschen). input: { [programId]: { booking, reviews, absent } }
+// absent = „gibt es nicht“ (Objekt beim Anbieter nicht gelistet) – nur ohne Preis-Link; ein Link hebt den Vermerk auf.
 async function saveLinks(entityId, input, adminId) {
   const progs = await programs();
   const errors = [];
@@ -106,6 +107,16 @@ async function saveLinks(entityId, input, adminId) {
          ON CONFLICT (entity_id, program_id, kind) DO UPDATE SET url = EXCLUDED.url, updated_at = now()`,
         [entityId, p.id, kind, url, adminId]);
       changes.push({ program: p.code, kind, old: old ? old.url : null, new: url });
+    }
+    const hasBooking = Boolean(await db.one(`SELECT 1 FROM entity_links WHERE entity_id = $1 AND program_id = $2 AND kind = 'booking'`, [entityId, p.id]));
+    const wantAbsent = !hasBooking && ((input || {})[p.id] || {}).absent === 'on';
+    const wasAbsent = Boolean(await db.one('SELECT 1 FROM entity_link_absences WHERE entity_id = $1 AND program_id = $2', [entityId, p.id]));
+    if (wantAbsent && !wasAbsent) {
+      await db.query('INSERT INTO entity_link_absences (entity_id, program_id, created_by) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [entityId, p.id, adminId]);
+      changes.push({ program: p.code, kind: 'absent', old: null, new: true });
+    } else if (!wantAbsent && wasAbsent) {
+      await db.query('DELETE FROM entity_link_absences WHERE entity_id = $1 AND program_id = $2', [entityId, p.id]);
+      changes.push({ program: p.code, kind: 'absent', old: true, new: null });
     }
   }
   return { errors, changes };

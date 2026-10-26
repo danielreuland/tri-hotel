@@ -298,6 +298,7 @@ async function loadDetail(id) {
   // Partnerlinks (alle Programme, auch inaktive, damit Links vorbereitet werden können)
   const partnerPrograms = entity ? await partners.programs() : [];
   const partnerLinks = entity ? await db.many('SELECT * FROM entity_links WHERE entity_id = $1', [entity.id]) : [];
+  const partnerAbsent = entity ? (await db.many('SELECT program_id FROM entity_link_absences WHERE entity_id = $1', [entity.id])).map((r) => r.program_id) : [];
   // Verknüpfte Quellen (z. B. Camp-Anbieter dieses Objekts) für Kriterien mit link_source
   const campLinks = entity && criteria.some((c) => c.link_source === 'camp_providers') ? await require('../services/camps').forEntity(entity.id) : [];
   // Camp-Anbieter in diesem Objekt pflegen (Auswahl aller Anbieter der Site)
@@ -317,7 +318,7 @@ async function loadDetail(id) {
   return {
     basicsMissing, BASICS_KEYS: basics.KEYS, placesEnabledForBasics: places.enabled(),
     mailThread, mailPersonas, mailDefaultPersona,
-    campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
+    partnerAbsent, campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
     confirmFeatureList, offerFeatureCount, confirmDefaults,
@@ -557,7 +558,7 @@ router.post('/meldungen/:id/partnerlinks', wrap(async (req, res, next) => {
   if (!t) return next();
   const { errors, changes } = await partners.saveLinks(t.entity.id, req.body.links, req.session.admin.id);
   if (changes.length) await logAction(req.session.admin.id, 'entity', t.entity.id, 'edit_partner_links', { changes });
-  const msg = errors.length ? errors.join(' ') : changes.length ? `${changes.length} Partnerlink(s) gespeichert` : 'Keine Änderung';
+  const msg = errors.length ? errors.join(' ') : changes.length ? `Partnerlinks gespeichert (${changes.length} Änderung${changes.length === 1 ? "" : "en"})` : 'Keine Änderung';
   res.redirect(`/admin/meldungen/${t.sub.id}?${errors.length ? 'fehler' : 'ok'}=${encodeURIComponent(msg)}#partnerlinks`);
 }));
 
