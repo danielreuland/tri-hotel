@@ -86,10 +86,12 @@
   <section class="camp-box card" style="margin-top:20px">
     <h2 style="margin-top:0">Trainingscamps in diesem <%= ranking.entity_label_sg %></h2>
     <p class="muted" style="margin-top:0">Diese Anbieter führen hier laut eigener Website Camps durch:</p>
-    <ul class="chips">
-      <% campProviders.forEach(function (c) { %><li style="list-style:none"><a class="chip" href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %> <span class="muted">· <%= CAMP_MODELS[c.model] %></span></a><% if (c.lead_active) { %> <a class="chip chip-cta" href="/trainingscamp/anbieter/<%= c.slug %>?hotel=<%= entity.id %>#anfrage">Camp hier anfragen</a><% } %></li><% }) %>
-    </ul>
-    <div class="filters" style="margin:12px 0 0">
+    <%# Anbieter und Anfrage-Knöpfe in einer Reihe, alle gleich breit und hoch (Handy: untereinander) %>
+    <div class="camp-actions">
+      <% campProviders.forEach(function (c) { %>
+        <a class="btn secondary" href="/trainingscamp/anbieter/<%= c.slug %>"><%= c.name %> <span class="muted">· <%= CAMP_MODELS[c.model] %></span></a>
+        <% if (c.lead_active) { %><a class="btn secondary" href="/trainingscamp/anbieter/<%= c.slug %>?hotel=<%= entity.id %>#anfrage">Camp bei <%= c.name %> anfragen</a><% } %>
+      <% }) %>
       <a class="btn cta" href="/trainingscamp/angebote?hotel=<%= entity.slug %>&amp;gruppe=1" data-goal="Vereinscamp-Anfrage">Vereinscamp in diesem <%= ranking.entity_label_sg %> anfragen</a>
       <a class="btn secondary" href="/trainingscamp/angebote?hotel=<%= entity.slug %>">Mit Freunden anfragen</a>
     </div>

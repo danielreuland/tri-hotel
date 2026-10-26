@@ -549,3 +549,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .geo-candidate small { flex: 1; }
 .geo-dot, .geo-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent, #0d7a6f); color: #fff; font-weight: 700; font-size: 13px; }
 .geo-click-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; }
+
+/* Hotelseite: Camp-Anbieter und Anfrage-Knöpfe gleich groß */
+.camp-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 4px; }
+.camp-actions .btn { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 6px; min-height: 52px; text-align: center; line-height: 1.25; }
+.camp-actions .btn .muted { font-weight: 500; }
