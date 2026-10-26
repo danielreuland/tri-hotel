@@ -46,17 +46,35 @@ async function linksFor(entityOrId) {
   const entity = typeof entityOrId === 'object' ? entityOrId : await db.one('SELECT id, name, city FROM entities WHERE id = $1', [entityOrId]);
   if (!entity) return [];
   const rows = await db.many(
-    `SELECT l.id, l.kind, l.url, p.code, p.name, p.label_booking, p.label_reviews, p.link_params, p.link_template, p.sort_order
+    `SELECT l.id, l.kind, l.url, p.code, p.name, p.label_booking, p.label_reviews, p.link_params, p.link_template, p.sort_order,
+            p.direct_link, p.trademark_notice
        FROM entity_links l JOIN partner_programs p ON p.id = l.program_id
       WHERE l.entity_id = $1 AND p.status = 'active'`, [entity.id]);
   for (const p of await db.many(`SELECT * FROM partner_programs WHERE status = 'active' AND auto_search IS NOT NULL`)) {
     if (rows.some((r) => r.code === p.code && r.kind === p.auto_search)) continue;
     const url = searchUrl(p, entity);
-    if (url) rows.push({ id: null, kind: p.auto_search, url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, auto: true });
+    if (url) rows.push({ id: null, kind: p.auto_search, url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, direct_link: p.direct_link, trademark_notice: p.trademark_notice, auto: true });
   }
   rows.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'de') || a.kind.localeCompare(b.kind));
   for (const r of rows) r.monetized = monetized(r);
   return rows;
+}
+
+// Links je Anbieter gruppieren (Hotelseite, Vergleich): href je Art – über /go oder direkt (direct_link, Zählung per Beacon)
+function groupLinks(links, slug) {
+  const groups = [];
+  for (const l of links) {
+    let g = groups.find((x) => x.code === l.code);
+    if (!g) {
+      groups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized,
+        trademark_notice: l.trademark_notice || null, kinds: [], href: {}, count: {} }));
+    }
+    g.kinds.push(l.kind);
+    const go = `/go/${slug}/${l.code}${l.kind === 'reviews' ? '/bewertungen' : ''}`;
+    g.href[l.kind] = l.direct_link ? buildUrl(l, l.url) : go;
+    g.count[l.kind] = l.direct_link ? `${go}/klick` : null;
+  }
+  return groups;
 }
 
 // Admin: Links eines Objekts speichern (leer = löschen). input: { [programId]: { booking, reviews } }
@@ -124,4 +142,4 @@ async function stats(days = 30) {
   return { byProgram, top };
 }
 
-module.exports = { KINDS, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };

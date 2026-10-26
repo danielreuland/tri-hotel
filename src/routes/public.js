@@ -205,12 +205,7 @@ async function renderEntity(req, res, ranking, slug) {
   // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
   // Partnerlinks je Anbieter gruppiert (alphabetisch, ohne Einfluss auf Score/Reihenfolge)
-  const partnerGroups = [];
-  for (const l of await partners.linksFor(entity)) {
-    let g = partnerGroups.find((x) => x.code === l.code);
-    if (!g) partnerGroups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized, kinds: [] }));
-    g.kinds.push(l.kind);
-  }
+  const partnerGroups = partners.groupLinks(await partners.linksFor(entity), entity.slug);
   const reviewCfg = reviewsService.config(ranking);
   const reviewList = reviewCfg.enabled ? await reviewsService.published(entity.id, ranking.id) : [];
   // Galerie: eigene/freigegebene Objektbilder, dann Gästefotos aus Bewertungen; ohne beides Beispielbilder der Region (mit Hinweis)

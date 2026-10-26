@@ -49,7 +49,7 @@
     </div>
     <div class="book-actions">
       <% if (primary) { %>
-        <a class="btn cta large" href="/go/<%= entity.slug %>/<%= primary.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen <small>bei <%= primary.name %> ↗</small></a>
+        <a class="btn cta large" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen <small>bei <%= primary.name %> ↗</small></a>
       <% } else if (entity.website) { %>
         <a class="btn cta large" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Direkt beim <%= ranking.entity_label_sg %> buchen ↗</a>
       <% } %>
@@ -57,15 +57,17 @@
     </div>
     <% if (others.length || (primary && entity.website)) { %>
       <p class="book-more">Auch bei:
-        <% others.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="/go/<%= entity.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.name %></a><% }) %>
+        <% others.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.name %></a><% }) %>
         <% if (primary && entity.website) { %><%= others.length ? ' · ' : '' %><a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">direkt beim <%= ranking.entity_label_sg %></a><% } %>
       </p>
     <% } %>
     <p class="muted" style="margin:6px 0 0"><small><%= bookAd ? 'Bei einer Buchung über Partnerlinks erhalten wir eine Provision. ' : '' %>Auf <%= ranking.score_name %> und Reihenfolge der <%= ranking.entity_label_pl %> hat das keinen Einfluss.</small></p>
+    <% var notices = partnerGroups.map(function (g) { return g.trademark_notice; }).filter(function (t, i, all) { return t && all.indexOf(t) === i; }); %>
+    <% if (notices.length) { %><p class="muted trademark-notice" style="margin:4px 0 0"><small><%= notices.join(' ') %></small></p><% } %>
   </section>
   <% if (primary || hotelInquiryUrl) { %>
     <nav class="book-bar" aria-label="Buchen und Anfragen">
-      <% if (primary) { %><a class="btn cta" href="/go/<%= entity.slug %>/<%= primary.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen</a><% } %>
+      <% if (primary) { %><a class="btn cta" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen</a><% } %>
       <% if (hotelInquiryUrl) { %><a class="btn secondary" href="<%= hotelInquiryUrl %>" data-goal="Hotel-Anfrage-Start">Anfragen</a><% } %>
       <% if (bookAd) { %><span class="ad-label">Anzeige</span><% } %>
     </nav>
@@ -117,7 +119,7 @@
 <% } %>
 
 <% var gEmbed = googleMapsEmbedUrl(entity); %>
-<% if (!gEmbed) { %><p class="other-opinions muted"><small>Allgemeine Gästemeinungen (nicht Teil des <%= ranking.score_name %>): <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Bewertungen bei Google ansehen ↗</a><% reviewPartners.forEach(function (g) { %> · <a href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="<%= g.monetized ? 'sponsored ' : '' %>nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.name %> ↗</a><% }) %><%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (teils Anzeige)' : '' %></small></p><% } %>
+<% if (!gEmbed) { %><p class="other-opinions muted"><small>Allgemeine Gästemeinungen (nicht Teil des <%= ranking.score_name %>): <a href="<%= googleMapsUrl(entity) %>" target="_blank" rel="nofollow noopener">Bewertungen bei Google ansehen ↗</a><% reviewPartners.forEach(function (g) { %> · <a href="<%= g.href.reviews %>"<% if (g.count.reviews) { %> data-count="<%= g.count.reviews %>"<% } %> rel="<%= g.monetized ? 'sponsored ' : '' %>nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.name %> ↗</a><% }) %><%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (teils Anzeige)' : '' %></small></p><% } %>
 
 <% if (campProviders.length) { %>
   <section class="camp-box card" style="margin-top:20px">
@@ -227,7 +229,7 @@
         </div>
       </div>
       <% if (reviewPartners.length) { %>
-        <p class="muted partner-reviews"><small>Weitere Gästebewertungen<%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (Anzeige)' : '' %>: <% reviewPartners.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="/go/<%= entity.slug %>/<%= g.code %>/bewertungen" rel="<%= g.monetized ? 'sponsored ' : '' %>nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.name %> ↗</a><% }) %></small></p>
+        <p class="muted partner-reviews"><small>Weitere Gästebewertungen<%= reviewPartners.some(function (g) { return g.monetized; }) ? ' (Anzeige)' : '' %>: <% reviewPartners.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="<%= g.href.reviews %>"<% if (g.count.reviews) { %> data-count="<%= g.count.reviews %>"<% } %> rel="<%= g.monetized ? 'sponsored ' : '' %>nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.name %> ↗</a><% }) %></small></p>
       <% } %>
     <% } %>
   </section>

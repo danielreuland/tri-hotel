@@ -49,7 +49,11 @@
           <option value="reviews" <%= p.auto_search === 'reviews' ? 'selected' : '' %>>Suchseite als Bewertungs-Link</option>
         </select></div>
       </div>
-      <label>Notiz</label><input name="notes" type="text" value="<%= p.notes || '' %>">
+      <div class="form-row">
+        <div><label class="inline" style="margin-top:8px"><input type="checkbox" name="direct_link" <%= p.direct_link ? 'checked' : '' %>> <span>Direkt verlinken <small class="muted">– Link zeigt sichtbar auf den Anbieter bzw. das Netzwerk statt über unsere Weiterleitung (für Programme, die verkürzte/verdeckte Links verbieten, z. B. Expedia); gezählt wird trotzdem</small></span></label></div>
+        <div><label>Markenhinweis <small class="muted">erscheint unter dem Kasten, wenn der Anbieter verlinkt ist</small></label><input name="trademark_notice" type="text" maxlength="300" value="<%= p.trademark_notice || '' %>"></div>
+      </div>
+      <label>Notiz</label><textarea name="notes" rows="2"><%= p.notes || '' %></textarea>
       <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
     </form>
   </section>

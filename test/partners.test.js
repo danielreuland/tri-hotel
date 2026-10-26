@@ -33,3 +33,18 @@ test('Suchseite des Anbieters für Objekte ohne eigenen Link', () => {
   assert.match(url, /destination=Caf%C3%A9(\+|%20)%26(\+|%20)Bar/);
   assert.match(url, /affcid=X1/);
 });
+
+test('Partnerlinks gruppieren: Weiterleitung über /go oder direkt (z. B. Expedia), Markenhinweis', () => {
+  const awin = 'https://www.awin1.com/cread.php?awinmid=1&awinaffid=2&ued={url_enc}';
+  const groups = partners.groupLinks([
+    { code: 'expedia', name: 'Expedia', kind: 'booking', url: 'https://www.expedia.de/Hotel-Search?destination=X', link_template: awin, direct_link: true, trademark_notice: 'EXPEDIA ist eine Marke …', monetized: true },
+    { code: 'tripadvisor', name: 'Tripadvisor', kind: 'reviews', url: 'https://www.tripadvisor.de/Search?q=X', direct_link: false, monetized: false },
+  ], 'hotel-x');
+  const ex = groups.find((g) => g.code === 'expedia');
+  assert.match(ex.href.booking, /^https:\/\/www\.awin1\.com\/cread\.php\?awinmid=1&awinaffid=2&ued=https%3A%2F%2Fwww\.expedia\.de/);
+  assert.equal(ex.count.booking, '/go/hotel-x/expedia/klick');
+  assert.equal(ex.trademark_notice, 'EXPEDIA ist eine Marke …');
+  const ta = groups.find((g) => g.code === 'tripadvisor');
+  assert.equal(ta.href.reviews, '/go/hotel-x/tripadvisor/bewertungen');
+  assert.equal(ta.count.reviews, null);
+});

@@ -36,7 +36,14 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
-- **Expedia und hotel.de aktivieren**: Admin → Einstellungen → Partnerprogramme → Kennung bzw. Deeplink-Vorlage eintragen,
+- **Expedia (BEX DACH über Awin) aktivieren**: in Awin prüfen, ob Deeplinks erlaubt sind (Programmdetails „Deeplinking“);
+  Programm-ID (awinmid) und Publisher-ID (awinaffid) in die Deeplink-Vorlage
+  `https://www.awin1.com/cread.php?awinmid=…&awinaffid=…&ued={url_enc}` eintragen, aktivieren. Direktlink und Markenhinweis
+  sind voreingestellt (Branch expedia-bedingungen). Ohne Deeplink-Erlaubnis: Suchlinks abschalten und je Hotel Links aus dem
+  Awin-Linkgenerator eintragen. Regeln: keine Gutscheine/Rabatt-Versprechen, keine Expedia-Links in E-Mails/Offline,
+  „Expedia“ nicht in Seitentitel/Meta-Tags, Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen (Lara).
+  Hotels.com = eigenes Programm.
+- **hotel.de aktivieren**: Admin → Einstellungen → Partnerprogramme → Kennung bzw. Deeplink-Vorlage eintragen,
   Reihenfolge festlegen (kleinste Zahl = Hauptknopf „Preise prüfen“), Status aktiv. Expedia nutzt ohne eigenen Link je Hotel
   die Suchseite (Name + Ort) – prüfen, ob das Programm Such-Deeplinks vergütet.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console

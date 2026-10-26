@@ -59,7 +59,7 @@ async function load(ranking, slugs) {
     e.label = scoring.labelFor(e.score, ranking.labels);
     e.bestTime = seo.monthRanges(seo.bestMonths(formula, climate), MONTHS) || null;
     e.featureList = await features.forEntity(ranking.entity_type, e.id);
-    e.partnerGroups = groupLinks(await partners.linksFor(e));
+    e.partnerGroups = partners.groupLinks(await partners.linksFor(e), e.slug);
     e.campList = await camps.forEntity(e.id);
   }
 
@@ -101,17 +101,6 @@ async function load(ranking, slugs) {
   ].map((r) => ({ ...r, differ: differs(r.cells) }));
 
   return { entities, sections, featureRows, overview };
-}
-
-// Partnerlinks je Anbieter gruppieren (alphabetisch wie auf der Profilseite)
-function groupLinks(links) {
-  const groups = [];
-  for (const l of links) {
-    let g = groups.find((x) => x.code === l.code);
-    if (!g) groups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized, kinds: [] }));
-    g.kinds.push(l.kind);
-  }
-  return groups;
 }
 
 module.exports = { SEP, MIN, MAX, parseCombo, comboPath, canonicalCombo, differs, bestIndexes, load };

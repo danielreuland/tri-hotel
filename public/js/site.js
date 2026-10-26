@@ -205,3 +205,10 @@ document.querySelectorAll('form[data-sending]').forEach(function (form) {
     });
   });
 })();
+
+// Partner-Direktlinks: Klick zählen, ohne die Weiterleitung zu verändern (keine eigene Zwischenadresse)
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a[data-count]');
+  if (!a || !navigator.sendBeacon) return;
+  try { navigator.sendBeacon(a.getAttribute('data-count')); } catch (err) { /* Zählung ist optional */ }
+}, true);

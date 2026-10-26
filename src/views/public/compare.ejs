@@ -76,8 +76,8 @@
           <td class="links">
             <% if (!e.partnerGroups.length) { %><span class="muted">–</span><% } %>
             <% e.partnerGroups.forEach(function (g) { %>
-              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="/go/<%= e.slug %>/<%= g.code %>" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.label_booking %> ↗</a><% } %>
-              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="/go/<%= e.slug %>/<%= g.code %>/bewertungen" rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.label_reviews %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('booking') >= 0) { %><a class="btn secondary small" href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.label_booking %> ↗</a><% } %>
+              <% if (g.kinds.indexOf('reviews') >= 0) { %><a class="btn secondary small" href="<%= g.href.reviews %>"<% if (g.count.reviews) { %> data-count="<%= g.count.reviews %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Bewertungen"><%= g.label_reviews %> ↗</a><% } %>
             <% }) %>
           </td>
         <% }) %></tr>
