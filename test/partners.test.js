@@ -56,3 +56,11 @@ test('CJ-Deeplink: Zieladresse kodiert, Objekt-Slug als sid', () => {
     'https://www.tkqlhce.com/click-101907930-13904715?url=https%3A%2F%2Fwww.expedia.de%2FHotel-Search%3Fdestination%3DPlayitas%2520Hotel%2520Las%2520Playitas&sid=playitas-hotel-las-playitas');
   assert.equal(partners.buildUrl(p, target), partners.buildUrl(p, target, { slug: '' }), 'ohne Slug bleibt sid leer');
 });
+
+test('Partnerlink aus Nummer (Expedia-Hotel-ID)', () => {
+  const ex = { id_url: 'https://www.expedia.de/h{id}.Hotel-Information', domains: ['expedia.de'] };
+  assert.equal(partners.fromId(ex, ' 793891 '), 'https://www.expedia.de/h793891.Hotel-Information');
+  assert.equal(partners.allowedUrl(ex, partners.fromId(ex, '793891')), 'https://www.expedia.de/h793891.Hotel-Information');
+  assert.equal(partners.fromId(ex, 'https://www.expedia.de/x.h1.Hotel-Information'), 'https://www.expedia.de/x.h1.Hotel-Information', 'Adresse bleibt Adresse');
+  assert.equal(partners.fromId({ id_url: null }, '793891'), '793891', 'ohne Vorlage keine Umwandlung');
+});

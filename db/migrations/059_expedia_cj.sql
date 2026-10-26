@@ -1,3 +1,6 @@
+-- id_url: Programme, deren Objektseiten über eine Nummer erreichbar sind – im Admin genügt dann die Nummer ({id}).
+ALTER TABLE partner_programs ADD COLUMN IF NOT EXISTS id_url text;
+
 -- Expedia DACH läuft über CJ (nicht Awin): CJ-Deeplink mit Zieladresse und sid = Objekt-Slug.
 -- PID 101907930 (Website tri-hotel), AID 13904715 (Deeplink-fähiger Link aus Expedias Linkbauer; der Textlink „DE_Hotel“
 -- 13852993 ignoriert die Zieladresse), Advertiser 5289015. Getestet am 26.10.2026: Zuordnung über affcid/cjevent klappt.
@@ -9,5 +12,6 @@ UPDATE partner_programs SET
   link_params = '{}',
   auto_search = NULL,
   search_url = 'https://www.google.com/search?q=site%3Aexpedia.de+{q}',
+  id_url = 'https://www.expedia.de/h{id}.Hotel-Information',
   notes = 'Expedia DACH über CJ (Advertiser 5289015, Website 101907930, Deeplink-Link 13904715). Je Hotel die Adresse der Expedia-Hotelseite (…h123456.Hotel-Information) als Preis-Link eintragen – keine Suchlinks (Expedia löst Hotelnamen falsch auf): 4 % Unterkunft, 2 % Pakete/Ferienwohnungen, 7 Tage Cookie. Kein CJ-Zählpixel (würde Besucher ohne Einwilligung melden). Keine Gutscheine, keine Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Seitentiteln/Meta-Tags. Hotels.com ist ein eigenes Programm.'
  WHERE code = 'expedia';

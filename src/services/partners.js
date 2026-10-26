@@ -6,6 +6,12 @@ const db = require('../db');
 
 const KINDS = { booking: 'Preise / Buchung', reviews: 'Bewertungen' };
 
+// Nur eine Nummer eingetragen (z. B. Expedia-Hotel-ID 793891)? Dann Adresse aus der Vorlage des Programms (id_url mit {id})
+function fromId(program, raw) {
+  const v = String(raw || '').trim();
+  return program.id_url && /^\d{3,12}$/.test(v) ? program.id_url.replace(/\{id\}/g, v) : v;
+}
+
 // Zieladresse zulässig? Nur https und – wenn das Programm Domains vorgibt – nur diese (inkl. Subdomains)
 function allowedUrl(program, raw) {
   let u;
@@ -92,7 +98,7 @@ async function saveLinks(entityId, input, adminId) {
         if (old) { await db.query('DELETE FROM entity_links WHERE id = $1', [old.id]); changes.push({ program: p.code, kind, old: old.url, new: null }); }
         continue;
       }
-      const url = allowedUrl(p, raw);
+      const url = allowedUrl(p, fromId(p, raw));
       if (!url) { errors.push(`${p.name} (${KINDS[kind]}): nur https-Adressen${p.domains.length ? ` von ${p.domains.join(', ')}` : ''}.`); continue; }
       if (old && old.url === url) continue;
       await db.query(
@@ -144,4 +150,4 @@ async function stats(days = 30) {
   return { byProgram, top };
 }
 
-module.exports = { KINDS, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, fromId, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
