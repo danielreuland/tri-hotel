@@ -22,3 +22,14 @@ test('Partnerlinks: Kennung anhängen oder Netzwerk-Vorlage verwenden', () => {
   assert.equal(partners.monetized({ link_params: {} }), false);
   assert.equal(partners.monetized(booking), true);
 });
+
+test('Suchseite des Anbieters für Objekte ohne eigenen Link', () => {
+  const p = { search_url: 'https://www.expedia.de/Hotel-Search?destination={q}' };
+  assert.equal(partners.searchUrl(p, { name: 'Playitas Hotel', city: 'Las Playitas' }), 'https://www.expedia.de/Hotel-Search?destination=Playitas%20Hotel%20Las%20Playitas');
+  assert.equal(partners.searchUrl({ search_url: 'https://x.de/suche' }, { name: 'A' }), null, 'ohne {q} kein Suchlink');
+  assert.equal(partners.searchUrl({ search_url: null }, { name: 'A' }), null);
+  // mit Partnerkennung wird der Suchlink wie jeder andere Link ergänzt
+  const url = partners.buildUrl({ link_params: { affcid: 'X1' } }, partners.searchUrl(p, { name: 'Café & Bar', city: null }));
+  assert.match(url, /destination=Caf%C3%A9(\+|%20)%26(\+|%20)Bar/);
+  assert.match(url, /affcid=X1/);
+});

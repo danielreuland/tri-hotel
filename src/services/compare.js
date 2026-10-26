@@ -59,7 +59,7 @@ async function load(ranking, slugs) {
     e.label = scoring.labelFor(e.score, ranking.labels);
     e.bestTime = seo.monthRanges(seo.bestMonths(formula, climate), MONTHS) || null;
     e.featureList = await features.forEntity(ranking.entity_type, e.id);
-    e.partnerGroups = groupLinks(await partners.linksFor(e.id));
+    e.partnerGroups = groupLinks(await partners.linksFor(e));
     e.campList = await camps.forEntity(e.id);
   }
 

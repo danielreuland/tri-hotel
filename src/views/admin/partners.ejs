@@ -1,13 +1,13 @@
 <%- include('../partials/admin-head') %>
 <h1>Partnerprogramme</h1>
-<p class="muted">Partnerlinks erscheinen auf Profilseiten als <strong>Anzeige</strong>, alphabetisch nach Anbieter und ohne Einfluss auf Score, Reihenfolge oder Prüfung. Links je Objekt pflegst du in der Detailansicht (Reiter Stammdaten → Partnerlinks). Ohne Partnerkennung bzw. Deeplink-Vorlage sind es normale Links ohne Provision.</p>
+<p class="muted">Partnerlinks erscheinen auf Profilseiten im Kasten „Buchen &amp; Anfragen“ als <strong>Anzeige</strong> – in der hier festgelegten Reihenfolge (der erste aktive Preis-Anbieter ist der Hauptknopf „Preise prüfen“), ohne Einfluss auf Score, Reihenfolge der Hotels oder Prüfung. Links je Objekt pflegst du in der Detailansicht (Reiter Stammdaten → Partnerlinks). Ohne Partnerkennung bzw. Deeplink-Vorlage sind es normale Links ohne Provision.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (error) { %><div class="errors"><%= error %></div><% } %>
 
 <h2>Klicks <small class="muted">letzte <%= days %> Tage · <% [7, 30, 90, 365].forEach(function (d) { %><a href="/admin/partner?tage=<%= d %>" class="<%= d === days ? 'on' : '' %>"><%= d %></a> <% }) %></small></h2>
 <div class="table-scroll"><table>
-  <tr><th>Programm</th><th>Links</th><th>Klicks</th></tr>
-  <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td></tr><% }) %>
+  <tr><th>Programm</th><th>Eigene Links</th><th>Klicks eigene Links</th><th>Klicks Suchlinks</th></tr>
+  <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td><td><%= p.auto_search || p.search_clicks ? p.search_clicks : '–' %></td></tr><% }) %>
 </table></div>
 <% if (stats.top.length) { %>
   <details style="margin:8px 0 20px"><summary>Meistgeklickte Links</summary>
@@ -19,8 +19,8 @@
 
 <h2>Programme</h2>
 <% programs.forEach(function (p) { var params = Object.keys(p.link_params || {}).map(function (k) { return k + '=' + p.link_params[k]; }).join('\n'); %>
-  <section class="card" style="margin-bottom:12px">
-    <h3 style="margin-top:0"><%= p.name %>
+  <section class="card" style="margin-bottom:12px" id="p-<%= p.code %>">
+    <h3 style="margin-top:0"><span class="muted"><%= p.sort_order %> ·</span> <%= p.name %>
       <span class="badge <%= p.status === 'active' ? 'good' : '' %>"><%= p.status === 'active' ? 'aktiv' : 'inaktiv' %></span>
       <span class="badge <%= monetized(p) ? 'good' : 'warn' %>"><%= monetized(p) ? 'mit Partnerkennung' : 'ohne Partnerkennung' %></span></h3>
     <% if (p.notes) { %><p class="muted" style="margin-top:0"><small><%= p.notes %></small></p><% } %>
@@ -37,9 +37,30 @@
         <div><label>Beschriftung Preise</label><input name="label_booking" type="text" value="<%= p.label_booking %>"></div>
         <div><label>Beschriftung Bewertungen</label><input name="label_reviews" type="text" value="<%= p.label_reviews %>"></div>
       </div>
+      <div class="form-row">
+        <div><label>Reihenfolge <small class="muted">kleiner = weiter vorn</small></label><input name="sort_order" type="number" min="0" max="999" value="<%= p.sort_order %>"></div>
+        <div><label>Erlaubte Ziel-Domains <small class="muted">leer = beliebige https-Adresse</small></label><input name="domains" type="text" value="<%= p.domains.join(', ') %>"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Such-Adresse beim Anbieter <small class="muted">mit {q} = Name + Ort</small></label><input name="search_url" type="text" value="<%= p.search_url || '' %>" placeholder="https://…?q={q}"></div>
+        <div><label>Für Objekte ohne eigenen Link</label><select name="auto_search">
+          <option value="" <%= !p.auto_search ? 'selected' : '' %>>nur eigene Links je Objekt</option>
+          <option value="booking" <%= p.auto_search === 'booking' ? 'selected' : '' %>>Suchseite als Preis-Link</option>
+          <option value="reviews" <%= p.auto_search === 'reviews' ? 'selected' : '' %>>Suchseite als Bewertungs-Link</option>
+        </select></div>
+      </div>
       <label>Notiz</label><input name="notes" type="text" value="<%= p.notes || '' %>">
-      <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button> <small class="muted">Erlaubte Ziel-Domains: <%= p.domains.length ? p.domains.join(', ') : 'beliebige https-Adresse' %></small></p>
+      <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
     </form>
   </section>
 <% }) %>
+<section class="card">
+  <h3 style="margin-top:0">Weiteres Programm anlegen</h3>
+  <form method="post" action="/admin/partner/neu" class="form-row" style="align-items:end">
+    <div><label>Name</label><input name="name" type="text" required placeholder="z. B. Hotels.com"></div>
+    <div><label>Ziel-Domains</label><input name="domains" type="text" required placeholder="hotels.com"></div>
+    <div><button class="btn small" type="submit">Anlegen</button></div>
+  </form>
+  <p class="muted" style="margin-bottom:0"><small>Neue Programme starten inaktiv. Danach Kennung bzw. Deeplink-Vorlage eintragen, Reihenfolge setzen und aktivieren.</small></p>
+</section>
 <%- include('../partials/admin-foot') %>

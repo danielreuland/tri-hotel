@@ -559,3 +559,20 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .queue-filters { align-items: center; }
 .queue-filters input[type=search] { flex: 1 1 260px; min-width: 200px; }
 .queue-filters select { flex: 0 1 auto; }
+
+/* Hotelseite: Buchen & Anfragen (Anzeige gekennzeichnet; ohne Einfluss auf Score/Reihenfolge) */
+.book-box .book-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.book-box .ad-label, .book-bar .ad-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.book-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.book-actions .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 56px; text-align: center; line-height: 1.2; }
+.book-actions .btn small { font-weight: 500; font-size: .8rem; opacity: .85; }
+.book-more { margin: 10px 0 0; }
+.book-bar { display: none; }
+@media (max-width: 700px) {
+  .book-bar { display: flex; gap: 8px; align-items: center; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, .08); }
+  .book-bar .btn { flex: 1; text-align: center; padding: 10px 12px; }
+  .book-bar .ad-label { position: absolute; top: -18px; right: 16px; background: var(--surface); padding: 0 6px; border-radius: 4px 4px 0 0; }
+  body:has(.book-bar) { padding-bottom: 72px; }
+}

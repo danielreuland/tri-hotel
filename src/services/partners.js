@@ -1,5 +1,7 @@
 // Partnerlinks (Affiliate) je Objekt: Programme, Links, Weiterleitung mit Klickzählung.
-// Grundsatz: Partnerlinks beeinflussen weder Score noch Reihenfolge; Anbieter erscheinen alphabetisch, immer als Anzeige gekennzeichnet.
+// Grundsatz: Partnerlinks beeinflussen weder Score noch Reihenfolge der Objekte; Anbieter erscheinen in der vom Admin
+// festgelegten Reihenfolge (sort_order), immer als Anzeige gekennzeichnet, wenn Provision möglich ist.
+// Objekte ohne eigenen Link bekommen bei Programmen mit auto_search die Suchseite des Anbieters (Name + Ort).
 const db = require('../db');
 
 const KINDS = { booking: 'Preise / Buchung', reviews: 'Bewertungen' };
@@ -28,15 +30,31 @@ function buildUrl(program, url) {
 }
 
 async function programs({ activeOnly = false } = {}) {
-  return db.many(`SELECT * FROM partner_programs ${activeOnly ? "WHERE status = 'active'" : ''} ORDER BY lower(name)`);
+  return db.many(`SELECT * FROM partner_programs ${activeOnly ? "WHERE status = 'active'" : ''} ORDER BY sort_order, lower(name)`);
 }
 
-// Links eines Objekts für die öffentliche Seite: nur aktive Programme, alphabetisch
-async function linksFor(entityId) {
+// Suchseite des Anbieters für ein Objekt ({q} = Name + Ort); null, wenn das Programm keine hat
+function searchUrl(program, entity) {
+  if (!program.search_url || !/\{q\}/.test(program.search_url)) return null;
+  const q = [entity.name, entity.city].filter(Boolean).join(' ');
+  return program.search_url.replace(/\{q\}/g, encodeURIComponent(q));
+}
+
+// Links eines Objekts für die öffentliche Seite: nur aktive Programme, in Admin-Reihenfolge.
+// Ohne eigenen Link: Suchseite bei Programmen mit auto_search (auto: true, id: null).
+async function linksFor(entityOrId) {
+  const entity = typeof entityOrId === 'object' ? entityOrId : await db.one('SELECT id, name, city FROM entities WHERE id = $1', [entityOrId]);
+  if (!entity) return [];
   const rows = await db.many(
-    `SELECT l.id, l.kind, l.url, p.code, p.name, p.label_booking, p.label_reviews, p.link_params, p.link_template
+    `SELECT l.id, l.kind, l.url, p.code, p.name, p.label_booking, p.label_reviews, p.link_params, p.link_template, p.sort_order
        FROM entity_links l JOIN partner_programs p ON p.id = l.program_id
-      WHERE l.entity_id = $1 AND p.status = 'active' ORDER BY lower(p.name), l.kind`, [entityId]);
+      WHERE l.entity_id = $1 AND p.status = 'active'`, [entity.id]);
+  for (const p of await db.many(`SELECT * FROM partner_programs WHERE status = 'active' AND auto_search IS NOT NULL`)) {
+    if (rows.some((r) => r.code === p.code && r.kind === p.auto_search)) continue;
+    const url = searchUrl(p, entity);
+    if (url) rows.push({ id: null, kind: p.auto_search, url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, auto: true });
+  }
+  rows.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'de') || a.kind.localeCompare(b.kind));
   for (const r of rows) r.monetized = monetized(r);
   return rows;
 }
@@ -67,29 +85,37 @@ async function saveLinks(entityId, input, adminId) {
   return { errors, changes };
 }
 
-// Weiterleitung: Link über Objekt-Slug, Programm-Code und Art finden
+// Weiterleitung: Link über Objekt-Slug, Programm-Code und Art finden; sonst Suchseite (auto_search)
 async function resolve(entityType, slug, code, kind) {
-  return db.one(
+  const link = await db.one(
     `SELECT l.*, p.link_params, p.link_template, p.status FROM entity_links l
        JOIN partner_programs p ON p.id = l.program_id JOIN entities e ON e.id = l.entity_id
       WHERE e.entity_type = $1 AND e.slug = $2 AND p.code = $3 AND l.kind = $4 AND p.status = 'active'`,
     [entityType, slug, code, kind]);
+  if (link) return link;
+  const p = await db.one(`SELECT * FROM partner_programs WHERE code = $1 AND status = 'active' AND auto_search = $2`, [code, kind]);
+  const entity = p && await db.one('SELECT id, name, city FROM entities WHERE entity_type = $1 AND slug = $2', [entityType, slug]);
+  const url = entity && searchUrl(p, entity);
+  return url ? { id: null, program_id: p.id, url, link_params: p.link_params, link_template: p.link_template, auto: true } : null;
 }
 
-// Klicks nur als Anzahl je Tag (keine personenbezogenen Daten)
-async function countClick(linkId) {
+// Klicks nur als Anzahl je Tag (keine personenbezogenen Daten); Suchlinks je Programm
+async function countClick(link) {
+  const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, clicks) VALUES ('entity_link', $1, current_date, 1)
-     ON CONFLICT (kind, target_id, day) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [linkId]);
+    `INSERT INTO outbound_clicks (kind, target_id, day, clicks) VALUES ($1, $2, current_date, 1)
+     ON CONFLICT (kind, target_id, day) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target]);
 }
 
 // Admin-Übersicht: Klicks der letzten Tage je Programm und je Objekt
 async function stats(days = 30) {
   const byProgram = await db.many(
-    `SELECT p.id, p.name, count(DISTINCT l.id)::int AS links, COALESCE(sum(c.clicks), 0)::int AS clicks
+    `SELECT p.id, p.name, p.auto_search, count(DISTINCT l.id)::int AS links, COALESCE(sum(c.clicks), 0)::int AS clicks,
+            (SELECT COALESCE(sum(s.clicks), 0)::int FROM outbound_clicks s WHERE s.kind = 'partner_search' AND s.target_id = p.id
+              AND s.day > current_date - $1::int) AS search_clicks
        FROM partner_programs p LEFT JOIN entity_links l ON l.program_id = p.id
        LEFT JOIN outbound_clicks c ON c.kind = 'entity_link' AND c.target_id = l.id AND c.day > current_date - $1::int
-      GROUP BY p.id, p.name ORDER BY lower(p.name)`, [days]);
+      GROUP BY p.id, p.name ORDER BY p.sort_order, lower(p.name)`, [days]);
   const top = await db.many(
     `SELECT e.name, p.name AS program, l.kind, sum(c.clicks)::int AS clicks
        FROM outbound_clicks c JOIN entity_links l ON l.id = c.target_id JOIN partner_programs p ON p.id = l.program_id JOIN entities e ON e.id = l.entity_id
@@ -98,4 +124,4 @@ async function stats(days = 30) {
   return { byProgram, top };
 }
 
-module.exports = { KINDS, allowedUrl, monetized, buildUrl, programs, linksFor, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, saveLinks, resolve, countClick, stats };

@@ -206,7 +206,7 @@ async function renderEntity(req, res, ranking, slug) {
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
   // Partnerlinks je Anbieter gruppiert (alphabetisch, ohne Einfluss auf Score/Reihenfolge)
   const partnerGroups = [];
-  for (const l of await partners.linksFor(entity.id)) {
+  for (const l of await partners.linksFor(entity)) {
     let g = partnerGroups.find((x) => x.code === l.code);
     if (!g) partnerGroups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized, kinds: [] }));
     g.kinds.push(l.kind);
@@ -252,7 +252,7 @@ async function renderEntity(req, res, ranking, slug) {
     bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
-    guestPhotos, regionExamples, galleryRegion: region, partnerGroups,
+    guestPhotos, regionExamples, galleryRegion: region, partnerGroups, hotelInquiryUrl: null,
     reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),
     reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,
