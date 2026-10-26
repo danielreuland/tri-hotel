@@ -554,3 +554,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .camp-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 4px; }
 .camp-actions .btn { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 6px; min-height: 52px; text-align: center; line-height: 1.25; }
 .camp-actions .btn .muted { font-weight: 500; }
+
+/* Admin: Hotel-Liste – Suche und Filter */
+.queue-filters { align-items: center; }
+.queue-filters input[type=search] { flex: 1 1 260px; min-width: 200px; }
+.queue-filters select { flex: 0 1 auto; }

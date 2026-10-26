@@ -1,21 +1,43 @@
 <%- include('../partials/admin-head') %>
 <h1><%= adminNav.objectsLabel %></h1>
 <% var countOf = function (s) { var c = counts.find(function (x) { return x.status === s }); return c ? c.n : 0 };
-   var total = counts.reduce(function (sum, x) { return sum + x.n }, 0);
-   var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' })); %>
-<div class="pill-row">
-  <% order.forEach(function (s) { %>
-    <a class="badge <%= status === s ? 'accent' : '' %>" href="/admin?status=<%= s %><%= rankingId ? '&ranking=' + rankingId : '' %>"><%= STATUS_LABELS[s] %> (<%= countOf(s) %>)</a>
-  <% }) %>
-  <a class="badge <%= status === null ? 'accent' : '' %>" href="/admin?status=alle<%= rankingId ? '&ranking=' + rankingId : '' %>">alle (<%= total %>)</a>
-</div>
-<form class="filters" method="get">
+   var totalAll = counts.reduce(function (sum, x) { return sum + x.n }, 0);
+   var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' }));
+   // Link mit allen aktuellen Filtern, einzelne Werte überschreibbar
+   var link = function (over) {
+     var p = Object.assign({ status: status || 'alle', ranking: rankingId || '', q: q || '', land: land || '', region: regionId || '' }, over);
+     return '/admin?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
+   };
+   var filtered = Boolean(q || land || regionId || rankingId); %>
+<form class="filters queue-filters" method="get" action="/admin" role="search">
   <input type="hidden" name="status" value="<%= status || 'alle' %>">
-  <select name="ranking" data-autosubmit>
+  <label class="sr-only" for="qf-q">Name oder Ort</label>
+  <input id="qf-q" type="search" name="q" value="<%= q %>" placeholder="Name, Ort oder Website suchen" autocomplete="off">
+  <label class="sr-only" for="qf-ranking">Ranking</label>
+  <select id="qf-ranking" name="ranking" data-autosubmit>
     <option value="">alle Rankings</option>
     <% allRankings.forEach(function (r) { %><option value="<%= r.id %>" <%= rankingId === r.id ? 'selected' : '' %>><%= r.name %></option><% }) %>
   </select>
+  <label class="sr-only" for="qf-land">Land</label>
+  <select id="qf-land" name="land" data-autosubmit>
+    <option value="">alle Länder</option>
+    <% countries.forEach(function (c) { %><option value="<%= c.code %>" <%= land === c.code ? 'selected' : '' %>><%= c.name %> (<%= c.n %>)</option><% }) %>
+  </select>
+  <label class="sr-only" for="qf-region">Region</label>
+  <select id="qf-region" name="region" data-autosubmit>
+    <option value="">alle Regionen</option>
+    <% regionOptions.forEach(function (g) { %><option value="<%= g.id %>" <%= regionId === g.id ? 'selected' : '' %>><%= g.name %> (<%= g.n %>)</option><% }) %>
+  </select>
+  <button class="btn small" type="submit">Suchen</button>
+  <% if (filtered) { %><a class="btn small secondary" href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %>
 </form>
+<div class="pill-row">
+  <% order.forEach(function (s) { %>
+    <a class="badge <%= status === s ? 'accent' : '' %>" href="<%= link({ status: s }) %>"><%= STATUS_LABELS[s] %> (<%= countOf(s) %>)</a>
+  <% }) %>
+  <a class="badge <%= status === null ? 'accent' : '' %>" href="<%= link({ status: 'alle' }) %>">alle (<%= totalAll %>)</a>
+</div>
+<% if (total > rows.length) { %><p class="muted"><small>Angezeigt werden die neuesten <%= rows.length %> von <%= total %> Treffern – Suche oder Filter eingrenzen.</small></p><% } %>
 <div class="table-scroll">
 <table>
   <tr><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Offen</th><th>Hinweis</th></tr>
@@ -32,7 +54,7 @@
       <td><% if (r.possible_duplicate_name) { %><span class="badge warn">mögliche Dublette</span> <small><%= r.possible_duplicate_name %></small><% } %><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
   <% }) %>
-  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Keine Meldungen in diesem Status.</td></tr><% } %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted"><%= filtered ? 'Keine ' + adminNav.objectsLabel + ' gefunden.' : 'Keine Meldungen in diesem Status.' %><% if (filtered) { %> <a href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %></td></tr><% } %>
 </table>
 </div>
 <% locals.scripts = ['/static/js/site.js'] %>

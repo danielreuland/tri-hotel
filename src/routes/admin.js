@@ -158,30 +158,70 @@ router.use(requireAdmin);
 
 // ---------- Warteschlange ----------
 
+// Suche ohne Groß-/Kleinschreibung und Akzente (Postgres ohne unaccent-Erweiterung: translate)
+const FOLD_FROM = 'ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿ';
+const FOLD_TO = 'AAAAAAaaaaaaCcEEEEeeeeIIIIiiiiNnOOOOOOooooooUUUUuuuuYyy';
+const foldSql = (expr) => `lower(translate(coalesce(${expr}, ''), '${FOLD_FROM}', '${FOLD_TO}'))`;
+const foldJs = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const QUEUE_LIMIT = 300;
+const { countryName, inRegion } = require('../lib/seo');
+
+// Hotel-Liste: Status-Pillen, Ranking, Suche (Name, Ort, Website), Land, Region – alles kombinierbar.
+// Zahlen an Pillen und Auswahllisten berücksichtigen die jeweils anderen Filter.
 router.get('/', wrap(async (req, res) => {
   const status = STATUS_LABELS[req.query.status] ? req.query.status : req.query.status === 'alle' ? null : 'admin_review';
   const rankingId = UUID_RE.test(req.query.ranking || '') ? req.query.ranking : null;
-  const rows = await db.many(
-    `SELECT s.*, e.name AS current_name, r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
+  const q = String(req.query.q || '').trim().slice(0, 100);
+  const land = /^[A-Za-z]{2}$/.test(req.query.land || '') ? req.query.land.toUpperCase() : null;
+  const allRegions = await db.many(`SELECT id, name, lat, lng, radius_km FROM regions WHERE status = 'active' ORDER BY name`);
+  const region = allRegions.find((r) => r.id === req.query.region) || null;
+
+  const params = [rankingId];
+  const where = ['($1::uuid IS NULL OR s.ranking_id = $1)'];
+  if (q) {
+    params.push(`%${foldJs(q).replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+    const p = `$${params.length}`;
+    where.push(`(${['s.entity_name', 'e.name', 'COALESCE(e.city, s.city)', 'COALESCE(e.website, s.website)'].map((c) => `${foldSql(c)} LIKE ${p}`).join(' OR ')})`);
+  }
+  // alle Meldungen zu Ranking + Suche; Status, Land und Region werden darauf angewendet (so stimmen alle Zahlen)
+  const base = await db.many(
+    `SELECT s.*, e.name AS current_name, e.lat, e.lng, upper(COALESCE(e.country, s.country)) AS cc,
+            r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
             (SELECT name FROM entities d WHERE d.id = s.possible_duplicate_of) AS possible_duplicate_name,
             (SELECT email FROM admin_users u WHERE u.id = s.created_by) AS created_by_email,
             COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
        FROM submissions s JOIN rankings r ON r.id = s.ranking_id
        LEFT JOIN entity_rankings er ON er.entity_id = s.entity_id AND er.ranking_id = s.ranking_id
        LEFT JOIN entities e ON e.id = s.entity_id
-      WHERE ($1::submission_status IS NULL OR s.status = $1) AND ($2::uuid IS NULL OR s.ranking_id = $2)
-      ORDER BY s.created_at DESC LIMIT 300`,
-    [status, rankingId]
-  );
+      WHERE ${where.join(' AND ')}
+      ORDER BY s.created_at DESC`, params);
+  const byStatus = (r) => !status || r.status === status;
+  const byLand = (r) => !land || r.cc === land;
+  const byRegion = (r) => !region || inRegion(r, region);
+
+  const matching = base.filter((r) => byStatus(r) && byLand(r) && byRegion(r));
+  const rows = matching.slice(0, QUEUE_LIMIT);
+  const countMap = {};
+  for (const r of base) if (byLand(r) && byRegion(r)) countMap[r.status] = (countMap[r.status] || 0) + 1;
+  const counts = Object.entries(countMap).map(([st, n]) => ({ status: st, n }));
+  const countryMap = {};
+  for (const r of base) if (r.cc && byStatus(r) && byRegion(r)) countryMap[r.cc] = (countryMap[r.cc] || 0) + 1;
+  const countries = Object.entries(countryMap).map(([code, n]) => ({ code, n, name: countryName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const regionOptions = allRegions.map((g) => ({ id: g.id, name: g.name, n: base.filter((r) => byStatus(r) && byLand(r) && inRegion(r, g)).length }))
+    .filter((g) => g.n || (region && g.id === region.id));
+
   // Offene Prüfpunkte je Objekt (nur Admin-Prüfung und live)
   for (const r of rows) {
     if (!r.entity_id || !['admin_review', 'live'].includes(r.status)) continue;
     const l = await reviewlist.load(r.id);
     if (l) r.review = { open: l.review.open, blockers: l.review.blockers };
   }
-  const counts = await db.many(`SELECT status, count(*)::int AS n FROM submissions GROUP BY status`);
   const allRankings = await db.many(`SELECT id, name FROM rankings ORDER BY name`);
-  res.render('admin/queue', { title: 'Warteschlange', rows, status, rankingId, counts, allRankings });
+  res.render('admin/queue', {
+    title: 'Warteschlange', rows, total: matching.length, limit: QUEUE_LIMIT, status, rankingId, counts, allRankings,
+    q, land, regionId: region ? region.id : null, countries, regionOptions,
+  });
 }));
 
 // ---------- Detailansicht ----------
