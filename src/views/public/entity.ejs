@@ -61,9 +61,6 @@
         <% if (primary && entity.website) { %><%= others.length ? ' · ' : '' %><a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">direkt beim <%= ranking.entity_label_sg %></a><% } %>
       </p>
     <% } %>
-    <p class="muted" style="margin:6px 0 0"><small><%= bookAd ? 'Bei einer Buchung über Partnerlinks erhalten wir eine Provision. ' : '' %>Auf <%= ranking.score_name %> und Reihenfolge der <%= ranking.entity_label_pl %> hat das keinen Einfluss.</small></p>
-    <% var notices = partnerGroups.map(function (g) { return g.trademark_notice; }).filter(function (t, i, all) { return t && all.indexOf(t) === i; }); %>
-    <% if (notices.length) { %><p class="muted trademark-notice" style="margin:4px 0 0"><small><%= notices.join(' ') %></small></p><% } %>
   </section>
   <% if (primary || hotelInquiryUrl) { %>
     <nav class="book-bar" aria-label="Buchen und Anfragen">
@@ -271,6 +268,12 @@
     </ul>
     <p><a href="<%= base %>/region/<%= region.slug %>">Alle <%= ranking.entity_label_pl %> <%= region.name_in %> →</a></p>
   </section>
+<% } %>
+
+<%# Hinweise zu Partnerlinks am Seitenende (Kennzeichnung „Anzeige“ steht direkt am Kasten; Markenhinweise laut Partnerbedingungen „am Ende“) %>
+<% var notices = partnerGroups.map(function (g) { return g.trademark_notice; }).filter(function (t, i, all) { return t && all.indexOf(t) === i; }); %>
+<% if (partnerGroups.length) { %>
+  <p class="page-notes muted"><%= partnerGroups.some(function (g) { return g.monetized; }) ? 'Bei einer Buchung über Partnerlinks erhalten wir eine Provision. ' : '' %>Auf <%= ranking.score_name %> und Reihenfolge der <%= ranking.entity_label_pl %> hat das keinen Einfluss.<% if (notices.length) { %> <%= notices.join(' ') %><% } %></p>
 <% } %>
 
 <% locals.scripts = ['/static/js/site.js'] %>

@@ -576,3 +576,6 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .book-bar .ad-label { position: absolute; top: -18px; right: 16px; background: var(--surface); padding: 0 6px; border-radius: 4px 4px 0 0; }
   body:has(.book-bar) { padding-bottom: 72px; }
 }
+
+/* Hotelseite: Hinweise zu Partnerlinks und Marken am Seitenende */
+.page-notes { font-size: .75rem; line-height: 1.4; margin: 32px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
