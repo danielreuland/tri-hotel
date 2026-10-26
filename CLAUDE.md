@@ -120,7 +120,7 @@ Die Werte 0,6/0,4, C, m und Mindest-Vollständigkeit stammen aus `rankings.formu
 
 ## Arbeiten auf zwei Rechnern
 
-Abgleich nur über Git (GitHub `danielreuland/tri-hotel`). Chatverlauf und lokale Claude-Notizen (`~/.claude`) wandern nicht mit – Stand und Entscheidungen gehören in Commits, `CLAUDE.md` oder die Übergabe-Notiz `WIP-KI-MAILS.md`.
+Abgleich nur über Git (GitHub `danielreuland/tri-hotel`). Chatverlauf und lokale Claude-Notizen (`~/.claude`) wandern nicht mit – Stand und Entscheidungen gehören in Commits, `CLAUDE.md` oder den Backlog `BACKLOG.md`.
 
 - Vor dem Start `git pull`, am Ende committen und pushen. Arbeiten beide Rechner gleichzeitig: je Rechner bzw. Aufgabe ein eigener Branch, danach mergen.
 - **Deploy** (Server holt `main`): nur deployen, wenn `main` lokal aktuell ist (`git pull` vorher), damit nichts vom anderen Rechner verloren geht.
