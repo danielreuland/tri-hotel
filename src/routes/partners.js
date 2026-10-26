@@ -15,7 +15,7 @@ router.get('/go/:slug/:program/:kind?', wrap(async (req, res, next) => {
   if (!BOT_RE.test(req.get('user-agent') || '')) await partners.countClick(link);
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.set('Cache-Control', 'no-store');
-  res.redirect(302, partners.buildUrl(link, link.url));
+  res.redirect(302, partners.buildUrl(link, link.url, { slug: req.params.slug }));
 }));
 
 // Direktlinks (direct_link, z. B. Expedia): der Browser geht direkt zum Anbieter, gezählt wird per Beacon beim Klick

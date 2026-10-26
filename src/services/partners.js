@@ -20,9 +20,11 @@ function allowedUrl(program, raw) {
 const monetized = (program) => Boolean(program.link_template || Object.keys(program.link_params || {}).length);
 
 // Ausgehende Adresse: Netzwerk-Vorlage ({url}, {url_enc}) oder Parameter anhängen (vorhandene bleiben)
-function buildUrl(program, url) {
+// {slug} = Objekt-Slug, z. B. als Unterkennung (CJ: sid), damit im Netzwerk sichtbar ist, welches Objekt die Buchung brachte
+function buildUrl(program, url, { slug = '' } = {}) {
   if (program.link_template) {
-    return program.link_template.replace(/\{url_enc\}/g, encodeURIComponent(url)).replace(/\{url\}/g, url);
+    return program.link_template.replace(/\{url_enc\}/g, encodeURIComponent(url)).replace(/\{url\}/g, url)
+      .replace(/\{slug\}/g, encodeURIComponent(slug));
   }
   const u = new URL(url);
   for (const [k, v] of Object.entries(program.link_params || {})) if (!u.searchParams.has(k)) u.searchParams.set(k, String(v));
@@ -71,7 +73,7 @@ function groupLinks(links, slug) {
     }
     g.kinds.push(l.kind);
     const go = `/go/${slug}/${l.code}${l.kind === 'reviews' ? '/bewertungen' : ''}`;
-    g.href[l.kind] = l.direct_link ? buildUrl(l, l.url) : go;
+    g.href[l.kind] = l.direct_link ? buildUrl(l, l.url, { slug }) : go;
     g.count[l.kind] = l.direct_link ? `${go}/klick` : null;
   }
   return groups;

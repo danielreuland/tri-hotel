@@ -31,7 +31,7 @@
       </div>
       <div class="form-row">
         <div><label>Partnerkennung als Parameter <small class="muted">je Zeile name=wert, z. B. aid=1234567</small></label><textarea name="link_params" rows="2"><%= params %></textarea></div>
-        <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">z. B. https://www.awin1.com/cread.php?awinmid=…&amp;awinaffid=…&amp;ued={url_enc}</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
+        <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">{url_enc} = Zieladresse, {slug} = Objekt (z. B. CJ: https://www.jdoqocy.com/click-PID-AID?url={url_enc}&amp;sid={slug})</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
       </div>
       <div class="form-row">
         <div><label>Beschriftung Preise</label><input name="label_booking" type="text" value="<%= p.label_booking %>"></div>
