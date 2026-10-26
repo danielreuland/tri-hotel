@@ -1256,9 +1256,10 @@ router.get('/aufgaben', wrap(async (req, res) => {
   const assignee = ['me', 'none'].includes(req.query.wer) ? req.query.wer : null;
   const label = tasks.LABELS[req.query.label] ? req.query.label : null;
   const columns = await tasks.board({ assignee, label, me: req.session.admin.id });
+  const labelCounts = await tasks.openCounts({ assignee, me: req.session.admin.id });
   const team = await db.many(`SELECT id, email, display_name FROM admin_users ORDER BY COALESCE(display_name, email)`);
   res.render('admin/tasks', {
-    title: 'Aufgaben', columns, team, assignee, label, STATUSES: tasks.STATUSES, LABELS: tasks.LABELS, me: req.session.admin.id,
+    title: 'Aufgaben', columns, team, assignee, label, labelCounts, STATUSES: tasks.STATUSES, LABELS: tasks.LABELS, me: req.session.admin.id,
     flash: req.query.ok || null, error: req.query.fehler || null,
   });
 }));

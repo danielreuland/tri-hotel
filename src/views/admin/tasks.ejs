@@ -31,8 +31,9 @@
   <a class="badge <%= assignee === 'me' ? 'good' : '' %>" href="<%= qs({ wer: 'me' }) %>">meine</a>
   <a class="badge <%= assignee === 'none' ? 'good' : '' %>" href="<%= qs({ wer: 'none' }) %>">nicht zugewiesen</a>
   <span class="muted" style="margin:0 4px">·</span>
-  <a class="badge <%= !label ? 'good' : '' %>" href="<%= qs({ label: '' }) %>">alle Labels</a>
-  <% Object.keys(LABELS).forEach(function (k) { %><a class="badge lbl lbl-<%= k %> <%= label === k ? 'on' : '' %>" href="<%= qs({ label: k }) %>"><%= LABELS[k] %></a><% }) %>
+  <% var totalOpen = Object.keys(labelCounts).reduce(function (n, k) { return n + labelCounts[k]; }, 0); %>
+  <a class="badge <%= !label ? 'good' : '' %>" href="<%= qs({ label: '' }) %>">alle Labels (<%= totalOpen %>)</a>
+  <% Object.keys(LABELS).forEach(function (k) { %><a class="badge lbl lbl-<%= k %> <%= label === k ? 'on' : '' %>" href="<%= qs({ label: k }) %>" title="<%= labelCounts[k] || 0 %> offen oder in Arbeit"><%= LABELS[k] %> (<%= labelCounts[k] || 0 %>)</a><% }) %>
 </div>
 
 <div class="board" data-back="<%= back %>">

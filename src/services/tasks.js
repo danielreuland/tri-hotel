@@ -256,6 +256,15 @@ async function board({ assignee = null, label = null, me = null } = {}) {
   return columns;
 }
 
+// Nicht erledigte Karten (Offen + In Arbeit) je Label, mit demselben Personenfilter wie das Board
+async function openCounts({ assignee = null, me = null } = {}) {
+  const rows = await db.many(
+    `SELECT source, count(*)::int AS n FROM admin_tasks
+      WHERE status <> 'done' AND ($1::text IS NULL OR ($1 = 'me' AND assignee_id = $2) OR ($1 = 'none' AND assignee_id IS NULL))
+      GROUP BY source`, [assignee, me]);
+  return Object.fromEntries(rows.map((r) => [r.source, r.n]));
+}
+
 // Karte verschieben: Status setzen und Reihenfolge der Zielspalte übernehmen.
 // Wer eine Karte ohne Zuständigen nach „In Arbeit“ zieht, wird zuständig. Rückgabe: Zuständiger danach
 async function move(id, status, order, adminId) {
@@ -309,4 +318,4 @@ async function removeManual(id, adminId) {
   if (r.rowCount) await logAction(adminId, 'task', id, 'delete_task');
 }
 
-module.exports = { STATUSES, LABELS, collect, sync, board, move, assign, createManual, removeManual, fingerprint: fp };
+module.exports = { STATUSES, LABELS, collect, sync, board, openCounts, move, assign, createManual, removeManual, fingerprint: fp };
