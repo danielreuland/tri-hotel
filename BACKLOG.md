@@ -36,16 +36,14 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
-- **Expedia (BEX DACH über Awin) aktivieren**: in Awin prüfen, ob Deeplinks erlaubt sind (Programmdetails „Deeplinking“);
-  Programm-ID (awinmid) und Publisher-ID (awinaffid) in die Deeplink-Vorlage
-  `https://www.awin1.com/cread.php?awinmid=…&awinaffid=…&ued={url_enc}` eintragen, aktivieren. Direktlink und Markenhinweis
-  sind voreingestellt (Branch expedia-bedingungen). Ohne Deeplink-Erlaubnis: Suchlinks abschalten und je Hotel Links aus dem
-  Awin-Linkgenerator eintragen. Regeln: keine Gutscheine/Rabatt-Versprechen, keine Expedia-Links in E-Mails/Offline,
-  „Expedia“ nicht in Seitentitel/Meta-Tags, Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen (Lara).
-  Hotels.com = eigenes Programm.
-- **hotel.de aktivieren**: Admin → Einstellungen → Partnerprogramme → Kennung bzw. Deeplink-Vorlage eintragen,
-  Reihenfolge festlegen (kleinste Zahl = Hauptknopf „Preise prüfen“), Status aktiv. Expedia nutzt ohne eigenen Link je Hotel
-  die Suchseite (Name + Ort) – prüfen, ob das Programm Such-Deeplinks vergütet.
+- **Expedia (BEX DACH über CJ) aktivieren**: Daniel schickt einen fertigen Link aus Expedias Linkbauer
+  (expedia.de/marketing-tools/urlbuilder, Ziel z. B. eine Hotel-Suche) → daraus Deeplink-Vorlage mit {url_enc} bauen,
+  sid = Hotel-Slug prüfen; Notiz im Admin und Datenschutz (CJ statt nur Awin) anpassen; dann aktivieren und Reihenfolge
+  setzen (Hauptknopf). Direktlink und Markenhinweis sind schon live. Regeln: keine Gutscheine/Rabatt-Versprechen, keine
+  Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Seitentiteln/Meta-Tags, Social-Media-Posts mit Expedia-Bezug als
+  Werbung kennzeichnen (Lara). Hotels.com = eigenes Programm.
+- **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
+  daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
   indexierte Seiten zeigt.
 - Plausible: Ziel „Hotel-Anfrage-Start“ anlegen (Klick auf „Trainingslager anfragen“).
