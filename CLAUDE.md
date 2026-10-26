@@ -111,8 +111,19 @@ Die Werte 0,6/0,4, C, m und Mindest-Vollständigkeit stammen aus `rankings.formu
 
 ## Konventionen
 
+- Mit dem Nutzer immer auf Deutsch kommunizieren (Chat, Rückfragen, Zusammenfassungen) – auch nach einer Kontext-Zusammenfassung.
 - Keine Secrets im Repo; Konfiguration über `.env` (siehe `.env.example`).
 - Datenbankänderungen nur über Migrationen in `db/migrations/`.
 - Jede Admin-Änderung an Fakten oder Status schreibt einen Eintrag in `admin_actions`.
 - Keine Fotos von fremden Websites übernehmen (Urheberrecht). Version 1: Hotelseiten ohne Hotelfoto (Karte/Platzhalter). Bilder nur mit dokumentierter Berechtigung in `entity_images` (Hotel-Freigabe, Partner-Feed nach dessen Bedingungen, Places mit Attribution, eigene Fotos, freie Lizenzen nur für generische Motive). Kein Hotlinking, Urhebervermerk immer anzeigen.
 - Keine Triathlon-Annahmen im Code: Kategorien, Kriterien, Formel, Labels, Beschriftungen immer aus `rankings`/`criteria` lesen.
+
+## Arbeiten auf zwei Rechnern
+
+Abgleich nur über Git (GitHub `danielreuland/tri-hotel`). Chatverlauf und lokale Claude-Notizen (`~/.claude`) wandern nicht mit – Stand und Entscheidungen gehören in Commits, `CLAUDE.md` oder die Übergabe-Notiz `WIP-KI-MAILS.md`.
+
+- Vor dem Start `git pull`, am Ende committen und pushen. Arbeiten beide Rechner gleichzeitig: je Rechner bzw. Aufgabe ein eigener Branch, danach mergen.
+- **Deploy** (Server holt `main`): nur deployen, wenn `main` lokal aktuell ist (`git pull` vorher), damit nichts vom anderen Rechner verloren geht.
+- **Migrationen:** Nummern vor dem Anlegen mit `git pull` abgleichen – zwei parallele `0NN_…sql` mit derselben Nummer kollidieren.
+- `package-lock.json` ist eingecheckt; Abhängigkeiten nur mit `npm install <paket>` ändern und Lock-Datei mitcommitten.
+- `.env` gibt es nur auf dem Server (Schlüssel wie Hunter, Mail, KI). Lokal laufen die Tests ohne `.env`; lokale Werte nie ins Repo oder in `.env.example`.
