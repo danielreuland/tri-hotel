@@ -50,9 +50,9 @@ test('Partnerlinks gruppieren: Weiterleitung über /go oder direkt (z. B. Expedi
 });
 
 test('CJ-Deeplink: Zieladresse kodiert, Objekt-Slug als sid', () => {
-  const p = { link_template: 'https://www.tkqlhce.com/click-101907930-13852993?url={url_enc}&sid={slug}' };
+  const p = { link_template: 'https://www.tkqlhce.com/click-101907930-13904715?url={url_enc}&sid={slug}' };
   const target = partners.searchUrl({ search_url: 'https://www.expedia.de/Hotel-Search?destination={q}' }, { name: 'Playitas Hotel', city: 'Las Playitas' });
   assert.equal(partners.buildUrl(p, target, { slug: 'playitas-hotel-las-playitas' }),
-    'https://www.tkqlhce.com/click-101907930-13852993?url=https%3A%2F%2Fwww.expedia.de%2FHotel-Search%3Fdestination%3DPlayitas%2520Hotel%2520Las%2520Playitas&sid=playitas-hotel-las-playitas');
+    'https://www.tkqlhce.com/click-101907930-13904715?url=https%3A%2F%2Fwww.expedia.de%2FHotel-Search%3Fdestination%3DPlayitas%2520Hotel%2520Las%2520Playitas&sid=playitas-hotel-las-playitas');
   assert.equal(partners.buildUrl(p, target), partners.buildUrl(p, target, { slug: '' }), 'ohne Slug bleibt sid leer');
 });

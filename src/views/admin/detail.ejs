@@ -291,7 +291,7 @@
 
     <section class="card" style="margin-top:16px" id="partnerlinks" data-tab="stammdaten">
       <h2 style="margin-top:0">Partnerlinks</h2>
-      <p class="muted" style="margin-top:0"><small>Links zur Seite dieses <%= ranking.entity_label_sg %>s beim jeweiligen Anbieter. Erscheinen auf der Profilseite als Anzeige, alphabetisch und ohne Einfluss auf Score oder Reihenfolge. Die Partnerkennung wird automatisch ergänzt (<a href="/admin/partner">Partnerprogramme</a>).</small></p>
+      <p class="muted" style="margin-top:0"><small>Links zur Seite dieses <%= ranking.entity_label_sg %>s beim jeweiligen Anbieter. Erscheinen auf der Profilseite im Kasten „Buchen &amp; Anfragen“ als Anzeige – in der Reihenfolge aus den Partnerprogrammen, ohne Einfluss auf Score oder Reihenfolge der Hotels. Die Partnerkennung wird automatisch ergänzt (<a href="/admin/partner">Partnerprogramme</a>).</small></p>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/partnerlinks">
         <% partnerPrograms.forEach(function (p) { var get = function (kind) { var l = partnerLinks.find(function (x) { return x.program_id === p.id && x.kind === kind; }); return l ? l.url : ''; }; %>
           <fieldset style="border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:0 0 10px">
@@ -300,7 +300,7 @@
               <div><label>Seite mit Preisen / Buchung</label><input name="links[<%= p.id %>][booking]" type="url" placeholder="https://" value="<%= get('booking') %>"></div>
               <div><label>Bewertungsseite <small class="muted">optional</small></label><input name="links[<%= p.id %>][reviews]" type="url" placeholder="https://" value="<%= get('reviews') %>"></div>
             </div>
-            <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener">Bei <%= p.name %> suchen ↗</a></small><% } %>
+            <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener"><%= /google\./.test(p.search_url) ? p.name + '-Seite des Hotels suchen ↗' : 'Bei ' + p.name + ' suchen ↗' %></a></small><% } %>
           </fieldset>
         <% }) %>
         <button class="btn small" type="submit">Partnerlinks speichern</button>
