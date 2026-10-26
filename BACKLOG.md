@@ -10,9 +10,21 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
-### 1. SEO prüfen und optimieren (Agenda 21.10.)
-Search Console (erste indexierte Seiten, Fehler), Titel/Beschreibungen, interne Links, strukturierte Daten, Ladezeit,
-Inhalte je Region/Land.
+### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
+Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten
+Titel, alt-Texte, HTTPS/HSTS, gzip, Ø 21 ms). Erledigt 26.10.: lange Titel gekürzt (seo.entityTitle), aggregateRating aus
+Athleten-Bewertungen. Offen, nach Wirkung sortiert:
+- **Redaktionstexte**: nur 10 von 42 Live-Hotels haben einen freigegebenen Text („Unsere Einschätzung“) – eigener, einzigartiger
+  Inhalt ist der größte Hebel. Vorschlag: Sammelaktion „Entwurf erzeugen“ für alle Live-Hotels ohne Text (ca. 3 Cent je Text)
+  + Board-Karte „Text prüfen und freigeben“.
+- **Mehr Hotels je Region**: Teneriffa, Gardasee, Algarve haben nur 1 Hotel (Regionsseite bleibt unter der Mindestzahl 2 noindex),
+  Kreta/Zypern/Girona 0. Die 99 geparkten Import-Hotels würden das füllen (siehe „Zu entscheiden“).
+- **Dünne Seiten**: 21 Camp-Anbieter-Profile und /region/fuerteventura haben < 300 Wörter. Anbieter-Profile anreichern
+  (Kurzprofil, Leistungen, Zielorte, Hotels, Preise ausformulieren; ggf. KI-Entwurf wie bei Hotels) oder bis dahin noindex.
+- **Search Console** (ab ca. Anfang November aussagekräftig): Indexierung, Suchanfragen, CTR je Seite auswerten → Titel/
+  Beschreibungen gezielt nachschärfen, Themen für neue Seiten ableiten.
+- Kleinigkeiten: /triscore ohne strukturierte Daten (z. B. FAQ), Länderseiten mit nur 1 Hotel (PT, IT, TR).
+- Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
