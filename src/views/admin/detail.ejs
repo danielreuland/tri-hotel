@@ -444,13 +444,13 @@
           <small class="muted"><%= text.model ? 'erzeugt mit ' + text.model + (text.generated_at ? ' am ' + new Date(text.generated_at).toLocaleString('de-DE') : '') : 'von Hand geschrieben' %><%= text.published_at ? ' · freigegeben am ' + new Date(text.published_at).toLocaleString('de-DE') : '' %></small>
         <% } %>
       </p>
-      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/notizen" style="margin-bottom:14px">
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/notizen" style="margin-bottom:14px" data-busy="Wird gespeichert …">
         <label for="t-notes">Redaktionelle Notizen <small class="muted">eigene Einschätzung in Stichworten – fließt in den KI-Entwurf ein, erscheint nicht direkt auf der Seite</small></label>
         <textarea id="t-notes" name="notes" rows="3" maxlength="3000" placeholder="z. B. viel Wind, wenig Streckenvielfalt · direkt am Strand · Sportlerbahnen gegen Aufpreis · ganze Anlage auf Sportler ausgerichtet"><%= text ? text.notes : '' %></textarea>
         <button class="btn small secondary" type="submit">Notizen speichern</button>
         <small class="muted">Danach „Neu erzeugen“, damit der Entwurf sie berücksichtigt. <a href="/admin/ki-texte">So entsteht der Text ↗</a></small>
       </form>
-      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/erzeugen" style="margin-bottom:12px"
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/text/erzeugen" style="margin-bottom:12px" data-busy="Text wird erzeugt … (ca. 20 Sekunden)"
             <% if (hasText) { %>data-confirm="Den bisherigen Text durch einen neuen Entwurf ersetzen?"<% } %>>
         <button class="btn small secondary" type="submit"><%= hasText ? 'Neu erzeugen' : 'Entwurf erzeugen' %></button>
         <small class="muted">ca. 3 Cent</small>

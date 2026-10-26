@@ -583,3 +583,13 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 
 /* Hotelseite: Hinweise zu Partnerlinks und Marken am Seitenende */
 .page-notes { font-size: .75rem; line-height: 1.4; margin: 32px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* Admin: Rückmeldungen schweben oben rechts (auch nach Sprung zu einem Abschnitt sichtbar) */
+.toast-wrap { position: fixed; top: 76px; right: 16px; z-index: 1000; display: grid; gap: 8px; max-width: min(440px, calc(100vw - 32px)); }
+.toast { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; background: var(--surface, #fff);
+  border: 1px solid var(--border); border-left: 5px solid var(--ok, #15803d); box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+  font-weight: 600; transition: opacity .4s ease, transform .4s ease; }
+.toast.bad { border-left-color: var(--bad, #b91c1c); }
+.toast span { flex: 1; }
+.toast.fade { opacity: 0; transform: translateY(-6px); }
+.toast-x { border: 0; background: none; font-size: 1.2rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 2px; }
