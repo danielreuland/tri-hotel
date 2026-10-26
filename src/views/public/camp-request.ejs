@@ -64,12 +64,21 @@
   </form>
 <% } else { %>
   <% var sel = [].concat(preselected || []); %>
-  <% if (!ranked.length) { %>
+  <% var canAskHotel = Boolean(hotel && hotel.contact_email); %>
+  <% if (!ranked.length && !canAskHotel) { %>
     <div class="card"><p style="margin:0">Leider passt gerade kein Anbieter zu deinen Wünschen. <a href="/trainingscamp/angebote">Wünsche ändern</a> oder <a href="/trainingscamp">alle Anbieter ansehen</a>.</p></div>
   <% } else { %>
-    <p class="lead" style="max-width:720px">Die ersten <%= Math.min(3, ranked.length) %> passen am besten und sind schon ausgewählt. Du kannst bis zu <%= MAX %> Anbieter wählen – jeder bekommt deine Anfrage und antwortet dir direkt.</p>
+    <% if (ranked.length) { %>
+      <p class="lead" style="max-width:720px"><%= canAskHotel ? 'Deine Anfrage kann direkt an das Hotel gehen und zusätzlich an Camp-Anbieter. ' : '' %>Die ersten <%= Math.min(3, ranked.length) %> Anbieter passen am besten und sind schon ausgewählt. Du kannst bis zu <%= MAX %> Anbieter wählen – jeder bekommt deine Anfrage und antwortet dir direkt.</p>
+    <% } else { %>
+      <p class="lead" style="max-width:720px">Deine Anfrage geht direkt an das Hotel; es antwortet dir per E-Mail. Passende Camp-Anbieter gibt es für diese Wünsche gerade nicht.</p>
+    <% } %>
     <form method="post" action="/trainingscamp/angebote/senden" class="card" novalidate data-sending="Wird gesendet …">
       <input type="hidden" name="wishes" value="<%= wishesJson %>">
+      <% if (canAskHotel) { %>
+        <label class="inline cr-hotel-ask" style="margin:0 0 12px;align-items:flex-start"><input type="checkbox" name="ask_hotel" <%= form.ask_hotel === 'on' ? 'checked' : '' %>>
+          <span><strong>Direkt beim <%= hotel.name %> anfragen</strong><%= hotel.city ? ' · ' + hotel.city : '' %><br><small class="muted">Das Hotel bekommt deine Anfrage und antwortet dir direkt – z. B. zu Zimmern, Bahnzeiten oder Radgarage.</small></span></label>
+      <% } %>
       <ul class="cr-providers" style="list-style:none;padding:0;margin:0 0 12px">
         <% ranked.forEach(function (p) { %>
           <li style="border-top:1px solid var(--border);padding:10px 0">
@@ -87,7 +96,7 @@
       </div>
       <div class="hp" aria-hidden="true"><label for="cr-hp">Bitte leer lassen</label><input id="cr-hp" name="company_url" type="text" tabindex="-1" autocomplete="off"></div>
       <label class="inline"><input type="checkbox" name="consent" <%= form.consent === 'on' ? 'checked' : '' %>>
-        <span>Ich bin einverstanden, dass tri-hotel.de meine Anfrage mit Name, E-Mail-Adresse, Telefon (falls angegeben) und den Angaben oben an die <strong>oben angehakten Anbieter</strong> weitergibt, damit sie mir Angebote schicken können. Die Anbieter dürfen mir dazu antworten; eine Buchung ist damit nicht verbunden. *</span></label>
+        <span>Ich bin einverstanden, dass tri-hotel.de meine Anfrage mit Name, E-Mail-Adresse, Telefon (falls angegeben) und den Angaben oben an <strong><%= canAskHotel ? 'das Hotel bzw. die oben angehakten Anbieter' : 'die oben angehakten Anbieter' %></strong> weitergibt, damit sie mir Angebote schicken können. Sie dürfen mir dazu antworten; eine Buchung ist damit nicht verbunden. *</span></label>
       <p class="muted"><small>Wir schicken dir zuerst einen Bestätigungslink; in der Mail stehen alle Anbieter noch einmal mit Namen. <a href="/datenschutz#camp-anfragen" target="_blank">Datenschutz</a> · Einige Anbieter zahlen uns eine Vergütung für vermittelte Anfragen; auf Auswahl und Reihenfolge hat das keinen Einfluss.</small></p>
       <p style="margin-bottom:0"><button class="btn cta" type="submit">Anfrage senden</button> <a class="btn secondary" href="/trainingscamp/angebote">Wünsche ändern</a></p>
     </form>

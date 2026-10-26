@@ -115,6 +115,19 @@ Der Link ist {{stunden}} Stunden gültig. Du hast nichts angefragt? Dann ignorie
 
 Bitte verwendet die Daten nur für diese Anfrage.`,
   },
+  'lead-forward-hotel': {
+    label: 'Trainingslager-Anfrage an Hotel',
+    recipient: 'Hotel (Kontakt-E-Mail aus den Stammdaten)',
+    trigger: 'wenn eine bestätigte Anfrage „direkt beim Hotel“ im Admin weitergeleitet wird',
+    subject: 'Anfrage Trainingslager über {{site}}: {{name}}',
+    body: `Guten Tag,
+
+über {{site}} interessiert sich jemand für ein Trainingslager im **{{anbieter}}** und hat der Weitergabe seiner Anfrage an Sie zugestimmt. Antworten Sie einfach auf diese Mail – sie geht direkt an den Interessenten.
+
+{{anfrage}}
+
+Die Weitergabe ist für Sie kostenlos. Bitte verwenden Sie die Daten nur für diese Anfrage.`,
+  },
   'request-verify': {
     label: 'Camp-Angebote anfordern bestätigen',
     recipient: 'Interessent (Anfrage an mehrere Camp-Anbieter)',
@@ -171,6 +184,7 @@ const VARS = {
   'review-verify': { link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden', name: 'Name des Gastes' },
   'lead-verify': { anbieter: 'Name des Camp-Anbieters', name: 'Name des Interessenten', link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden' },
   'lead-forward': { anbieter: 'Name des Camp-Anbieters', name: 'Name des Interessenten', anfrage: 'alle Angaben der Anfrage (Zeitraum, Personen, Niveau, Hotel, Kontakt, Nachricht)' },
+  'lead-forward-hotel': { anbieter: 'Name des Hotels', name: 'Name des Interessenten', anfrage: 'alle Angaben der Anfrage (Zeitraum, Personen, Niveau, Kontakt, Nachricht)' },
   'request-verify': { name: 'Name des Interessenten', anbieter: 'Liste der gewählten Anbieter', anzahl: 'Anzahl Anbieter', link: 'Bestätigungslink', stunden: 'Gültigkeit des Links in Stunden' },
   'lead-followup': { anbieter: 'Name des Camp-Anbieters', name: 'Name des Interessenten', zeitraum: 'Zeitraum der Anfrage', link_ja: 'Link „Angebot geschickt“', link_nein: 'Link „kein Angebot möglich“', link_passt_nicht: 'Link „passt nicht“' },
   'inquiry-answered': { link: 'Link zur Prüfansicht', antworten: 'Anzahl Antworten', fotos: '„, 2 Foto(s)“ oder leer', einwilligungen: 'neue Einwilligungen (leer, wenn keine)' },
@@ -189,6 +203,7 @@ function sampleData(key, site) {
     'review-verify': { ...base, link: `${url}/bewertung-bestaetigen/beispiel`, hours: 72, name: 'Anna K.' },
     'lead-verify': { ...base, entityName: 'Beispiel-Camps', name: 'Anna', link: `${url}/anfrage-bestaetigen/beispiel`, hours: 72 },
     'lead-forward': { ...base, entityName: 'Beispiel-Camps', lead: { name: 'Anna K.', email: 'anna@example.com', phone: '+49 170 1234567', period_month: '2027-03-01', period_note: 'Osterferien', persons: 2, hotel_text: 'Beispielhotel Mar Azul', message: 'Wir suchen ein Camp mit Schwimmtechnik.' }, levelLabel: 'Fortgeschritten' },
+    'lead-forward-hotel': { ...base, lead: { name: 'Anna K.', email: 'anna@example.com', period_month: '2027-03-01', period_note: 'Osterferien', persons: 12, message: 'Vereinstrainingslager, 50-m-Bahn morgens gewünscht.' }, levelLabel: 'Fortgeschritten', extraLines: ['Gruppe/Verein: TV Beispiel', 'Zimmer: 6 Doppelzimmer'] },
     'request-verify': { ...base, name: 'Anna', providers: ['Beispiel-Camps', 'Muster-Coaching', 'Trainingslager Süd'], link: `${url}/angebote-bestaetigen/beispiel`, hours: 72 },
     'lead-followup': { ...base, entityName: 'Beispiel-Camps', name: 'Anna K.', period: 'März 2027', links: { offer_sent: `${url}/anbieter-rueckmeldung/beispiel/offer_sent`, no_offer: `${url}/anbieter-rueckmeldung/beispiel/no_offer`, not_relevant: `${url}/anbieter-rueckmeldung/beispiel/not_relevant` } },
     'inquiry-answered': { ...base, answers: 3, photos: 2, consents: ['Fotos im Profil'], link: `${url}/admin/meldungen/beispiel#anfragen` },
@@ -218,7 +233,7 @@ function varsFor(key, data, site, baseUrl) {
   }
   if (key === 'review-verify') Object.assign(v, { link: d.link || '', stunden: String(d.hours || ''), name: d.name || '' });
   if (key === 'lead-verify') Object.assign(v, { anbieter: d.entityName || '', name: d.name || '', link: d.link || '', stunden: String(d.hours || '') });
-  if (key === 'lead-forward') {
+  if (key === 'lead-forward' || key === 'lead-forward-hotel') {
     const l = d.lead || {};
     // Eingaben des Interessenten: keine Formatierungszeichen durchlassen (kein **fett**, keine [Links](…))
     const clean = (t) => String(t || '').replace(/[*[\]]/g, '').trim();

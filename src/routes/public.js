@@ -252,7 +252,9 @@ async function renderEntity(req, res, ranking, slug) {
     bestMonths: seo.bestMonths(ranking.formula, climate), bestTime: seo.monthRanges(seo.bestMonths(ranking.formula, climate), MONTHS_DE),
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
-    guestPhotos, regionExamples, galleryRegion: region, partnerGroups, hotelInquiryUrl: null,
+    guestPhotos, regionExamples, galleryRegion: region, partnerGroups,
+    // „Trainingslager anfragen“: Anfrage direkt ans Hotel (über die Camp-Anfrage), nur mit Kontaktadresse
+    hotelInquiryUrl: res.locals.campGuide && entity.contact_email ? `/trainingscamp/angebote?hotel=${encodeURIComponent(entity.slug)}` : null,
     reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),
     reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,

@@ -19,7 +19,7 @@ const pickWishes = (body) => Object.fromEntries(WISH_KEYS.filter((k) => body[k] 
 
 async function hotelFrom(req, slug) {
   if (!slug || !/^[a-z0-9-]{1,120}$/.test(slug) || !req.hostRanking) return null;
-  return db.one(`SELECT e.id, e.name, e.slug, e.city FROM entities e JOIN entity_rankings er ON er.entity_id = e.id
+  return db.one(`SELECT e.id, e.name, e.slug, e.city, e.contact_email FROM entities e JOIN entity_rankings er ON er.entity_id = e.id
     WHERE e.slug = $1 AND er.ranking_id = $2 AND er.status = 'live'`, [slug, req.hostRanking.id]);
 }
 
@@ -50,7 +50,7 @@ router.post(BASE, limiter, wrap(async (req, res, next) => {
   const ranked = requests.rankProviders(providers, wishes, ctx);
   res.render('public/camp-request', {
     title: 'Passende Camp-Anbieter', noindex: true, step: 2, wishesJson: JSON.stringify(pickWishes(req.body)), wishes, ranked,
-    preselected: ranked.slice(0, requests.SUGGEST).map((p) => p.id), MAX: requests.MAX_PROVIDERS, form: {}, errors: [], hotel, LEVELS: leads.LEVELS,
+    preselected: ranked.slice(0, requests.SUGGEST).map((p) => p.id), MAX: requests.MAX_PROVIDERS, form: { ask_hotel: 'on' }, errors: [], hotel, LEVELS: leads.LEVELS,
   });
 }));
 
@@ -68,7 +68,7 @@ router.post(`${BASE}/senden`, limiter, wrap(async (req, res, next) => {
   if (wishErrors.length) return renderStep1(res, req, { form: raw, errors: wishErrors, regions, hotel });
   const { providers, ctx } = await requests.context(req.site.id, wishes, hotel);
   const ranked = requests.rankProviders(providers, wishes, ctx);
-  const { errors, ids, contact } = requests.validateSelection(req.body, ranked);
+  const { errors, ids, contact, askHotel } = requests.validateSelection(req.body, ranked, { hotel });
   if (!errors.length && (await leads.recentCountByIp(req.ip)) >= 5) errors.push('Zu viele Anfragen in kurzer Zeit. Bitte versuch es morgen noch einmal.');
   if (errors.length) {
     return res.status(422).render('public/camp-request', {
@@ -80,7 +80,7 @@ router.post(`${BASE}/senden`, limiter, wrap(async (req, res, next) => {
   const dup = await db.one(`SELECT 1 FROM camp_requests WHERE email = $1 AND created_at > now() - interval '30 minutes'`, [contact.email]);
   if (!dup) {
     const chosen = ids.map((id) => ranked.find((p) => p.id === id));
-    await requests.create({ site: req.site, wishes, contact, chosen, suggested: ranked.slice(0, requests.SUGGEST), entity: hotel, ip: req.ip });
+    await requests.create({ site: req.site, wishes, contact, chosen, suggested: ranked.slice(0, requests.SUGGEST), entity: hotel, ip: req.ip, askHotel });
   }
   res.redirect(303, `${BASE}/danke`);
 }));

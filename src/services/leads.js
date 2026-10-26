@@ -85,8 +85,9 @@ async function verify(token) {
 
 async function load(id) {
   return db.one(
-    `SELECT l.*, p.name AS provider_name, p.lead_email, p.contact_email AS provider_contact_email, p.lead_model, p.lead_fee, p.lead_active, p.site_id AS provider_site, e.name AS entity_name
-       FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id WHERE l.id = $1`, [id]);
+    `SELECT l.*, COALESCE(p.name, e.name) AS provider_name, p.lead_email, COALESCE(p.contact_email, CASE WHEN l.to_entity THEN e.contact_email END) AS provider_contact_email,
+            p.lead_model, p.lead_fee, COALESCE(p.lead_active, false) AS lead_active, p.site_id AS provider_site, e.name AS entity_name
+       FROM camp_leads l LEFT JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id WHERE l.id = $1`, [id]);
 }
 
 // Admin: E-Mail ohne Bestätigung als geprüft behandeln (z. B. Anfrage per Telefon nachgefragt)
@@ -107,8 +108,9 @@ async function forward(id, adminId) {
   const site = await db.one('SELECT * FROM sites WHERE id = $1', [l.site_id]);
   const request = l.request_id ? await db.one('SELECT * FROM camp_requests WHERE id = $1', [l.request_id]) : null;
   const extra = request ? require('./camp-requests').detailLines(request) : [];
+  // Anfrage direkt ans Hotel: Bezug zum Objekt (Postfach ordnet Antworten zu), keine Abrechnung
   const sent = await mailer.send({
-    to, template: 'lead-forward', site, replyTo: l.email, campProviderId: l.provider_id,
+    to, template: l.to_entity ? 'lead-forward-hotel' : 'lead-forward', site, replyTo: l.email, campProviderId: l.provider_id, entityId: l.to_entity ? l.entity_id : null,
     data: { entityName: l.provider_name, lead: l, levelLabel: LEVELS[l.level] || null, extraLines: extra },
   });
   if (!sent) throw new Error(`Mailversand an ${l.provider_name} fehlgeschlagen – Anfrage bleibt offen.`);
@@ -141,8 +143,8 @@ const OUTCOMES = { offer_sent: 'Angebot geschickt', no_offer: 'kein Angebot mög
 // Täglich: weitergeleitete Anfragen ohne Rückmeldung nach 7 Tagen einmal nachfragen
 async function sendFollowups() {
   const due = await db.many(
-    `SELECT l.*, p.name AS provider_name, p.lead_email, p.contact_email AS provider_contact_email
-       FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+    `SELECT l.*, COALESCE(p.name, e.name) AS provider_name, p.lead_email, COALESCE(p.contact_email, CASE WHEN l.to_entity THEN e.contact_email END) AS provider_contact_email
+       FROM camp_leads l LEFT JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id
       WHERE l.status = 'forwarded' AND l.outcome IS NULL AND l.followup_sent_at IS NULL AND l.anonymized_at IS NULL
         AND l.forwarded_at < now() - make_interval(days => $1)`, [FOLLOWUP_AFTER_DAYS]);
   let sent = 0;
@@ -154,7 +156,7 @@ async function sendFollowups() {
     const base = `${sites.urlFor(site)}/anbieter-rueckmeldung/${tok.token}`;
     const period = [l.period_month ? new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : null, l.period_note].filter(Boolean).join(', ');
     const ok = await mailer.send({
-      to, template: 'lead-followup', site, campProviderId: l.provider_id,
+      to, template: 'lead-followup', site, campProviderId: l.provider_id, entityId: l.to_entity ? l.entity_id : null,
       data: { entityName: l.provider_name, name: l.name, period, links: Object.fromEntries(Object.keys(OUTCOMES).map((k) => [k, `${base}/${k}`])) },
     });
     if (!ok) continue;
@@ -166,7 +168,8 @@ async function sendFollowups() {
 
 async function findByFollowupToken(token) {
   return db.one(
-    `SELECT l.*, p.name AS provider_name FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id WHERE l.followup_token_hash = $1`, [sha256(token)]);
+    `SELECT l.*, COALESCE(p.name, e.name) AS provider_name FROM camp_leads l LEFT JOIN camp_providers p ON p.id = l.provider_id
+       LEFT JOIN entities e ON e.id = l.entity_id WHERE l.followup_token_hash = $1`, [sha256(token)]);
 }
 
 // Rückmeldung speichern (nur per Formular-Absenden, nicht schon beim Öffnen des Links – Mailscanner öffnen Links automatisch)

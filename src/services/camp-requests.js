@@ -114,25 +114,29 @@ async function context(siteId, w, entity = null) {
 }
 
 // Schritt 2: Auswahl, Kontakt, Einwilligung prüfen
-function validateSelection(body, ranked) {
+// hotel: Hotel der Hotelseite mit Kontaktadresse – kann zusätzlich (oder allein) angefragt werden (ask_hotel)
+function validateSelection(body, ranked, { hotel = null } = {}) {
   const errors = [];
+  const askHotel = Boolean(hotel && hotel.contact_email && body.ask_hotel === 'on');
   const ids = [...new Set([].concat(body.providers || []))].filter((id) => ranked.some((p) => p.id === id)).slice(0, MAX_PROVIDERS + 1);
   const contact = {
     name: text(body.name, 80) || '',
     email: String(body.email || '').trim().toLowerCase().slice(0, 200),
     phone: String(body.phone || '').trim().replace(/[^0-9+ ()/-]/g, '').slice(0, 30) || null,
   };
-  if (!ids.length) errors.push('Bitte wähle mindestens einen Anbieter.');
+  if (!ids.length && !askHotel) errors.push(hotel && hotel.contact_email ? 'Bitte wähle das Hotel oder mindestens einen Anbieter.' : 'Bitte wähle mindestens einen Anbieter.');
   if (ids.length > MAX_PROVIDERS) errors.push(`Bitte höchstens ${MAX_PROVIDERS} Anbieter wählen.`);
   if (contact.name.length < 2) errors.push('Bitte gib deinen Namen an.');
   if (!isEmail(contact.email)) errors.push('Bitte gib eine gültige E-Mail-Adresse an – wir schicken dir einen Bestätigungslink.');
   if (body.consent !== 'on') errors.push('Bitte bestätige, dass wir deine Anfrage an die gewählten Anbieter weitergeben dürfen.');
-  return { errors, ids: ids.slice(0, MAX_PROVIDERS), contact };
+  return { errors, ids: ids.slice(0, MAX_PROVIDERS), contact, askHotel };
 }
 
-async function create({ site, wishes, contact, chosen, suggested, entity, ip }) {
+async function create({ site, wishes, contact, chosen, suggested, entity, ip, askHotel = false }) {
   const tok = newToken();
-  const consent = consentText(chosen.map((p) => p.name));
+  const toHotel = Boolean(askHotel && entity);
+  const recipients = [...(toHotel ? [entity.name] : []), ...chosen.map((p) => p.name)];
+  const consent = consentText(recipients);
   const id = await db.tx(async (c) => {
     const row = (await c.query(
       `INSERT INTO camp_requests (site_id, kind, period_month, period_note, duration_days, destination, level, focus, support, hotel_wanted, flight_wanted,
@@ -153,11 +157,19 @@ async function create({ site, wishes, contact, chosen, suggested, entity, ip }) 
         [site.id, p.id, row.id, entity ? entity.id : null, entity ? entity.name : null, contact.name, contact.email, contact.phone, wishes.period_month,
           wishes.period_note, wishes.persons, wishes.level, wishes.message, consent, ipHash(ip)]);
     }
+    // Anfrage direkt ans Hotel: Lead ohne Camp-Anbieter (Weiterleitung an die Kontaktadresse des Hotels)
+    if (toHotel) {
+      await c.query(
+        `INSERT INTO camp_leads (site_id, provider_id, to_entity, request_id, entity_id, hotel_text, name, email, phone, period_month, period_note, persons, level, message, consent_text, ip_hash)
+         VALUES ($1, NULL, true, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [site.id, row.id, entity.id, entity.name, contact.name, contact.email, contact.phone, wishes.period_month,
+          wishes.period_note, wishes.persons, wishes.level, wishes.message, consent, ipHash(ip)]);
+    }
     return row.id;
   });
   await mailer.send({
     to: contact.email, template: 'request-verify', site,
-    data: { name: contact.name, providers: chosen.map((p) => p.name), hours: leads.VERIFY_HOURS, link: `${sites.urlFor(site)}/angebote-bestaetigen/${tok.token}` },
+    data: { name: contact.name, providers: recipients, hours: leads.VERIFY_HOURS, link: `${sites.urlFor(site)}/angebote-bestaetigen/${tok.token}` },
   });
   return id;
 }

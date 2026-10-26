@@ -116,7 +116,8 @@ async function collect() {
   }
   // Camp-Anfragen: bestätigt, aber noch nicht weitergeleitet
   for (const l of await db.many(
-    `SELECT l.id, l.name, l.persons, l.period_month, p.name AS provider FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+    `SELECT l.id, l.name, l.persons, l.period_month, COALESCE(p.name, e.name) AS provider FROM camp_leads l
+       LEFT JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id
       WHERE l.status = 'confirmed' ORDER BY l.confirmed_at NULLS LAST`)) {
     push({ source: 'camp_lead', source_key: `lead:${l.id}`, title: `${l.provider} – Anfrage ${l.name}`,
       detail: [{ level: 'todo', text: `${l.persons} Person(en)${l.period_month ? `, ${new Date(l.period_month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' })}` : ''} – prüfen und weiterleiten` }],

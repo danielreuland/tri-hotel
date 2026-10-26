@@ -67,3 +67,18 @@ test('consentText nennt jeden Empfänger; detailLines beschreibt Zimmer und Grup
   assert.ok(lines.includes('Rechnung an den Verein'));
   assert.ok(!lines.some((l) => l.startsWith('Flug')), '„egal“ wird nicht aufgeführt');
 });
+
+test('Camp-Anfrage: Hotel direkt anfragen (allein oder zusätzlich zu Anbietern)', () => {
+  const ranked = [{ id: 'p1', name: 'Anbieter 1' }];
+  const contact = { name: 'Anna K.', email: 'anna@example.com', consent: 'on' };
+  const hotel = { id: 'h1', name: 'Hotel Mar', contact_email: 'info@mar.example' };
+  const onlyHotel = req.validateSelection({ ...contact, ask_hotel: 'on' }, ranked, { hotel });
+  assert.deepEqual(onlyHotel.errors, []);
+  assert.equal(onlyHotel.askHotel, true);
+  assert.deepEqual(onlyHotel.ids, []);
+  const none = req.validateSelection({ ...contact }, ranked, { hotel });
+  assert.match(none.errors.join(' '), /Hotel oder mindestens einen Anbieter/);
+  const noAddress = req.validateSelection({ ...contact, ask_hotel: 'on' }, ranked, { hotel: { ...hotel, contact_email: null } });
+  assert.equal(noAddress.askHotel, false, 'ohne Kontaktadresse kein Hotel als Empfänger');
+  assert.match(req.consentText(['Hotel Mar', 'Anbieter 1']), /folgende Anbieter weitergibt.*Hotel Mar, Anbieter 1/);
+});

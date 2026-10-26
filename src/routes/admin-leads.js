@@ -16,11 +16,12 @@ router.get('/', wrap(async (req, res) => {
   const filter = FILTERS[req.query.status] ? req.query.status : 'offen';
   const site = await db.one('SELECT id FROM sites ORDER BY is_default DESC LIMIT 1');
   const rows = await db.many(
-    `SELECT l.*, p.name AS provider_name, p.slug AS provider_slug, p.lead_email, p.lead_active, p.contact_email AS provider_contact_email, p.lead_model, p.lead_fee,
+    `SELECT l.*, COALESCE(p.name, e.name) AS provider_name, p.slug AS provider_slug, p.lead_email, COALESCE(p.lead_active, false) AS lead_active,
+            COALESCE(p.contact_email, CASE WHEN l.to_entity THEN e.contact_email END) AS provider_contact_email, p.lead_model, p.lead_fee,
             e.name AS entity_name, r.kind AS req_kind, r.club_name AS req_club, r.rooms_single AS req_single, r.rooms_double AS req_double,
-            cardinality(r.provider_ids) AS req_providers, r.status AS req_status
-       FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id LEFT JOIN camp_requests r ON r.id = l.request_id
-      WHERE l.status = ANY($1::text[]) ORDER BY (l.status = 'confirmed') DESC, l.created_at DESC, l.request_id, p.name LIMIT 300`, [FILTERS[filter]]);
+            (SELECT count(*)::int FROM camp_leads x WHERE x.request_id = l.request_id) AS req_providers, r.status AS req_status
+       FROM camp_leads l LEFT JOIN camp_providers p ON p.id = l.provider_id LEFT JOIN entities e ON e.id = l.entity_id LEFT JOIN camp_requests r ON r.id = l.request_id
+      WHERE l.status = ANY($1::text[]) ORDER BY (l.status = 'confirmed') DESC, l.created_at DESC, l.request_id, l.to_entity DESC, p.name LIMIT 300`, [FILTERS[filter]]);
   const counts = Object.fromEntries((await db.many(`SELECT status, count(*)::int AS n FROM camp_leads GROUP BY status`)).map((r) => [r.status, r.n]));
   const active = await db.many(`SELECT name, slug, lead_model, lead_fee, lead_commission, lead_email FROM camp_providers WHERE lead_active ORDER BY lower(name)`);
   res.render('admin/leads', {
