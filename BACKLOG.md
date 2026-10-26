@@ -26,6 +26,13 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - Kleinigkeiten: /triscore ohne strukturierte Daten (z. B. FAQ), Länderseiten mit nur 1 Hotel (PT, IT, TR).
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
 
+### Hotelseite überarbeiten (Vorschläge 26.10.2026, Entscheidung offen)
+Befund und drei Varianten mit Handy-Skizzen: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN
+A Steckbrief zuerst (Score mit Balken je Disziplin + Kernfakten oben, klein), B nach Disziplinen (Einschätzung, Fakten mit
+Quelle, Leistungen, Athleten-Note je Disziplin zusammengeführt, mittel – passt zum neuen Text-Prompt), C Entscheidungshilfe
+(Hero, „passt / passt nicht“, Reisemonat, Mini-Vergleich, mittel bis groß). Für alle: Handy-Kopfzeile einzeilig, „Preise
+prüfen“ am Handy nur in der Leiste, Fotos als Streifen, Karten-Vorschau. Vorschlag: A jetzt, B mit dem neuen Prompt.
+
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
 Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
