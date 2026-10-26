@@ -218,7 +218,7 @@ async function renderEntity(req, res, ranking, slug) {
   const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
   const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
-    title: `${entity.name} (${entity.city || seo.countryName(entity.country)}) – ${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`,
+    title: seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
     description: text && text.summary ? text.summary : (result.eligible
       ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}. `
       : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich. `)
@@ -226,7 +226,8 @@ async function renderEntity(req, res, ranking, slug) {
     canonical,
     ogImage,
     ogType: 'article',
-    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary, features: entityFeatureList }), seo.breadcrumbLd(crumbs)],
+    jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary, features: entityFeatureList,
+      reviewCount: Number(er.review_count || 0), reviewAvg: er.review_avg }), seo.breadcrumbLd(crumbs)],
     crumbs,
     region,
     nearby,

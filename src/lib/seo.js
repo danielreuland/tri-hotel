@@ -143,7 +143,7 @@ function breadcrumbLd(items) {
 }
 
 // Objekt mit redaktioneller Bewertung (nur wenn ein aussagekräftiger Score vorliegt)
-function entityLd({ entity, ranking, site, url, result, image, description, features }) {
+function entityLd({ entity, ranking, site, url, result, image, description, features, reviewCount = 0, reviewAvg = null }) {
   const type = ranking.entity_type === 'hotel' ? 'Hotel' : 'LocalBusiness';
   const ld = {
     '@context': 'https://schema.org',
@@ -168,6 +168,10 @@ function entityLd({ entity, ranking, site, url, result, image, description, feat
       publisher: { '@type': 'Organization', name: site.name },
       reviewRating: { '@type': 'Rating', ratingValue: result.score, bestRating: 100, worstRating: 0 },
     };
+  }
+  // Bewertungen von Athleten (auf der Seite sichtbar, Skala 1–5) – wir sind Dritte, keine Eigenbewertung des Hotels
+  if (reviewCount > 0 && reviewAvg !== null) {
+    ld.aggregateRating = { '@type': 'AggregateRating', ratingValue: Math.round(Number(reviewAvg) * 10) / 10, ratingCount: reviewCount, bestRating: 5, worstRating: 1 };
   }
   return ld;
 }
@@ -196,6 +200,16 @@ function googleMapsEmbedUrl(entity, key) {
 const TITLE_MAX = 60;
 const DESC_MAX = 155;
 
+// Titel der Profilseite: „Name (Ort) – TriScore 78“; zu lang → ohne Ort; noch zu lang → Name gekürzt, Score bleibt
+function entityTitle(name, place, scorePart) {
+  const tail = scorePart ? ` – ${scorePart}` : '';
+  const full = `${name}${place ? ` (${place})` : ''}${tail}`;
+  if (full.length <= TITLE_MAX) return full;
+  if (`${name}${tail}`.length <= TITLE_MAX) return `${name}${tail}`;
+  const room = TITLE_MAX - tail.length - 1;
+  return `${name.slice(0, room).replace(/[\s,;:&–-]+\S*$/, '').trim()}…${tail}`;
+}
+
 function fitTitle(title, brand) {
   const t = String(title || '').trim();
   const withBrand = brand ? `${t} · ${brand}` : t;
@@ -211,6 +225,7 @@ function fitDescription(text) {
 
 module.exports = {
   fitTitle,
+  entityTitle,
   fitDescription,
   TITLE_MAX,
   DESC_MAX,

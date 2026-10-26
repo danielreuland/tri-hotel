@@ -99,3 +99,18 @@ test('seo.fitTitle / fitDescription: Längen für Suchergebnisse', () => {
   assert.ok(d.length <= seo.DESC_MAX && d.endsWith('…'));
   assert.equal(seo.fitDescription('Kurz.'), 'Kurz.');
 });
+
+test('Titel der Profilseite: lange Namen ohne Ort, notfalls gekürzt, Score bleibt', () => {
+  assert.equal(seo.entityTitle('Aktivhotel Santa Lucia', 'Torbole', 'TriScore 78'), 'Aktivhotel Santa Lucia (Torbole) – TriScore 78');
+  const noPlace = seo.entityTitle('Hotel Blau Colonia Sant Jordi Resort & Spa', 'Mallorca', 'TriScore 81');
+  assert.equal(noPlace, 'Hotel Blau Colonia Sant Jordi Resort & Spa – TriScore 81');
+  const cut = seo.entityTitle('Jugend- und Sporthotel Euroville mit Sportschule und Seminarzentrum', 'Naumburg (Saale)', 'TriScore 70');
+  assert.ok(cut.length <= seo.TITLE_MAX, cut);
+  assert.match(cut, /… – TriScore 70$/);
+});
+
+test('Hotel-Daten: Sterne der Athleten nur mit veröffentlichten Bewertungen', () => {
+  const base = { entity: { name: 'X', city: 'Y', country: 'ES' }, ranking: { entity_type: 'hotel', score_name: 'TriScore' }, site: { name: 'tri-hotel.de' }, url: 'https://tri-hotel.de/hotel/x' };
+  assert.equal(seo.entityLd(base).aggregateRating, undefined);
+  assert.deepEqual(seo.entityLd({ ...base, reviewCount: 3, reviewAvg: '4.333' }).aggregateRating, { '@type': 'AggregateRating', ratingValue: 4.3, ratingCount: 3, bestRating: 5, worstRating: 1 });
+});
