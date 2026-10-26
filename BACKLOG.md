@@ -36,12 +36,12 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
-- **Expedia (BEX DACH über CJ) aktivieren**: Daniel schickt einen fertigen Link aus Expedias Linkbauer
-  (expedia.de/marketing-tools/urlbuilder, Ziel z. B. eine Hotel-Suche) → daraus Deeplink-Vorlage mit {url_enc} bauen,
-  sid = Hotel-Slug prüfen; Notiz im Admin und Datenschutz (CJ statt nur Awin) anpassen; dann aktivieren und Reihenfolge
-  setzen (Hauptknopf). Direktlink und Markenhinweis sind schon live. Regeln: keine Gutscheine/Rabatt-Versprechen, keine
-  Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Seitentiteln/Meta-Tags, Social-Media-Posts mit Expedia-Bezug als
-  Werbung kennzeichnen (Lara). Hotels.com = eigenes Programm.
+- **Expedia scharf schalten** (technisch fertig, 26.10.): je Hotel unter Stammdaten → Partnerlinks → Expedia die
+  Expedia-Hotel-ID (z. B. 793891) oder die Adresse der Hotelseite eintragen; dann Partnerprogramme → Expedia aktiv,
+  Reihenfolge setzen (z. B. 5 = Hauptknopf). Einmal testen: „Preise prüfen“ → Adresse enthält
+  affcid=…cj.101907930.13904715.<hotel> und die richtige Hotelseite (Kurzform h{id}.Hotel-Information prüfen).
+  Regeln: keine Gutscheine, keine Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Titeln/Meta-Tags,
+  Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen (Lara).
 - **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
   daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
