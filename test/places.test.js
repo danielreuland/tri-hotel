@@ -36,3 +36,20 @@ test('Kein Vorschlag bei Gleichstand, großer Entfernung oder fehlenden Koordina
   assert.equal(noCoords.pick, null);
   assert.equal(noCoords.candidates[0].distanceM, null);
 });
+
+test('Ohne eigene Koordinaten: eindeutig nur bei Land, Ort/PLZ und bestem Namen', () => {
+  const cand = (id, name, address, country = 'ES', loc = at(28.2, -13.9)) => ({ id, displayName: { text: name }, formattedAddress: address, location: loc, addressComponents: [{ types: ['country'], shortText: country }] });
+  const entity = { name: 'Playitas Hotel', city: 'Las Playitas', country: 'ES', lat: null, lng: null };
+  const one = places.rank(entity, [cand('h', 'Playitas Hotel', 'Calle X 1, 35629 Las Playitas, Spanien'), cand('a', 'Playitas Aparthotel', 'Calle Y, 35629 Las Playitas, Spanien')]);
+  assert.equal(places.pickWithoutCoords(entity, one.candidates).id, 'h', 'gleicher Name schlägt Teilübereinstimmung');
+  assert.deepEqual(one.candidates[0].location, { lat: 28.2, lng: -13.9 });
+  const otherCountry = places.rank(entity, [cand('p', 'Playitas Hotel', 'Rua 1, Lagos, Portugal', 'PT')]);
+  assert.equal(places.pickWithoutCoords(entity, otherCountry.candidates), null, 'falsches Land');
+  const otherTown = places.rank(entity, [cand('t', 'Playitas Hotel', 'Calle 2, 35600 Puerto del Rosario, Spanien')]);
+  assert.equal(places.pickWithoutCoords(entity, otherTown.candidates), null, 'Ort passt nicht');
+  assert.equal(places.pickWithoutCoords(entity, otherTown.candidates, { postalCode: '35600' }).id, 't', 'Postleitzahl der Website-Anschrift passt');
+  const twins = places.rank(entity, [cand('a', 'Playitas Hotel', 'Calle 1, Las Playitas'), cand('b', 'Hotel Playitas', 'Calle 3, Las Playitas')]);
+  assert.equal(places.pickWithoutCoords(entity, twins.candidates), null, 'Gleichstand');
+  const partialAlone = places.rank(entity, [cand('a', 'Playitas Aparthotel', 'Calle Y, Las Playitas')]);
+  assert.equal(places.pickWithoutCoords(entity, partialAlone.candidates).id, 'a', 'Teilübereinstimmung als einziger Treffer');
+});

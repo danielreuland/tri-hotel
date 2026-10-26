@@ -22,13 +22,14 @@ const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
 const tasks = require('../services/tasks');
 const places = require('../services/places');
+const basics = require('../services/basics');
 const partners = require('../services/partners');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 const STATUS_LABELS = {
-  received: 'eingegangen', verified: 'bestätigt', auto_check: 'in Auto-Prüfung', admin_review: 'in Admin-Prüfung',
+  received: 'eingegangen', verified: 'bestätigt', auto_check: 'in Auto-Prüfung', basics: 'wartet auf Grunddaten', admin_review: 'in Admin-Prüfung',
   live: 'live', rejected: 'abgelehnt', expired: 'verfallen', duplicate: 'Dublette',
 };
 const TRUST_LABELS = { 1: '1 – vom Betreiber bestätigt', 2: '2 – Admin geprüft', 3: '3 – Nutzer bestätigt', 4: '4 – automatisch' };
@@ -271,7 +272,10 @@ async function loadDetail(id) {
   const adminMail = require('./admin-mail');
   const mailPersonas = entity ? await adminMail.personas() : [];
   const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
+  // Grunddaten (Website, Google-Eintrag, Koordinaten) – Voraussetzung für die Auto-Prüfung
+  const basicsMissing = entity ? basics.missing(entity) : [];
   return {
+    basicsMissing, BASICS_KEYS: basics.KEYS, placesEnabledForBasics: places.enabled(),
     mailThread, mailPersonas, mailDefaultPersona,
     campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
     sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
@@ -446,10 +450,26 @@ router.post('/meldungen/:id/objekt', wrap(async (req, res, next) => {
     [old.id, upd.name, upd.city, upd.country, upd.website, upd.lat, upd.lng, upd.booking_url, upd.booking_provider,
       upd.contact_email, emailChanged, placeId]
   );
-  if (placeId !== ((old.attributes || {}).google_place_id || '')) await logAction(req.session.admin.id, 'entity', old.id, 'edit_google_place_id', { new: placeId || null });
+  if (placeId !== ((old.attributes || {}).google_place_id || '')) {
+    await logAction(req.session.admin.id, 'entity', old.id, 'edit_google_place_id', { new: placeId || null });
+    if (placeId) {
+      await db.query(`UPDATE entities SET attributes = (attributes - 'google_place_suggestion' - 'no_google_place') || jsonb_build_object('google_place_source', jsonb_build_object('via', 'admin', 'at', now())) WHERE id = $1`, [old.id]);
+    } else {
+      await db.query(`UPDATE entities SET attributes = attributes - 'google_place_source' WHERE id = $1`, [old.id]);
+    }
+  }
+  // Koordinaten von Hand geändert: gelten als manuell und werden nie automatisch überschrieben
+  const same = (a, b) => (a === null || a === undefined || a === '' ? b === null : b !== null && Math.abs(Number(a) - b) < 1e-7);
+  const coordsChanged = !same(old.lat, upd.lat) || !same(old.lng, upd.lng);
+  if (coordsChanged) {
+    await db.query(upd.lat !== null && upd.lng !== null
+      ? `UPDATE entities SET attributes = (attributes - 'geo_suggestion') || jsonb_build_object('geo_source', 'Admin: von Hand eingetragen', 'geo_manual', true) WHERE id = $1`
+      : `UPDATE entities SET attributes = attributes - 'geo_source' - 'geo_manual' WHERE id = $1`, [old.id]);
+  }
   const diff = Object.fromEntries(Object.entries(upd).filter(([k, v]) => String(old[k] ?? '') !== String(v ?? '')).map(([k, v]) => [k, { old: old[k], new: v }]));
   if (Object.keys(diff).length) await logAction(req.session.admin.id, 'entity', old.id, 'edit_entity', diff);
-  res.redirect(`/admin/meldungen/${sub.id}?ok=Stammdaten+gespeichert`);
+  const note = await basics.continueIfReady(sub.id, { coordsChanged: coordsChanged && upd.lat !== null });
+  res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent(`Stammdaten gespeichert${note ? ` – ${note}` : ''}`)}`);
 }));
 
 // Kontaktadresse suchen (OpenStreetMap, dann Hunter.io), Vorschlag übernehmen oder verwerfen
@@ -514,8 +534,10 @@ router.post('/meldungen/:id/google-suche', wrap(async (req, res, next) => {
   const t = await subEntity(req.params.id);
   if (!t) return next();
   try {
-    const r = await places.search(t.entity);
-    req.session.placeSearch = { sub: t.sub.id, query: places.query(t.entity), candidates: r.candidates, pick: r.pick && r.pick.id };
+    // ohne Koordinaten entscheidet Land, Ort/PLZ und Name über den eindeutigen Treffer (wie in der Auto-Prüfung)
+    const r = await places.identify(t.entity);
+    const candidates = r.candidates.map(({ location, ...c }) => c); // Google-Positionen nicht in die Sitzung
+    req.session.placeSearch = { sub: t.sub.id, query: r.query, candidates, pick: r.pick && r.pick.id };
     req.session.save(() => res.redirect(`/admin/meldungen/${t.sub.id}#stammdaten`));
   } catch (err) {
     res.redirect(backTo(t.sub.id, 'fehler', err.message));
@@ -529,7 +551,36 @@ router.post('/meldungen/:id/google-place', wrap(async (req, res, next) => {
   if (!PLACE_ID_RE.test(placeId)) return res.redirect(backTo(t.sub.id, 'fehler', 'Google Place ID ungültig.'));
   await places.accept(t.entity.id, placeId);
   await logAction(req.session.admin.id, 'entity', t.entity.id, 'edit_google_place_id', { new: placeId, via: 'google_search' });
-  res.redirect(backTo(t.sub.id, 'ok', 'Google Place ID übernommen'));
+  const note = await basics.continueIfReady(t.sub.id);
+  res.redirect(backTo(t.sub.id, 'ok', `Google Place ID übernommen${note ? ` – ${note}` : ''}`));
+}));
+
+// Grunddaten: Koordinaten per Klick in die Karte oder aus dem Vorschlag übernehmen (gelten als vom Admin gesetzt)
+router.post('/meldungen/:id/koordinaten', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const num = (v) => Number(String(v || '').replace(',', '.'));
+  const how = { karte: 'in der Karte gesetzt', vorschlag: 'Vorschlag bestätigt' }[req.body.how] || 'von Hand eingetragen';
+  try {
+    await basics.setManual(t.entity.id, num(req.body.lat), num(req.body.lng), how, req.session.admin.id);
+  } catch (err) {
+    return res.redirect(backTo(t.sub.id, 'fehler', err.message));
+  }
+  const note = await basics.continueIfReady(t.sub.id, { coordsChanged: true });
+  res.redirect(`/admin/meldungen/${t.sub.id}?ok=${encodeURIComponent(`Koordinaten gespeichert${note ? ` – ${note}` : ''}`)}#grunddaten`);
+}));
+
+// Grunddaten: „Keine Website“ bzw. „Kein Google-Eintrag“ markieren (oder Markierung aufheben)
+router.post('/meldungen/:id/grunddaten/fehlt', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  try {
+    await basics.setAbsent(t.entity.id, String(req.body.key || ''), req.body.absent === '1', req.session.admin.id);
+  } catch (err) {
+    return res.redirect(backTo(t.sub.id, 'fehler', err.message));
+  }
+  const note = await basics.continueIfReady(t.sub.id);
+  res.redirect(`/admin/meldungen/${t.sub.id}?ok=${encodeURIComponent(`Gespeichert${note ? ` – ${note}` : ''}`)}#grunddaten`);
 }));
 
 router.post('/meldungen/:id/google-verwerfen', wrap(async (req, res, next) => {
@@ -650,7 +701,7 @@ router.post('/meldungen/:id/zurueckstellen', wrap(async (req, res) => {
 router.post('/meldungen/:id/pruefen', wrap(async (req, res, next) => {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [req.params.id]);
   if (!sub) return next();
-  if (!['verified', 'auto_check', 'admin_review'].includes(sub.status)) {
+  if (!['verified', 'auto_check', 'basics', 'admin_review'].includes(sub.status)) {
     return res.redirect(`/admin/meldungen/${sub.id}?fehler=Auto-Pr%C3%BCfung+nur+vor+der+Freigabe+m%C3%B6glich`);
   }
   await submissions.setStatus(sub.id, 'verified');

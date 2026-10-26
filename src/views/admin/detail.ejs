@@ -48,6 +48,85 @@
     <% detailTabs.forEach(function (t) { %><a href="#<%= t.anchor %>" data-tab-link="<%= t.key %>"><%= t.label %><% if (t.n) { %> <span class="nav-count"><%= t.n %></span><% } %></a><% }) %>
   </nav>
 <% } %>
+<% if (entity) {
+  var ba = entity.attributes || {}; var gsug = ba.geo_suggestion; var psug = ba.google_place_suggestion;
+  var showBasics = sub.status === 'basics' || basicsMissing.length || gsug; %>
+  <% if (showBasics) { %>
+  <section class="card basics-card" id="grunddaten">
+    <h2 style="margin:0 0 4px">Grunddaten <small class="muted"><%= sub.status === 'basics' ? '– die Auto-Prüfung wartet, bis alles vorliegt' : (basicsMissing.length ? '– unvollständig' : '– Koordinaten-Vorschlag offen') %></small></h2>
+    <p class="muted" style="margin:0 0 10px"><small>Website, Google-Eintrag und Koordinaten müssen vorliegen, bevor Website-Auswertung, Klima, Umgebung und Score laufen. Ergänzt du hier etwas, geht es automatisch weiter – kein Neustart nötig.</small></p>
+    <ul class="basics-list">
+      <li class="<%= basicsMissing.indexOf('website') >= 0 ? 'todo' : 'done' %>">
+        <strong>Website</strong>
+        <% if (entity.website) { %><a href="<%= entity.website %>" target="_blank" rel="noopener"><%= entity.website %></a>
+        <% } else if (ba.no_website) { %><span class="muted">keine Website (markiert)</span>
+        <% } else { %><span>fehlt – in den <a href="#stammdaten">Stammdaten</a> eintragen</span><% } %>
+        <% if (!entity.website) { %>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/grunddaten/fehlt" class="inline-form"><input type="hidden" name="key" value="website"><input type="hidden" name="absent" value="<%= ba.no_website ? '0' : '1' %>"><button class="btn small secondary" type="submit"><%= ba.no_website ? 'Markierung aufheben' : 'Hat keine Website' %></button></form>
+        <% } %>
+      </li>
+      <% if (placesEnabledForBasics) { %>
+      <li class="<%= basicsMissing.indexOf('place') >= 0 ? 'todo' : 'done' %>">
+        <strong>Google-Eintrag</strong>
+        <% if (ba.google_place_id) { %><a href="<%= placesMapsLink(ba.google_place_id) %>" target="_blank" rel="noopener">in Google Maps ↗</a> <small class="muted"><%= ba.google_place_source && ba.google_place_source.via === 'auto' ? 'automatisch gefunden (eindeutig)' : 'vom Admin gesetzt' %></small>
+        <% } else if (ba.no_google_place) { %><span class="muted">kein Google-Eintrag (markiert)</span>
+        <% } else { %><span><%= psug && psug.status === 'unclear' ? psug.count + ' Treffer, keiner eindeutig' : psug && psug.status === 'none' ? 'kein Treffer bei Google' : 'noch nicht gesucht' %></span><% } %>
+        <% if (!ba.google_place_id) { %>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/google-suche" class="inline-form"><button class="btn small secondary" type="submit">Bei Google suchen</button></form>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/grunddaten/fehlt" class="inline-form"><input type="hidden" name="key" value="place"><input type="hidden" name="absent" value="<%= ba.no_google_place ? '0' : '1' %>"><button class="btn small secondary" type="submit"><%= ba.no_google_place ? 'Markierung aufheben' : 'Kein Google-Eintrag' %></button></form>
+        <% } %>
+      </li>
+      <% } %>
+      <li class="<%= basicsMissing.indexOf('coords') >= 0 ? 'todo' : 'done' %>">
+        <strong>Koordinaten</strong>
+        <% if (entity.lat !== null) { %><span><%= Number(entity.lat).toFixed(5) %>, <%= Number(entity.lng).toFixed(5) %></span> <small class="muted"><%= ba.geo_source || '' %></small>
+        <% } else { %><span>fehlen<%= gsug && gsug.reason ? ' – ' + gsug.reason : '' %></span><% } %>
+      </li>
+    </ul>
+
+    <% if (entity.lat === null || gsug) { %>
+      <div class="geo-pick">
+        <div>
+          <% if (gsug && gsug.candidates && gsug.candidates.length) { %>
+            <p style="margin:0 0 6px"><strong>Vorschlag</strong> <small class="muted">(offene Quellen<%= gsug.google_distance_m !== null && gsug.google_distance_m !== undefined ? ', ' + gsug.google_distance_m.toLocaleString('de-DE') + ' m vom Google-Eintrag entfernt' : '' %>)</small></p>
+            <% gsug.candidates.forEach(function (c, i) { %>
+              <form method="post" action="/admin/meldungen/<%= sub.id %>/koordinaten" class="geo-candidate">
+                <input type="hidden" name="lat" value="<%= c.lat %>"><input type="hidden" name="lng" value="<%= c.lng %>"><input type="hidden" name="how" value="vorschlag">
+                <span class="geo-dot"><%= i + 1 %></span>
+                <small><%= c.source %><br><span class="muted"><%= c.detail %></span></small>
+                <button class="btn small" type="submit">Übernehmen</button>
+              </form>
+            <% }) %>
+          <% } %>
+          <div class="geo-map" data-geo-pick
+               data-candidates="<%= JSON.stringify(((gsug && gsug.candidates) || []).map(function (c) { return [Number(c.lat), Number(c.lng)]; })) %>"
+               data-current="<%= entity.lat !== null ? JSON.stringify([Number(entity.lat), Number(entity.lng)]) : '' %>"
+               data-center="<%= gsug && gsug.center ? JSON.stringify([gsug.center.lat, gsug.center.lng]) : '' %>">
+            <p class="muted" style="padding:12px">Karte wird geladen …</p>
+          </div>
+          <form method="post" action="/admin/meldungen/<%= sub.id %>/koordinaten" class="geo-click-form" data-geo-click>
+            <input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="how" value="karte">
+            <small class="muted" data-geo-hint>In die Karte klicken, um die genaue Lage zu setzen.</small>
+            <button class="btn small" type="submit" disabled>Gesetzten Punkt übernehmen</button>
+          </form>
+        </div>
+        <% if (googleMapsEnabled && (ba.google_place_id || entity.name)) { %>
+          <div>
+            <p style="margin:0 0 6px"><strong>Zum Vergleich: Google</strong> <small class="muted">nur Anzeige, wird nicht gespeichert</small></p>
+            <iframe class="geo-google" src="<%= googleMapsEmbedUrl(entity) %>" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Google-Karte zum Vergleich"></iframe>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+    <% if (sub.status === 'basics') { %>
+      <form method="post" action="/admin/meldungen/<%= sub.id %>/pruefen" style="margin-top:10px">
+        <button class="btn small secondary" type="submit">Grunddaten erneut suchen</button>
+        <small class="muted">z. B. nach Änderung von Name, Ort oder Website</small>
+      </form>
+    <% } %>
+  </section>
+  <% } %>
+<% } %>
 <% if (entity) { %>
   <section class="card review-list" id="pruefliste" data-tab="pruefung">
     <% if (review.items.length) { %>
@@ -99,7 +178,7 @@
       <% } %>
       <% if (sub.admin_note) { %><p><strong>📝 Notiz:</strong> <%= sub.admin_note %></p><% } %>
       <% if (sub.rejection_reason) { %><p><strong>Ablehnungsgrund:</strong> <%= sub.rejection_reason %></p><% } %>
-      <details <%= sub.status === 'auto_check' ? 'open' : '' %>>
+      <details <%= sub.status === 'auto_check' || sub.status === 'basics' ? 'open' : '' %>>
         <summary>Auto-Prüfung (<%= sub.pipeline_log.length %> Schritte)</summary>
         <ul class="log-list">
           <% sub.pipeline_log.forEach(function (l) { %>
@@ -744,10 +823,10 @@ Viele Grüße</textarea>
       </div>
     <% } %>
 
-    <% if (['admin_review', 'auto_check', 'verified'].includes(sub.status)) { %>
+    <% if (['admin_review', 'auto_check', 'basics', 'verified'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
         <form method="post" action="/admin/meldungen/<%= sub.id %>/freigeben">
-          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko && !sub.possible_duplicate_of ? '' : 'disabled' %>><%= sub.submitter_email && sub.verified_at && !sub.verified_by ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
+          <button class="btn" type="submit" style="width:100%" <%= entity && !result.ko && !sub.possible_duplicate_of && sub.status !== 'basics' ? '' : 'disabled' %> <%= sub.status === 'basics' ? 'title="Erst nach vollständigen Grunddaten und Auto-Prüfung"' : '' %>><%= sub.submitter_email && sub.verified_at && !sub.verified_by ? 'Freigeben & Mail senden' : 'Freigeben' %></button>
         </form>
         <% if (entity && !entity.contact_email) { %><p class="muted" style="margin:6px 0 0"><small>Ohne Kontakt-E-Mail keine Anfragen an das <%= ranking.entity_label_sg %> möglich (Stammdaten).</small></p><% } %>
         <details style="margin-top:10px">
@@ -772,5 +851,5 @@ Viele Grüße</textarea>
   </aside>
 </div>
 
-<% locals.scripts = ['/static/js/admin.js'] %>
+<% locals.scripts = ['/static/js/admin.js', '/static/js/geo-pick.js'] %>
 <%- include('../partials/admin-foot') %>

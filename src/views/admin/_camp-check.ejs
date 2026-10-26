@@ -37,7 +37,7 @@
         <% }) %>
       </ul>
     <% } %>
-    <% if (pendingHotels.length) { var SUB = { received: 'eingegangen', verified: 'bestätigt', auto_check: 'Auto-Prüfung läuft', admin_review: 'wartet auf Freigabe', live: 'live', rejected: 'abgelehnt', duplicate: 'Dublette', expired: 'verfallen' }; %>
+    <% if (pendingHotels.length) { var SUB = { received: 'eingegangen', verified: 'bestätigt', auto_check: 'Auto-Prüfung läuft', basics: 'wartet auf Grunddaten', admin_review: 'wartet auf Freigabe', live: 'live', rejected: 'abgelehnt', duplicate: 'Dublette', expired: 'verfallen' }; %>
       <p style="margin:10px 0 0"><small><strong>Noch nicht verknüpft:</strong> <% pendingHotels.forEach(function (h, i) { %><%= i ? ' · ' : '' %><a href="/admin/meldungen/<%= h.submission_id %>"><%= h.hotel_name %></a> (<%= SUB[h.status] || h.status %><%= h.website ? '' : ', ohne Website' %>)<% }) %>
         – wird nach Freigabe des Hotels automatisch verknüpft.</small></p>
     <% } %>

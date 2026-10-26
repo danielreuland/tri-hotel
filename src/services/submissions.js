@@ -1,4 +1,4 @@
-// Meldeprozess: received -> verified -> auto_check -> admin_review -> live
+// Meldeprozess: received -> verified -> auto_check (-> basics, solange Grunddaten fehlen) -> admin_review -> live
 // Nebenausgänge: expired, duplicate, rejected
 const db = require('../db');
 const config = require('../config');

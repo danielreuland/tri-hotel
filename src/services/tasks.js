@@ -15,6 +15,7 @@ const LABELS = {
   image_rights: 'Bildrechte',
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
+  basics: 'Grunddaten fehlen',
   user_review: 'Bewertung',
   google_place: 'Google Place ID',
   camp_lead: 'Camp-Anfrage',
@@ -92,6 +93,18 @@ async function collect() {
     } else if (new Date(s.updated_at) < new Date(Date.now() - 3600 * 1000)) {
       push({ source: 'stuck', source_key: `stuck:${s.id}`, title: s.entity_name, detail: [{ level: 'block', text: 'Auto-Prüfung seit über einer Stunde ohne Ergebnis – erneut starten' }], link: detailLink(s.id), entity_id: null });
     }
+  }
+  // Grunddaten fehlen: Auto-Prüfung wartet auf Website, Google-Eintrag oder Koordinaten
+  const basicsService = require('./basics');
+  for (const s of await db.many(
+    `SELECT s.id, s.entity_name, e.id AS entity_id, e.name, e.website, e.lat, e.lng, e.attributes
+       FROM submissions s JOIN entities e ON e.id = s.entity_id WHERE s.status = 'basics' ORDER BY s.updated_at`)) {
+    const miss = basicsService.missing(s);
+    const gs = (s.attributes || {}).geo_suggestion;
+    const lines = miss.map((k) => ({ level: 'todo', text: k === 'coords' && gs && gs.candidates && gs.candidates.length
+      ? `Koordinaten: Vorschlag bestätigen (${gs.reason})` : `${basicsService.KEYS[k]} fehlt` }));
+    if (!lines.length) lines.push({ level: 'todo', text: 'Vollständig – Auto-Prüfung läuft gleich weiter' });
+    push({ source: 'basics', source_key: `basics:${s.id}`, title: s.name || s.entity_name, detail: lines, link: detailLink(s.id, 'grunddaten'), entity_id: s.entity_id });
   }
   // Bewertungen: zur Freigabe (bestätigt) bzw. E-Mail unbestätigt
   for (const r of await db.many(

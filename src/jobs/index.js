@@ -17,6 +17,7 @@ async function start() {
   await boss.createQueue('inquiry-send');
   await boss.createQueue('inquiry-daily');
   await boss.createQueue('osm-retry');
+  await boss.createQueue('geo-followup');
   await boss.createQueue('retention');
   await boss.createQueue('mail-poll');
   await boss.createQueue('camp-check');
@@ -24,6 +25,11 @@ async function start() {
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
+  });
+
+  // Koordinaten im Admin geändert: Klima, Umgebung und Score nachziehen (ohne neue Auto-Prüfung)
+  await boss.work('geo-followup', async (jobs) => {
+    for (const job of jobs) await autoCheck.geoFollowup(job.data.submissionId);
   });
 
   // OpenStreetMap-Schritt nachholen, wenn die Overpass-Server gestört waren

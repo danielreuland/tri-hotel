@@ -1,7 +1,9 @@
-// Auto-Prüfung einer bestätigten Meldung:
-// Dublette? -> Objekt anlegen -> Website (Strukturdaten + KI, ggf. 2. Durchgang) -> Koordinaten -> Klima -> OSM-Vorschläge
-// -> Score -> Anfrage-Entwurf für offene Punkte
-// -> Score + K.O. + Vollständigkeit -> Admin-Warteschlange.
+// Auto-Prüfung einer bestätigten Meldung in zwei Phasen:
+// 1. Grunddaten: Dublette? -> Objekt anlegen -> Website lesen (Anschrift, Kartenlinks) -> Google-Eintrag (Place ID)
+//    -> Koordinaten (offene Quellen, mit Google abgeglichen). Fehlt danach Website, Google-Eintrag oder Koordinaten,
+//    wartet die Meldung im Status 'basics'; ergänzt der Admin, läuft sie automatisch weiter (services/basics.js).
+// 2. Prüfung: KI-Auswertung der Website (ggf. 2. Durchgang) -> Klima -> OSM-Vorschläge -> Score + Vollständigkeit
+//    -> Kontaktadresse -> Anfrage-Entwurf -> Admin-Warteschlange.
 // Einzelne Schritte dürfen scheitern; sie landen im pipeline_log, der Admin entscheidet.
 const db = require('../db');
 const rankings = require('../services/rankings');
@@ -16,6 +18,7 @@ const llm = require('../lib/llm');
 const config = require('../config');
 const sitedata = require('../services/sitedata');
 const places = require('../services/places');
+const basics = require('../services/basics');
 
 // Zweiter Durchgang nur, wenn danach noch mehrere auslesbare Kriterien fehlen
 const MIN_MISSING_FOR_SECOND_PASS = 3;
@@ -92,7 +95,7 @@ async function insertAutoFacts(entityId, facts) {
 async function run(submissionId, { refresh = false } = {}) {
   const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
   if (!sub) return;
-  if (refresh ? !(sub.status === 'live' && sub.entity_id) : !['verified', 'auto_check'].includes(sub.status)) return;
+  if (refresh ? !(sub.status === 'live' && sub.entity_id) : !['verified', 'auto_check', 'basics'].includes(sub.status)) return;
   if (!refresh) await submissions.setStatus(sub.id, 'auto_check');
   const ranking = await rankings.getRanking(sub.ranking_id);
   const criteria = await rankings.getCriteria(ranking.id);
@@ -119,14 +122,26 @@ async function run(submissionId, { refresh = false } = {}) {
     await db.query('UPDATE submissions SET entity_id = $2 WHERE id = $1', [sub.id, entity.id]);
   }
 
-  // 2. Website lesen und auswerten (vor den Koordinaten: liefert Anschrift, Kartenlinks, Strukturdaten)
-  let site = { geo: [], addresses: [], emails: [], amenities: [] };
+  // ---------- Phase 1: Grunddaten ----------
+  const ctx = await identifyBasics(sub, entity, ranking, criteria);
+  entity = await db.one('SELECT * FROM entities WHERE id = $1', [entity.id]);
+  const miss = basics.missing(entity);
+  if (miss.length && !refresh) {
+    await submissions.appendLog(sub.id, 'Grunddaten', false,
+      `Es fehlt: ${basics.describe(miss)}. Bitte im Admin ergänzen oder bestätigen – danach läuft die Prüfung automatisch weiter.`);
+    await submissions.setStatus(sub.id, 'basics');
+    return;
+  }
+
+  // ---------- Phase 2: Prüfung ----------
+  // 2. Website mit KI auswerten (Seiten aus Phase 1 wiederverwenden)
+  let site = ctx.site;
   let found = { address: null };
   if (entity.website) {
     await step(sub.id, 'Website-Auswertung', async () => {
       const catalog = await featureService.catalog(ranking.entity_type);
       const labels = [...criteria.flatMap(extractor.criterionTerms), ...catalog.map((f) => f.label)];
-      const pages = await extractor.fetchSite(entity.website, { labels });
+      const pages = ctx.pages || await extractor.fetchSite(entity.website, { labels });
       if (!pages.length) throw new Error('Website nicht erreichbar.');
       site = sitedata.merge(pages);
       const res = await extractRound(sub.id, ranking, criteria, entity, pages, catalog);
@@ -158,64 +173,18 @@ async function run(submissionId, { refresh = false } = {}) {
       } else {
         parts.push('Keine Kontakt-E-Mail auf der Website.');
       }
-      // Anschrift merken (Stammdaten-Zusatz, mit Fundstelle)
-      const address = site.addresses.find((a) => a.street) || found.address;
-      if (address) {
-        await db.query(`UPDATE entities SET attributes = attributes || jsonb_build_object('address', $2::jsonb), updated_at = now() WHERE id = $1`,
-          [entity.id, JSON.stringify({ street: address.street || address.text || null, postal_code: address.postal_code || null, city: address.city || null, url: address.url })]);
-        parts.push(`Anschrift: ${address.street || address.text}${address.city ? `, ${address.city}` : ''}.`);
+      // Anschrift aus der KI-Auswertung, falls die Strukturdaten keine hatten
+      if (!ctx.address && found.address) {
+        await saveAddress(entity.id, found.address);
+        parts.push(`Anschrift (KI): ${found.address.street || found.address.text}${found.address.city ? `, ${found.address.city}` : ''}.`);
       }
-      if (site.geo.length) parts.push(`Koordinaten auf der Website gefunden (${site.geo[0].kind}).`);
       if (res.cost) parts.push(`KI gesamt: ${llm.formatTokens(res.cost)}.`);
       return parts.join(' ');
     });
   }
 
-  // 3. Koordinaten: Website-Koordinaten -> Anschrift -> Namenssuche, jeweils gegen das Ortszentrum geprüft
-  if (entity.lat === null) {
-    await step(sub.id, 'Koordinaten', async () => {
-      const addresses = [...site.addresses];
-      if (found.address) addresses.push(found.address);
-      const hit = await geo.locate({ name: entity.name, city: entity.city, country: entity.country }, { geo: site.geo, addresses });
-      if (hit.lat === null) {
-        throw new Error(`Nicht gefunden – bitte Koordinaten im Admin eintragen. Versucht: ${hit.tried.join('; ') || '–'}`);
-      }
-      await db.query(
-        `UPDATE entities SET lat = $2, lng = $3, attributes = attributes || jsonb_build_object('geo_source', $4::text), updated_at = now() WHERE id = $1`,
-        [entity.id, hit.lat, hit.lng, `${hit.source}${hit.url ? ` (${hit.url})` : ''}`]
-      );
-      entity.lat = hit.lat;
-      entity.lng = hit.lng;
-      return `${hit.lat.toFixed(5)}, ${hit.lng.toFixed(5)} – ${hit.source}: ${hit.detail}`;
-    });
-  }
-
-  // 3b. Google Place ID als Vorschlag (nur ID; übernommen wird sie erst im Admin)
-  if (entity.lat !== null && places.enabled()) {
-    const fresh = await db.one('SELECT * FROM entities WHERE id = $1', [entity.id]);
-    if (!(fresh.attributes || {}).google_place_id) {
-      await step(sub.id, 'Google Place ID', async () => {
-        const s = await places.suggest(fresh);
-        if (s.status === 'found') return `Vorschlag ${s.id} (${s.distance_m} m, Name ${s.match === 2 ? 'gleich' : 'teilweise'}) – bitte in den Stammdaten prüfen.`;
-        return s.status === 'unclear' ? `${s.count} Treffer, keiner eindeutig – bei Bedarf in den Stammdaten suchen.` : 'Kein Treffer bei Google.';
-      });
-    }
-  }
-
   // 4. Klima je Monat
-  if (entity.lat !== null) {
-    await step(sub.id, 'Klima', async () => {
-      const months = await climate.monthlyClimate({ lat: entity.lat, lng: entity.lng });
-      for (const m of months) {
-        await db.query(
-          `INSERT INTO climate_monthly (entity_id, month, avg_high_c, avg_low_c, rain_days) VALUES ($1,$2,$3,$4,$5)
-           ON CONFLICT (entity_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c, rain_days = EXCLUDED.rain_days`,
-          [entity.id, m.month, m.avg_high_c, m.avg_low_c, m.rain_days]
-        );
-      }
-      return '12 Monate von Open-Meteo übernommen.';
-    });
-  }
+  if (entity.lat !== null) await climateStep(sub.id, entity, 'Klima');
 
   // 5. OSM-Vorschläge nur für Kriterien ohne Wert aus der Website.
   //    Sind die öffentlichen Overpass-Server gestört, wird der Schritt später automatisch nachgeholt.
@@ -248,6 +217,118 @@ async function run(submissionId, { refresh = false } = {}) {
     });
   }
   if (!refresh) await submissions.setStatus(sub.id, 'admin_review');
+}
+
+// ---------- Phase 1: Grunddaten ermitteln ----------
+// Website lesen (Anschrift, Koordinaten aus Strukturdaten/Kartenlinks), Google-Eintrag erkennen, Koordinaten bestimmen.
+// Vom Admin gesetzte Werte (Place ID, geo_manual) bleiben unangetastet. Rückgabe: Seiten und Website-Daten für Phase 2.
+async function identifyBasics(sub, entity, ranking, criteria) {
+  const out = { pages: null, site: { geo: [], addresses: [], emails: [], amenities: [] }, address: null };
+  const attrs = entity.attributes || {};
+
+  if (entity.website) {
+    await step(sub.id, 'Website lesen', async () => {
+      const catalog = await featureService.catalog(ranking.entity_type);
+      const labels = [...criteria.flatMap(extractor.criterionTerms), ...catalog.map((f) => f.label)];
+      const pages = await extractor.fetchSite(entity.website, { labels });
+      if (!pages.length) throw new Error('Website nicht erreichbar – bitte Adresse in den Stammdaten prüfen.');
+      out.pages = pages;
+      out.site = sitedata.merge(pages);
+      out.address = out.site.addresses.find((a) => a.street) || null;
+      const parts = [`${pages.length} Seiten gelesen.`];
+      if (out.address) {
+        await saveAddress(entity.id, out.address);
+        parts.push(`Anschrift: ${out.address.street || out.address.text}${out.address.city ? `, ${out.address.city}` : ''}.`);
+      } else parts.push('Keine Anschrift in den Strukturdaten.');
+      if (out.site.geo.length) parts.push(`Koordinaten auf der Website (${out.site.geo[0].kind}).`);
+      return parts.join(' ');
+    });
+  }
+  if (!out.address && attrs.address && attrs.address.street) out.address = attrs.address;
+
+  // Google-Eintrag: Suche mit Name, Anschrift, Ort, Land; eindeutig -> Place ID automatisch speichern
+  let googleLoc = null;
+  if (places.enabled() && !attrs.no_google_place) {
+    await step(sub.id, 'Google-Eintrag', async () => {
+      const r = await places.identify(entity, { address: out.address });
+      if (r.pick) googleLoc = r.pick.location;
+      if (attrs.google_place_id) {
+        // vorhandene ID (z. B. vom Admin) nie überschreiben; passt der Treffer dazu, dient er dem Abgleich
+        if (!r.pick || r.pick.id !== attrs.google_place_id) googleLoc = null;
+        return r.pick && r.pick.id === attrs.google_place_id ? 'Place ID vorhanden und bestätigt.' : 'Place ID vorhanden (vom Admin) – bleibt unverändert.';
+      }
+      if (r.pick) {
+        await places.saveAuto(entity.id, r.pick);
+        return `Eindeutig gefunden, Place ID gespeichert (Name ${r.pick.match === 2 ? 'gleich' : 'teilweise gleich'}, ${r.pick.address}).`;
+      }
+      await places.markUnclear(entity.id, r.candidates.length);
+      throw new Error(r.candidates.length
+        ? `${r.candidates.length} Treffer für „${r.query}“, keiner eindeutig – bitte in den Stammdaten auswählen.`
+        : `Kein Treffer für „${r.query}“ – bitte suchen oder „Kein Google-Eintrag“ markieren.`);
+    });
+  }
+
+  // Koordinaten aus offenen Quellen, mit dem Google-Eintrag abgeglichen; unsicher -> Vorschlag mit Karte
+  if (entity.lat === null && !attrs.geo_manual) {
+    await step(sub.id, 'Koordinaten', async () => {
+      const addresses = [...out.site.addresses];
+      if (out.address && !addresses.includes(out.address)) addresses.push(out.address);
+      const hit = await geo.locate({ name: entity.name, city: entity.city, country: entity.country }, { geo: out.site.geo, addresses });
+      const verdict = basics.judge(hit, googleLoc);
+      if (verdict.save && await basics.saveAuto(entity.id, hit, verdict.note)) {
+        return `${hit.lat.toFixed(5)}, ${hit.lng.toFixed(5)} – ${hit.source}: ${hit.detail} (${verdict.note}).`;
+      }
+      await basics.suggest(entity.id, { hit, reason: verdict.reason, googleDistanceM: verdict.googleDistanceM });
+      throw new Error(`${verdict.reason || 'Nicht gespeichert'} – Vorschlag mit Karte in den Stammdaten bestätigen.${hit.tried && hit.tried.length && hit.lat === null ? ` Versucht: ${hit.tried.join('; ')}` : ''}`);
+    });
+  }
+  return out;
+}
+
+async function saveAddress(entityId, address) {
+  await db.query(`UPDATE entities SET attributes = attributes || jsonb_build_object('address', $2::jsonb), updated_at = now() WHERE id = $1`,
+    [entityId, JSON.stringify({ street: address.street || address.text || null, postal_code: address.postal_code || null, city: address.city || null, url: address.url || null })]);
+}
+
+async function climateStep(subId, entity, label) {
+  return step(subId, label, async () => {
+    const months = await climate.monthlyClimate({ lat: Number(entity.lat), lng: Number(entity.lng) });
+    for (const m of months) {
+      await db.query(
+        `INSERT INTO climate_monthly (entity_id, month, avg_high_c, avg_low_c, rain_days) VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (entity_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c, rain_days = EXCLUDED.rain_days`,
+        [entity.id, m.month, m.avg_high_c, m.avg_low_c, m.rain_days]
+      );
+    }
+    return '12 Monate von Open-Meteo übernommen.';
+  });
+}
+
+// Nach einer Koordinaten-Änderung im Admin (Meldung schon geprüft oder live): Klima, Umgebung, ggf. Google-Eintrag
+// und Score nachziehen – ohne die ganze Prüfung neu zu starten. Vorhandene Werte bleiben, neue kommen als Vorschläge.
+async function geoFollowup(submissionId) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  if (!sub || !sub.entity_id || !['auto_check', 'admin_review', 'live'].includes(sub.status)) return;
+  const entity = await db.one('SELECT * FROM entities WHERE id = $1', [sub.entity_id]);
+  if (!entity || entity.lat === null) return;
+  const ranking = await rankings.getRanking(sub.ranking_id);
+  const criteria = await rankings.getCriteria(ranking.id);
+  await submissions.appendLog(sub.id, 'Koordinaten geändert', true, `${Number(entity.lat).toFixed(5)}, ${Number(entity.lng).toFixed(5)} – Klima und Umgebung werden nachgezogen.`);
+  const a = entity.attributes || {};
+  if (places.enabled() && !a.google_place_id && !a.no_google_place) {
+    await step(sub.id, 'Google-Eintrag', async () => {
+      const r = await places.identify(entity);
+      if (r.pick && await places.saveAuto(entity.id, r.pick)) return `Place ID gespeichert (${r.pick.distanceM} m, Name ${r.pick.match === 2 ? 'gleich' : 'teilweise gleich'}).`;
+      await places.markUnclear(entity.id, r.candidates.length);
+      return r.candidates.length ? 'Kein eindeutiger Treffer – bei Bedarf in den Stammdaten suchen.' : 'Kein Treffer bei Google.';
+    });
+  }
+  await climateStep(sub.id, entity, 'Klima');
+  const ok = await osmStep(sub.id, entity, ranking, criteria, 'Umgebung (OpenStreetMap)');
+  if (!ok) await scheduleOsmRetry(sub.id, 1);
+  const result = await rankings.recomputeEntity(entity.id, ranking.id);
+  await submissions.appendLog(sub.id, 'Score', !result.ko,
+    result.ko ? `K.O.: ${result.koReason}` : `Neu berechnet: ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`);
 }
 
 async function osmStep(subId, entity, ranking, criteria, label) {
@@ -292,4 +373,4 @@ async function retryOsm(submissionId, attempt) {
     result.ko ? `K.O.: ${result.koReason}` : `Neu berechnet: ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`);
 }
 
-module.exports = { run, retryOsm, insertAutoFacts, rankPages, sumCost };
+module.exports = { run, retryOsm, geoFollowup, insertAutoFacts, rankPages, sumCost };

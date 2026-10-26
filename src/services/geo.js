@@ -164,12 +164,13 @@ async function locate({ name, city, country }, candidates = {}) {
     }
     const d = nearestCenterKm(p);
     const dist = d !== null && d <= MAX_CITY_KM ? `, ${d.toFixed(1).replace('.', ',')} km vom Ortszentrum` : '';
-    return { lat: p.lat, lng: p.lng, source, detail: `${detail}${dist}`, url: p.url || p.osmUrl || null, tried };
+    // confidence: high = Website-Koordinaten oder genaue Anschrift, medium = Namenssuche/ungenaue Anschrift, low = Postleitzahlgebiet
+    return { lat: p.lat, lng: p.lng, source, detail: `${detail}${dist}`, url: p.url || p.osmUrl || null, confidence: (opts && opts.confidence) || 'medium', center, tried };
   };
 
   // 1. Koordinaten direkt von der Website (Strukturdaten, Metatag, Kartenlink)
   for (const g of candidates.geo || []) {
-    const r = accept(g, `Website (${g.kind})`, g.url);
+    const r = accept(g, `Website (${g.kind})`, g.url, { confidence: 'high' });
     if (r) return r;
   }
   // 2. Anschrift (Strukturdaten der Website oder KI-Auswertung mit Fundstelle):
@@ -200,7 +201,7 @@ async function locate({ name, city, country }, candidates = {}) {
           hit = hitOf((await nominatim({ ...t.params, ...(c ? { countrycodes: c } : {}) }))[0]);
         }
         if (!hit) continue;
-        const r = accept(hit, `Anschrift von der Website${t.approx ? ` (${t.approx})` : ''}`, `${label} → ${hit.display}`, { postalCode: a.postal_code });
+        const r = accept(hit, `Anschrift von der Website${t.approx ? ` (${t.approx})` : ''}`, `${label} → ${hit.display}`, { postalCode: a.postal_code, confidence: t.approx ? 'medium' : 'high' });
         if (r) return r;
       } catch (err) {
         tried.push(`Anschrift (${t.kind}): ${err.message}`);
@@ -238,13 +239,13 @@ async function locate({ name, city, country }, candidates = {}) {
     try {
       const hit = hitOf((await nominatim({ postalcode: a.postal_code, ...(a.city ? { city: a.city } : {}), ...(a.c ? { countrycodes: a.c } : {}), limit: '1' }))[0]);
       if (!hit) continue;
-      const r = accept({ ...hit, postcode: hit.postcode || a.postal_code }, 'Postleitzahlgebiet der Anschrift (ungefähr – bitte prüfen)', `${a.label} → ${hit.display}`, { postalCode: a.postal_code });
+      const r = accept({ ...hit, postcode: hit.postcode || a.postal_code }, 'Postleitzahlgebiet der Anschrift (ungefähr – bitte prüfen)', `${a.label} → ${hit.display}`, { postalCode: a.postal_code, confidence: 'low' });
       if (r) return { ...r, approximate: true };
     } catch (err) {
       tried.push(`Postleitzahl: ${err.message}`);
     }
   }
-  return { lat: null, lng: null, tried };
+  return { lat: null, lng: null, center, tried };
 }
 
 function distanceKm(a, b) {
