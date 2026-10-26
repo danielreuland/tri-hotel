@@ -16,6 +16,7 @@ const LABELS = {
   stuck: 'Auto-Prüfung hängt',
   unconfirmed: 'Neue Meldung',
   basics: 'Grunddaten fehlen',
+  partner_link: 'Partnerlink',
   user_review: 'Bewertung',
   google_place: 'Google Place ID',
   camp_lead: 'Camp-Anfrage',
@@ -92,6 +93,24 @@ async function collect() {
       push({ source: 'unconfirmed', source_key: `unconfirmed:${s.id}`, title: s.entity_name, detail: [{ level: 'todo', text: 'Wartet auf E-Mail-Bestätigung – ohne Bestätigung prüfen oder ablehnen' }], link: detailLink(s.id), entity_id: null });
     } else if (new Date(s.updated_at) < new Date(Date.now() - 3600 * 1000)) {
       push({ source: 'stuck', source_key: `stuck:${s.id}`, title: s.entity_name, detail: [{ level: 'block', text: 'Auto-Prüfung seit über einer Stunde ohne Ergebnis – erneut starten' }], link: detailLink(s.id), entity_id: null });
+    }
+  }
+  // Partnerlink prüfen / generieren: live, aber ohne Preis-Link bei einem aktiven Programm mit Provision
+  //   (Fingerabdruck = fehlende Programme: erledigt bleibt erledigt, bis ein weiteres Programm dazukommt)
+  const partnerSvc = require('./partners');
+  const paying = (await db.many(`SELECT * FROM partner_programs WHERE status = 'active' ORDER BY sort_order, name`)).filter(partnerSvc.monetized);
+  if (paying.length) {
+    for (const r of await db.many(
+      `SELECT e.id AS entity_id, e.name, ${latestSub} AS sub_id,
+              COALESCE(array_agg(DISTINCT l.program_id) FILTER (WHERE l.kind = 'booking'), '{}') AS have
+         FROM entities e JOIN entity_rankings er ON er.entity_id = e.id AND er.status = 'live'
+         LEFT JOIN entity_links l ON l.entity_id = e.id
+        GROUP BY e.id ORDER BY lower(e.name)`)) {
+      const missing = paying.filter((p) => !p.auto_search && !r.have.includes(p.id));
+      if (!missing.length) continue;
+      push({ source: 'partner_link', source_key: `partner-link:${r.entity_id}`, title: `${r.name} – Partnerlink prüfen / generieren`,
+        detail: [{ level: 'todo', text: `${missing.map((p) => p.name).join(', ')}: Link fehlt – Seite des Hotels suchen und eintragen (gibt es keine: Karte auf „Erledigt“)` }],
+        fingerprint: `partner:${missing.map((p) => p.code).join(',')}`, link: detailLink(r.sub_id, 'partnerlinks'), entity_id: r.entity_id });
     }
   }
   // Grunddaten fehlen: Auto-Prüfung wartet auf Website, Google-Eintrag oder Koordinaten
