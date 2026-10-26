@@ -5,30 +5,16 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### 1. Suche und Filter in der Hotel-Liste (`/admin`) – in Arbeit (26.10.2026)
-Suchfeld „Name oder Ort“ (Name, Ort, Website; ohne Groß-/Kleinschreibung und Akzente), Auswahl Land und Region (nur
-vorkommende Werte, mit Anzahl), kombinierbar mit Status-Pillen und Ranking; Pillen-Zahlen berücksichtigen die Filter;
-leerer Treffer mit „Filter zurücksetzen“; GET-Parameter (Lesezeichen möglich).
+### Offen aus „Buchen & Anfragen“
+- **Tripadvisor-Note** (Bubbles, Anzahl) über die Content API – vorher Freischaltung und Bedingungen prüfen.
+  Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
+- hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
-### 2. Hotelseite „Buchen & Anfragen“ (Konzept 19.10.2026, bestätigt) – danach
-Affiliate-Programme aktuell (26.10.): **hotel.de** und **Expedia** (Expedia Group; Hotels.com ggf. über dasselbe Programm).
-Booking und HolidayCheck folgen nach Freigabe.
-- **a) Direktbuchung:** Box „Buchen & Anfragen“ (Handy: schmale feste Leiste unten). Ein Hauptknopf „Preise prüfen“ →
-  im Admin festgelegter Standard-Anbieter; darunter Textzeile „Auch bei: … · direkt beim Hotel“, keine Logo-Knöpfe.
-  „Direkt beim Hotel“ (ohne Provision) immer dabei. Kennzeichnung „Anzeige“; Reihenfolge legt der Admin fest, nie Einfluss
-  auf Score/Sortierung. Technik: `partner_programs`/`entity_links`, `/go/:slug/:program`.
-- **b) „Trainingslager anfragen“ beim Hotel:** Formular (Vorname, E-Mail, Zeitraum, Gruppengröße, Bedarf, Nachricht,
-  Einwilligung mit Hotelnamen) → E-Mail-Bestätigung → Admin-Prüfung → Weiterleitung an `entities.contact_email` mit Reply-To.
-  Aufbauend auf `camp_leads`/`services/leads.js`. Start kostenlos für alle Hotels mit Kontaktadresse. Kein WhatsApp.
-  Plausible-Ziel „Hotel-Anfrage“.
-- **c) Tripadvisor:** Note, Anzahl, Link „Alle Bewertungen auf Tripadvisor“ im Abschnitt „Bewertungen anderswo“ (mit Google),
-  nie im Score. Quelle Content API – vorher Bedingungen prüfen; sonst einfacher Link.
-
-### 3. SEO prüfen und optimieren (Agenda 21.10.)
+### 1. SEO prüfen und optimieren (Agenda 21.10.)
 Search Console (erste indexierte Seiten, Fehler), Titel/Beschreibungen, interne Links, strukturierte Daten, Ladezeit,
 Inhalte je Region/Land.
 
-### 4. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
+### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
 Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
@@ -50,8 +36,12 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
+- **Expedia und hotel.de aktivieren**: Admin → Einstellungen → Partnerprogramme → Kennung bzw. Deeplink-Vorlage eintragen,
+  Reihenfolge festlegen (kleinste Zahl = Hauptknopf „Preise prüfen“), Status aktiv. Expedia nutzt ohne eigenen Link je Hotel
+  die Suchseite (Name + Ort) – prüfen, ob das Programm Such-Deeplinks vergütet.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
-  indexierte Seiten zeigt; Zugangsdaten/Linkformat hotel.de und Expedia für die Einrichtung bereithalten.
+  indexierte Seiten zeigt.
+- Plausible: Ziel „Hotel-Anfrage-Start“ anlegen (Klick auf „Trainingslager anfragen“).
 - Hunter.io-Konto („account restricted“) prüfen.
 - Ausfallüberwachung (UptimeRobot), Plausible-Ziel „Hotelvergleich“ + Eigenschaften `anbieter`/`art`, Gewerbeanmeldung vor Provisionen.
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
@@ -62,6 +52,12 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 26.10. **Hotel-Liste im Admin**: Suche (Name, Ort, Website), Filter Land und Region, kombinierbar mit Status/Ranking.
+- 26.10. **Buchen & Anfragen** auf der Hotelseite: Hauptknopf „Preise prüfen“ (erster aktiver Preis-Anbieter in Admin-Reihenfolge),
+  weitere Anbieter als Textzeile, direkt beim Hotel; Handy-Leiste unten; Suchlinks für Hotels ohne eigenen Link (auto_search);
+  Programme Expedia/hotel.de (inaktiv bis Kennung), Tripadvisor als Bewertungslink; Admin: Reihenfolge, Such-Adresse,
+  Programme anlegen (Migration 056). **„Trainingslager anfragen“**: Hotel als Empfänger der Camp-Anfrage (allein oder
+  zusätzlich zu Anbietern), Weiterleitung im Sie-Ton, kostenlos, gleicher Ablauf inkl. Nachfrage (Migration 057).
 - 26.10. **Grunddaten vor der Auto-Prüfung**: Website, Google-Eintrag (Place ID automatisch bei eindeutigem Treffer),
   Koordinaten aus offenen Quellen mit Google-Abgleich; Status „wartet auf Grunddaten“, Vorschlag mit Karte, automatische
   Fortsetzung, `geo-followup` nach Koordinaten-Änderung (services/basics.js, Migration 055). Google-Koordinaten werden
