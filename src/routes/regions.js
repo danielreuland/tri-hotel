@@ -21,14 +21,7 @@ function viewHelpers(ranking) {
     regionPath: (r) => `/region/${r.slug}`,
     seaTip: (r) => `Wassertemperatur vor der Küste: Mittel aus ${r.seaPoints === 1 ? 'einem Küstenpunkt' : `${r.seaPoints} Küstenpunkten`} der Region `
       + '(Modellwert von Open-Meteo, Raster etwa 8–9 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.',
-    climateTip: (r) => {
-      const p = r.region.climate_point;
-      if (!p) return 'Klima von Open-Meteo, Mittel der letzten drei vollen Jahre.';
-      const where = { hotels: 'an der Lage der Hotels', auto: 'an einem tiefer gelegenen Ort nahe der Regionsmitte', admin: 'an einem typischen Trainingsort', center: 'in der Regionsmitte' }[p.source] || '';
-      const bits = [p.place, p.elevation_m !== null && p.elevation_m !== undefined ? `${p.elevation_m} m` : null].filter(Boolean);
-      return `Klima ${where}${bits.length ? ` (${bits.join(', ')})` : ''} – Modellwerte von Open-Meteo, Mittel der letzten drei vollen Jahre. `
-        + 'In höheren Lagen ist es kühler, je 100 m etwa 0,6 °C.';
-    },
+    climateTip: (r) => guide.climatePointNote(r.region),
     scoreName: ranking.score_name,
   };
 }

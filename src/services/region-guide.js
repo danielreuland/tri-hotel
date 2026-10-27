@@ -135,11 +135,93 @@ function bikeFacts(row) {
   return {
     score: num(row.score),
     quietKm: num(roads.quietKm),
+    networkKm: num(roads.networkKm),
+    quietShare: num(roads.quietShare),
     passes: num(roads.passes),
+    passMaxM: num(roads.passMaxM),
     reliefM: num(terrain.reliefM),
+    flatShare: num(terrain.flatShare),
     routes: num(roads.routes),
     computedAt: row.computed_at,
   };
+}
+
+const de = (v, digits = 0) => Number(v).toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+// Gelände in Worten nach Höhenunterschied im Gebiet (Meter); gilt für jedes Radrevier, unabhängig vom Ranking
+const RELIEF_WORDS = [[300, 'überwiegend flach'], [900, 'hügelig'], [Infinity, 'bergig']];
+
+// Radrevier in Sätzen (rein, testbar). b: aus bikeFacts
+function bikeText(b) {
+  if (!b) return [];
+  const out = [];
+  if (b.reliefM !== null) {
+    const word = RELIEF_WORDS.find(([max]) => b.reliefM < max)[1];
+    const flat = b.flatShare !== null && word === 'bergig' && b.flatShare >= 0.25 ? ', mit flachen Abschnitten' : '';
+    out.push(`Gelände ${word}${flat}: ${de(b.reliefM)} m Höhenunterschied im Gebiet.`);
+  }
+  if (b.passes) out.push(`${de(b.passes)} ${b.passes === 1 ? 'Pass' : 'Pässe'} in OpenStreetMap${b.passMaxM ? `, der höchste auf ${de(b.passMaxM)} m` : ''}.`);
+  if (b.quietKm !== null) {
+    const share = b.quietShare !== null ? ` – ${de(b.quietShare * 100)} % des Straßennetzes` : '';
+    out.push(`Rund ${de(b.quietKm)} km ruhige Nebenstraßen${share}.`);
+  }
+  if (b.routes) out.push(`${de(b.routes)} ausgeschilderte Radrouten.`);
+  return out;
+}
+
+// Beste Reisezeit mit Begründung (rein, testbar): Regel aus formula.best_time, Monate innerhalb und außerhalb,
+// dazu Auffälligkeiten bei Regen, Sonne, Wind und Wasser. Rückgabe { rule, best, outside: [], notes: [] }
+function bestTimeReasons(climate, formula, monthNames) {
+  const out = { rule: null, best: null, outside: [], notes: [] };
+  const rows = (climate || []).map((c) => ({ ...c, month: Number(c.month) }));
+  if (!rows.length) return out;
+  const val = (c, k) => num(c[k]);
+  const ranges = (list) => seo.monthRanges(list.map((c) => c.month), monthNames);
+  const bt = (formula || {}).best_time;
+  if (bt && bt.metric && METRICS[bt.metric]) {
+    const M = METRICS[bt.metric];
+    const range = bt.min !== undefined && bt.max !== undefined ? `zwischen ${bt.min} und ${bt.max} ${M.unit}`
+      : bt.min !== undefined ? `ab ${bt.min} ${M.unit}` : `bis ${bt.max} ${M.unit}`;
+    out.rule = `Monate mit ${M.label} ${range}`;
+    const best = rows.filter((c) => inBestTime(val(c, bt.metric), bt));
+    out.best = best.length ? ranges(best) : null;
+    const above = rows.filter((c) => bt.max !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) > Number(bt.max));
+    const below = rows.filter((c) => bt.min !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) < Number(bt.min));
+    if (above.length) out.outside.push(`${ranges(above)} darüber (bis ${de(Math.max(...above.map((c) => val(c, bt.metric))))} ${M.unit})`);
+    if (below.length) out.outside.push(`${ranges(below)} darunter (ab ${de(Math.min(...below.map((c) => val(c, bt.metric))))} ${M.unit})`);
+  }
+  const ext = (k, dir) => {
+    const list = rows.filter((c) => val(c, k) !== null);
+    if (!list.length) return null;
+    return list.reduce((a, b) => ((val(b, k) - val(a, k)) * dir > 0 ? b : a));
+  };
+  const name = (c) => monthNames[c.month - 1];
+  const wet = ext('rain_days', 1);
+  const dry = ext('rain_days', -1);
+  if (wet && dry && val(wet, 'rain_days') > val(dry, 'rain_days')) {
+    out.notes.push(`Am meisten Regen im ${name(wet)} (${de(val(wet, 'rain_days'))} Regentage), am wenigsten im ${name(dry)} (${de(val(dry, 'rain_days'))}).`);
+  }
+  const sun = ext('sunshine_h', 1);
+  if (sun) out.notes.push(`Am sonnigsten im ${name(sun)} (${de(val(sun, 'sunshine_h'))} Sonnenstunden am Tag).`);
+  const wind = ext('wind_kmh', 1);
+  if (wind) {
+    const gusts = val(wind, 'windy_days');
+    out.notes.push(`Am windigsten im ${name(wind)} (Ø ${de(val(wind, 'wind_kmh'))} km/h${gusts ? `, ${de(gusts)} Tage mit Sturmböen` : ''}).`);
+  }
+  const warm = ext('sea_c', 1);
+  const cold = ext('sea_c', -1);
+  if (warm && cold) out.notes.push(`Wasser am wärmsten im ${name(warm)} (${de(val(warm, 'sea_c'))} °C), am kühlsten im ${name(cold)} (${de(val(cold, 'sea_c'))} °C).`);
+  return out;
+}
+
+// Herkunft der Klimawerte einer Region in einem Satz (Tooltip und Quellenhinweis)
+const POINT_WHERE = { hotels: 'an der Lage der Hotels', auto: 'an einem tiefer gelegenen Ort nahe der Regionsmitte', admin: 'an einem typischen Trainingsort', center: 'in der Regionsmitte' };
+function climatePointNote(region) {
+  const p = region && region.climate_point;
+  if (!p) return 'Klima von Open-Meteo, Mittel der letzten drei vollen Jahre.';
+  const bits = [p.place, p.elevation_m !== null && p.elevation_m !== undefined ? `${p.elevation_m} m` : null].filter(Boolean);
+  return `Klima ${POINT_WHERE[p.source] || ''}${bits.length ? ` (${bits.join(', ')})` : ''} – Modellwerte von Open-Meteo, Mittel der letzten drei vollen Jahre. `
+    + 'In höheren Lagen ist es kühler, je 100 m etwa 0,6 °C.';
 }
 
 // Alle Daten je Region für Übersicht und Vergleich
@@ -190,4 +272,4 @@ function parsePair(pair) {
   return [...new Set(slugs)].slice(0, 3);
 }
 
-module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, load, pairSlug, parsePair };
+module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeReasons, climatePointNote, load, pairSlug, parsePair };

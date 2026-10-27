@@ -32,9 +32,10 @@ Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
    Radrevier auch für Regionen ohne Hotels. Klimapunkt ab 3 Hotels aus deren Lage, sonst Ort ≤ 400 m nahe der Mitte; fest gesetzt
    (27.10.): Zypern Limassol, Algarve Lagos, Teneriffa Costa Adeje, Gran Canaria Maspalomas, Kreta Chania.
 2. **Übersicht `/trainingsregionen` – umgesetzt 27.10.** (siehe Erledigt).
-3. **Regionsseiten mit Kontext**: Klima je Monat inkl. Wind/Wasser/Sonne, Radrevier in Worten und Zahlen (Quelle OSM),
-   Schwimmen/Laufen in der Region (Badegewässer, 50-m-Becken, Bahnen – soweit aus vorhandenen Abfragen ableitbar),
-   beste Reisezeit mit Begründung, Camps, Hotels; später Regionstext per KI (nach neuem Prompt).
+3. **Regionsseiten mit Kontext – umgesetzt 27.10.**: Klima und Wasser je Monat aus den Regionsdaten (Klimapunkt), beste Reisezeit
+   mit Begründung (Regel aus `formula.best_time`, Monate darüber/darunter, Regen, Sonne, Wind, Wasser), Radrevier in Zahlen
+   und Sätzen (OSM), Ausstattung der Hotels je Gruppe (Schwimmen, Rad, Laufen … aus dem Leistungskatalog), Camps der Region,
+   Sprungleiste. Später: Badegewässer/50-m-Becken/Bahnen der Region per eigener Abfrage (Overpass), Regionstext per KI.
 
 ### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
 Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten

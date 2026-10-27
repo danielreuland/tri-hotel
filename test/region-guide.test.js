@@ -56,7 +56,7 @@ test('Regionen: Vergleichs-URL', () => {
   assert.deepEqual(guide.parsePair('x<y>-vs-b'), ['b']);
   assert.equal(guide.pairSlug(['a', 'b']), 'a-vs-b');
   assert.deepEqual(guide.bikeFacts({ score: '3.5', metrics: { roads: { quietKm: 1393, passes: 48 }, terrain: { reliefM: 1625 } } }),
-    { score: 3.5, quietKm: 1393, passes: 48, reliefM: 1625, routes: null, computedAt: undefined });
+    { score: 3.5, quietKm: 1393, networkKm: null, quietShare: null, passes: 48, passMaxM: null, reliefM: 1625, flatShare: null, routes: null, computedAt: undefined });
   assert.equal(guide.bikeFacts({ score: null }), null);
 });
 
@@ -98,4 +98,33 @@ test('Klimapunkt: Admin vor Hotels vor tiefem Ort nahe der Mitte, nie der Gipfel
   assert.equal(high.lat, 2, 'ohne Ort bis 400 m: tiefster Landpunkt');
   assert.equal(rd.pickClimatePoint(center, {}).source, 'center');
   assert.equal(rd.climatePointText({ place: 'Costa Adeje', elevation_m: 30, source: 'hotels' }), 'Costa Adeje, 30 m, Lage der Hotels');
+});
+
+test('Regionsseite: Radrevier in Worten', () => {
+  const t = guide.bikeText({ score: 3.5, quietKm: 1389, quietShare: 0.58, passes: 47, passMaxM: 1790, reliefM: 1625, flatShare: 0.08, routes: 17 });
+  assert.equal(t[0], 'Gelände bergig: 1.625 m Höhenunterschied im Gebiet.');
+  assert.equal(t[1], '47 Pässe in OpenStreetMap, der höchste auf 1.790 m.');
+  assert.equal(t[2], 'Rund 1.389 km ruhige Nebenstraßen – 58 % des Straßennetzes.');
+  assert.equal(t[3], '17 ausgeschilderte Radrouten.');
+  assert.match(guide.bikeText({ reliefM: 120, quietKm: null, passes: 0, routes: 0 })[0], /überwiegend flach/);
+  assert.match(guide.bikeText({ reliefM: 1200, flatShare: 0.4, quietKm: null })[0], /bergig, mit flachen Abschnitten/);
+  assert.deepEqual(guide.bikeText(null), []);
+});
+
+test('Regionsseite: beste Reisezeit mit Begründung aus formula.best_time', () => {
+  const { MONTHS: M } = require('../src/lib/util');
+  const highs = [15, 16, 18, 20, 23, 29, 32, 31, 28, 24, 22, 18];
+  const rain = [9, 12, 9, 8, 8, 1, 0, 2, 6, 3, 6, 11];
+  const climate = highs.map((h, i) => ({ month: i + 1, avg_high_c: h, rain_days: rain[i], sunshine_h: i === 6 ? 13 : 9, wind_kmh: i === 7 ? 25 : 15, windy_days: i === 7 ? 4 : 1, sea_c: i === 7 ? 26 : i === 1 ? 16 : 20 }));
+  const r = guide.bestTimeReasons(climate, { best_time: { metric: 'avg_high_c', min: 16, max: 28 } }, M);
+  assert.equal(r.rule, 'Monate mit Ø Höchsttemperatur zwischen 16 und 28 °C');
+  assert.equal(r.best, 'Februar–Mai, September–Dezember');
+  assert.deepEqual(r.outside, ['Juni–August darüber (bis 32 °C)', 'Januar darunter (ab 15 °C)']);
+  assert.ok(r.notes.includes('Am meisten Regen im Februar (12 Regentage), am wenigsten im Juli (0).'));
+  assert.ok(r.notes.includes('Am windigsten im August (Ø 25 km/h, 4 Tage mit Sturmböen).'));
+  assert.ok(r.notes.includes('Wasser am wärmsten im August (26 °C), am kühlsten im Februar (16 °C).'));
+  const none = guide.bestTimeReasons(climate, {}, M);
+  assert.equal(none.rule, null, 'ohne Regel im Ranking keine Reisezeit-Begründung, nur Auffälligkeiten');
+  assert.ok(none.notes.length >= 3);
+  assert.deepEqual(guide.bestTimeReasons([], {}, M), { rule: null, best: null, outside: [], notes: [] });
 });

@@ -16,6 +16,7 @@ const describer = require('../services/describer');
 const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
 const home = require('../services/home');
+const regionGuide = require('../services/region-guide');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -459,6 +460,19 @@ const MONTHS_DE = require('../lib/util').MONTHS;
 async function renderArea(req, res, ranking, area) {
   const month = parseMonth(req.query.monat);
   const d = await areas.pageData(ranking, area, month);
+  // Regionen: Klima, Wasser und Radrevier aus den Regionsdaten (unabhängig von Hotels), Camps der Region
+  let rd = null;
+  let regionCamps = [];
+  if (area.type === 'region') {
+    const [row] = await regionGuide.load(ranking, req.site.id, { slugs: [area.slug] });
+    if (row && row.climate.length) {
+      rd = { ...row, reasons: regionGuide.bestTimeReasons(row.climate, ranking.formula, MONTHS_DE), bikeText: regionGuide.bikeText(row.bike),
+        climateNote: regionGuide.climatePointNote(area.region) };
+      d.climate = row.climate.map((c) => ({ ...c, month: Number(c.month) }));
+      d.bestMonths = row.bestMonths;
+    }
+    if (res.locals.campGuide) regionCamps = (await camps.list(req.site.id)).filter((p) => (p.regions || []).includes(area.name));
+  }
   const siteUrl = res.locals.siteUrl;
   const base = rankingBase(ranking);
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
@@ -482,7 +496,7 @@ async function renderArea(req, res, ranking, area) {
       seo.breadcrumbLd(crumbs),
       ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
     ],
-    heading, ranking, area, d, month, best, crumbs, base,
+    heading, ranking, area, d, month, best, crumbs, base, rd, regionCamps, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
     countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug)),
     entityPath: (e) => entityPath(ranking, e),

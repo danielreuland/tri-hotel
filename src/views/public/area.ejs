@@ -2,6 +2,8 @@
 <%
   var formula = Object.assign({ min_completeness: 70 }, ranking.formula || {});
   var methodHref = base + (isHostRanking ? scorePath : '/methodik');
+  var de = function (v, d) { return v === null || v === undefined ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
+  var seaYear = rd && rd.hasSea ? rd.climate.map(function (c) { return c.sea_c === null ? null : Number(c.sea_c); }).filter(function (v) { return v !== null; }) : [];
 %>
 
 <nav class="crumbs" aria-label="Brotkrumen">
@@ -23,7 +25,18 @@
     <div><strong><%= d.count %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
     <% if (d.topScore !== null) { %><div><strong><%= d.topScore %></strong><span>bester <%= ranking.score_name %></span></div><% } %>
     <% if (best) { %><div><strong class="months"><%= best %></strong><span>beste Reisezeit laut Klimadaten</span></div><% } %>
+    <% if (rd && rd.bike) { %><div><strong><%= de(rd.bike.score, 1) %><small> von 6</small></strong><span>Radrevier (OpenStreetMap)</span></div><% } %>
+    <% if (seaYear.length) { %><div><strong><%= de(Math.min.apply(null, seaYear)) %>–<%= de(Math.max.apply(null, seaYear)) %> °C</strong><span>Wasser im Jahresverlauf</span></div><% } %>
   </div>
+  <% if (rd) { %>
+    <nav class="area-jump" aria-label="Auf dieser Seite">
+      <a href="#reisezeit">Klima &amp; Reisezeit</a>
+      <% if (rd.bike) { %><a href="#radrevier">Radrevier</a><% } %>
+      <% if (d.featureGroups.length) { %><a href="#ausstattung">Ausstattung</a><% } %>
+      <% if (regionCamps.length) { %><a href="#camps">Camps</a><% } %>
+      <% if (locals.regionGuide) { %><a href="/trainingsregionen">Alle Regionen im Vergleich</a><% } %>
+    </nav>
+  <% } %>
 </section>
 
 <section>
@@ -63,31 +76,84 @@
   <% } %>
 </section>
 
-<div class="grid grid-2 grid-content" style="margin-top:8px">
-  <% if (d.featureShares.length) { %>
-    <section>
-      <h2>Ausstattung <%= area.nameIn %></h2>
-      <ul class="shares">
-        <% d.featureShares.forEach(function (f) { %>
-          <li><span><%= f.label %></span><span class="muted"><%= f.n %> von <%= d.count %></span></li>
-        <% }) %>
-      </ul>
-    </section>
-  <% } %>
-  <% if (d.climate.length) { %>
-    <section>
-      <h2>Klima <%= area.nameIn %></h2>
-      <div class="table-scroll">
-        <table class="climate">
-          <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
-          <tr><th>Ø max °C</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
-          <tr><th>Regentage</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
-        </table>
+<% if (rd) { var bt = rd.reasons; %>
+<section id="reisezeit">
+  <h2>Klima und beste Reisezeit <%= area.nameIn %></h2>
+  <div class="area-reasons">
+    <% if (bt.rule) { %>
+      <p><strong>Beste Reisezeit: <%= bt.best || 'kein Monat im Bereich' %>.</strong> Als beste Reisezeit gelten <%= bt.rule %><% if (bt.outside.length) { %> – <%= bt.outside.join('; ') %><% } %>.</p>
+    <% } %>
+    <% if (bt.notes.length) { %><ul><% bt.notes.forEach(function (n) { %><li><%= n %></li><% }) %></ul><% } %>
+  </div>
+  <div class="table-scroll">
+    <table class="climate">
+      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+      <% ['avg_high_c', 'avg_low_c', 'rain_days', 'sunshine_h', 'wind_kmh'].concat(rd.hasSea ? ['sea_c'] : []).forEach(function (k) { %>
+        <tr><th><%= METRICS[k].short %><%= METRICS[k].unit === 'Tage' ? '' : ' ' + METRICS[k].unit %></th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c[k] === null || c[k] === undefined ? '–' : de(c[k]) %></td><% }) %></tr>
+      <% }) %>
+    </table>
+  </div>
+  <p class="muted"><small>Markiert: beste Reisezeit. <%= rd.climateNote %><% if (rd.hasSea) { %> Wasser: Mittel küstennaher Meerespunkte (Raster etwa 8–9 km); am Strand und in Buchten im Sommer oft 1–2 °C wärmer.<% } %> Klima und Wasser fließen nicht in den <%= ranking.score_name %> ein. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
+</section>
+
+<% if (rd.bike) { %>
+<section id="radrevier">
+  <h2>Radrevier <%= area.nameIn %></h2>
+  <div class="area-facts">
+    <div><strong><%= de(rd.bike.score, 1) %><small> von 6</small></strong><span>Bewertung Radrevier</span></div>
+    <% if (rd.bike.quietKm !== null) { %><div><strong><%= de(rd.bike.quietKm) %> km</strong><span>ruhige Nebenstraßen</span></div><% } %>
+    <% if (rd.bike.passes) { %><div><strong><%= de(rd.bike.passes) %></strong><span>Pässe</span></div><% } %>
+    <% if (rd.bike.reliefM !== null) { %><div><strong><%= de(rd.bike.reliefM) %> m</strong><span>Höhenunterschied</span></div><% } %>
+  </div>
+  <ul class="area-list"><% rd.bikeText.forEach(function (t) { %><li><%= t %></li><% }) %></ul>
+  <p class="muted"><small>Quelle: OpenStreetMap (© OpenStreetMap-Mitwirkende) und Höhenmodell, ausgewertet im Umkreis der Region – mit derselben Regel wie bei den <%= ranking.entity_label_pl %> (0–6 Punkte). Fließt als Regionswert nicht in den <%= ranking.score_name %> einzelner <%= ranking.entity_label_pl %> ein.</small></p>
+</section>
+<% } %>
+<% } else if (d.climate.length) { %>
+<section id="reisezeit">
+  <h2>Klima <%= area.nameIn %></h2>
+  <div class="table-scroll">
+    <table class="climate">
+      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+      <tr><th>Ø max °C</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
+      <tr><th>Regentage</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+    </table>
+  </div>
+  <p class="muted"><small>Mittel der <%= ranking.entity_label_pl %> <%= area.nameIn %> (Open-Meteo, letzte drei Jahre). Markiert: beste Reisezeit. Das Klima ist nur Information und fließt nicht in den <%= ranking.score_name %> ein. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
+</section>
+<% } %>
+
+<% if (d.featureGroups.length) { %>
+<section id="ausstattung">
+  <h2>Was die <%= ranking.entity_label_pl %> <%= area.nameIn %> bieten</h2>
+  <p class="muted">Geprüfte Angaben der <%= d.count %> <%= d.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl %> hier – je Leistung, wie viele sie haben.</p>
+  <div class="area-groups">
+    <% d.featureGroups.forEach(function (g) { %>
+      <div class="card">
+        <h3><%= g.label %></h3>
+        <ul class="shares"><% g.items.forEach(function (f) { %><li><span><%= f.label %></span><span class="muted"><%= f.n %> von <%= d.count %></span></li><% }) %></ul>
       </div>
-      <p class="muted"><small>Mittel der <%= ranking.entity_label_pl %> <%= area.nameIn %> (Open-Meteo, letzte drei Jahre). Markiert: beste Reisezeit. Das Klima ist nur Information und fließt nicht in den <%= ranking.score_name %> ein. <a href="<%= methodHref %>">Wie der <%= ranking.score_name %> rechnet</a></small></p>
-    </section>
-  <% } %>
-</div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<% if (regionCamps.length) { %>
+<section id="camps">
+  <h2>Trainingscamps <%= area.nameIn %></h2>
+  <p class="muted">Anbieter mit Camps in dieser Region, alphabetisch – ohne Wertung.</p>
+  <div class="area-camps">
+    <% regionCamps.forEach(function (p) { %>
+      <a class="card" href="/trainingscamp/anbieter/<%= p.slug %>">
+        <span class="badge"><%= campModels[p.model] || p.model_label || '' %></span>
+        <strong><%= p.name %></strong>
+        <% if (p.partner) { %><span class="badge ad-badge">Anzeige · Partner</span><% } %>
+      </a>
+    <% }) %>
+  </div>
+  <p><a href="/trainingscamp?region=<%= encodeURIComponent(area.name) %>">Camps <%= area.nameIn %> vergleichen →</a></p>
+</section>
+<% } %>
 
 <section>
   <h2>Weitere Ziele</h2>

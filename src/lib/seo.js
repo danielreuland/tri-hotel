@@ -106,6 +106,25 @@ function featureShares(entities, featureMap, limit = 6) {
   return [...counts.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label, 'de')).slice(0, limit);
 }
 
+// Alle Leistungen mit Anzahl, gruppiert wie im Katalog (group_label, sort_order) – für die Bereichsseiten
+function featureGroupShares(entities, featureMap) {
+  const counts = new Map();
+  for (const e of entities) {
+    for (const f of featureMap.get(e.id) || []) {
+      const c = counts.get(f.code) || { label: f.label, group: f.group_label || 'Weitere', sort: f.sort_order || 0, filterable: f.filterable, n: 0 };
+      c.n += 1;
+      counts.set(f.code, c);
+    }
+  }
+  const groups = [];
+  for (const c of [...counts.values()].sort((a, b) => a.sort - b.sort)) {
+    let g = groups.find((x) => x.label === c.group);
+    if (!g) groups.push((g = { label: c.group, items: [] }));
+    g.items.push(c);
+  }
+  return groups;
+}
+
 // ---------- JSON-LD ----------
 
 // Sicher in <script type="application/ld+json"> einbetten
@@ -237,6 +256,6 @@ module.exports = {
   googleMapsUrl,
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
-  averageClimate, bestMonths, monthRanges, featureShares,
+  averageClimate, bestMonths, monthRanges, featureShares, featureGroupShares,
   ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd, listPath,
 };

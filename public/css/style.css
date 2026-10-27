@@ -148,6 +148,19 @@ figcaption { font-size: .78rem; color: var(--muted); }
 .area-facts span { color: var(--muted); font-size: .9rem; }
 .shares { list-style: none; padding: 0; margin: 0; }
 .shares li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+/* Regionsseite: Sprungleiste, Begründung der Reisezeit, Ausstattung je Gruppe, Camps */
+.area-facts strong small { font: 600 1rem/1 var(--body, inherit); color: var(--muted); }
+.area-jump { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 6px 0 4px; font-weight: 700; font-size: .95rem; }
+.area-reasons { max-width: 75ch; display: grid; gap: 8px; margin-bottom: 12px; }
+.area-reasons p, .area-reasons ul { margin: 0; }
+.area-reasons ul, .area-list { padding-left: 1.2em; display: grid; gap: 4px; }
+.area-list { max-width: 75ch; }
+.area-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 14px; }
+.area-groups .card { min-width: 0; }
+.area-groups h3 { margin: 0 0 6px; font-size: 1.15rem; }
+.area-camps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.area-camps a.card { display: grid; gap: 6px; justify-items: start; text-decoration: none; color: inherit; }
+.area-camps a.card:hover { border-color: var(--accent-strong); }
 a.chip { text-decoration: none; color: var(--text); }
 a.chip:hover { border-color: var(--primary); }
 
