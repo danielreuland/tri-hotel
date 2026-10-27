@@ -1,6 +1,6 @@
 // Trainingsregionen, Schritt 1: Daten je Region unabhängig von Hotels.
 // - Klima je Monat am Klimapunkt der Region (Open-Meteo, mit Wind und Sonne): vom Admin gesetzt, sonst Lage der Hotels,
-//   sonst ein tiefer gelegener Ort nahe der Mitte – der Mittelpunkt liegt auf Inseln oft im Gebirge (Teneriffa: Teide)
+//   (ab MIN_HOTELS Hotels), sonst ein tiefer gelegener Ort nahe der Mitte – der Mittelpunkt liegt auf Inseln oft im Gebirge (Teneriffa: Teide)
 // - Wassertemperatur vor der Küste: Mittel der küstennächsten Meereszellen in bis zu 8 Richtungen (Binnenregionen ohne)
 // - Radrevier aus OpenStreetMap (bike_areas, gleiche Regel und Berechnung wie für die Hotels)
 // Aktualisierung: per Knopf im Admin oder automatisch, wenn älter als MAX_AGE_DAYS.
@@ -12,7 +12,8 @@ const { logAction } = require('../lib/audit');
 
 const MAX_AGE_DAYS = 365;
 const PAUSE_MS = 20000;
-const LOW_M = 400;   // „tiefer gelegen“: Orte bis zu dieser Höhe kommen als Klimapunkt in Frage
+const LOW_M = 400;
+const MIN_HOTELS = 3;  // darunter entscheidet bei der Hotel-Lage der Zufall (bei 2 Hotels liegt keins „mittiger“)   // „tiefer gelegen“: Orte bis zu dieser Höhe kommen als Klimapunkt in Frage
 
 // Hotel, das den anderen am nächsten liegt (Medoid) – ein echter Ort, kein Mittelwert zwischen Nord- und Südküste
 function medoid(points) {
@@ -29,11 +30,11 @@ function climateCandidates(center, radiusKm) {
   return climate.seaCandidates(center, radiusKm, [0.25, 0.5, 0.75]);
 }
 
-// Klimapunkt wählen. override: {lat, lng} aus dem Admin; hotels: [{lat, lng, city}] in der Region;
+// Klimapunkt wählen. override: {lat, lng} aus dem Admin; hotels: [{lat, lng, city}] in der Region (zählt ab MIN_HOTELS);
 // samples: Rasterpunkte mit elevation (Meer = 0). Rückgabe {lat, lng, source, place}
 function pickClimatePoint(center, { override = null, hotels = [], samples = [] } = {}) {
   if (override) return { lat: override.lat, lng: override.lng, source: 'admin', place: null };
-  const m = medoid(hotels);
+  const m = hotels.length >= MIN_HOTELS ? medoid(hotels) : null;
   if (m) return { lat: m.lat, lng: m.lng, source: 'hotels', place: m.city || null };
   const land = samples.filter((p) => p.elevation > 0);
   const low = land.filter((p) => p.elevation <= LOW_M);
@@ -59,7 +60,7 @@ async function climatePoint(region) {
     ? { lat: Number(region.climate_lat), lng: Number(region.climate_lng) } : null;
   const hotels = override ? [] : await hotelsIn(region);
   let samples = [];
-  if (!override && !hotels.length) {
+  if (!override && hotels.length < MIN_HOTELS) {
     const cands = climateCandidates(center, Number(region.radius_km));
     const elev = await geo.elevations(cands);
     samples = cands.map((c, i) => ({ ...c, elevation: elev[i] }));
@@ -148,4 +149,4 @@ async function climateOf(regionId) {
   return db.many('SELECT * FROM region_climate_monthly WHERE region_id = $1 ORDER BY month', [regionId]);
 }
 
-module.exports = { MAX_AGE_DAYS, LOW_M, refresh, refreshAll, climateOf, pickClimatePoint, climatePointText, medoid };
+module.exports = { MAX_AGE_DAYS, LOW_M, MIN_HOTELS, refresh, refreshAll, climateOf, pickClimatePoint, climatePointText, medoid };

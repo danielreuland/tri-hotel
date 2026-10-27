@@ -47,7 +47,7 @@ async function render(res, extra = {}) {
        FROM regions r JOIN sites s ON s.id = r.site_id LEFT JOIN bike_areas b ON b.key = 'region:' || r.id
       ORDER BY s.name, r.sort_order, r.name`);
   const sites = await db.many(`SELECT id, name FROM sites ORDER BY is_default DESC, name`);
-  res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, climatePointText: regionData.climatePointText, lowM: regionData.LOW_M, ...extra });
+  res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, climatePointText: regionData.climatePointText, lowM: regionData.LOW_M, minHotels: regionData.MIN_HOTELS, ...extra });
 }
 
 router.get('/', wrap(async (req, res) => render(res, { flash: req.query.ok || null })));

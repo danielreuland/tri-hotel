@@ -49,7 +49,7 @@
   <div class="form-row">
     <div><label>Klimapunkt Breitengrad</label><input name="climate_lat" type="text" value="<%= e.climate_lat === null || e.climate_lat === undefined ? '' : e.climate_lat %>" placeholder="automatisch"></div>
     <div><label>Klimapunkt Längengrad</label><input name="climate_lng" type="text" value="<%= e.climate_lng === null || e.climate_lng === undefined ? '' : e.climate_lng %>" placeholder="automatisch"></div>
-    <div style="flex:2"><small class="muted">Ort, für den Temperatur, Regen, Sonne und Wind gelten. Leer = automatisch: Lage der Hotels der Region, ohne Hotels ein Ort bis <%= lowM %> m nahe der Mitte (der Mittelpunkt liegt auf Inseln oft im Gebirge). Nach dem Ändern „Aktualisieren“ klicken.</small></div>
+    <div style="flex:2"><small class="muted">Ort, für den Temperatur, Regen, Sonne und Wind gelten. Leer = automatisch: Lage der Hotels der Region (ab <%= minHotels %> Hotels), sonst ein Ort bis <%= lowM %> m nahe der Mitte (der Mittelpunkt liegt auf Inseln oft im Gebirge). Nach dem Ändern „Aktualisieren“ klicken.</small></div>
   </div>
   <label>Einleitungstext <small class="muted">eigener Text je Region, wichtig für Google (2–4 Sätze)</small></label>
   <textarea name="intro"><%= e.intro || '' %></textarea>

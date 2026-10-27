@@ -84,6 +84,7 @@ test('Klimapunkt: Admin vor Hotels vor tiefem Ort nahe der Mitte, nie der Gipfel
   const h = rd.pickClimatePoint(center, { hotels });
   assert.equal(h.source, 'hotels');
   assert.ok(['Costa Adeje', 'Adeje'].includes(h.place), 'Medoid liegt im Süden, wo die meisten Hotels sind');
+  assert.notEqual(rd.pickClimatePoint(center, { hotels: hotels.slice(0, 2) }).source, 'hotels', 'zwei Hotels reichen nicht');
   const samples = [
     { lat: 28.29, lng: -16.62, elevation: 2345 },
     { lat: 28.20, lng: -16.62, elevation: 900 },
