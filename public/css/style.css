@@ -597,8 +597,16 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .book-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .book-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 14px;
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; }
-.book-row:hover, .book-row:focus-visible { border-color: var(--accent-strong); }
 .book-row .book-go { font-weight: 600; color: var(--accent-strong); white-space: nowrap; }
+.book-row .book-go .arr { display: inline-block; margin-left: 2px; }
+/* Ganze Zeile ist ein Link: beim Darüberfahren Fläche, Rahmen und Pfeil deutlich */
+.book-row:hover, .book-row:focus-visible { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.book-row:hover .book-go, .book-row:focus-visible .book-go { text-decoration: underline; text-underline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .book-row { transition: background-color .15s, border-color .15s, box-shadow .15s; }
+  .book-row .book-go .arr { transition: transform .15s; }
+  .book-row:hover .book-go .arr, .book-row:focus-visible .book-go .arr { transform: translate(2px, -2px); }
+}
 .book-row.direct { background: var(--surface-2); }
 /* Logos aus den Werbemitteln der Programme: immer auf hellem Grund, wie es die Markenrichtlinien meist verlangen */
 .book-logo { display: inline-flex; align-items: center; min-width: 0; }
