@@ -1,14 +1,72 @@
 // Trainingsregionen, Schritt 1: Daten je Region unabhängig von Hotels.
-// - Klima je Monat am Regionsmittelpunkt (Open-Meteo, mit Wind und Sonne)
+// - Klima je Monat am Klimapunkt der Region (Open-Meteo, mit Wind und Sonne): vom Admin gesetzt, sonst Lage der Hotels,
+//   sonst ein tiefer gelegener Ort nahe der Mitte – der Mittelpunkt liegt auf Inseln oft im Gebirge (Teneriffa: Teide)
 // - Wassertemperatur vor der Küste: Mittel der küstennächsten Meereszellen in bis zu 8 Richtungen (Binnenregionen ohne)
 // - Radrevier aus OpenStreetMap (bike_areas, gleiche Regel und Berechnung wie für die Hotels)
 // Aktualisierung: per Knopf im Admin oder automatisch, wenn älter als MAX_AGE_DAYS.
 const db = require('../db');
 const climate = require('./climate');
+const geo = require('./geo');
 const bikeArea = require('./bike-area');
 const { logAction } = require('../lib/audit');
 
 const MAX_AGE_DAYS = 365;
+const LOW_M = 400;   // „tiefer gelegen“: Orte bis zu dieser Höhe kommen als Klimapunkt in Frage
+
+// Hotel, das den anderen am nächsten liegt (Medoid) – ein echter Ort, kein Mittelwert zwischen Nord- und Südküste
+function medoid(points) {
+  let best = null;
+  for (const p of points) {
+    const sum = points.reduce((acc, q) => acc + geo.distanceKm(p, q), 0);
+    if (!best || sum < best.sum) best = { p, sum };
+  }
+  return best ? best.p : null;
+}
+
+// Rasterpunkte für die automatische Wahl: Mittelpunkt und Ringe bei 1/4, 1/2, 3/4 des Radius in 8 Richtungen
+function climateCandidates(center, radiusKm) {
+  return climate.seaCandidates(center, radiusKm, [0.25, 0.5, 0.75]);
+}
+
+// Klimapunkt wählen. override: {lat, lng} aus dem Admin; hotels: [{lat, lng, city}] in der Region;
+// samples: Rasterpunkte mit elevation (Meer = 0). Rückgabe {lat, lng, source, place}
+function pickClimatePoint(center, { override = null, hotels = [], samples = [] } = {}) {
+  if (override) return { lat: override.lat, lng: override.lng, source: 'admin', place: null };
+  const m = medoid(hotels);
+  if (m) return { lat: m.lat, lng: m.lng, source: 'hotels', place: m.city || null };
+  const land = samples.filter((p) => p.elevation > 0);
+  const low = land.filter((p) => p.elevation <= LOW_M);
+  const pick = low.length
+    ? low.reduce((a, b) => (geo.distanceKm(center, b) < geo.distanceKm(center, a) ? b : a))
+    : land.length ? land.reduce((a, b) => (b.elevation < a.elevation ? b : a)) : null;
+  return pick ? { lat: pick.lat, lng: pick.lng, source: 'auto', place: null } : { lat: center.lat, lng: center.lng, source: 'center', place: null };
+}
+
+// Hotels (live in irgendeinem Ranking) innerhalb des Regionsradius
+async function hotelsIn(region) {
+  const center = { lat: Number(region.lat), lng: Number(region.lng) };
+  const rows = await db.many(
+    `SELECT DISTINCT e.id, e.lat, e.lng, e.city FROM entities e JOIN entity_rankings er ON er.entity_id = e.id AND er.status = 'live'
+      WHERE e.lat IS NOT NULL AND e.lng IS NOT NULL`);
+  return rows.map((r) => ({ lat: Number(r.lat), lng: Number(r.lng), city: r.city }))
+    .filter((p) => geo.distanceKm(center, p) <= Number(region.radius_km));
+}
+
+async function climatePoint(region) {
+  const center = { lat: Number(region.lat), lng: Number(region.lng) };
+  const override = region.climate_lat !== null && region.climate_lat !== undefined && region.climate_lng !== null && region.climate_lng !== undefined
+    ? { lat: Number(region.climate_lat), lng: Number(region.climate_lng) } : null;
+  const hotels = override ? [] : await hotelsIn(region);
+  let samples = [];
+  if (!override && !hotels.length) {
+    const cands = climateCandidates(center, Number(region.radius_km));
+    const elev = await geo.elevations(cands);
+    samples = cands.map((c, i) => ({ ...c, elevation: elev[i] }));
+  }
+  const point = pickClimatePoint(center, { override, hotels, samples });
+  const [elevation] = await geo.elevations([point]);
+  return { ...point, lat: Number(point.lat.toFixed(5)), lng: Number(point.lng.toFixed(5)), elevation_m: elevation === undefined ? null : Math.round(elevation) };
+}
 
 async function saveClimate(regionId, months, sea) {
   await db.tx(async (c) => {
@@ -30,7 +88,8 @@ async function refresh(region, { force = false, adminId = null } = {}) {
   const errors = [];
   const center = { lat: Number(region.lat), lng: Number(region.lng) };
   try {
-    const months = await climate.monthlyClimate(center, { extended: true });
+    const point = await climatePoint(region);
+    const months = await climate.monthlyClimate(point, { extended: true });
     let sea = null;
     try {
       sea = await climate.seaTemperature(center, Number(region.radius_km), { mode: 'coast' });
@@ -38,8 +97,9 @@ async function refresh(region, { force = false, adminId = null } = {}) {
       errors.push(`Wassertemperatur: ${err.message}`);
     }
     await saveClimate(region.id, months, sea);
-    await db.query('UPDATE regions SET sea_point = $2 WHERE id = $1', [region.id, sea ? JSON.stringify({ points: sea.points }) : null]);
-    parts.push(`Klima 12 Monate${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : ', Binnenregion (kein Meer im Radius)'}`);
+    await db.query('UPDATE regions SET sea_point = $2, climate_point = $3 WHERE id = $1',
+      [region.id, sea ? JSON.stringify({ points: sea.points }) : null, JSON.stringify(point)]);
+    parts.push(`Klima 12 Monate (${climatePointText(point)})${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : ', Binnenregion (kein Meer im Radius)'}`);
   } catch (err) {
     errors.push(`Klima: ${err.message}`);
   }
@@ -59,11 +119,11 @@ async function refresh(region, { force = false, adminId = null } = {}) {
   return { ok: !errors.length, text: [...parts, ...errors].join(' · ') };
 }
 
-// Alle aktiven Regionen ohne oder mit veralteten Daten (force: alle)
-async function refreshAll({ force = false, log = () => {} } = {}) {
+// Alle aktiven Regionen ohne oder mit veralteten Daten (all: alle Regionen; force: zusätzlich Radrevier neu aus OSM)
+async function refreshAll({ force = false, all = force, log = () => {} } = {}) {
   const list = await db.many(
     `SELECT * FROM regions WHERE status = 'active' AND ($1 OR data_computed_at IS NULL OR data_error IS NOT NULL
-       OR data_computed_at < now() - make_interval(days => $2)) ORDER BY sort_order, name`, [force, MAX_AGE_DAYS]);
+       OR data_computed_at < now() - make_interval(days => $2)) ORDER BY sort_order, name`, [all, MAX_AGE_DAYS]);
   const out = [];
   for (const r of list) {
     const res = await refresh(r, { force });
@@ -73,8 +133,14 @@ async function refreshAll({ force = false, log = () => {} } = {}) {
   return out;
 }
 
+const SOURCES = { admin: 'vom Admin gesetzt', hotels: 'Lage der Hotels', auto: 'tiefer gelegener Ort nahe der Mitte', center: 'Mittelpunkt' };
+function climatePointText(p) {
+  if (!p) return '';
+  return [p.place, p.elevation_m !== null && p.elevation_m !== undefined ? `${p.elevation_m} m` : null, SOURCES[p.source]].filter(Boolean).join(', ');
+}
+
 async function climateOf(regionId) {
   return db.many('SELECT * FROM region_climate_monthly WHERE region_id = $1 ORDER BY month', [regionId]);
 }
 
-module.exports = { MAX_AGE_DAYS, refresh, refreshAll, climateOf };
+module.exports = { MAX_AGE_DAYS, LOW_M, refresh, refreshAll, climateOf, pickClimatePoint, climatePointText, medoid };

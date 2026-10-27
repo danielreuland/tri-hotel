@@ -4,6 +4,7 @@ const db = require('../db');
 const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { slugify } = require('../lib/util');
+const regionData = require('../services/region-data');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -22,6 +23,9 @@ function readForm(b) {
     slug: slugify(b.slug || b.name),
     country: String(b.country || '').trim().toUpperCase().slice(0, 2),
     lat: num(b.lat), lng: num(b.lng), radius_km: num(b.radius_km),
+    // Klimapunkt optional: beide leer = automatisch (Lage der Hotels bzw. tiefer gelegener Ort nahe der Mitte)
+    climate_lat: String(b.climate_lat || '').trim() ? num(b.climate_lat) : null,
+    climate_lng: String(b.climate_lng || '').trim() ? num(b.climate_lng) : null,
     intro: String(b.intro || '').trim().slice(0, 2000) || null,
     status: ['draft', 'active', 'archived'].includes(b.status) ? b.status : 'active',
     sort_order: Number(b.sort_order) || 100,
@@ -30,6 +34,9 @@ function readForm(b) {
   if (!f.name || !f.name_in || !f.slug) errors.push('Name, „auf/am …“ und Slug sind Pflicht.');
   if (!/^[A-Z]{2}$/.test(f.country)) errors.push('Land als zweistelliger Code.');
   if (!(Math.abs(f.lat) <= 90) || !(Math.abs(f.lng) <= 180) || !(f.radius_km > 0 && f.radius_km <= 500)) errors.push('Koordinaten und Radius (1–500 km) prüfen.');
+  if ((f.climate_lat === null) !== (f.climate_lng === null) || (f.climate_lat !== null && !(Math.abs(f.climate_lat) <= 90 && Math.abs(f.climate_lng) <= 180))) {
+    errors.push('Klimapunkt: Breiten- und Längengrad angeben oder beide leer lassen.');
+  }
   return { f, errors };
 }
 
@@ -40,13 +47,12 @@ async function render(res, extra = {}) {
        FROM regions r JOIN sites s ON s.id = r.site_id LEFT JOIN bike_areas b ON b.key = 'region:' || r.id
       ORDER BY s.name, r.sort_order, r.name`);
   const sites = await db.many(`SELECT id, name FROM sites ORDER BY is_default DESC, name`);
-  res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, ...extra });
+  res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, climatePointText: regionData.climatePointText, lowM: regionData.LOW_M, ...extra });
 }
 
 router.get('/', wrap(async (req, res) => render(res, { flash: req.query.ok || null })));
 
 // Daten je Region (Klima mit Wind/Sonne/Wasser, Radrevier aus OSM) im Hintergrund berechnen – dauert je Region 1–3 Minuten
-const regionData = require('../services/region-data');
 router.post('/daten', wrap(async (req, res) => {
   regionData.refreshAll({ force: req.body.alle === '1', log: (t) => console.log('[regionen]', t) }).catch((err) => console.error('[regionen]', err.message));
   await logAction(req.session.admin.id, 'region', req.session.admin.id, 'refresh_all_region_data', { force: req.body.alle === '1' });
@@ -70,14 +76,16 @@ router.post('/:id?', wrap(async (req, res) => {
   try {
     if (req.params.id) {
       await db.query(
-        `UPDATE regions SET site_id=$2, name=$3, name_in=$4, slug=$5, country=$6, lat=$7, lng=$8, radius_km=$9, intro=$10, status=$11, sort_order=$12, updated_at=now() WHERE id=$1`,
-        [req.params.id, f.site_id, f.name, f.name_in, f.slug, f.country, f.lat, f.lng, f.radius_km, f.intro, f.status, f.sort_order]
+        `UPDATE regions SET site_id=$2, name=$3, name_in=$4, slug=$5, country=$6, lat=$7, lng=$8, radius_km=$9, intro=$10, status=$11, sort_order=$12,
+           climate_lat=$13, climate_lng=$14, updated_at=now() WHERE id=$1`,
+        [req.params.id, f.site_id, f.name, f.name_in, f.slug, f.country, f.lat, f.lng, f.radius_km, f.intro, f.status, f.sort_order, f.climate_lat, f.climate_lng]
       );
-      await logAction(req.session.admin.id, 'region', req.params.id, 'edit_region', { name: f.name, radius_km: f.radius_km });
+      await logAction(req.session.admin.id, 'region', req.params.id, 'edit_region', { name: f.name, radius_km: f.radius_km, climate_lat: f.climate_lat, climate_lng: f.climate_lng });
     } else {
       const row = await db.one(
-        `INSERT INTO regions (site_id, name, name_in, slug, country, lat, lng, radius_km, intro, status, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-        [f.site_id, f.name, f.name_in, f.slug, f.country, f.lat, f.lng, f.radius_km, f.intro, f.status, f.sort_order]
+        `INSERT INTO regions (site_id, name, name_in, slug, country, lat, lng, radius_km, intro, status, sort_order, climate_lat, climate_lng)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+        [f.site_id, f.name, f.name_in, f.slug, f.country, f.lat, f.lng, f.radius_km, f.intro, f.status, f.sort_order, f.climate_lat, f.climate_lng]
       );
       await logAction(req.session.admin.id, 'region', row.id, 'create_region', { name: f.name });
     }

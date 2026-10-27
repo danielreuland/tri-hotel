@@ -74,7 +74,7 @@
 
         <% if (r.climate.length) { %>
           <dl class="region-stats">
-            <div><dt><%= METRICS.avg_high_c.short %></dt><dd><%= stat(r, 'avg_high_c') %> °C</dd></div>
+            <div><dt><%= METRICS.avg_high_c.short %> <%- include('../partials/info-tip', { text: climateTip(r) }) %></dt><dd><%= stat(r, 'avg_high_c') %> °C</dd></div>
             <div><dt>Regentage</dt><dd><%= stat(r, 'rain_days') %></dd></div>
             <div><dt>Sonne</dt><dd><%= stat(r, 'sunshine_h') %> h</dd></div>
             <div><dt>Wind</dt><dd><%= stat(r, 'wind_kmh') %> km/h</dd></div>
@@ -126,7 +126,7 @@
 </section>
 
 <section class="page-notes">
-  <p><small>Quellen: Klima und Wassertemperatur von Open-Meteo (Mittel der letzten drei vollen Jahre; Klima am Mittelpunkt der Region, Wasser als Mittel küstennaher Meerespunkte). Radrevier aus OpenStreetMap (© OpenStreetMap-Mitwirkende), bewertet mit derselben Regel wie bei den <%= ranking.entity_label_pl %>. Die Regionsdaten fließen nicht in den <%= scoreName %> ein.</small></p>
+  <p><small>Quellen: Klima und Wassertemperatur von Open-Meteo (Mittel der letzten drei vollen Jahre; Klima an einem typischen Ort der Region – Lage der Hotels, sonst ein tiefer gelegener Ort nahe der Mitte –, Wasser als Mittel küstennaher Meerespunkte). Radrevier aus OpenStreetMap (© OpenStreetMap-Mitwirkende), bewertet mit derselben Regel wie bei den <%= ranking.entity_label_pl %>. Die Regionsdaten fließen nicht in den <%= scoreName %> ein.</small></p>
 </section>
 
 <%- include('../partials/foot') %>

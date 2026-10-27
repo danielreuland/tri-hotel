@@ -358,19 +358,23 @@ async function bathingWaters(point, radiusKm) {
 // Liegt der Punkt am Meer? Höhenmodell von Open-Meteo (Copernicus, 90 m): Meeresflächen haben Höhe 0, Seen liegen
 // darüber. Küstenlage = mindestens ein Punkt auf Höhe 0 im Abstand von 1, 2 oder km Kilometern (8 Richtungen, ein Aufruf).
 const ELEVATION = 'https://api.open-meteo.com/v1/elevation';
+async function elevations(points) {
+  if (!points.length) return [];
+  const params = new URLSearchParams({ latitude: points.map((p) => Number(p.lat).toFixed(4)).join(','), longitude: points.map((p) => Number(p.lng).toFixed(4)).join(',') });
+  const res = await fetch(`${ELEVATION}?${params}`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`Open-Meteo Höhen ${res.status}`);
+  const data = await res.json();
+  return data.elevation || [];
+}
 async function nearCoast(point, km = 3) {
   const pts = [];
   for (const r of [1, 2, km]) {
     for (let k = 0; k < 8; k++) {
       const a = (k * Math.PI) / 4;
-      pts.push([point.lat + (r / 111.32) * Math.cos(a), point.lng + (r / (111.32 * Math.cos((point.lat * Math.PI) / 180))) * Math.sin(a)]);
+      pts.push({ lat: point.lat + (r / 111.32) * Math.cos(a), lng: point.lng + (r / (111.32 * Math.cos((point.lat * Math.PI) / 180))) * Math.sin(a) });
     }
   }
-  const params = new URLSearchParams({ latitude: pts.map((p) => p[0].toFixed(4)).join(','), longitude: pts.map((p) => p[1].toFixed(4)).join(',') });
-  const res = await fetch(`${ELEVATION}?${params}`, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(20000) });
-  if (!res.ok) throw new Error(`Open-Meteo Höhen ${res.status}`);
-  const data = await res.json();
-  return (data.elevation || []).some((e) => e === 0);
+  return (await elevations(pts)).some((e) => e === 0);
 }
 
 // Gelände: Höhen auf einem Raster um den Punkt (OpenTopoData, Datensatz mapzen, eine Anfrage je Objekt)
@@ -479,4 +483,4 @@ async function suggestFacts(point, criteria, ctx = {}) {
 module.exports = {
   locate,
   coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, applyLengthRule, applyTerrainRule, poolLengthM, spanM,
-  bathingWaters, nearCoast, terrain, evaluateRule, distanceKm, suggestFacts, overpass, SELECTOR_RE };
+  bathingWaters, nearCoast, elevations, terrain, evaluateRule, distanceKm, suggestFacts, overpass, SELECTOR_RE };

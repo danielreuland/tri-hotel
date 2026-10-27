@@ -75,3 +75,26 @@ test('Regionen: Jahreszeit – Eignung zählt Monate in der besten Reisezeit, We
   assert.equal(guide.parsePeriod('quatsch', M), null);
   assert.equal(guide.parsePeriod('3', M).label, 'im März');
 });
+
+test('Klimapunkt: Admin vor Hotels vor tiefem Ort nahe der Mitte, nie der Gipfel', () => {
+  const rd = require('../src/services/region-data');
+  const center = { lat: 28.29, lng: -16.62 };
+  assert.deepEqual(rd.pickClimatePoint(center, { override: { lat: 28.1, lng: -16.7 } }), { lat: 28.1, lng: -16.7, source: 'admin', place: null });
+  const hotels = [{ lat: 28.10, lng: -16.75, city: 'Costa Adeje' }, { lat: 28.11, lng: -16.74, city: 'Adeje' }, { lat: 28.40, lng: -16.55, city: 'Puerto de la Cruz' }];
+  const h = rd.pickClimatePoint(center, { hotels });
+  assert.equal(h.source, 'hotels');
+  assert.ok(['Costa Adeje', 'Adeje'].includes(h.place), 'Medoid liegt im Süden, wo die meisten Hotels sind');
+  const samples = [
+    { lat: 28.29, lng: -16.62, elevation: 2345 },
+    { lat: 28.20, lng: -16.62, elevation: 900 },
+    { lat: 28.10, lng: -16.62, elevation: 120 },
+    { lat: 28.00, lng: -16.62, elevation: 15 },
+    { lat: 27.95, lng: -16.62, elevation: 0 },
+  ];
+  const a = rd.pickClimatePoint(center, { samples });
+  assert.deepEqual([a.source, a.lat], ['auto', 28.10], 'nächster Ort bis 400 m, nicht das Meer und nicht der Gipfel');
+  const high = rd.pickClimatePoint(center, { samples: [{ lat: 1, lng: 1, elevation: 1500 }, { lat: 2, lng: 2, elevation: 900 }] });
+  assert.equal(high.lat, 2, 'ohne Ort bis 400 m: tiefster Landpunkt');
+  assert.equal(rd.pickClimatePoint(center, {}).source, 'center');
+  assert.equal(rd.climatePointText({ place: 'Costa Adeje', elevation_m: 30, source: 'hotels' }), 'Costa Adeje, 30 m, Lage der Hotels');
+});

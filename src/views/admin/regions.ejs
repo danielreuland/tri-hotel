@@ -14,7 +14,7 @@
       <td><span class="badge"><%= r.status %></span></td>
       <td><small>
         <% if (r.data_computed_at) { %><%= formatDate(r.data_computed_at) %> · <% } %>
-        Klima <%= r.climate_months === 12 ? '✓' : '–' %> · Wasser <%= r.sea_point ? (r.sea_point.points ? '✓ (' + r.sea_point.points.length + ' Küstenpunkte)' : '✓') : (r.climate_months ? 'Binnenland' : '–') %> ·
+        Klima <%= r.climate_months === 12 ? '✓' : '–' %><% if (r.climate_point) { %> (<%= climatePointText(r.climate_point) %>)<% } %> · Wasser <%= r.sea_point ? (r.sea_point.points ? '✓ (' + r.sea_point.points.length + ' Küstenpunkte)' : '✓') : (r.climate_months ? 'Binnenland' : '–') %> ·
         Radrevier <%= r.bike_score !== null && r.bike_score !== undefined ? String(Number(r.bike_score)).replace('.', ',') + '/6' : '–' %>
         <% if (r.data_error || r.bike_error) { %><br><span style="color:var(--bad)"><%= r.data_error || r.bike_error %></span><% } %>
       </small>
@@ -45,6 +45,11 @@
     <div><label>Radius km *</label><input name="radius_km" type="text" required value="<%= e.radius_km || '' %>"></div>
     <div><label>Reihenfolge</label><input name="sort_order" type="number" value="<%= e.sort_order %>"></div>
     <div><label>Status</label><select name="status"><% ['active', 'draft', 'archived'].forEach(function (s) { %><option value="<%= s %>" <%= e.status === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+  </div>
+  <div class="form-row">
+    <div><label>Klimapunkt Breitengrad</label><input name="climate_lat" type="text" value="<%= e.climate_lat === null || e.climate_lat === undefined ? '' : e.climate_lat %>" placeholder="automatisch"></div>
+    <div><label>Klimapunkt Längengrad</label><input name="climate_lng" type="text" value="<%= e.climate_lng === null || e.climate_lng === undefined ? '' : e.climate_lng %>" placeholder="automatisch"></div>
+    <div style="flex:2"><small class="muted">Ort, für den Temperatur, Regen, Sonne und Wind gelten. Leer = automatisch: Lage der Hotels der Region, ohne Hotels ein Ort bis <%= lowM %> m nahe der Mitte (der Mittelpunkt liegt auf Inseln oft im Gebirge). Nach dem Ändern „Aktualisieren“ klicken.</small></div>
   </div>
   <label>Einleitungstext <small class="muted">eigener Text je Region, wichtig für Google (2–4 Sätze)</small></label>
   <textarea name="intro"><%= e.intro || '' %></textarea>
