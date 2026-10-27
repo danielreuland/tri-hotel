@@ -35,7 +35,7 @@
      var meta = METRICS[key]; var digits = key === 'sunshine_h' || key === 'windy_days' ? 1 : 0; %>
   <section>
     <h2><%= meta.label %> <small class="muted">(<%= meta.unit %>)</small>
-      <% if (key === 'sea_c') { %><%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Mittel küstennaher Meerespunkte je Region (Modellwert von Open-Meteo, Raster etwa 5 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %><% } %>
+      <% if (key === 'sea_c') { %><%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Mittel küstennaher Meerespunkte je Region (Modellwert von Open-Meteo, Raster etwa 8–9 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %><% } %>
     </h2>
     <div class="table-scroll">
       <table class="climate region-grid">

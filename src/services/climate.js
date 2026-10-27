@@ -2,7 +2,7 @@
 // avg_high_c / avg_low_c = Mittel der Tageshöchst-/-tiefstwerte, rain_days = Tage mit ≥ 1 mm Niederschlag.
 // Erweitert (Regionen): wind_kmh = mittlere Windgeschwindigkeit, windy_days = Tage mit Spitzenwind ≥ 40 km/h,
 // sunshine_h = Sonnenstunden je Tag; Wassertemperatur separat über die Marine-API (seaTemperature, hotelSea):
-// Modellwerte vor der Küste – am Strand bzw. in Buchten kann es wärmer sein (Hinweis auf der Seite).
+// Modellwerte vor der Küste (Raster etwa 8–9 km) – am Strand bzw. in Buchten kann es wärmer sein (Hinweis auf der Seite).
 const config = require('../config');
 const { distanceKm } = require('./geo');
 
@@ -154,8 +154,16 @@ async function seaTemperature(center, radiusKm, { mode = 'coast', fractions } = 
   return { months: await seaMonthly(points), points: points.map((p) => ({ lat: p.lat, lng: p.lng, distance_km: p.distance_km })) };
 }
 
-// Hotel: nächste Meereszelle in bis zu 10 km (2, 5, 10 km in 8 Richtungen)
-const HOTEL_SEA_KM = 10;
-const hotelSea = (point) => seaTemperature(point, HOTEL_SEA_KM, { mode: 'nearest', fractions: [0.2, 0.5, 1] });
+// Hotel: Die Marine-API liefert zu einem Punkt automatisch die nächste Meereszelle (Raster etwa 8–9 km, Buchten oft
+// nicht aufgelöst). Gefragt wird deshalb nur der Hotelpunkt; die Zelle zählt, wenn sie höchstens HOTEL_SEA_KM entfernt ist.
+const HOTEL_SEA_KM = 20;
+async function hotelSea(point) {
+  const query = { lat: point.lat, lng: point.lng };
+  const [r] = await probe([query]);
+  if (!hasSea(r)) return null;
+  const hit = hitOf(point, query, r);
+  if (hit.distance_km > HOTEL_SEA_KM) return null;
+  return { months: await seaMonthly([hit]), points: [{ lat: hit.lat, lng: hit.lng, distance_km: hit.distance_km }] };
+}
 
 module.exports = { monthlyClimate, aggregateMonthly, seaTemperature, hotelSea, seaCandidates, pickSeaPoint, pickCoastPoints, WINDY_KMH, HOTEL_SEA_KM };

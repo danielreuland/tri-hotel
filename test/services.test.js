@@ -146,3 +146,27 @@ test('climate: Region – je Richtung die küstennächste Meereszelle, doppelte 
   assert.equal(pts.length, 2, 'Norden (Ring 2) und Süden, doppelte Zelle nur einmal');
   assert.deepEqual(pts.map((p) => p.lat).sort(), [39.1, 39.95]);
 });
+
+test('climate: Hotel – nächste Meereszelle der Marine-API zählt bis 20 km (Raster etwa 8–9 km), weiter weg = kein Meer', async () => {
+  const orig = global.fetch;
+  const reply = (cell) => async (url) => {
+    const daily = url.includes('2023-01-01') || /start_date=\d{4}-01-01/.test(url)
+      ? { time: ['2025-01-15', '2025-08-15'], sea_surface_temperature_mean: [15, 26] }
+      : { time: ['x'], sea_surface_temperature_mean: cell ? [27] : [null] };
+    return { ok: true, json: async () => ({ latitude: cell ? cell.lat : 0, longitude: cell ? cell.lng : 0, daily }) };
+  };
+  try {
+    const hotel = { lat: 39.844616, lng: 3.134473 };
+    global.fetch = reply({ lat: 39.958336, lng: 3.1250153 });
+    const sea = await climate.hotelSea(hotel);
+    assert.ok(sea, 'Zelle in 12,7 km zählt');
+    assert.equal(sea.points[0].distance_km, 12.7);
+    assert.equal(sea.months[7], 26);
+    global.fetch = reply({ lat: 40.2, lng: 3.13 });
+    assert.equal(await climate.hotelSea(hotel), null, 'Zelle in ~40 km zählt nicht');
+    global.fetch = reply(null);
+    assert.equal(await climate.hotelSea(hotel), null, 'Binnenland');
+  } finally {
+    global.fetch = orig;
+  }
+});

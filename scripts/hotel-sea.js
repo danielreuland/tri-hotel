@@ -1,4 +1,4 @@
-// Wassertemperatur für vorhandene Hotels nachtragen (nächste Meereszelle ≤ 10 km; Binnenland ohne).
+// Wassertemperatur für vorhandene Hotels nachtragen (nächste Meereszelle ≤ 20 km; Binnenland ohne).
 // Aufruf: node scripts/hotel-sea.js [--fehlende]   (--fehlende: nur Hotels ohne erfolgreichen Durchlauf)
 // Open-Meteo begrenzt die Anfragen: Pause zwischen den Hotels, bei 429 bis zu drei Wiederholungen mit Wartezeit.
 require('dotenv').config();
@@ -33,7 +33,7 @@ async function withRetry(fn) {
         `UPDATE entities SET attributes = (CASE WHEN $2::jsonb IS NULL THEN attributes - 'sea_point' ELSE attributes || jsonb_build_object('sea_point', $2::jsonb) END)
            || jsonb_build_object('sea_checked_at', now()::date) WHERE id = $1`,
         [e.id, sea ? JSON.stringify(sea.points[0]) : null]);
-      console.log(`${e.name}: ${sea ? `${sea.points[0].distance_km} km · Aug ${sea.months[7]} °C · Mär ${sea.months[2]} °C` : 'kein Meer in 10 km'}`);
+      console.log(`${e.name}: ${sea ? `${sea.points[0].distance_km} km · Aug ${sea.months[7]} °C · Mär ${sea.months[2]} °C` : 'kein Meer in 20 km'}`);
     } catch (err) {
       errors += 1;
       console.log(`${e.name}: Fehler ${err.message}`);

@@ -25,7 +25,7 @@ function viewHelpers(ranking) {
     bestText: (months) => seo.monthRanges(months, MONTHS),
     regionPath: (r) => `/region/${r.slug}`,
     seaTip: (r) => `Wassertemperatur vor der Küste: Mittel aus ${r.seaPoints === 1 ? 'einem Küstenpunkt' : `${r.seaPoints} Küstenpunkten`} der Region `
-      + '(Modellwert von Open-Meteo, Raster etwa 5 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.',
+      + '(Modellwert von Open-Meteo, Raster etwa 8–9 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.',
     scoreName: ranking.score_name,
   };
 }

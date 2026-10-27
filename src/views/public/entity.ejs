@@ -216,7 +216,7 @@
           <tr><th>Ø min °C</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
           <tr><th>Regentage</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
           <% if (climate.some(function (c) { return c.sea_c !== null && c.sea_c !== undefined; })) { var seaKm = (entity.attributes || {}).sea_point ? String(entity.attributes.sea_point.distance_km).replace('.', ',') : null; %>
-            <tr><th>Wasser °C <%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Modellwert von Open-Meteo im Raster von etwa 5 km' + (seaKm ? ', nächster Punkt ' + seaKm + ' km vom Hotel' : '') + '. Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %></th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.sea_c === null || c.sea_c === undefined ? '–' : Math.round(c.sea_c) %></td><% }) %></tr>
+            <tr><th>Wasser °C <%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Modellwert von Open-Meteo im Raster von etwa 8–9 km' + (seaKm ? ', nächster Punkt ' + seaKm + ' km vom Hotel' : '') + '. Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %></th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.sea_c === null || c.sea_c === undefined ? '–' : Math.round(c.sea_c) %></td><% }) %></tr>
           <% } %>
         </table>
       </div>
