@@ -13,9 +13,11 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 ### Partner: Hotels.com und CHECK24 (Stand 27.10.2026)
 - **Hotels.com:** live und aktiv seit 27.10.2026 (Migration 065/066, übernimmt Hotel-IDs aus dem Expedia-Link über `id_from`).
   Bedingungen geprüft: 4 % Hotels, 7 Tage; Markenhinweis nennt Expedia, Inc.; sonst wie Expedia (siehe Notiz im Programm).
-- **CHECK24:** vorbereitet im Branch `check24` (Migration 067, Programm inaktiv). Pauschalreisen auf check24.net,
-  Link über a.check24.net/misc/click.php (pid 1179734, aid 18, tid = Slug), Hotel-Nummer = c24pp_hotel_id (Playitas 18002).
-  Kurze Form getestet (Standarddaten), Bedingungen geprüft (7 %, kein Markenhinweis, Datenschutz ergänzt). Offen, veröffentlichen, Nummern je Hotel eintragen.
+- **CHECK24:** live und aktiv seit 27.10.2026 (Migrationen 067, 069), Reihenfolge 4 = Hauptbutton, wo ein Link steht.
+  Pauschalreisen auf check24.net (Provision nur dort, 7 %), Link über a.check24.net/misc/click.php (pid 1179734, aid 18,
+  tid = Slug), Hotel-Nummer = c24pp_hotel_id bzw. hotelId auf urlaub.check24.de (Barceló Lanzarote Active Resort 1677933).
+  Offen: Nummern je Hotel eintragen (Suchlink im Admin beim Hotel); Kurzform öffnet beim ersten Besuch mit Cookie-Banner
+  evtl. nur die allgemeine Suche – im privaten Fenster prüfen.
 
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
