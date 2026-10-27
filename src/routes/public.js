@@ -521,9 +521,24 @@ router.get('/rankings/:rslug/:eslug', wrap(async (req, res, next) => {
 
 const MONTHS_DE = require('../lib/util').MONTHS;
 
+// Fragen zu einzelnen Leistungen: ranking.content.area_faq_features = [{ feature: Code, q: Vorlage }]
+async function featureQuestions(ranking, list, d, fill) {
+  if (!Array.isArray(list) || !list.length || !d.count) return [];
+  const cat = await features.catalog(ranking.entity_type);
+  return list.map((f) => {
+    const feat = cat.find((c) => c.code === f.feature);
+    return feat && f.q ? { q: fill(f.q), label: feat.label, entities: d.withFeature(feat.code).map((e) => e.name) } : null;
+  }).filter(Boolean);
+}
+
 async function renderArea(req, res, ranking, area) {
   const month = parseMonth(req.query.monat);
   const d = await areas.pageData(ranking, area, month);
+  // Titel, H1 und Fragen aus den Landingpage-Texten des Rankings (Suchbegriffe wie „Trainingslager Fuerteventura“), Platzhalter
+  // {in} „auf Fuerteventura“, {name}, {anzahl}, {objekte}, {objekt}, {score}, {andere}; ohne Vorlage wie bisher „<Ranking> <in>“
+  const content = ranking.content || {};
+  const fill = (tpl, extra = {}) => String(tpl).replace(/\{(\w+)\}/g, (m, k) => ({ in: area.nameIn, name: area.name, anzahl: d.count,
+    objekte: ranking.entity_label_pl, objekt: ranking.entity_label_sg, score: ranking.score_name, ...extra }[k] ?? m));
   // Regionen: Klima, Wasser und Radrevier aus den Regionsdaten (unabhängig von Hotels), Camps der Region
   let rd = null;
   let regionCamps = [];
@@ -548,6 +563,8 @@ async function renderArea(req, res, ranking, area) {
       region: area, ranking, climate: rd ? rd.climate : [], bike: rd ? rd.bike : null,
       hotels: { count: d.count, top: d.ranked[0] ? { name: d.ranked[0].name, score: d.ranked[0].score } : null },
       camps: regionCamps.map((p) => p.name),
+      features: await featureQuestions(ranking, content.area_faq_features, d, fill),
+      compare: text && text.compare ? { q: fill(content.area_faq_compare || '{name} oder {andere}?', { andere: text.compare.name }), a: text.compare.text } : null,
     }, MONTHS_DE);
   }
   const siteUrl = res.locals.siteUrl;
@@ -555,11 +572,6 @@ async function renderArea(req, res, ranking, area) {
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
   const ov = await areas.overview(ranking, req.site.id);
   const best = seo.bestTimeText(d.bestMonths, MONTHS_DE);
-  // Titel und H1 aus den Landingpage-Texten des Rankings (Suchbegriffe wie „Trainingslager Fuerteventura“), Platzhalter
-  // {in} „auf Fuerteventura“, {name}, {anzahl}, {objekte}, {score}; ohne Vorlage wie bisher „<Ranking> <in>“
-  const content = ranking.content || {};
-  const fill = (tpl) => String(tpl).replace(/\{(\w+)\}/g, (m, k) => ({ in: area.nameIn, name: area.name, anzahl: d.count,
-    objekte: ranking.entity_label_pl, score: ranking.score_name }[k] ?? m));
   const heading = content.area_h1 ? fill(content.area_h1) : `${ranking.name} ${area.nameIn}`;
   const subline = content.area_subline ? fill(content.area_subline) : null;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];

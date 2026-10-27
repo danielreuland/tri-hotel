@@ -81,6 +81,7 @@ async function pageData(ranking, area, month) {
     climate,
     bestMonths: seo.bestMonths(ranking.formula, climate),
     featureShares: seo.featureShares(all, featureMap),
+    withFeature: (code) => all.filter((e) => (featureMap.get(e.id) || []).some((f) => f.code === code)),
     featureGroups: seo.featureGroupShares(all, featureMap),
     avgScore: scores.length ? Math.round(scores.reduce((s, x) => s + x, 0) / scores.length) : null,
     topScore: scores.length ? Math.max(...scores) : null,

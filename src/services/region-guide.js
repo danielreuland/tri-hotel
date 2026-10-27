@@ -233,7 +233,9 @@ function bestTimeReasons(climate, formula, monthNames) {
 // Häufige Fragen zur Region, nur aus unseren Daten (rein, testbar). Rückgabe [{ q, a }]
 // region: { nameIn }, ranking: { entity_label_sg/pl, score_name, formula }, climate, bike (bikeFacts),
 // hotels: { count, top: { name, score } | null }, camps: [Name]
-function regionFaq({ region, ranking, climate = [], bike = null, hotels = { count: 0, top: null }, camps = [] }, monthNames) {
+// features: [{ q, label, entities: [Name] }] – Fragen zu einzelnen Leistungen (Vorlagen aus ranking.content.area_faq_features)
+// compare: { q, a } – Vergleich mit der Nachbarregion (aus dem Regionstext)
+function regionFaq({ region, ranking, climate = [], bike = null, hotels = { count: 0, top: null }, camps = [], features = [], compare = null }, monthNames) {
   const out = [];
   const mName = (c) => monthNames[Number(c.month) - 1];
   const reasons = bestTimeReasons(climate, ranking.formula, monthNames);
@@ -289,6 +291,18 @@ function regionFaq({ region, ranking, climate = [], bike = null, hotels = { coun
         + ` Die Liste ist nur nach ${ranking.score_name} sortiert.`,
     });
   }
+  for (const f of features) {
+    if (!hotels.count) continue;
+    const pl = hotels.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl;
+    const n = f.entities.length;
+    out.push({
+      q: f.q,
+      a: n
+        ? `${f.label}: ${n} von ${hotels.count} geprüften ${pl} ${region.nameIn} – ${f.entities.join(', ')}.`
+        : `${f.label}: bei keinem der ${hotels.count} geprüften ${pl} ${region.nameIn} bestätigt.`,
+    });
+  }
+  if (compare) out.push(compare);
   if (camps.length) {
     out.push({
       q: `Gibt es organisierte Trainingscamps ${region.nameIn}?`,

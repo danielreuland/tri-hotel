@@ -167,3 +167,17 @@ test('Regionsseite: beste Reisezeit „ganzjährig außer …“ und Frage zum W
   assert.match(faq[0].a, /14 km\/h im Januar bis 23 km\/h im Juli\. Über das Jahr gibt es rund 5 Tage mit Sturmböen/);
   assert.equal(guide.bikeText({ routes: 1, reliefM: null, quietKm: null })[0], '1 ausgeschilderte Radroute.');
 });
+
+test('Regionsseite: Fragen zu Leistungen und zum Vergleich mit der Nachbarregion', () => {
+  const { MONTHS: M } = require('../src/lib/util');
+  const ranking = { entity_label_sg: 'Hotel', entity_label_pl: 'Hotels', score_name: 'TriScore', formula: {} };
+  const faq = guide.regionFaq({ region: { nameIn: 'auf Fuerteventura' }, ranking, hotels: { count: 2, top: null },
+    features: [{ q: 'Welches Hotel auf Fuerteventura hat ein 50-m-Becken?', label: '50-m-Becken im Hotel', entities: ['Playitas Hotel', 'Playitas Aparthotel'] }],
+    compare: { q: 'Fuerteventura oder Lanzarote fürs Trainingslager?', a: 'Beide sind windig.' } }, M);
+  assert.equal(faq[1].q, 'Welches Hotel auf Fuerteventura hat ein 50-m-Becken?');
+  assert.equal(faq[1].a, '50-m-Becken im Hotel: 2 von 2 geprüften Hotels auf Fuerteventura – Playitas Hotel, Playitas Aparthotel.');
+  assert.deepEqual(faq[2], { q: 'Fuerteventura oder Lanzarote fürs Trainingslager?', a: 'Beide sind windig.' });
+  const none = guide.regionFaq({ region: { nameIn: 'auf Mallorca' }, ranking, hotels: { count: 13, top: null },
+    features: [{ q: 'Welches Hotel auf Mallorca hat ein 50-m-Becken?', label: '50-m-Becken im Hotel', entities: [] }] }, M);
+  assert.equal(none[1].a, '50-m-Becken im Hotel: bei keinem der 13 geprüften Hotels auf Mallorca bestätigt.');
+});

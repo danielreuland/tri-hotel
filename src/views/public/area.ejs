@@ -193,7 +193,7 @@
 
 <% if (faq.length) { %>
 <section id="fragen" class="area-faq">
-  <h2>Häufige Fragen <%= area.nameIn %></h2>
+  <h2>Häufige Fragen zu <%= area.name %></h2>
   <% faq.forEach(function (f) { %>
     <details><summary><%= f.q %></summary><p><%= f.a %></p></details>
   <% }) %>
