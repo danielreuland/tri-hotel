@@ -3,6 +3,12 @@
   var formula = Object.assign({ min_completeness: 70 }, ranking.formula || {});
   var methodHref = base + (isHostRanking ? scorePath : '/methodik');
   var de = function (v, d) { return v === null || v === undefined ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
+  // Redaktionstext: Absätze vor der ersten Zwischenüberschrift sind der Einstieg (oben im Kopfbereich), der Rest steht im Überblick
+  var textIntro = [], textRest = [];
+  if (text) { var seenHead = false; text.blocks.forEach(function (b) { if (b.type === 'h') seenHead = true; (seenHead ? textRest : textIntro).push(b); }); }
+  // Ausstattung: ab 3 Einträgen als Übersicht „x von y“, bei 2 nur die Gemeinsamkeiten, bei 1 nichts (steht auf der Profilseite)
+  var shared = d.count === 2 ? [].concat.apply([], d.featureGroups.map(function (g) { return g.items.filter(function (f) { return f.n === 2 && f.filterable; }); })) : [];
+  var showGroups = d.count >= 3 && d.featureGroups.length;
   var seaYear = rd && rd.hasSea ? rd.climate.map(function (c) { return c.sea_c === null ? null : Number(c.sea_c); }).filter(function (v) { return v !== null; }) : [];
 %>
 
@@ -20,7 +26,10 @@
 <section class="area-hero">
   <p class="eyebrow"><%= area.type === 'region' ? 'Region' : 'Land' %> · <%= ranking.score_name %>-Ranking</p>
   <h1><%= heading %></h1>
-  <% if (area.intro) { %><p class="lead"><%= area.intro %></p><% } %>
+  <% if (subline) { %><p class="area-subline"><%= subline %></p><% } %>
+  <% if (textIntro.length) { %>
+    <% textIntro.forEach(function (b, i) { %><p class="<%= i === 0 ? 'lead' : 'area-intro-more' %>"><%= b.text || (b.items || []).join(' · ') %></p><% }) %>
+  <% } else if (area.intro) { %><p class="lead"><%= area.intro %></p><% } %>
   <div class="area-facts">
     <div><strong><%= d.count %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
     <% if (d.topScore !== null) { %><div><strong><%= d.topScore %></strong><span>bester <%= ranking.score_name %></span></div><% } %>
@@ -33,7 +42,7 @@
       <% if (text) { %><a href="#ueberblick">Region im Überblick</a><% } %>
       <a href="#reisezeit">Klima &amp; Reisezeit</a>
       <% if (rd.bike) { %><a href="#radrevier">Radrevier</a><% } %>
-      <% if (d.featureGroups.length) { %><a href="#ausstattung">Ausstattung</a><% } %>
+      <% if (showGroups || shared.length) { %><a href="#ausstattung">Ausstattung</a><% } %>
       <% if (regionCamps.length) { %><a href="#camps">Camps</a><% } %>
       <% if (faq.length) { %><a href="#fragen">Häufige Fragen</a><% } %>
       <% if (locals.regionGuide) { %><a href="/trainingsregionen">Alle Regionen im Vergleich</a><% } %>
@@ -78,15 +87,22 @@
   <% } %>
 </section>
 
-<% if (text) { %>
+<% if (textRest.length) { %>
 <section id="ueberblick" class="area-text">
   <h2><%= area.name %> im Überblick</h2>
-  <% text.blocks.forEach(function (b) { %>
+  <% textRest.forEach(function (b) { %>
     <% if (b.type === 'h') { %><h3><%= b.text %></h3>
     <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
     <% } else { %><p><%= b.text %></p><% } %>
   <% }) %>
-  <p class="muted"><small>Redaktionstext, mit KI-Unterstützung erstellt und von der Redaktion geprüft<%= text.published_at ? ', Stand ' + new Date(text.published_at).toLocaleDateString('de-DE') : '' %>. Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.</small></p>
+  <p class="muted"><small>Redaktionstext, Stand <%= new Date(text.updated_at).toLocaleDateString('de-DE') %>. Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.</small></p>
+</section>
+<% } %>
+<% if (text && text.compare) { %>
+<section id="vergleich" class="area-text">
+  <h2><%= area.name %> oder <%= text.compare.name %>?</h2>
+  <p><%= text.compare.text %></p>
+  <p><a class="btn small secondary" href="<%= text.compare.href %>"><%= area.name %> und <%= text.compare.name %> direkt vergleichen →</a></p>
 </section>
 <% } %>
 
@@ -137,10 +153,16 @@
 </section>
 <% } %>
 
-<% if (d.featureGroups.length) { %>
+<% if (shared.length && !showGroups) { %>
+<section id="ausstattung">
+  <h2>Was die <%= ranking.entity_label_pl %> <%= area.nameIn %> gemeinsam haben</h2>
+  <p>Beide geprüften <%= ranking.entity_label_pl %> hier bieten: <%= shared.map(function (f) { return f.label; }).join(', ') %>. Details stehen auf den Profilseiten.</p>
+</section>
+<% } %>
+<% if (showGroups) { %>
 <section id="ausstattung">
   <h2>Was die <%= ranking.entity_label_pl %> <%= area.nameIn %> bieten</h2>
-  <p class="muted"><%= d.count === 1 ? 'Geprüfte Angaben des einen ' + ranking.entity_label_sg + 's hier.' : 'Geprüfte Angaben der ' + d.count + ' ' + ranking.entity_label_pl + ' hier – je Leistung, wie viele sie haben.' %></p>
+  <p class="muted">Geprüfte Angaben der <%= d.count %> <%= ranking.entity_label_pl %> hier – je Leistung, wie viele sie haben.</p>
   <div class="area-groups">
     <% d.featureGroups.forEach(function (g) { %>
       <div class="card">

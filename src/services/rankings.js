@@ -159,7 +159,7 @@ async function listThumbs(ranking, entityIds) {
 }
 
 // Ohne eigenes Bild und Gastfoto: Beispielbild der Region (wie auf der Objektseite: erste passende Region),
-// in der Liste als „Beispiel Region“ gekennzeichnet. entities: Zeilen mit id, lat, lng
+// in der Liste als „Symbolbild“ gekennzeichnet. entities: Zeilen mit id, lat, lng
 async function regionThumbs(ranking, entities) {
   const out = new Map();
   if (!entities.length || !ranking.site_id) return out;

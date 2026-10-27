@@ -389,8 +389,16 @@ function explainScoring(c) {
         .join(' · ') + (s.multi ? ' (mehrere möglich, es zählt die beste Angabe)' : '');
     case 'bool':
       return `ja = ${s.points_true}`;
-    case 'rating':
+    case 'rating': {
+      // Vorschlag aus dem Radrevier (OpenStreetMap): Gebietswertung 0–(Summe der Teilwertungen), umgerechnet auf die Skala
+      const bike = [].concat(s.auto || []).find((r) => r.source === 'bike_area');
+      if (bike) {
+        const parts = Object.keys(bike.max || {}).map((k) => `${(bike.labels || {})[k] || k} ${bike.max[k]}`).join(', ');
+        const total = Object.values(bike.max || {}).reduce((sum, v) => sum + Number(v), 0);
+        return `Einstufung ${s.min}–${s.max}; Vorschlag aus OpenStreetMap: Radrevier der Region 0–${total} (${parts}), umgerechnet auf ${s.min}–${s.max} und von uns geprüft`;
+      }
       return `Einstufung ${s.min}–${s.max}`;
+    }
     case 'bands':
     case 'climate':
       return s.bands.map((b) => `${b.min ?? '…'}–${b.max ?? '…'} = ${b.points}`).join(' · ');
@@ -531,7 +539,11 @@ async function renderArea(req, res, ranking, area) {
     }
     if (res.locals.campGuide) regionCamps = (await camps.list(req.site.id)).filter((p) => (p.regions || []).includes(area.name));
     const t = await regionText.published(area.region.id);
-    if (t) text = { ...t, blocks: describer.parseBody(t.body) };
+    if (t) {
+      const other = t.compare_slug ? await areas.region(req.site.id, t.compare_slug) : null;
+      text = { ...t, blocks: describer.parseBody(t.body),
+        compare: other && t.compare_text ? { name: other.name, text: t.compare_text, href: `/trainingsregionen/vergleich/${regionGuide.pairSlug([area.slug, other.slug])}` } : null };
+    }
     faq = regionGuide.regionFaq({
       region: area, ranking, climate: rd ? rd.climate : [], bike: rd ? rd.bike : null,
       hotels: { count: d.count, top: d.ranked[0] ? { name: d.ranked[0].name, score: d.ranked[0].score } : null },
@@ -542,13 +554,19 @@ async function renderArea(req, res, ranking, area) {
   const base = rankingBase(ranking);
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
   const ov = await areas.overview(ranking, req.site.id);
-  const best = seo.monthRanges(d.bestMonths, MONTHS_DE);
-  const heading = `${ranking.name} ${area.nameIn}`;
+  const best = seo.bestTimeText(d.bestMonths, MONTHS_DE);
+  // Titel und H1 aus den Landingpage-Texten des Rankings (Suchbegriffe wie „Trainingslager Fuerteventura“), Platzhalter
+  // {in} „auf Fuerteventura“, {name}, {anzahl}, {objekte}, {score}; ohne Vorlage wie bisher „<Ranking> <in>“
+  const content = ranking.content || {};
+  const fill = (tpl) => String(tpl).replace(/\{(\w+)\}/g, (m, k) => ({ in: area.nameIn, name: area.name, anzahl: d.count,
+    objekte: ranking.entity_label_pl, score: ranking.score_name }[k] ?? m));
+  const heading = content.area_h1 ? fill(content.area_h1) : `${ranking.name} ${area.nameIn}`;
+  const subline = content.area_subline ? fill(content.area_subline) : null;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   res.render('public/area', {
-    title: `${heading} – Ranking nach ${ranking.score_name}`,
+    title: content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`,
     description: text && text.summary ? text.summary : (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
@@ -562,7 +580,7 @@ async function renderArea(req, res, ranking, area) {
       ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
       ...(faq.length ? [seo.faqLd(faq)] : []),
     ],
-    heading, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
+    heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
     countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug)),
     entityPath: (e) => entityPath(ranking, e),

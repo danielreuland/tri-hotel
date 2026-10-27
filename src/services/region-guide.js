@@ -165,7 +165,7 @@ function bikeText(b) {
     const share = b.quietShare !== null ? ` – ${de(b.quietShare * 100)} % des Straßennetzes` : '';
     out.push(`Rund ${de(b.quietKm)} km ruhige Nebenstraßen${share}.`);
   }
-  if (b.routes) out.push(`${de(b.routes)} ausgeschilderte Radrouten.`);
+  if (b.routes) out.push(`${de(b.routes)} ausgeschilderte ${b.routes === 1 ? 'Radroute' : 'Radrouten'}.`);
   return out;
 }
 
@@ -192,7 +192,7 @@ function bestTimeReasons(climate, formula, monthNames) {
     const M = METRICS[bt.metric];
     out.rule = bestTimeRule(formula);
     const best = rows.filter((c) => inBestTime(val(c, bt.metric), bt));
-    out.best = best.length ? ranges(best) : null;
+    out.best = best.length ? seo.bestTimeText(best.map((c) => c.month), monthNames) : null;
     const above = rows.filter((c) => bt.max !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) > Number(bt.max));
     const below = rows.filter((c) => bt.min !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) < Number(bt.min));
     // Eine Nachkommastelle, wenn der gerundete Wert sonst wie die Grenze aussähe (15,6 °C „unter 16“)
@@ -264,6 +264,18 @@ function regionFaq({ region, ranking, climate = [], bike = null, hotels = { coun
     out.push({
       q: `Wie oft regnet es ${region.nameIn}?`,
       a: `Im Jahr gibt es rund ${de(total)} Tage mit mindestens 1 mm Regen, die meisten im ${mName(wet)} (${de(wet.rain_days)} Tage).`,
+    });
+  }
+  const windy = climate.filter((c) => num(c.wind_kmh) !== null);
+  if (windy.length) {
+    const max = windy.reduce((a, b) => (num(b.wind_kmh) > num(a.wind_kmh) ? b : a));
+    const min = windy.reduce((a, b) => (num(b.wind_kmh) < num(a.wind_kmh) ? b : a));
+    const gusts = windy.reduce((s, c) => s + (num(c.windy_days) || 0), 0);
+    out.push({
+      q: `Wie windig ist es ${region.nameIn}?`,
+      a: `Im Mittel weht der Wind mit ${de(min.wind_kmh)} km/h im ${mName(min)} bis ${de(max.wind_kmh)} km/h im ${mName(max)}.`
+        + (gusts ? ` Über das Jahr gibt es rund ${de(gusts)} Tage mit Sturmböen ab 40 km/h.` : '')
+        + ' Gemessen in 10 m Höhe, Mittel der letzten drei Jahre.',
     });
   }
   if (bike && bike.score !== null && bike.score !== undefined) {

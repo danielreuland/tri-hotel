@@ -55,36 +55,4 @@
   <textarea name="intro"><%= e.intro || '' %></textarea>
   <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button></p>
 </form>
-<% if (edit && edit.id) { var t = locals.text || null; %>
-<h2 id="text">Regionstext: <%= edit.name %></h2>
-<section class="card">
-  <p class="muted" style="margin-top:0">Eigener Text für die Regionsseite (Landschaft, Klima und Reisezeit, Strecken und Gewässer, Anreise, Ruhetag, Fazit) – wichtig gegen „dünne Seiten“ bei Google. Der KI-Entwurf beruht auf den Regionsdaten (Klima, Radrevier, Hotels, Camps) und allgemein bekanntem Wissen; Ortsnamen, Strecken und Anreise bitte prüfen. Öffentlich erst nach Freigabe.</p>
-  <p>
-    Status: <strong><%= t ? (t.status === 'published' ? 'freigegeben' : 'Entwurf') : 'noch kein Text' %></strong>
-    <% if (t && t.body) { %> · <%= locals.textWords %> Wörter<% } %>
-    <% if (t && t.generated_at) { %> · KI-Entwurf vom <%= formatDate(t.generated_at) %><% if (t.model) { %> (<%= t.model %>)<% } %><% } %>
-    <% if (t && t.published_at) { %> · freigegeben am <%= formatDate(t.published_at) %><% } %>
-    <% if (locals.textStale) { %><br><span style="color:var(--warn, #b26b00)">Die Regionsdaten haben sich seit dem Entwurf geändert – Text prüfen oder neu erzeugen.</span><% } %>
-  </p>
-  <form method="post" action="/admin/regionen/<%= edit.id %>/text/erzeugen" data-busy="Entwurf wird geschrieben (ca. 1 Minute) …" <% if (t && t.body) { %>data-confirm="Neuen Entwurf erzeugen? Der aktuelle Text wird überschrieben."<% } %>>
-    <button class="btn small secondary" type="submit"><%= t && t.body ? 'Neuen KI-Entwurf erzeugen' : 'KI-Entwurf erzeugen' %></button>
-  </form>
-  <form method="post" action="/admin/regionen/<%= edit.id %>/text" style="margin-top:12px">
-    <label>Kurzbeschreibung <small class="muted">ein Satz, zugleich Meta-Beschreibung (max. 160 Zeichen)</small></label>
-    <input name="summary" type="text" maxlength="160" value="<%= t ? t.summary : '' %>">
-    <label>Text <small class="muted">Absätze durch Leerzeile, Zwischenüberschriften mit „## “ – Ziel 500–750 Wörter</small></label>
-    <textarea name="body" rows="22"><%= t ? t.body : '' %></textarea>
-    <p style="margin-bottom:0;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn small" type="submit" name="action" value="save">Speichern</button>
-      <button class="btn small cta" type="submit" name="action" value="publish">Speichern und freigeben</button>
-      <% if (t && t.status === 'published') { %><button class="btn small secondary" type="submit" name="action" value="unpublish">Zurückziehen</button><% } %>
-    </p>
-  </form>
-  <form method="post" action="/admin/regionen/<%= edit.id %>/text/notizen" style="margin-top:14px">
-    <label>Redaktionelle Notizen <small class="muted">eigene Einschätzung, Orte, Strecken, Hinweise – fließen in den nächsten KI-Entwurf ein</small></label>
-    <textarea name="notes" rows="4"><%= t && t.notes ? t.notes : '' %></textarea>
-    <p style="margin-bottom:0"><button class="btn small secondary" type="submit">Notizen speichern</button></p>
-  </form>
-</section>
-<% } %>
 <%- include('../partials/admin-foot') %>

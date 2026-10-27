@@ -162,6 +162,8 @@ figcaption { font-size: .78rem; color: var(--muted); }
 .area-camps a.card { display: grid; gap: 6px; justify-items: start; text-decoration: none; color: inherit; }
 .area-camps a.card:hover { border-color: var(--accent-strong); }
 .area-text { max-width: 75ch; }
+.area-subline { margin: -4px 0 10px; color: var(--muted); font-weight: 700; }
+.area-hero .area-intro-more { max-width: 70ch; }
 .area-text h3 { margin: 18px 0 6px; font-size: 1.2rem; }
 .area-text p { margin: 0 0 10px; }
 .area-faq { max-width: 75ch; }

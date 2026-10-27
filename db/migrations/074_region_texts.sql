@@ -1,20 +1,11 @@
--- Redaktionstext je Region (Landschaft, Klima und Reisezeit, Strecken und Gewässer, Anreise, Ruhetag, Fazit) für eigenen,
--- einzigartigen Inhalt der Regionsseiten. Entwurf per KI aus unseren Regionsdaten plus allgemein bekanntem Wissen
--- (Landschaft, Orte, bekannte Strecken, Flughäfen) – öffentlich erst nach Prüfung und Freigabe durch den Admin.
--- Kein Wikipedia-Text als Vorlage (Lizenz, nicht eigenständig).
+-- Redaktionstext je Region (Landschaft, Klima und Reisezeit, Radfahren, Schwimmen, Laufen, Anreise, Ruhetag, Fazit) für
+-- eigenen, einzigartigen Inhalt der Regionsseiten (gegen „Thin Content“). Texte werden redaktionell geschrieben und per
+-- Migration eingespielt (keine Admin-Bearbeitung). Zahlen zu Klima, Wasser und Radrevier zeigt die Seite aus den Daten.
 CREATE TABLE region_texts (
-  region_id          uuid PRIMARY KEY REFERENCES regions(id) ON DELETE CASCADE,
-  summary            text NOT NULL DEFAULT '',     -- ein Satz, zugleich Meta-Beschreibung (max. 160 Zeichen)
-  body               text NOT NULL DEFAULT '',     -- Absätze durch Leerzeile, Zwischenüberschriften mit "## "
-  notes              text,                         -- redaktionelle Notizen als zusätzliche Grundlage für den Entwurf
-  generated_summary  text,
-  generated_body     text,
-  input_hash         text,
-  model              text,
-  generated_at       timestamptz,
-  status             text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
-  published_at       timestamptz,
-  published_by       uuid REFERENCES admin_users(id),
-  updated_by         uuid REFERENCES admin_users(id),
-  updated_at         timestamptz NOT NULL DEFAULT now()
+  region_id   uuid PRIMARY KEY REFERENCES regions(id) ON DELETE CASCADE,
+  summary     text NOT NULL DEFAULT '',     -- ein Satz, zugleich Meta-Beschreibung (max. 160 Zeichen)
+  body        text NOT NULL,                -- Absätze durch Leerzeile, Zwischenüberschriften mit "## "
+  compare_slug text,                        -- häufig verglichene Nachbarregion (Slug), z. B. Fuerteventura ↔ Lanzarote
+  compare_text text,                        -- 2–3 Sätze zum Vergleich; die Seite verlinkt den Direktvergleich
+  updated_at  timestamptz NOT NULL DEFAULT now()
 );

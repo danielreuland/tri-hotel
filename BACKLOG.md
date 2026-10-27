@@ -36,10 +36,13 @@ Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
    mit Begründung (Regel aus `formula.best_time`, Monate darüber/darunter, Regen, Sonne, Wind, Wasser), Radrevier in Zahlen
    und Sätzen (OSM), Ausstattung der Hotels je Gruppe (Schwimmen, Rad, Laufen … aus dem Leistungskatalog), Camps der Region,
    Sprungleiste. Später: Badegewässer/50-m-Becken/Bahnen der Region per eigener Abfrage (Overpass).
-4. **Regionstext und häufige Fragen (27.10.)**: eigener Text je Region (Landschaft, Klima/Reisezeit, Strecken und Gewässer je
-   Ranking-Kategorie, Anreise und Gepäck, Ruhetag, Fazit; 500–750 Wörter) als KI-Entwurf aus Regionsdaten + allgemein bekanntem
-   Wissen, Prüfung und Freigabe im Admin unter Regionen (Migration 074, `scripts/region-text.js`). Häufige Fragen nur aus Daten
-   mit FAQ-Schema. Regionen unter `region_min_entities` (2) bleiben noindex. Offen: Entwürfe prüfen und freigeben (Daniel).
+4. **Regionstext, Vergleich und häufige Fragen (27.10.)**: eigener Redaktionstext je Region (Einstieg oben mit Stärke und
+   Kehrseite, Landschaft, Klima/Reisezeit, Wind wo prägend, Radfahren, Schwimmen, Laufen, Anreise und Radtransport, Ruhetag,
+   „Für wen eignet sich …?“, 390–570 Wörter) plus „X oder Y?“ mit Link zum Direktvergleich, per Migration gepflegt (region_texts,
+   ohne Admin-Bearbeitung, Entscheidung Daniel). Titel/H1 nach Suchbegriffen („Triathlon-Trainingslager auf …“, Vorlagen in den
+   Landingpage-Texten). Häufige Fragen nur aus Daten (inkl. Wind) mit FAQ-Schema. Ausstattung erst ab 3 Hotels, bei 2 als
+   Gemeinsamkeiten. Regionen unter `region_min_entities` (2) bleiben noindex.
+   Offen: Angaben in den Texten (Transferzeiten, Anstiege, Flugzeiten) bei Gelegenheit vor Ort bzw. beim Anbieter gegenprüfen.
 
 ### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
 Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten
@@ -111,6 +114,9 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 27.10. **TriScore-Seite für Suchanfragen**: Titel/Beschreibung/H1, Einstieg mit den typischen Fragen, häufige Fragen mit
+  FAQ-Schema (Landingpage-Texte mit Platzhaltern), Rechenbeispiel mit echtem Hotel aus der Mitte des Rankings (inkl. Beispiel mit
+  Bewertungen), eigenes OG-Bild, Links zu Top-Hotels und Regionen; Radrevier-Kriterium erklärt (OSM 0–6 → Skala 0–10).
 - 27.10. **Ranking speichern repariert**: Die Formel-Prüfung im Admin verlangte für jeden Schlüssel eine Zahl – die Formel des
   Triathlon-Rankings (best_time, athlete_enabled, unknown_policy) und die Vorlage für neue Rankings (review_age_weights) ließen
   sich nicht speichern. Jetzt Prüfung je Schlüssel (`scoring.validateFormula`), unbekannte Schlüssel weiter nur als Zahl.

@@ -92,6 +92,16 @@ function monthRanges(months, names) {
   return ranges.map(([a, b]) => (a === b ? names[a - 1] : `${names[a - 1]}–${names[b - 1]}`)).join(', ');
 }
 
+// Beste Reisezeit in Worten: bei 9–11 Monaten „ganzjährig außer …“ statt einer langen Spanne, die nichts unterscheidet
+function bestTimeText(months, names) {
+  const set = [...new Set(months.map(Number))];
+  if (set.length >= 9 && set.length < 12) {
+    const rest = Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => !set.includes(m));
+    return `ganzjährig außer ${monthRanges(rest, names)}`;
+  }
+  return monthRanges(set, names);
+}
+
 // Wie viele Objekte haben welche (filterbare) Leistung? Häufigste zuerst
 function featureShares(entities, featureMap, limit = 6) {
   const counts = new Map();
@@ -264,6 +274,6 @@ module.exports = {
   googleMapsUrl,
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
-  averageClimate, bestMonths, monthRanges, featureShares, featureGroupShares,
+  averageClimate, bestMonths, monthRanges, bestTimeText, featureShares, featureGroupShares,
   ldJson, websiteLd, itemListLd, breadcrumbLd, faqLd, entityLd, listPath,
 };

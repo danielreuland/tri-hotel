@@ -150,12 +150,20 @@ test('Regionsseite: häufige Fragen nur aus Daten', () => {
   assert.deepEqual(bare, [], 'ohne Daten keine Fragen');
 });
 
-test('Regionstext: Prompt nennt Kategorien aus dem Ranking, Wortzählung ohne Überschriften', () => {
+test('Regionstext: Wortzählung ohne Überschriften', () => {
   const rt = require('../src/services/region-text');
-  const p = rt.prompt({ ranking: { name: 'Hyrox-Gyms', entity: 'Gym', entities: 'Gyms', categories: ['Geräte', 'Laufstrecke'] },
-    region: { name: 'Allgäu', name_in: 'im Allgäu', country: 'Deutschland' }, notes: '' });
-  assert.match(p, /„Hyrox-Gyms“/);
-  assert.match(p, /Regionsseite im Allgäu \(Deutschland\)/);
-  assert.match(p, /"Laufstrecke"/);
   assert.equal(rt.wordCount('## Titel mit vier Worten\n\nEins zwei drei.\n\nVier fünf.'), 5);
+});
+
+test('Regionsseite: beste Reisezeit „ganzjährig außer …“ und Frage zum Wind', () => {
+  const { MONTHS: M } = require('../src/lib/util');
+  const seo = require('../src/lib/seo');
+  assert.equal(seo.bestTimeText([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12], M), 'ganzjährig außer August');
+  assert.equal(seo.bestTimeText([3, 4, 5, 9, 10], M), 'März–Mai, September–Oktober');
+  assert.equal(seo.bestTimeText(Array.from({ length: 12 }, (_, i) => i + 1), M), 'ganzjährig');
+  const climate = [{ month: 1, wind_kmh: 14, windy_days: 1 }, { month: 7, wind_kmh: 23, windy_days: 4 }];
+  const faq = guide.regionFaq({ region: { nameIn: 'auf Fuerteventura' }, ranking: { formula: {} }, climate }, M);
+  assert.equal(faq[0].q, 'Wie windig ist es auf Fuerteventura?');
+  assert.match(faq[0].a, /14 km\/h im Januar bis 23 km\/h im Juli\. Über das Jahr gibt es rund 5 Tage mit Sturmböen/);
+  assert.equal(guide.bikeText({ routes: 1, reliefM: null, quietKm: null })[0], '1 ausgeschilderte Radroute.');
 });
