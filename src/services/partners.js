@@ -17,17 +17,22 @@ function fromId(program, raw) {
 // vor {id} und der Text danach (bei Expedia „h“ und „.Hotel-Information“). Steht {id} in einem Parameter
 // (CHECK24: ?c24pp_hotel_id={id}), zählt der Parameter an beliebiger Stelle der Adresse.
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// id_params: weitere Parameternamen mit derselben Nummer, z. B. hotelId in Adressen von urlaub.check24.de
+const paramRe = (name) => new RegExp(`[?&#]${escRe(name)}=(\\d{3,12})(?:[&#]|$)`);
 function idOf(program, url) {
   if (!program || !program.id_url || !url || !program.id_url.includes('{id}')) return null;
+  const u = String(url);
   const [before, after] = program.id_url.split('{id}');
   const param = /[?&]([\w.-]+)=$/.exec(before);
+  let m;
   if (param) {
-    const m = new RegExp(`[?&]${escRe(param[1])}=(\\d{3,12})(?:[&#]|$)`).exec(String(url));
-    return m ? m[1] : null;
+    m = paramRe(param[1]).exec(u);
+  } else {
+    const lead = before.slice(before.lastIndexOf('/') + 1);
+    const tail = (after || '').split(/[/?#]/)[0];
+    m = new RegExp(`${escRe(lead)}(\\d{3,12})${escRe(tail)}(?:[/?#]|$)`).exec(u);
   }
-  const lead = before.slice(before.lastIndexOf('/') + 1);
-  const tail = (after || '').split(/[/?#]/)[0];
-  const m = new RegExp(`${escRe(lead)}(\\d{3,12})${escRe(tail)}(?:[/?#]|$)`).exec(String(url));
+  for (const name of program.id_params || []) m = m || paramRe(name).exec(u);
   return m ? m[1] : null;
 }
 
@@ -136,7 +141,10 @@ async function saveLinks(entityId, input, adminId) {
       // Adresse mit erkennbarer Hotel-Nummer auf die kurze Form der Vorlage bringen (ohne Reisedaten, die veralten)
       const id = idOf(p, raw);
       const url = allowedUrl(p, fromId(p, id || raw));
-      if (!url) { errors.push(`${p.name} (${KINDS[kind]}): nur https-Adressen${p.domains.length ? ` von ${p.domains.join(', ')}` : ''}.`); continue; }
+      if (!url) {
+        errors.push(`${p.name} (${KINDS[kind]}): nur https-Adressen${p.domains.length ? ` von ${p.domains.join(', ')}` : ''}${p.id_url ? ' oder eine Adresse mit erkennbarer Hotel-Nummer' : ''}.`);
+        continue;
+      }
       if (old && old.url === url) continue;
       await db.query(
         `INSERT INTO entity_links (entity_id, program_id, kind, url, created_by) VALUES ($1,$2,$3,$4,$5)

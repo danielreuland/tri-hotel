@@ -83,6 +83,13 @@ test('Partner: Nummer aus einem Parameter (CHECK24 c24pp_hotel_id), auch mitten 
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002'), '18002');
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?x_c24pp_hotel_id=18002'), null);
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_region_id=552'), null);
+  // Adresse von urlaub.check24.de: Nummer steht als hotelId (gleiche Nummern wie c24pp_hotel_id)
+  const withAlias = { ...check24, id_params: ['hotelId'] };
+  const urlaub = 'https://urlaub.check24.de/suche/angebot?airport=FRA,HHN&departureDate=2027-01-20&pageArea=package&hotelId=5116&ds=h&noRedirect=1';
+  assert.equal(partners.idOf(check24, urlaub), null, 'ohne id_params nicht erkannt');
+  assert.equal(partners.idOf(withAlias, urlaub), '5116');
+  assert.equal(partners.idOf(withAlias, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002#/suche/angebot?hotelId=18002'), '18002');
+  assert.equal(partners.idOf(withAlias, 'https://urlaub.check24.de/suche/angebot?myhotelId=5116'), null);
   // Link wie aus dem CHECK24-Linkgenerator (kurze Form eingegeben), Tracking-ID am Ende
   const c24 = { id_url: 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id={id}&pid=1179734',
     link_template: 'https://a.check24.net/misc/click.php?aid=18&pid=1179734&target_url={url_enc}&tid={slug}' };

@@ -55,6 +55,8 @@
       </div>
       <label>Adresse aus Nummer <small class="muted">optional – mit {id}; dann genügt beim Objekt die Nummer (z. B. Expedia-Hotel-ID)</small></label>
       <input name="id_url" type="text" value="<%= p.id_url || '' %>" placeholder="https://…{id}…">
+      <label>Weitere Parameter mit der Nummer <small class="muted">optional, durch Komma getrennt – erkennt die Nummer auch in anderen Adressen des Anbieters (z. B. hotelId bei urlaub.check24.de)</small></label>
+      <input name="id_params" type="text" value="<%= (p.id_params || []).join(', ') %>" placeholder="hotelId">
       <label>Nummer übernehmen von <small class="muted">optional – gleiche Hotel-IDs wie ein anderes Programm (z. B. Hotels.com ← Expedia): Ohne eigenen Link wird die Adresse aus dessen Nummer gebaut</small></label>
       <select name="id_from">
         <option value="">– nicht übernehmen –</option>
