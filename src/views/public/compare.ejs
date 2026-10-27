@@ -1,12 +1,12 @@
 <%- include('../partials/head') %>
 <%
   var n = entities.length;
-  var listUrl = (base || '') + '/#ranking';
+  var listUrl = listHref + '#ranking';
   var fmt = function (v) { return v === null || v === undefined || v === '' ? '' : v; };
   var withoutAt = function (i) { var rest = entities.filter(function (_, j) { return j !== i; }); return rest.length >= 2 ? (base || '') + '/vergleich/' + comboPath(rest.map(function (e) { return e.slug; })) : listUrl; };
   var anyDiff = function (rows) { return rows.some(function (r) { return r.differ; }); };
 %>
-<nav class="crumbs" aria-label="Brotkrumen"><a href="<%= base || '/' %>"><%= ranking.name %></a> › <span>Vergleich</span></nav>
+<nav class="crumbs" aria-label="Brotkrumen"><a href="<%= listHref %>"><%= ranking.name %></a> › <span>Vergleich</span></nav>
 
 <div class="compare-head">
   <h1 data-goal="Hotelvergleich"><%= ranking.entity_label_pl %> im Vergleich</h1>

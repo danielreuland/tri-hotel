@@ -2,225 +2,172 @@
 <%
   var title = content.hero_title || ranking.name;
   var hl = content.hero_highlight && title.indexOf(content.hero_highlight) >= 0 ? content.hero_highlight : null;
-  var methodHref = base + (isHostRanking ? scorePath : '/methodik');
-  var formula = Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {});
-  var maxWeight = Math.max.apply(null, weights.map(function (w) { return w.max }).concat([1]));
-
+  var heroImg = siteMedia.slots.home_hero, ctaImg = siteMedia.slots.cta_band;
+  var methodHref = scorePath;
+  function climateAt(r, m) { return r.climate.find(function (c) { return Number(c.month) === m; }) || {}; }
+  function num(v, d) { return v === null || v === undefined ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
 %>
 
-<% var heroImg = siteMedia.slots.home_hero, ctaImg = siteMedia.slots.cta_band; %>
 <section class="hero-band<%= heroImg ? ' has-photo' : '' %>">
   <% if (heroImg) { %>
     <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
-  <div class="wrap hero-grid<%= topCard ? '' : ' single' %>">
+  <div class="wrap hero-grid single">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
         <% if (hl) { var i = title.indexOf(hl); %><%= title.slice(0, i) %><em><%= hl %></em><%= title.slice(i + hl.length) %><% } else { %><%= title %><% } %>
       </h1>
       <p class="hero-text"><%= content.hero_text || ranking.description || '' %></p>
-      <form class="hero-search" method="get" action="#ranking" role="search">
+      <form class="hero-search" method="get" action="<%= listHref %>" role="search">
         <label for="hero-q" class="sr-only"><%= ranking.entity_label_sg %> oder Ort suchen</label>
-        <input id="hero-q" type="search" name="q" value="<%= search.q %>" placeholder="<%= ranking.entity_label_sg %> oder Ort suchen, z. B. Mallorca">
+        <input id="hero-q" type="search" name="q" placeholder="<%= ranking.entity_label_sg %> oder Ort suchen, z. B. Mallorca">
         <button class="btn" type="submit">Suchen</button>
       </form>
       <div class="hero-actions">
-        <a class="btn large secondary" href="#ranking">Zum Ranking</a>
-        <% if (isHostRanking) { %><a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a><% } %>
+        <a class="btn large secondary" href="<%= listHref %>">Zum Ranking</a>
+        <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
       </div>
     </div>
-
-    <% if (topCard) { %>
-      <a class="score-card" href="<%= entityPath(topCard.entity) %>" style="text-decoration:none;color:inherit">
-        <p class="caption">Platz 1 im Ranking</p>
-        <div class="head">
-          <div>
-            <div class="name"><%= topCard.entity.name %></div>
-            <small><%= topCard.entity.city %><%= topCard.entity.country ? ', ' + topCard.entity.country : '' %> · <%= topCard.label %></small>
-          </div>
-          <span class="score big"><%= topCard.score %></span>
-        </div>
-        <ul class="bars">
-          <% topCard.bars.forEach(function (b) { var pct = b.max ? Math.round(100 * b.points / b.max) : 0; %>
-            <li><span><%= b.label %></span><span class="track"><span class="fill" style="width:<%= pct %>%"></span></span><span class="val"><%= b.points %>/<%= b.max %></span></li>
-          <% }) %>
-        </ul>
-        <p class="muted" style="margin:14px 0 0;font-size:.85rem"><%= ranking.score_name %><%= topCard.provisional ? ' vorläufig, aus geprüften Fakten' : '' %> · Punkte je Kategorie</p>
-      </a>
-    <% } %>
   </div>
 </section>
 
-<section class="section" id="ranking">
-  <div class="wrap">
-    <div class="section-head">
-      <div>
-        <h2>Die besten <%= ranking.entity_label_pl %></h2>
-        <p>Sortiert nur nach <%= ranking.score_name %>. Ins Ranking kommt, wer mindestens <%= formula.min_completeness %> % der Punkte mit Fakten belegt hat.</p>
-      </div>
+<% blocks.forEach(function (b, idx) { var alt = idx % 2 === 1; %>
+<section class="home-band<%= alt ? ' alt' : '' %>" id="<%= { about: 'ueber', entities: 'bestenliste', camps: 'camps', regions: 'regionen' }[b.key] %>">
+  <div class="wrap home-band-grid">
+
+  <% if (b.key === 'about') { %>
+    <div class="home-band-text">
+      <p class="eyebrow">Über <%= site.name %></p>
+      <h2>Neutral verglichen, jeder Wert mit Quelle</h2>
+      <p><%= content.about_text || (site.name + ' vergleicht ' + ranking.entity_label_pl + ' neutral: Der ' + ranking.score_name + ' (0–100) entsteht aus geprüften Fakten, jeder Wert mit Quelle und Prüfdatum. Werbung und Partnerschaften ändern weder Score noch Reihenfolge.') %></p>
+      <p><a class="more-link" href="<%= methodHref %>">So entsteht der <%= ranking.score_name %> →</a></p>
     </div>
-
-    <form class="search card" method="get" action="#ranking" role="search">
-      <div class="search-row">
-        <div class="search-field grow">
-          <label for="q"><%= ranking.entity_label_sg %> oder Ort</label>
-          <input id="q" type="search" name="q" value="<%= search.q %>" placeholder="z. B. Mallorca oder Mar Azul">
-        </div>
-        <div class="search-field">
-          <label for="land">Land</label>
-          <select id="land" name="land">
-            <option value="">alle Länder</option>
-            <% countries.forEach(function (c) { var n = COUNTRIES.find(function (x) { return x[0] === c }); %><option value="<%= c %>" <%= search.country === c ? 'selected' : '' %>><%= n ? n[1] : c %></option><% }) %>
-          </select>
-        </div>
-        <div class="search-field">
-          <label for="monat">Gute Reisezeit im</label>
-          <select id="monat" name="monat">
-            <option value="">beliebigen Monat</option>
-            <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
-          </select>
-        </div>
-        <div class="search-field">
-          <label for="min"><%= ranking.score_name %> ab</label>
-          <select id="min" name="min">
-            <option value="">beliebig</option>
-            <% ranking.labels.slice().sort(function (a, b) { return b.min - a.min }).filter(function (l) { return l.min > 0 }).forEach(function (l) { %>
-              <option value="<%= l.min %>" <%= search.minScore === l.min ? 'selected' : '' %>><%= l.min %> · <%= l.label %></option>
-            <% }) %>
-          </select>
-        </div>
+    <div class="home-band-side">
+      <div class="home-stats">
+        <div><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
+        <% if (regionGuide) { %><div><strong><%= stats.regions %></strong><span>Trainingsregionen</span></div><% } %>
+        <% if (campGuide) { %><div><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></div><% } %>
+        <div><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></div>
       </div>
-      <% if (filterFeatures.length) { %>
-        <details class="search-features" <%= search.features.length ? 'open' : '' %>>
-          <summary>Leistungen<%= search.features.length ? ' (' + search.features.length + ')' : '' %></summary>
-          <div class="chips">
-            <% filterFeatures.forEach(function (f) { %>
-              <label class="chip"><input type="checkbox" name="l" value="<%= f.code %>" <%= search.features.indexOf(f.code) >= 0 ? 'checked' : '' %>> <span><%= f.label %></span></label>
-            <% }) %>
-          </div>
-        </details>
-      <% } %>
-      <div class="search-actions">
-        <button class="btn" type="submit">Suchen</button>
-        <% if (ranked.length >= 2) { %><button class="btn secondary" type="button" data-compare-toggle hidden><%= ranking.entity_label_pl %> vergleichen</button><% } %>
-        <% if (searchActive) { %><a href="<%= base || '/' %>#ranking">Filter zurücksetzen</a><% } %>
-        <span class="muted"><%= searchActive ? ranked.length + ' von ' + totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' : totalCount + ' ' + ranking.entity_label_pl + ' im Ranking' %></span>
-      </div>
-    </form>
-
-    <% if (!ranked.length && searchActive) { %>
-      <div class="card"><p style="margin:0">Kein <%= ranking.entity_label_sg %> passt zu allen Filtern. Entferne einzelne Leistungen oder <a href="<%= base || '/' %>#ranking">setze die Filter zurück</a>.</p></div>
-    <% } else if (!ranked.length) { %>
-      <div class="card"><p style="margin:0">Noch keine <%= ranking.entity_label_pl %> im Ranking. Die ersten Einträge werden gerade geprüft.</p></div>
-    <% } else { %>
-      <ol class="rank-list" data-compare-list data-compare-base="<%= base %>" data-compare-max="3">
-        <% ranked.forEach(function (e) { %>
-          <li>
-            <label class="compare-pick" hidden><input type="checkbox" data-compare-pick value="<%= e.slug %>" data-name="<%= e.name %>"><span class="sr-only"><%= e.name %> zum Vergleich auswählen</span></label>
-            <a class="rank-item" href="<%= entityPath(e) %>">
-              <span class="pos"><%= e.rank %></span>
-              <%- include('../partials/rank-thumb', { e: e }) %>
-              <span class="info">
-                <span class="name"><%= e.name %></span><br>
-                <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %><% if (e.bestMonths && e.bestMonths.length) { %> · beste Reisezeit <%= monthRanges(e.bestMonths, MONTHS) %><% } %></small>
-                <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
-                <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
-              </span>
-              <span class="score"><%= e.score %></span>
-            </a>
-          </li>
-        <% }) %>
-      </ol>
-    <% } %>
-
-    <% if (incomplete.length) { %>
-      <h3>Profil unvollständig</h3>
-      <p class="muted">Geprüft, aber noch nicht genug belegte Werte für einen Platz im Ranking.</p>
-      <ul class="rank-list">
-        <% incomplete.forEach(function (e) { %>
-          <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %></small></span><span class="score none">–</span></a></li>
-        <% }) %>
+      <ul class="home-principles">
+        <li><strong>Neutral.</strong> Buchungslinks sind als Anzeige gekennzeichnet und beeinflussen nichts.</li>
+        <li><strong>Transparent.</strong> Jeder Wert zeigt, woher er stammt und wann er geprüft wurde.</li>
+        <li><strong>Aktuell.</strong> Werte älter als <%= formula.recheck_months %> Monate werden neu geprüft.</li>
       </ul>
-    <% } %>
-  </div>
-</section>
-
-<% if (ranked.length >= 2) { %>
-  <div class="compare-bar" data-compare-bar hidden>
-    <div class="wrap">
-      <span data-compare-status>Bis zu 3 <%= ranking.entity_label_pl %> auswählen</span>
-      <span class="compare-bar-actions">
-        <button class="btn secondary small" type="button" data-compare-cancel>Abbrechen</button>
-        <a class="btn cta" href="#" data-compare-go aria-disabled="true">Zum Direktvergleich</a>
-      </span>
     </div>
-  </div>
-<% } %>
 
-<% var areaList = areaOverview.regions.filter(function (r) { return r.count > 0 }); if (!areaList.length) areaList = areaOverview.regions; %>
-<% if (areaList.length || areaOverview.countries.length || Object.keys(siteMedia.regions).length) { %>
-<section class="section">
-  <div class="wrap">
-    <div class="section-head"><div><h2>Beliebte Regionen</h2><p>Die besten <%= ranking.entity_label_pl %> je Ziel, mit Klima und Ausstattung im Überblick.</p></div></div>
-    <% // Regionen mit Foto immer als Kachel (auch ohne Einträge: die Seite lädt dann zum Hinzufügen ein), meiste Einträge zuerst
-       var withPhoto = areaOverview.regions.filter(function (r) { return siteMedia.regions[r.region.id] })
-         .sort(function (a, b) { return b.count - a.count }); %>
-    <% if (withPhoto.length) { %>
-      <div class="region-cards">
-        <% withPhoto.forEach(function (r) { var m = siteMedia.regions[r.region.id]; %>
-          <a class="region-card" href="<%= base %>/region/<%= r.slug %>">
-            <img <%- imgAttrs(m) %> sizes="(max-width: 700px) 100vw, 33vw" alt="" loading="lazy">
-            <span class="label"><strong><%= r.name %></strong><small><%= r.count ? r.count + ' ' + (r.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl) : 'noch im Aufbau' %></small></span>
-            <small class="photo-credit"><%= m.credit %></small>
+  <% } else if (b.key === 'entities') { %>
+    <div class="home-band-text">
+      <p class="eyebrow"><%= ranking.score_name %>-Ranking</p>
+      <h2>Die besten <%= ranking.entity_label_pl %></h2>
+      <p>Sortiert nur nach <%= ranking.score_name %>. Im Ranking findest du alle <%= b.count %> geprüften <%= ranking.entity_label_pl %> mit Filtern nach Land, Reisemonat und Leistungen.</p>
+      <p><a class="btn" href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a></p>
+    </div>
+    <div class="home-band-side">
+      <% if (b.featured) { var f = b.featured; %>
+        <a class="score-card home-feature" href="<%= entityPath(f.entity) %>">
+          <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion · Platz ' + f.entity.rank : 'Platz 1 im Ranking' %></p>
+          <div class="head">
+            <div>
+              <div class="name"><%= f.entity.name %></div>
+              <small><%= f.entity.city %><%= f.entity.country ? ', ' + f.entity.country : '' %> · <%= f.label %></small>
+            </div>
+            <span class="score big"><%= f.score %></span>
+          </div>
+          <ul class="bars">
+            <% f.bars.forEach(function (bar) { var pct = bar.max ? Math.round(100 * bar.points / bar.max) : 0; %>
+              <li><span><%= bar.label %></span><span class="track"><span class="fill" style="width:<%= pct %>%"></span></span><span class="val"><%= bar.points %>/<%= bar.max %></span></li>
+            <% }) %>
+          </ul>
+        </a>
+      <% } %>
+      <% if (b.others.length) { %>
+        <ol class="home-mini-list">
+          <% b.others.slice(0, 3).forEach(function (e) { %>
+            <li><a href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="nm"><%= e.name %><small><%= e.city %></small></span><span class="score"><%= e.score %></span></a></li>
+          <% }) %>
+        </ol>
+      <% } %>
+    </div>
+
+  <% } else if (b.key === 'camps') { var p = b.featured; var price = (p.prices || [])[0]; %>
+    <div class="home-band-text">
+      <p class="eyebrow">Trainingscamps</p>
+      <h2>Camp-Anbieter</h2>
+      <p>Organisierte Trainingslager mit Coach, als Gruppenreise oder im Sportresort. Alle <%= b.count %> Anbieter stehen neutral und alphabetisch in der Übersicht, mit Leistungen, Zielen und Preisen.</p>
+      <p><a class="btn" href="/trainingscamp#anbieter">Alle Camp-Anbieter</a></p>
+    </div>
+    <div class="home-band-side">
+      <article class="card home-feature camp-feature">
+        <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion' : 'Heute vorgestellt · wechselt täglich' %></p>
+        <header>
+          <span class="badge"><%= b.MODELS[p.model] %></span>
+          <% if (p.partner) { %><span class="badge ad-badge" title="Mit diesem Anbieter besteht eine Vereinbarung. Auf Auswahl und Darstellung hat das keinen Einfluss.">Anzeige · Partner</span><% } %>
+        </header>
+        <h3><a href="/trainingscamp/anbieter/<%= p.slug %>"><%= p.name %></a></h3>
+        <p class="muted"><%= (p.destinations || []).join(' · ') || 'Ziele nicht angegeben' %></p>
+        <% if (price) { %><p><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
+        <p><a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels →</a></p>
+      </article>
+      <div class="chips">
+        <% b.others.slice(0, 8).forEach(function (o) { %><a class="chip" href="/trainingscamp/anbieter/<%= o.slug %>"><%= o.name %></a><% }) %>
+      </div>
+      <p class="muted"><small>Du bietest Trainingscamps an? <a href="/trainingscamp/fuer-anbieter">Eintrag anfragen</a></small></p>
+    </div>
+
+  <% } else if (b.key === 'regions') { var r = b.featured; var c = climateAt(r, b.month); var photo = siteMedia.regions[r.region.id]; %>
+    <div class="home-band-text">
+      <p class="eyebrow">Trainingsregionen</p>
+      <h2>Wohin im <%= MONTHS[b.month - 1] %>?</h2>
+      <p>Klima je Monat, Wassertemperatur, Wind und Radrevier für alle Regionen im Überblick – sortierbar nach deinem Reisemonat und direkt vergleichbar.</p>
+      <p><a class="btn" href="/trainingsregionen?monat=<%= b.month %>">Alle Regionen im <%= MONTHS[b.month - 1] %></a></p>
+    </div>
+    <div class="home-band-side">
+      <article class="card home-feature region-feature">
+        <% if (photo) { %>
+          <a class="rg-photo" href="/region/<%= r.slug %>" tabindex="-1" aria-hidden="true">
+            <img <%- imgAttrs(photo) %> sizes="(max-width: 860px) 100vw, 520px" alt="" loading="lazy">
+            <small class="photo-credit"><%= photo.credit %></small>
           </a>
-        <% }) %>
+        <% } %>
+        <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion' : (r.bestMonths.indexOf(b.month) >= 0 ? 'Beste Reisezeit im ' + MONTHS[b.month - 1] : 'Im ' + MONTHS[b.month - 1] + ' vorn') %></p>
+        <h3><a href="/region/<%= r.slug %>"><%= r.name %></a> <small class="muted"><%= r.countryName %></small></h3>
+        <dl class="region-stats">
+          <div><dt>Ø max</dt><dd><%= num(c.avg_high_c) %> °C</dd></div>
+          <div><dt>Regentage</dt><dd><%= num(c.rain_days) %></dd></div>
+          <div><dt>Sonne</dt><dd><%= num(c.sunshine_h) %> h</dd></div>
+          <div><dt>Wasser</dt><dd><%= c.sea_c === null || c.sea_c === undefined ? 'Binnenland' : num(c.sea_c) + ' °C' %></dd></div>
+          <% if (r.bike) { %><div><dt>Radrevier</dt><dd><%= num(r.bike.score, 1) %>/6</dd></div><% } %>
+        </dl>
+        <ol class="month-strip" aria-label="Beste Reisezeit">
+          <% r.climate.forEach(function (m) { %><li class="<%= r.bestMonths.indexOf(Number(m.month)) >= 0 ? 'best' : '' %><%= Number(m.month) === b.month ? ' cur' : '' %>" title="<%= MONTHS[m.month - 1] %>"><span><%= MONTHS[m.month - 1].slice(0, 1) %></span></li><% }) %>
+        </ol>
+        <p class="muted"><small><%= r.hotels ? r.hotels + ' ' + (r.hotels === 1 ? ranking.entity_label_sg : ranking.entity_label_pl) + (r.topScore !== null ? ' · bester ' + ranking.score_name + ' ' + r.topScore : '') : 'Noch kein geprüftes ' + ranking.entity_label_sg %></small></p>
+      </article>
+      <div class="chips">
+        <% b.others.forEach(function (o) { %><a class="chip" href="/region/<%= o.slug %>"><%= o.name %></a><% }) %>
       </div>
-    <% } %>
-    <div class="chips">
-      <% areaList.filter(function (r) { return !siteMedia.regions[r.region.id] }).forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
-      <% areaOverview.countries.forEach(function (c) { %><a class="chip" href="<%= base %>/land/<%= c.slug %>"><%= c.name %> <span class="muted">(<%= c.count %>)</span></a><% }) %>
     </div>
+  <% } %>
+
   </div>
 </section>
-<% } %>
+<% }) %>
 
-<section class="section">
+<section class="cta-band<%= ctaImg ? ' has-photo' : '' %>">
+  <% if (ctaImg) { %>
+    <img class="band-photo" <%- imgAttrs(ctaImg) %> sizes="100vw" alt="" loading="lazy">
+    <small class="photo-credit"><%= ctaImg.credit %></small>
+  <% } %>
   <div class="wrap">
-    <div class="section-head"><h2>So entsteht der <%= ranking.score_name %></h2></div>
-    <ol class="process">
-      <li><strong>Fakten sammeln</strong><p>Aus der Website des <%= ranking.entity_label_sg %>s, OpenStreetMap, Klimadaten und Hinweisen aus der Community.</p></li>
-      <li><strong>Von Hand prüfen</strong><p>Jeder Wert bekommt Quelle und Prüfdatum. Kein Eintrag geht ohne Freigabe online.</p></li>
-      <li><strong>Score berechnen</strong><p><%= totalPoints %> Punkte in <%= weights.length %> Kategorien, umgerechnet auf 0–100. Fehlende Werte zählen mit dem Durchschnitt aller geprüften <%= ranking.entity_label_pl %> – Lücken bringen keinen Vorteil.</p></li>
-    </ol>
-    <p style="margin-top:16px"><a href="<%= methodHref %>">Formel, Gewichte und alle <%= criteriaCount %> Kriterien ansehen →</a></p>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap principles">
-    <div><strong>Neutral</strong><p>Werbung, Affiliate-Links und Partnerschaften ändern weder Score noch Reihenfolge. Buchungslinks sind als Anzeige gekennzeichnet.</p></div>
-    <div><strong>Transparent</strong><p>Jeder Wert zeigt, woher er stammt: vom <%= ranking.entity_label_sg %> bestätigt, von uns geprüft oder automatisch ermittelt.</p></div>
-    <div><strong>Aktuell</strong><p>Werte, die älter als <%= formula.recheck_months %> Monate sind, werden neu geprüft.</p></div>
-  </div>
-</section>
-
-<% if (isHostRanking) { %>
-  <section class="cta-band<%= ctaImg ? ' has-photo' : '' %>">
-    <% if (ctaImg) { %>
-      <img class="band-photo" <%- imgAttrs(ctaImg) %> sizes="100vw" alt="" loading="lazy">
-      <small class="photo-credit"><%= ctaImg.credit %></small>
-    <% } %>
-    <div class="wrap">
-      <div>
-        <h2><%= content.cta_title || (ranking.entity_label_sg + ' hinzufügen') %></h2>
-        <p><%= content.cta_text || '' %></p>
-      </div>
-      <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
+    <div>
+      <h2><%= content.cta_title || (ranking.entity_label_sg + ' hinzufügen') %></h2>
+      <p><%= content.cta_text || '' %></p>
     </div>
-  </section>
-<% } %>
+    <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
+  </div>
+</section>
 
-<% locals.scripts = ['/static/js/site.js'] %>
 <%- include('../partials/foot') %>

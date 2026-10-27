@@ -25,6 +25,7 @@ const SECTIONS = [
   {
     key: 'inhalte', label: 'Inhalte',
     tabs: [
+      { href: '/admin/startseite', label: 'Startseite' },
       { href: '/admin/bilder', label: 'Objektbilder' },
       { href: '/admin/medien', label: 'Seitenbilder' },
       { href: '/admin/camps', label: 'Camps' },

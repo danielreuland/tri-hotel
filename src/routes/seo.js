@@ -39,6 +39,7 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
   for (const ranking of all) {
     const bp = basePath(ranking);
     urls.push({ loc: `${base}${bp || '/'}`, priority: '1.0' });
+    if (ranking.is_default) urls.push({ loc: `${base}${seo.listPath(ranking)}`, priority: '0.9' });
     urls.push({ loc: `${base}${ranking.is_default ? res.locals.scorePath : `${bp}/methodik`}`, priority: '0.5' });
     const live = await db.many(
       `SELECT e.slug, GREATEST(e.updated_at, er.updated_at) AS lastmod FROM entity_rankings er JOIN entities e ON e.id = er.entity_id

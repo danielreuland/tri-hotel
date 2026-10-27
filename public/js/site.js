@@ -251,3 +251,10 @@ document.addEventListener('click', function (e) {
     if (a && a.classList && a.classList.contains('info-tip')) place(a);
   }, { passive: true });
 })();
+
+// Alte Links auf das Ranking der Startseite (/#ranking): Die Liste hat jetzt eine eigene Seite
+(function () {
+  if (location.pathname !== '/' || location.hash !== '#ranking') return;
+  var a = document.querySelector('[data-list-link]');
+  if (a) location.replace(a.getAttribute('href') + '#ranking');
+})();

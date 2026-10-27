@@ -36,7 +36,7 @@
     <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" hidden><span class="nav-toggle-bars" aria-hidden="true"></span><span class="sr-only">Menü</span></button>
     <nav id="site-nav">
       <% if (locals.hostRanking) { %>
-        <a href="/#ranking"><%= locals.hostRanking ? hostRanking.entity_label_pl : 'Ranking' %></a>
+        <a href="<%= locals.listPath || '/' %>" data-list-link><%= locals.hostRanking ? hostRanking.entity_label_pl : 'Ranking' %></a>
         <% if (locals.regionGuide) { %><a href="/trainingsregionen">Trainingsregionen</a><% } %>
         <% if (locals.campGuide) { %><a href="/trainingscamp">Trainingscamps</a><% } %>
         <a class="nav-cta" href="/<%= hostRanking.entity_type %>-hinzufuegen"><%= hostRanking.entity_label_sg %> hinzufügen</a>

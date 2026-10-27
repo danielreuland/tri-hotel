@@ -35,7 +35,7 @@ Ausführliches Konzept (Score-Formel, Kriterien, Prozesse, Phase 2): https://cla
 - `entity_images`: Bilder mit Quelle, Lizenz, Urhebervermerk, Freigabe-Nachweis, Ablaufdatum. Öffentlich nur anzeigen, wenn `approved_at` gesetzt und `valid_until` leer oder in der Zukunft.
 - Scoring-Typen (`option` – optional mit `multi` für Mehrfachauswahl, `bool`, `rating`, `climate`) sind für alle Rankings gleich; neue Typen nur als Erweiterung von `services/scoring.js` mit Tests.
 
-URLs: Das Standard-Ranking liegt auf `/` und `/hotel/:slug`; jedes weitere unter `/rankings/:ranking-slug` und `/rankings/:ranking-slug/:entity-slug`. Optional zusätzlich eine Subdomain je Ranking (`rankings.subdomain`, z. B. rad.tri-hotel.de), die per Host-Header dasselbe Ranking ausliefert.
+URLs: Die Startseite `/` zeigt Bereiche (Über die Seite, Objekte, Camps, Regionen; Reihenfolge im Admin unter „Startseite“). Die Liste des Standard-Rankings liegt unter `/<Objekte>` (z. B. `/hotels`, aus `entity_label_pl`), Objektseiten unter `/hotel/:slug`; jedes weitere unter `/rankings/:ranking-slug` und `/rankings/:ranking-slug/:entity-slug`. Optional zusätzlich eine Subdomain je Ranking (`rankings.subdomain`, z. B. rad.tri-hotel.de), die per Host-Header dasselbe Ranking ausliefert.
 
 ## Vorgeschlagene Struktur
 

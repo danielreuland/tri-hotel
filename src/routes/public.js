@@ -15,6 +15,7 @@ const compare = require('../services/compare');
 const describer = require('../services/describer');
 const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
+const home = require('../services/home');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -88,16 +89,18 @@ async function renderList(req, res, ranking) {
   const base = rankingBase(ranking);
   const searchActive = featureLib.isActive(search) || Boolean(month);
   const overview = await areas.overview(ranking, req.site.id);
-  const homeTitle = content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name);
-  res.render('public/home', {
-    title: homeTitle,
+  const listHref = seo.listPath(ranking);
+  const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
+  // Startseite des Host-Rankings ist die Bereichsübersicht; die Liste hat einen eigenen Titel
+  const listTitle = isHost ? `${ranking.entity_label_pl} im Ranking nach ${ranking.score_name}` : (content.meta_title || ranking.name);
+  res.render('public/ranking', {
+    title: listTitle,
     description: content.meta_description
       || `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`,
-    canonical: `${siteUrl}${base || '/'}`,
+    canonical: `${siteUrl}${listHref}`,
     // Suchergebnis- und Filterseiten nicht indexieren (doppelte Inhalte)
     noindex: searchActive,
     jsonLd: [
-      seo.websiteLd(req.site, siteUrl),
       seo.itemListLd(ranking.name, allRanked.slice(0, 20).map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` }))),
     ],
     areaOverview: overview,
@@ -117,10 +120,41 @@ async function renderList(req, res, ranking) {
     totalPoints: criteria.reduce((s, c) => s + c.max_points, 0),
     criteriaCount: criteria.length,
     base: rankingBase(ranking),
+    listHref,
     entityPath: (e) => entityPath(ranking, e),
-    isHostRanking: req.hostRanking && req.hostRanking.id === ranking.id,
+    isHostRanking: isHost,
   });
 }
+
+// Startseite: Bereiche (Über die Seite, Objekte, Camps, Regionen) in der Reihenfolge aus dem Admin
+async function renderHome(req, res, ranking) {
+  const [blocks, stats] = await Promise.all([
+    home.load(req.site, ranking, { campGuide: res.locals.campGuide, regionGuide: res.locals.regionGuide }),
+    home.stats(req.site, ranking),
+  ]);
+  const content = ranking.content || {};
+  const siteUrl = res.locals.siteUrl;
+  const listHref = seo.listPath(ranking);
+  const ent = blocks.find((b) => b.key === 'entities');
+  const top = ent ? [ent.featured && ent.featured.entity, ...ent.others].filter(Boolean) : [];
+  res.render('public/home', {
+    title: content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name),
+    description: content.meta_description
+      || `${stats.entities} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`,
+    canonical: `${siteUrl}/`,
+    jsonLd: [
+      seo.websiteLd(req.site, siteUrl, listHref),
+      ...(top.length ? [seo.itemListLd(ranking.name, top.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
+    ],
+    fullWidth: true,
+    ranking, content, blocks, stats, listHref,
+    formula: Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {}),
+    entityPath: (e) => entityPath(ranking, e),
+  });
+}
+
+// Suchparameter der alten Startseite (Ranking auf „/“) gehören zur Liste
+const LIST_PARAMS = ['q', 'land', 'monat', 'min', 'l'];
 
 // Anzeige der Vertrauensstufe (Konzept: Datenqualität)
 function trustText(fact, ranking) {
@@ -197,7 +231,7 @@ async function renderEntity(req, res, ranking, slug) {
   const base = rankingBase(ranking);
   const inRegions = await areas.regionsOf(req.site.id, entity);
   const region = inRegions[0] || null;
-  const crumbs = [{ name: ranking.name, url: `${siteUrl}${base || '/'}` }];
+  const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (entity.country) crumbs.push({ name: seo.countryName(entity.country), url: `${siteUrl}${base}/land/${seo.countrySlug(entity.country)}` });
   if (region) crumbs.push({ name: region.name, url: `${siteUrl}${base}/region/${region.slug}` });
   crumbs.push({ name: entity.name, url: `${siteUrl}${entityPath(ranking, entity)}` });
@@ -312,7 +346,18 @@ function explainScoring(c) {
 
 router.get('/', wrap(async (req, res, next) => {
   if (!req.hostRanking) return res.render('public/error', { title: 'Bald verfügbar', message: 'Hier entsteht gerade etwas.' });
-  await renderList(req, res, req.hostRanking);
+  if (LIST_PARAMS.some((k) => req.query[k] !== undefined)) {
+    const qs = req.originalUrl.slice(req.originalUrl.indexOf('?'));
+    return res.redirect(301, `${seo.listPath(req.hostRanking)}${qs}`);
+  }
+  await renderHome(req, res, req.hostRanking);
+}));
+
+// Liste des Host-Rankings unter /<Objekte>, z. B. /hotels
+router.get('/:list', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  if (!r || req.params.list !== slugify(r.entity_label_pl)) return next();
+  await renderList(req, res, r);
 }));
 
 // ---------- Direktvergleich (2–3 Objekte desselben Rankings) ----------
@@ -332,10 +377,11 @@ async function renderCompare(req, res, ranking, combo) {
     // jede Kombination wäre eine eigene Seite – vorerst nicht indexieren
     noindex: true,
     ranking, base, ...data,
+    listHref: seo.listPath(ranking),
     onlyDiff: req.query.nur === 'unterschiede',
     comboPath: compare.comboPath,
     entityPath: (e) => entityPath(ranking, e),
-    jsonLd: [seo.breadcrumbLd([{ name: ranking.name, url: `${siteUrl}${base || '/'}` }, { name: 'Vergleich', url: `${siteUrl}${base}/vergleich/${compare.canonicalCombo(slugs)}` }])],
+    jsonLd: [seo.breadcrumbLd([{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }, { name: 'Vergleich', url: `${siteUrl}${base}/vergleich/${compare.canonicalCombo(slugs)}` }])],
   });
   return true;
 }
@@ -419,7 +465,7 @@ async function renderArea(req, res, ranking, area) {
   const ov = await areas.overview(ranking, req.site.id);
   const best = seo.monthRanges(d.bestMonths, MONTHS_DE);
   const heading = `${ranking.name} ${area.nameIn}`;
-  const crumbs = [{ name: ranking.name, url: `${siteUrl}${base || '/'}` }];
+  const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   res.render('public/area', {

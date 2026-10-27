@@ -10,6 +10,13 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
+### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
+Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
+Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /hotels (Suchen auf „/“ leiten weiter).
+- Später: Monats-Planer aus Variante C in den Hero („Ich plane im …“ → Einträge passen sich an).
+- Später (mit Partner-CRM): gebuchte Plätze je Bereich, immer zusätzlich und als „Anzeige“ gekennzeichnet, nie anstelle der
+  neutralen Auswahl; ändert weder Score noch Reihenfolge.
+
 ### Trainingsregionen (Konzept 27.10.2026, von Daniel freigegeben)
 Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
 Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.

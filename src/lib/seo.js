@@ -113,13 +113,18 @@ function ldJson(obj) {
   return JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 }
 
-function websiteLd(site, url) {
+// Liste eines Rankings: Standard-Ranking unter /<Objekte> (z. B. /hotels), weitere unter /rankings/<slug>
+function listPath(ranking) {
+  return ranking.is_default ? `/${slugify(ranking.entity_label_pl)}` : `/rankings/${ranking.slug}`;
+}
+
+function websiteLd(site, url, searchPath = '/') {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: site.name,
     url,
-    potentialAction: { '@type': 'SearchAction', target: `${url}/?q={search_term_string}#ranking`, 'query-input': 'required name=search_term_string' },
+    potentialAction: { '@type': 'SearchAction', target: `${url}${searchPath}?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
   };
 }
 
@@ -233,5 +238,5 @@ module.exports = {
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
   averageClimate, bestMonths, monthRanges, featureShares,
-  ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd,
+  ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd, listPath,
 };

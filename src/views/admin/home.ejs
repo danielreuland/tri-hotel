@@ -1,0 +1,47 @@
+<%- include('../partials/admin-head') %>
+<h1>Startseite</h1>
+<p class="muted">Die Startseite besteht aus Bereichen. Hier legst du Reihenfolge und Sichtbarkeit fest und wer je Bereich hervorgehoben wird.
+  <b>Automatisch</b> ist neutral: Platz 1 im Ranking, die Region mit der besten Eignung im nächsten Monat, bei Camps täglich wechselnd der Reihe nach.
+  <b>Redaktion</b> zeigt deine Wahl mit dem Hinweis „Tipp der Redaktion“ bis zum Enddatum, danach wieder automatisch. Partner- oder Werbestatus spielt bei der Auswahl keine Rolle.</p>
+<% if (flash) { %><p class="flash"><%= flash %></p><% } %>
+
+<% if (allSites.length > 1) { %>
+  <form method="get" action="/admin/startseite" class="inline-form">
+    <label>Site <select name="site" data-autosubmit><% allSites.forEach(function (s) { %><option value="<%= s.id %>" <%= s.id === site.id ? 'selected' : '' %>><%= s.name %></option><% }) %></select></label>
+    <button class="btn small secondary" type="submit">Wechseln</button>
+  </form>
+<% } %>
+
+<form method="post" action="/admin/startseite" class="card" data-busy="Wird gespeichert …">
+  <input type="hidden" name="site" value="<%= site.id %>">
+  <div class="table-scroll">
+  <table>
+    <tr><th class="num">Position</th><th>Bereich</th><th>Sichtbar</th><th>Hervorgehoben</th><th>Auswahl der Redaktion</th><th>bis</th></tr>
+    <% blocks.forEach(function (b, i) { var list = { entities: opts.entities, camps: opts.camps, regions: opts.regions }[b.key]; %>
+      <tr>
+        <td class="num"><input type="number" name="pos_<%= b.key %>" value="<%= i + 1 %>" min="1" max="9" style="width:4.5em" aria-label="Position <%= BLOCKS[b.key].label %>"></td>
+        <td><strong><%= BLOCKS[b.key].label %></strong>
+          <% if (b.key === 'camps') { %><br><small class="muted">nur mit Trainingscamp-Seite</small><% } %>
+          <% if (b.key === 'regions') { %><br><small class="muted">nur mit aktiven Regionen</small><% } %></td>
+        <td><label class="chip"><input type="checkbox" name="show_<%= b.key %>" value="1" <%= b.hidden ? '' : 'checked' %>> anzeigen</label></td>
+        <% if (BLOCKS[b.key].picks) { %>
+          <td><select name="mode_<%= b.key %>">
+            <option value="auto" <%= b.pick.mode === 'auto' ? 'selected' : '' %>>automatisch</option>
+            <option value="editorial" <%= b.pick.mode === 'editorial' ? 'selected' : '' %>>Redaktion</option>
+          </select></td>
+          <td><select name="slug_<%= b.key %>">
+            <option value="">– wählen –</option>
+            <% list.forEach(function (o) { %><option value="<%= o.slug %>" <%= b.pick.slug === o.slug ? 'selected' : '' %>><%= o.name %><%= o.score !== undefined && o.score !== null ? ' (' + o.score + ')' : '' %></option><% }) %>
+          </select></td>
+          <td><input type="date" name="until_<%= b.key %>" value="<%= b.pick.until || '' %>"></td>
+        <% } else { %>
+          <td colspan="3"><small class="muted">Kennzahlen und Grundsätze, keine Auswahl</small></td>
+        <% } %>
+      </tr>
+    <% }) %>
+  </table>
+  </div>
+  <p class="muted"><small>Position: kleinere Zahl steht weiter oben. Ohne Enddatum gilt die Auswahl der Redaktion, bis du sie zurückstellst. Ist der gewählte Eintrag nicht mehr live, greift automatisch die neutrale Auswahl.</small></p>
+  <p style="margin-bottom:0"><button class="btn" type="submit">Speichern</button> <a href="/" target="_blank" rel="noopener">Startseite ansehen ↗</a></p>
+</form>
+<%- include('../partials/admin-foot') %>
