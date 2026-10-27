@@ -99,3 +99,28 @@ test('Partner: Nummer aus einem Parameter (CHECK24 c24pp_hotel_id), auch mitten 
   assert.equal(partners.buildUrl(c24, target, { slug: 'playitas-hotel-las-playitas' }),
     'https://a.check24.net/misc/click.php?aid=18&pid=1179734&target_url=https%3A%2F%2Fwww.check24.net%2Fpauschalreisen-vergleich%2F%3Fc24pp_hotel_id%3D18002%26pid%3D1179734&tid=playitas-hotel-las-playitas');
 });
+
+test('Anbieterlogos: Adresse nur für eigene Upload-Dateinamen, Kurzbeschriftung neben dem Logo', () => {
+  assert.equal(partners.logoUrl('trivago-1730000000000.svg'), '/partner-logo/trivago-1730000000000.svg');
+  assert.equal(partners.logoUrl('../etc/passwd'), null);
+  assert.equal(partners.logoUrl('x.gif'), null);
+  assert.equal(partners.logoUrl(null), null);
+  assert.equal(partners.shortLabel('Preise prüfen bei Expedia', 'Expedia'), 'Preise prüfen');
+  assert.equal(partners.shortLabel('Pauschalreise mit Flug bei CHECK24', 'CHECK24'), 'Pauschalreise mit Flug');
+  assert.equal(partners.shortLabel('Preise vergleichen bei trivago', 'trivago'), 'Preise vergleichen');
+  assert.equal(partners.shortLabel('Zum Angebot', 'trivago'), 'Zum Angebot', 'ohne Anbieternamen bleibt die Beschriftung');
+  const [g] = partners.groupLinks([{ code: 'trivago', name: 'trivago', kind: 'booking', url: 'https://www.trivago.de/x',
+    label_booking: 'Preise vergleichen bei trivago', logo_file: 'trivago-1.svg', direct_link: true, monetized: true }], 'hotel-x');
+  assert.equal(g.logo, '/partner-logo/trivago-1.svg');
+  assert.equal(g.short_booking, 'Preise vergleichen');
+});
+
+test('Logo-Upload: SVG mit aktiven Inhalten wird abgelehnt', () => {
+  const { unsafeSvg } = require('../src/routes/admin-partners');
+  assert.equal(unsafeSvg('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0h10v10z" fill="#08f"/></svg>'), false);
+  assert.equal(unsafeSvg('<svg><script>alert(1)</script></svg>'), true);
+  assert.equal(unsafeSvg('<svg onload="x()"></svg>'), true);
+  assert.equal(unsafeSvg('<svg><a xlink:href="javascript:x()"></a></svg>'), true);
+  assert.equal(unsafeSvg('<svg><use xlink:href="https://evil.example/x.svg#a"/></svg>'), true);
+  assert.equal(unsafeSvg('<svg><use xlink:href="#a"/></svg>'), false);
+});

@@ -1,6 +1,6 @@
 <%- include('../partials/admin-head') %>
 <h1>Partnerprogramme</h1>
-<p class="muted">Partnerlinks erscheinen auf Profilseiten im Kasten „Buchen &amp; Anfragen“ als <strong>Anzeige</strong> – in der hier festgelegten Reihenfolge (der erste aktive Preis-Anbieter ist der Hauptknopf „Preise prüfen“), ohne Einfluss auf Score, Reihenfolge der Hotels oder Prüfung. Links je Objekt pflegst du in der Detailansicht (Reiter Stammdaten → Partnerlinks). Ohne Partnerkennung bzw. Deeplink-Vorlage sind es normale Links ohne Provision.</p>
+<p class="muted">Partnerlinks erscheinen auf Profilseiten im Kasten „Buchen &amp; Anfragen“ als <strong>Anzeige</strong> – untereinander in der hier festgelegten Reihenfolge, mit Logo, falls hochgeladen (der erste aktive Preis-Anbieter ist zusätzlich der Knopf „Preise prüfen“ in der Leiste unten auf dem Handy), ohne Einfluss auf Score, Reihenfolge der Hotels oder Prüfung. Links je Objekt pflegst du in der Detailansicht (Reiter Stammdaten → Partnerlinks). Ohne Partnerkennung bzw. Deeplink-Vorlage sind es normale Links ohne Provision.</p>
 <% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
 <% if (error) { %><div class="errors"><%= error %></div><% } %>
 
@@ -64,6 +64,19 @@
       </select>
       <label>Notiz</label><textarea name="notes" rows="2"><%= p.notes || '' %></textarea>
       <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
+    </form>
+    <form method="post" action="/admin/partner/<%= p.id %>/logo" enctype="multipart/form-data" class="partner-logo-form">
+      <h4 style="margin:16px 0 6px">Logo <small class="muted">– nur aus den Werbemitteln bzw. Markenrichtlinien des Programms; erscheint im Kasten „Buchen &amp; Anfragen“</small></h4>
+      <% if (p.logo_file) { %>
+        <p style="display:flex;gap:12px;align-items:center;margin:0 0 8px"><span class="book-logo"><img src="/partner-logo/<%= p.logo_file %>" alt="<%= p.name %>"></span>
+          <small class="muted">Herkunft: <%= p.logo_source %><%= p.logo_updated_at ? ' · ' + new Date(p.logo_updated_at).toLocaleDateString('de-DE') : '' %></small></p>
+      <% } %>
+      <div class="form-row" style="align-items:end">
+        <div><label for="logo-<%= p.code %>">Datei <small class="muted">SVG, PNG oder WebP, bis 300 KB, quer (etwa 4:1)</small></label><input id="logo-<%= p.code %>" name="logo" type="file" accept="image/svg+xml,image/png,image/webp"></div>
+        <div><label for="logo-src-<%= p.code %>">Herkunft <small class="muted">Pflicht</small></label><input id="logo-src-<%= p.code %>" name="logo_source" type="text" maxlength="300" placeholder="z. B. Awin-Werbemittel trivago, 28.10.2026"></div>
+      </div>
+      <p style="margin-bottom:0"><button class="btn small secondary" type="submit">Logo hochladen</button>
+        <% if (p.logo_file) { %><label class="inline" style="margin-left:12px"><input type="checkbox" name="remove"> <span>Logo entfernen</span></label><% } %></p>
     </form>
   </section>
 <% }) %>

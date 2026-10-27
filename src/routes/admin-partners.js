@@ -1,6 +1,10 @@
 // Admin: Partnerprogramme (Kennung bzw. Netzwerk-Vorlage, Status) und Klickübersicht.
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
+const multer = require('multer');
 const db = require('../db');
+const config = require('../config');
 const partners = require('../services/partners');
 const { logAction } = require('../lib/audit');
 const { requireAdmin } = require('../middleware/context');
@@ -95,4 +99,40 @@ router.post('/:id', wrap(async (req, res, next) => {
   res.redirect(`/admin/partner?ok=${encodeURIComponent(`${upd.name} gespeichert`)}`);
 }));
 
+// Logo aus den Werbemitteln des Programms (SVG, PNG oder WebP, klein). Herkunft ist Pflicht – wie bei Bildern.
+const LOGO_DIR = path.join(config.uploadDir, 'partner-logos');
+const LOGO_TYPES = { 'image/svg+xml': 'svg', 'image/png': 'png', 'image/webp': 'webp' };
+const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 300 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, Boolean(LOGO_TYPES[file.mimetype])) });
+// SVG nur ohne aktive Inhalte (wird zusätzlich mit strenger CSP ausgeliefert)
+const unsafeSvg = (text) => /<script|<foreignObject|\son\w+\s*=|javascript:|<iframe|<embed|<object|xlink:href\s*=\s*["']\s*(?!#)/i.test(text);
+
+router.post('/:id/logo', logoUpload.single('logo'), wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.id)) return next();
+  const p = await db.one('SELECT * FROM partner_programs WHERE id = $1', [req.params.id]);
+  if (!p) return next();
+  const back = (msg, ok) => res.redirect(`/admin/partner?${ok ? 'ok' : 'fehler'}=${encodeURIComponent(msg)}#p-${p.code}`);
+  const removeOld = () => { if (p.logo_file) fs.rm(path.join(LOGO_DIR, path.basename(p.logo_file)), { force: true }, () => {}); };
+  if (req.body.remove === 'on') {
+    removeOld();
+    await db.query('UPDATE partner_programs SET logo_file = NULL, logo_source = NULL, logo_updated_at = now() WHERE id = $1', [p.id]);
+    await logAction(req.session.admin.id, 'partner_program', p.id, 'remove_partner_logo', { old: p.logo_file });
+    return back(`Logo von ${p.name} entfernt`, true);
+  }
+  const source = String(req.body.logo_source || '').trim().slice(0, 300);
+  if (!req.file) return back('Logo: SVG, PNG oder WebP bis 300 KB auswählen.');
+  if (!source) return back('Logo: Herkunft angeben (z. B. „Awin-Werbemittel trivago, 28.10.2026“).');
+  const ext = LOGO_TYPES[req.file.mimetype];
+  if (ext === 'svg' && unsafeSvg(req.file.buffer.toString('utf8'))) return back('Logo: SVG enthält Skripte oder externe Verweise – bitte PNG oder ein bereinigtes SVG.');
+  fs.mkdirSync(LOGO_DIR, { recursive: true });
+  const file = `${p.code.replace(/[^a-z0-9-]/g, '')}-${Date.now()}.${ext}`;
+  fs.writeFileSync(path.join(LOGO_DIR, file), req.file.buffer);
+  removeOld();
+  await db.query('UPDATE partner_programs SET logo_file = $2, logo_source = $3, logo_updated_at = now() WHERE id = $1', [p.id, file, source]);
+  await logAction(req.session.admin.id, 'partner_program', p.id, 'upload_partner_logo', { old: p.logo_file, new: file, source });
+  back(`Logo von ${p.name} gespeichert`, true);
+}));
+
 module.exports = router;
+module.exports.LOGO_DIR = LOGO_DIR;
+module.exports.unsafeSvg = unsafeSvg;

@@ -78,6 +78,21 @@ function searchUrl(program, entity) {
   return program.search_url.replace(/\{q\}/g, encodeURIComponent(q));
 }
 
+// Angaben des Programms, die jede Link-Zeile mitführt (eigener, übernommener oder Such-Link)
+const programFields = (p) => ({ code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews,
+  link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, direct_link: p.direct_link,
+  trademark_notice: p.trademark_notice, logo_file: p.logo_file });
+
+// Logo-Adresse (Datei aus dem Admin-Upload, Werbemittel des Programms) oder null
+const logoUrl = (file) => (file && /^[a-z0-9-]+\.(svg|png|webp)$/.test(file) ? `/partner-logo/${file}` : null);
+
+// Beschriftung neben dem Logo: „Preise prüfen bei Expedia“ → „Preise prüfen“ (der Name steht schon im Logo)
+function shortLabel(label, name) {
+  const l = String(label || '').trim();
+  const cut = l.replace(new RegExp(`\\s+(bei|auf|über)\\s+${escRe(String(name || ''))}$`, 'i'), '');
+  return cut && cut !== l ? cut : l;
+}
+
 // Links eines Objekts für die öffentliche Seite: nur aktive Programme, in Admin-Reihenfolge.
 // Ohne eigenen Link: Suchseite bei Programmen mit auto_search (auto: true, id: null).
 async function linksFor(entityOrId) {
@@ -85,7 +100,7 @@ async function linksFor(entityOrId) {
   if (!entity) return [];
   const rows = await db.many(
     `SELECT l.id, l.kind, l.url, p.code, p.name, p.label_booking, p.label_reviews, p.link_params, p.link_template, p.sort_order,
-            p.direct_link, p.trademark_notice
+            p.direct_link, p.trademark_notice, p.logo_file
        FROM entity_links l JOIN partner_programs p ON p.id = l.program_id
       WHERE l.entity_id = $1 AND p.status = 'active'`, [entity.id]);
   // Nummer von einem anderen Programm übernehmen (id_from), wenn kein eigener Preis-Link eingetragen ist
@@ -95,12 +110,12 @@ async function linksFor(entityOrId) {
       `SELECT l.url, s.id_url FROM entity_links l JOIN partner_programs s ON s.id = l.program_id
         WHERE l.entity_id = $1 AND s.code = $2 AND l.kind = 'booking'`, [entity.id, p.id_from]);
     const url = src && derivedUrl(p, src, src.url);
-    if (url) rows.push({ id: null, kind: 'booking', url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, direct_link: p.direct_link, trademark_notice: p.trademark_notice, derived: true });
+    if (url) rows.push({ id: null, kind: 'booking', url, ...programFields(p), derived: true });
   }
   for (const p of await db.many(`SELECT * FROM partner_programs WHERE status = 'active' AND auto_search IS NOT NULL`)) {
     if (rows.some((r) => r.code === p.code && r.kind === p.auto_search)) continue;
     const url = searchUrl(p, entity);
-    if (url) rows.push({ id: null, kind: p.auto_search, url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, direct_link: p.direct_link, trademark_notice: p.trademark_notice, auto: true });
+    if (url) rows.push({ id: null, kind: p.auto_search, url, ...programFields(p), auto: true });
   }
   rows.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'de') || a.kind.localeCompare(b.kind));
   for (const r of rows) r.monetized = monetized(r);
@@ -114,7 +129,8 @@ function groupLinks(links, slug) {
     let g = groups.find((x) => x.code === l.code);
     if (!g) {
       groups.push((g = { code: l.code, name: l.name, label_booking: l.label_booking, label_reviews: l.label_reviews, monetized: l.monetized,
-        trademark_notice: l.trademark_notice || null, kinds: [], href: {}, count: {} }));
+        trademark_notice: l.trademark_notice || null, logo: logoUrl(l.logo_file), short_booking: shortLabel(l.label_booking, l.name),
+        kinds: [], href: {}, count: {} }));
     }
     g.kinds.push(l.kind);
     const go = `/go/${slug}/${l.code}${l.kind === 'reviews' ? '/bewertungen' : ''}`;
@@ -216,4 +232,4 @@ async function stats(days = 30) {
   return { byProgram, top };
 }
 
-module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };

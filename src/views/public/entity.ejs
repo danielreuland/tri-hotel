@@ -4,10 +4,11 @@
   <% crumbs.forEach(function (c, i) { %><% if (i < crumbs.length - 1) { %><a href="<%= c.url.replace(siteUrl, '') || '/' %>"><%= c.name %></a> › <% } else { %><span><%= c.name %></span><% } %><% }) %>
 </nav>
 
-<%# Buchen & Anfragen: ein Hauptknopf (erster Preis-Anbieter in Admin-Reihenfolge), weitere als Textzeile,
-    „direkt beim Hotel“ immer dabei. Ohne Einfluss auf Score und Reihenfolge der Hotels. %>
+<%# Buchen & Anfragen: alle Preis-Anbieter gleichrangig untereinander (Logo bzw. Name, Admin-Reihenfolge), „direkt beim
+    Hotel“ als letzte Zeile. Der erste Anbieter ist zusätzlich der Knopf in der Handy-Leiste. Ohne Einfluss auf Score und
+    Reihenfolge der Hotels. %>
 <% var bookGroups = partnerGroups.filter(function (g) { return g.kinds.indexOf('booking') >= 0; });
-   var primary = bookGroups[0] || null; var others = bookGroups.slice(1);
+   var primary = bookGroups[0] || null;
    var reviewPartners = partnerGroups.filter(function (g) { return g.kinds.indexOf('reviews') >= 0; });
    var bookAd = bookGroups.some(function (g) { return g.monetized; }); %>
 <% var hasBook = Boolean(primary || entity.website || hotelInquiryUrl); var hasBar = Boolean(primary || hotelInquiryUrl);
@@ -60,20 +61,24 @@
       <h2 style="margin:0">Buchen &amp; Anfragen</h2>
       <% if (bookAd) { %><span class="ad-label">Anzeige</span><% } %>
     </div>
-    <div class="book-actions">
-      <% if (primary) { %>
-        <a class="btn cta large" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen <small>bei <%= primary.name %> ↗</small></a>
-      <% } else if (entity.website) { %>
-        <a class="btn cta large" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Direkt beim <%= ranking.entity_label_sg %> buchen ↗</a>
-      <% } %>
-      <% if (hotelInquiryUrl) { %><a class="btn secondary large" href="<%= hotelInquiryUrl %>" data-goal="Hotel-Anfrage-Start">Trainingslager anfragen</a><% } %>
-    </div>
-    <% if (others.length || (primary && entity.website)) { %>
-      <p class="book-more">Auch bei:
-        <% others.forEach(function (g, i) { %><%= i ? ' · ' : '' %><a href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise"><%= g.name %></a><% }) %>
-        <% if (primary && entity.website) { %><%= others.length ? ' · ' : '' %><a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">direkt beim <%= ranking.entity_label_sg %></a><% } %>
-      </p>
+    <% if (bookGroups.length) { %>
+      <ul class="book-list">
+        <% bookGroups.forEach(function (g) { %>
+          <li><a class="book-row" href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise">
+            <span class="book-logo"><% if (g.logo) { %><img src="<%= g.logo %>" alt="<%= g.name %>" width="120" height="28" loading="lazy"><% } else { %><strong><%= g.name %></strong><% } %></span>
+            <span class="book-go"><%= g.short_booking %> ↗</span>
+          </a></li>
+        <% }) %>
+        <% if (entity.website) { %>
+          <li><a class="book-row direct" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">
+            <span class="book-logo"><strong>Direkt beim <%= ranking.entity_label_sg %></strong></span><span class="book-go">Website ↗</span>
+          </a></li>
+        <% } %>
+      </ul>
+    <% } else if (entity.website) { %>
+      <div class="book-actions"><a class="btn cta large" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Direkt beim <%= ranking.entity_label_sg %> buchen ↗</a></div>
     <% } %>
+    <% if (hotelInquiryUrl) { %><div class="book-actions" style="margin-top:10px"><a class="btn secondary large" href="<%= hotelInquiryUrl %>" data-goal="Hotel-Anfrage-Start">Trainingslager anfragen</a></div><% } %>
   </section>
   <% } %>
 </div>

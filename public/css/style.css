@@ -594,7 +594,15 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .book-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .book-actions .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 56px; text-align: center; line-height: 1.2; }
 .book-actions .btn small { font-weight: 500; font-size: .8rem; opacity: .85; }
-.book-more { margin: 10px 0 0; }
+.book-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.book-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; }
+.book-row:hover, .book-row:focus-visible { border-color: var(--accent-strong); }
+.book-row .book-go { font-weight: 600; color: var(--accent-strong); white-space: nowrap; }
+.book-row.direct { background: var(--surface-2); }
+/* Logos aus den Werbemitteln der Programme: immer auf hellem Grund, wie es die Markenrichtlinien meist verlangen */
+.book-logo { display: inline-flex; align-items: center; min-width: 0; }
+.book-logo img { display: block; height: 28px; width: auto; max-width: 132px; object-fit: contain; background: #fff; border-radius: 4px; padding: 3px 6px; box-sizing: content-box; }
 .book-bar { display: none; }
 @media (max-width: 700px) {
   .book-bar { display: flex; gap: 8px; align-items: center; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;

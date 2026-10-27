@@ -1,10 +1,25 @@
 // Weiterleitung zu Partnerlinks: /go/<objekt-slug>/<programm>[/bewertungen], gezählt je Tag, nicht indexiert.
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
+const config = require('../config');
 const partners = require('../services/partners');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const BOT_RE = /bot|crawl|spider|preview|slurp|facebookexternalhit/i;
+
+// Anbieterlogos (Upload im Admin). SVG ohne aktive Inhalte – die CSP verhindert Skripte auch bei direktem Aufruf.
+const LOGO_DIR = path.join(config.uploadDir, 'partner-logos');
+router.get('/partner-logo/:file', (req, res, next) => {
+  if (!partners.logoUrl(req.params.file)) return next();
+  const file = path.join(LOGO_DIR, req.params.file);
+  if (!fs.existsSync(file)) return next();
+  res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Cache-Control', 'public, max-age=604800, immutable');
+  res.sendFile(file);
+});
 
 router.get('/go/:slug/:program/:kind?', wrap(async (req, res, next) => {
   const r = req.hostRanking;
