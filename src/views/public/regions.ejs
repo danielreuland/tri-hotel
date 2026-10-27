@@ -46,6 +46,12 @@
   <div class="rg-cards">
     <% rows.forEach(function (r) { var best = bestText(r.bestMonths); var fitsMonth = month && r.bestMonths.indexOf(month) >= 0; %>
       <article class="rg-card<%= fitsMonth ? ' fits' : '' %>">
+        <% var photo = siteMedia.regions[r.region.id]; if (photo) { %>
+          <a class="rg-photo" href="<%= regionPath(r) %>" tabindex="-1" aria-hidden="true">
+            <img <%- imgAttrs(photo) %> sizes="(max-width: 700px) 100vw, 400px" alt="" loading="lazy">
+            <small class="photo-credit"><%= photo.credit %></small>
+          </a>
+        <% } %>
         <header>
           <div>
             <h2><a href="<%= regionPath(r) %>"><%= r.name %></a></h2>

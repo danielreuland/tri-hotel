@@ -15,7 +15,7 @@
   <h2>Auf einen Blick</h2>
   <div class="table-scroll">
     <table class="compare-table region-compare">
-      <thead><tr><th></th><% rows.forEach(function (r) { %><th><a href="<%= regionPath(r) %>"><%= r.name %></a><br><small class="muted"><%= r.countryName %></small></th><% }) %></tr></thead>
+      <thead><tr><th></th><% rows.forEach(function (r) { var photo = siteMedia.regions[r.region.id]; %><th><% if (photo) { %><a class="rg-thumb" href="<%= regionPath(r) %>" tabindex="-1" aria-hidden="true"><img <%- imgAttrs(photo) %> sizes="240px" alt="" loading="lazy"><small class="photo-credit"><%= photo.credit %></small></a><% } %><a href="<%= regionPath(r) %>"><%= r.name %></a><br><small class="muted"><%= r.countryName %></small></th><% }) %></tr></thead>
       <tbody>
         <tr><th>Beste Reisezeit</th><% rows.forEach(function (r) { %><td><%= bestText(r.bestMonths) || '–' %></td><% }) %></tr>
         <tr><th>Radrevier (OSM)</th><% rows.forEach(function (r) { %><td><%= r.bike ? fmt(r.bike.score, 1) + ' von 6' : '–' %></td><% }) %></tr>

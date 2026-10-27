@@ -687,3 +687,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .region-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .region-compare-end { margin: 14px 0 0; text-align: right; }
+.rg-card { overflow: hidden; }
+.rg-photo { position: relative; display: block; margin: -16px -18px 4px; aspect-ratio: 16 / 9; background: var(--surface-2); }
+.rg-photo img, .rg-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rg-photo .photo-credit, .rg-thumb .photo-credit { font-size: .62rem; }
+.rg-thumb { position: relative; display: block; width: 100%; max-width: 240px; aspect-ratio: 3 / 2; margin-bottom: 8px; border-radius: var(--radius); overflow: hidden; background: var(--surface-2); }
