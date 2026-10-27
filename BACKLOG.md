@@ -85,7 +85,6 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
 - Preis je geteilter Camp-Anfrage (A3, zurückgestellt; Vorschlag: halber Preis einer Einzelanfrage).
 - `geo-refresh` für live-Objekte: würde ungeprüfte Vorschläge sofort in den Score bringen.
-- triprep: Branch `pwa-nutrition` (Commit 16adf7a, PWA + Nutrition Logs, ändert server.js) übernehmen oder verwerfen.
 
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
