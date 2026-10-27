@@ -37,6 +37,8 @@ async function withRetry(fn) {
       console.log(`${e.name}: ${sea ? `${sea.points[0].distance_km} km · Aug ${sea.months[7]} °C · Mär ${sea.months[2]} °C` : 'nicht am Meer'}`);
     } catch (err) {
       errors += 1;
+      // ohne Prüfvermerk kommt das Hotel mit --fehlende erneut dran
+      await db.query(`UPDATE entities SET attributes = attributes - 'sea_checked_at' WHERE id = $1`, [e.id]);
       console.log(`${e.name}: Fehler ${err.message}`);
     }
     await sleep(PAUSE_MS);
