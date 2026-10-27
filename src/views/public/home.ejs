@@ -3,17 +3,17 @@
   var title = content.hero_title || ranking.name;
   var hl = content.hero_highlight && title.indexOf(content.hero_highlight) >= 0 ? content.hero_highlight : null;
   var heroImg = siteMedia.slots.home_hero, ctaImg = siteMedia.slots.cta_band;
-  var methodHref = scorePath;
-  function climateAt(r, m) { return r.climate.find(function (c) { return Number(c.month) === m; }) || {}; }
   function num(v, d) { return v === null || v === undefined ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
 %>
 
-<section class="hero-band<%= heroImg ? ' has-photo' : '' %>">
+<% var about = blocks.find(function (b) { return b.key === 'about'; }); var bands = blocks.filter(function (b) { return b.key !== 'about'; }); %>
+<%# Kopfbereich = Bereich „Über die Seite“: Claim, Suche, Aktionen und (falls sichtbar) Kennzahlen und Grundsätze %>
+<section class="hero-band<%= heroImg ? ' has-photo' : '' %>" id="ueber">
   <% if (heroImg) { %>
     <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
-  <div class="wrap hero-grid single">
+  <div class="wrap hero-grid<%= about ? '' : ' single' %>">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
@@ -26,39 +26,34 @@
         <button class="btn" type="submit">Suchen</button>
       </form>
       <div class="hero-actions">
-        <a class="btn large secondary" href="<%= listHref %>">Zum Ranking</a>
+        <a class="btn large secondary" href="<%= listHref %>">Zur <%= ranking.entity_label_sg %>auswahl</a>
         <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
       </div>
     </div>
+    <% if (about) { %>
+      <div class="score-card hero-about">
+        <p class="caption">Über <%= site.name %></p>
+        <div class="home-stats">
+          <div><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
+          <% if (regionGuide) { %><div><strong><%= stats.regions %></strong><span>Trainingsregionen</span></div><% } %>
+          <% if (campGuide) { %><div><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></div><% } %>
+          <div><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></div>
+        </div>
+        <ul class="home-principles">
+          <li><strong>Neutral.</strong> Werbung und Partnerschaften ändern weder Score noch Reihenfolge.</li>
+          <li><strong>Transparent.</strong> Jeder Wert mit Quelle und Prüfdatum.</li>
+          <li><strong>Aktuell.</strong> Werte älter als <%= formula.recheck_months %> Monate werden neu geprüft.</li>
+        </ul>
+      </div>
+    <% } %>
   </div>
 </section>
 
-<% blocks.forEach(function (b, idx) { var alt = idx % 2 === 1; %>
-<section class="home-band<%= alt ? ' alt' : '' %>" id="<%= { about: 'ueber', entities: 'bestenliste', camps: 'camps', regions: 'regionen' }[b.key] %>">
+<% bands.forEach(function (b, idx) { var alt = idx % 2 === 1; %>
+<section class="home-band<%= alt ? ' alt' : '' %>" id="<%= { entities: 'bestenliste', camps: 'camps', regions: 'regionen' }[b.key] %>">
   <div class="wrap home-band-grid">
 
-  <% if (b.key === 'about') { %>
-    <div class="home-band-text">
-      <p class="eyebrow">Über <%= site.name %></p>
-      <h2>Neutral verglichen, jeder Wert mit Quelle</h2>
-      <p><%= content.about_text || (site.name + ' vergleicht ' + ranking.entity_label_pl + ' neutral: Der ' + ranking.score_name + ' (0–100) entsteht aus geprüften Fakten, jeder Wert mit Quelle und Prüfdatum. Werbung und Partnerschaften ändern weder Score noch Reihenfolge.') %></p>
-      <p><a class="more-link" href="<%= listHref %>">Zur <%= ranking.entity_label_sg %>auswahl →</a></p>
-    </div>
-    <div class="home-band-side">
-      <div class="home-stats">
-        <div><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
-        <% if (regionGuide) { %><div><strong><%= stats.regions %></strong><span>Trainingsregionen</span></div><% } %>
-        <% if (campGuide) { %><div><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></div><% } %>
-        <div><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></div>
-      </div>
-      <ul class="home-principles">
-        <li><strong>Neutral.</strong> Buchungslinks sind als Anzeige gekennzeichnet und beeinflussen nichts.</li>
-        <li><strong>Transparent.</strong> Jeder Wert zeigt, woher er stammt und wann er geprüft wurde.</li>
-        <li><strong>Aktuell.</strong> Werte älter als <%= formula.recheck_months %> Monate werden neu geprüft.</li>
-      </ul>
-    </div>
-
-  <% } else if (b.key === 'entities') { %>
+  <% if (b.key === 'entities') { %>
     <div class="home-band-text">
       <p class="eyebrow"><%= ranking.score_name %>-Ranking</p>
       <h2>Die besten <%= ranking.entity_label_pl %></h2>
@@ -117,12 +112,12 @@
       <p class="muted"><small>Du bietest Trainingscamps an? <a href="/trainingscamp/fuer-anbieter">Eintrag anfragen</a></small></p>
     </div>
 
-  <% } else if (b.key === 'regions') { var r = b.featured; var c = climateAt(r, b.month); var photo = siteMedia.regions[r.region.id]; %>
+  <% } else if (b.key === 'regions') { var r = b.featured; var c = b.avg; var photo = siteMedia.regions[r.region.id]; var sm = b.season.months; %>
     <div class="home-band-text">
       <p class="eyebrow">Trainingsregionen</p>
-      <h2>Wohin im <%= MONTHS[b.month - 1] %>?</h2>
-      <p>Klima je Monat, Wassertemperatur, Wind und Radrevier für alle Regionen im Überblick – sortierbar nach deinem Reisemonat und direkt vergleichbar.</p>
-      <p><a class="btn" href="/trainingsregionen?monat=<%= b.month %>">Alle Regionen im <%= MONTHS[b.month - 1] %></a></p>
+      <h2>Wohin im <%= b.season.label %>?</h2>
+      <p><strong><%= b.season.note %>.</strong> Klima, Wassertemperatur, Wind und Radrevier aller Regionen im Überblick – sortiert nach Eignung im <%= b.season.label %> und direkt vergleichbar.</p>
+      <p><a class="btn" href="/trainingsregionen?monat=<%= b.season.key %>">Alle Regionen im <%= b.season.label %></a></p>
     </div>
     <div class="home-band-side">
       <article class="card home-feature region-feature">
@@ -132,17 +127,18 @@
             <small class="photo-credit"><%= photo.credit %></small>
           </a>
         <% } %>
-        <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion' : (r.bestMonths.indexOf(b.month) >= 0 ? 'Beste Reisezeit im ' + MONTHS[b.month - 1] : 'Im ' + MONTHS[b.month - 1] + ' vorn') %></p>
+        <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion' : (b.fitMonths === sm.length ? 'Den ganzen ' + b.season.label + ' beste Reisezeit' : b.fitMonths ? 'Im ' + b.season.label + ' vorn' : 'Im ' + b.season.label + ' am besten geeignet') %></p>
         <h3><a href="/region/<%= r.slug %>"><%= r.name %></a> <small class="muted"><%= r.countryName %></small></h3>
         <dl class="region-stats">
           <div><dt>Ø max</dt><dd><%= num(c.avg_high_c) %> °C</dd></div>
-          <div><dt>Regentage</dt><dd><%= num(c.rain_days) %></dd></div>
+          <div><dt>Regentage</dt><dd><%= num(c.rain_days) %>/Monat</dd></div>
           <div><dt>Sonne</dt><dd><%= num(c.sunshine_h) %> h</dd></div>
           <div><dt>Wasser</dt><dd><%= c.sea_c === null || c.sea_c === undefined ? 'Binnenland' : num(c.sea_c) + ' °C' %></dd></div>
           <% if (r.bike) { %><div><dt>Radrevier</dt><dd><%= num(r.bike.score, 1) %>/6</dd></div><% } %>
         </dl>
+        <p class="muted" style="margin-top:-4px"><small>Mittel <%= sm.map(function (m) { return MONTHS[m - 1]; }).join(', ') %></small></p>
         <ol class="month-strip" aria-label="Beste Reisezeit">
-          <% r.climate.forEach(function (m) { %><li class="<%= r.bestMonths.indexOf(Number(m.month)) >= 0 ? 'best' : '' %><%= Number(m.month) === b.month ? ' cur' : '' %>" title="<%= MONTHS[m.month - 1] %>"><span><%= MONTHS[m.month - 1].slice(0, 1) %></span></li><% }) %>
+          <% r.climate.forEach(function (m) { %><li class="<%= r.bestMonths.indexOf(Number(m.month)) >= 0 ? 'best' : '' %><%= sm.indexOf(Number(m.month)) >= 0 ? ' cur' : '' %>" title="<%= MONTHS[m.month - 1] %>"><span><%= MONTHS[m.month - 1].slice(0, 1) %></span></li><% }) %>
         </ol>
         <p class="muted"><small><%= r.hotels ? r.hotels + ' ' + (r.hotels === 1 ? ranking.entity_label_sg : ranking.entity_label_pl) + (r.topScore !== null ? ' · bester ' + ranking.score_name + ' ' + r.topScore : '') : 'Noch kein geprüftes ' + ranking.entity_label_sg %></small></p>
       </article>

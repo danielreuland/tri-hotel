@@ -734,3 +734,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .home-band-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .home-mini-list .score { min-width: 44px; height: 44px; font-size: 1.6rem; border-radius: 10px; }
+.hero-about { display: grid; gap: 14px; align-self: center; }
+.hero-about .caption { color: var(--accent-strong); font-weight: 800; }
+.hero-about .home-stats div { background: var(--surface-2); border: 0; padding: 10px 12px; }
+.hero-about .home-stats strong { font-size: 2rem; }
+.hero-about .home-principles { font-size: .92rem; }

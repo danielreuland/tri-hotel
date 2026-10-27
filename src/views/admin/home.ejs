@@ -1,7 +1,7 @@
 <%- include('../partials/admin-head') %>
 <h1>Startseite</h1>
 <p class="muted">Die Startseite besteht aus Bereichen. Hier legst du Reihenfolge und Sichtbarkeit fest und wer je Bereich hervorgehoben wird.
-  <b>Automatisch</b> ist neutral: Platz 1 im Ranking, die Region mit der besten Eignung im nächsten Monat, bei Camps täglich wechselnd der Reihe nach.
+  <b>Automatisch</b> ist neutral: Platz 1 im Ranking, die Region mit der besten Eignung in der kommenden Jahreszeit (in zwei Monaten, z. B. Ende Oktober → Winter), bei Camps täglich wechselnd der Reihe nach.
   <b>Redaktion</b> zeigt deine Wahl mit dem Hinweis „Tipp der Redaktion“ bis zum Enddatum, danach wieder automatisch. Partner- oder Werbestatus spielt bei der Auswahl keine Rolle.</p>
 <% if (flash) { %><p class="flash"><%= flash %></p><% } %>
 
@@ -19,7 +19,7 @@
     <tr><th class="num">Position</th><th>Bereich</th><th>Sichtbar</th><th>Hervorgehoben</th><th>Auswahl der Redaktion</th><th>bis</th></tr>
     <% blocks.forEach(function (b, i) { var list = { entities: opts.entities, camps: opts.camps, regions: opts.regions }[b.key]; %>
       <tr>
-        <td class="num"><input type="number" name="pos_<%= b.key %>" value="<%= i + 1 %>" min="1" max="9" style="width:4.5em" aria-label="Position <%= BLOCKS[b.key].label %>"></td>
+        <td class="num"><% if (BLOCKS[b.key].fixed) { %><input type="hidden" name="pos_<%= b.key %>" value="0"><small class="muted">oben</small><% } else { %><input type="number" name="pos_<%= b.key %>" value="<%= i + 1 %>" min="1" max="9" style="width:4.5em" aria-label="Position <%= BLOCKS[b.key].label %>"><% } %></td>
         <td><strong><%= BLOCKS[b.key].label %></strong>
           <% if (b.key === 'camps') { %><br><small class="muted">nur mit Trainingscamp-Seite</small><% } %>
           <% if (b.key === 'regions') { %><br><small class="muted">nur mit aktiven Regionen</small><% } %></td>

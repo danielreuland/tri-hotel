@@ -2,7 +2,7 @@
 <%
   // Wert einer Region im gewählten Monat bzw. Spanne über das Jahr
   function stat(r, key, digits) {
-    if (month) return fmt(monthValue(r.climate, key, month), digits);
+    if (period) return fmt(monthValue(r.climate, key, months), digits);
     var y = yearRange(r.climate, key);
     if (!y) return '–';
     return y.min === y.max ? fmt(y.min, digits) : fmt(y.min, digits) + '–' + fmt(y.max, digits);
@@ -16,13 +16,13 @@
 
 <section class="area-hero">
   <p class="eyebrow">Trainingsregionen</p>
-  <h1><%= month ? 'Trainingsregionen im ' + MONTHS[month - 1] : 'Trainingsregionen im Überblick' %></h1>
+  <h1><%= period ? 'Trainingsregionen ' + period.label : 'Trainingsregionen im Überblick' %></h1>
   <p class="lead">Wo lohnt sich das Trainingslager in welchem Monat? Hier findest du alle Regionen mit denselben Daten nebeneinander – aus offenen Datenquellen und jeweils mit Quelle.</p>
   <ul class="region-intro">
     <li><strong>Klima je Monat:</strong> Tageshöchst­temperatur, Regentage, Sonnenstunden und Wind, dazu die Wassertemperatur an der Küste – und die Monate mit der besten Reisezeit.</li>
     <li><strong>Radrevier:</strong> Bewertung aus OpenStreetMap mit ruhigen Straßen-Kilometern, Pässen und Höhenunterschied.</li>
     <li><strong><%= ranking.entity_label_pl %><%= locals.campGuide ? ' und Camps' : '' %>:</strong> wie viele geprüfte <%= ranking.entity_label_pl %> es in der Region gibt und der beste <%= scoreName %><%= locals.campGuide ? ', dazu passende Camp-Anbieter' : '' %>.</li>
-    <li><strong>Dein Reisemonat:</strong> Wähle unten „Ich reise im …“, um die Regionen nach Eignung in diesem Monat zu sortieren, oder kreuze 2–3 Regionen für den Direktvergleich an.</li>
+    <li><strong>Deine Reisezeit:</strong> Wähle unten „Ich reise im …“ – Monat oder Jahreszeit –, um die Regionen nach Eignung in diesem Zeitraum zu sortieren, oder kreuze 2–3 Regionen für den Direktvergleich an.</li>
   </ul>
   <p class="muted"><small>Regionen bekommen bewusst keinen eigenen Score – du entscheidest, was dir wichtig ist.</small></p>
 </section>
@@ -31,7 +31,12 @@
   <label>Ich reise im
     <select name="monat">
       <option value="">beliebigen Monat</option>
-      <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+      <optgroup label="Jahreszeit">
+        <% Object.keys(seasons).forEach(function (k) { %><option value="<%= k %>" <%= period && period.season === k ? 'selected' : '' %>><%= seasons[k].label %></option><% }) %>
+      </optgroup>
+      <optgroup label="Monat">
+        <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= period && period.month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+      </optgroup>
     </select>
   </label>
   <label>Sortieren nach
@@ -51,7 +56,7 @@
   <% if (compareError) { %><p class="flash">Bitte mindestens zwei Regionen auswählen.</p><% } %>
 
   <div class="rg-cards">
-    <% rows.forEach(function (r) { var best = bestText(r.bestMonths); var fitsMonth = month && r.bestMonths.indexOf(month) >= 0; %>
+    <% rows.forEach(function (r) { var best = bestText(r.bestMonths); var fitsMonth = period && months.every(function (m) { return r.bestMonths.indexOf(m) >= 0; }); %>
       <article class="rg-card<%= fitsMonth ? ' fits' : '' %>">
         <% var photo = siteMedia.regions[r.region.id]; if (photo) { %>
           <a class="rg-photo" href="<%= regionPath(r) %>" tabindex="-1" aria-hidden="true">
@@ -75,10 +80,10 @@
             <div><dt>Wind</dt><dd><%= stat(r, 'wind_kmh') %> km/h</dd></div>
             <div><dt>Wasser <% if (r.hasSea) { %><%- include('../partials/info-tip', { text: seaTip(r) }) %><% } %></dt><dd><%= r.hasSea ? stat(r, 'sea_c') + ' °C' : 'Binnenland' %></dd></div>
           </dl>
-          <p class="region-months-label muted"><small><%= month ? 'Werte im ' + MONTHS[month - 1] : 'Spanne über das Jahr (Monatsmittel)' %></small></p>
+          <p class="region-months-label muted"><small><%= period ? 'Werte ' + period.label + (months.length > 1 ? ' (Mittel der Monate)' : '') : 'Spanne über das Jahr (Monatsmittel)' %></small></p>
           <ol class="month-strip" aria-label="Beste Reisezeit">
             <% r.climate.forEach(function (c) { var isBest = r.bestMonths.indexOf(Number(c.month)) >= 0; %>
-              <li class="<%= isBest ? 'best' : '' %><%= month === Number(c.month) ? ' cur' : '' %>" title="<%= MONTHS[c.month - 1] %>: <%= fmt(c.avg_high_c) %> °C, <%= fmt(c.rain_days) %> Regentage<%= isBest ? ' – beste Reisezeit' : '' %>"><span><%= MONTHS[c.month - 1].slice(0, 1) %></span></li>
+              <li class="<%= isBest ? 'best' : '' %><%= months.indexOf(Number(c.month)) >= 0 ? ' cur' : '' %>" title="<%= MONTHS[c.month - 1] %>: <%= fmt(c.avg_high_c) %> °C, <%= fmt(c.rain_days) %> Regentage<%= isBest ? ' – beste Reisezeit' : '' %>"><span><%= MONTHS[c.month - 1].slice(0, 1) %></span></li>
             <% }) %>
           </ol>
           <p class="region-best"><%= best ? 'Beste Reisezeit: ' + best : 'Keine Monate in der besten Reisezeit' %></p>
@@ -109,10 +114,10 @@
   <h2>Monatsraster: <%= METRICS.avg_high_c.label %></h2>
   <div class="table-scroll">
     <table class="climate region-grid">
-      <tr><th></th><% MONTHS.forEach(function (m, i) { %><th class="<%= month === i + 1 ? 'cur' : '' %>"><a href="/trainingsregionen?monat=<%= i + 1 %>"><%= m.slice(0, 3) %></a></th><% }) %></tr>
+      <tr><th></th><% MONTHS.forEach(function (m, i) { %><th class="<%= months.indexOf(i + 1) >= 0 ? 'cur' : '' %>"><a href="/trainingsregionen?monat=<%= i + 1 %>"><%= m.slice(0, 3) %></a></th><% }) %></tr>
       <% rows.forEach(function (r) { %>
         <tr><th><a href="<%= regionPath(r) %>"><%= r.name %></a></th>
-          <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, 'avg_high_c', m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %><%= month === m ? ' cur' : '' %>"><%= v === null ? '–' : fmt(v) %></td><% } %>
+          <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, 'avg_high_c', m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %><%= months.indexOf(m) >= 0 ? ' cur' : '' %>"><%= v === null ? '–' : fmt(v) %></td><% } %>
         </tr>
       <% }) %>
     </table>

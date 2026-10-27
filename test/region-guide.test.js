@@ -25,7 +25,8 @@ test('Regionen: andere Rankings – Bereich der besten Reisezeit kommt aus der F
   ];
   const ski = { best_time: { metric: 'avg_high_c', max: 10 } };
   assert.deepEqual(guide.sortRegions(rows, { month: 1, formula: ski }).map((r) => r.name), ['Kühl', 'Mild']);
-  assert.match(guide.sortText('standard', 1, ski, MONTHS), /bis 10 °C/);
+  assert.match(guide.sortText('standard', guide.parsePeriod(1, MONTHS), ski), /bis 10 °C/);
+  assert.match(guide.sortText('standard', guide.parsePeriod('winter', MONTHS), formula), /meisten Monaten im Winter/);
 });
 
 test('Regionen: Sortierung nach Wasser – Binnenregionen (ohne Wert) am Ende, Jahresmittel ohne Monat', () => {
@@ -57,4 +58,20 @@ test('Regionen: Vergleichs-URL', () => {
   assert.deepEqual(guide.bikeFacts({ score: '3.5', metrics: { roads: { quietKm: 1393, passes: 48 }, terrain: { reliefM: 1625 } } }),
     { score: 3.5, quietKm: 1393, passes: 48, reliefM: 1625, routes: null, computedAt: undefined });
   assert.equal(guide.bikeFacts({ score: null }), null);
+});
+
+test('Regionen: Jahreszeit – Eignung zählt Monate in der besten Reisezeit, Werte als Mittel der Monate', () => {
+  const { MONTHS: M } = require('../src/lib/util');
+  const hi = (w) => Array.from({ length: 12 }, (_, i) => ([12, 1, 2].includes(i + 1) ? w : 25));
+  const rows = [
+    { name: 'Kalt', sort_order: 1, climate: clim(hi(10), flat(2)) },
+    { name: 'Mild', sort_order: 2, climate: clim(hi(18), flat(4)) },
+  ];
+  const p = guide.parsePeriod('winter', M);
+  assert.deepEqual(p.months, [12, 1, 2]);
+  assert.equal(p.label, 'im Winter');
+  assert.deepEqual(guide.sortRegions(rows, { month: p.months, formula }).map((r) => r.name), ['Mild', 'Kalt']);
+  assert.equal(guide.monthValue(clim([10, 20, 30, 0, 0, 0, 0, 0, 0, 0, 0, 40], flat(1)), 'avg_high_c', [12, 1, 2]), 23.3);
+  assert.equal(guide.parsePeriod('quatsch', M), null);
+  assert.equal(guide.parsePeriod('3', M).label, 'im März');
 });

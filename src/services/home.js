@@ -1,6 +1,6 @@
 // Startseite aus Bereichen (Variante B „Kapitel“): Über die Site, Objekte des Rankings, Camp-Anbieter, Regionen.
 // Reihenfolge, Sichtbarkeit und Hervorhebung je Bereich stehen in sites.home (Admin „Startseite“) – ohne Code-Änderung.
-// Hervorhebung: automatisch und neutral (Platz 1, Region mit bester Eignung im nächsten Monat, Camp im Tageswechsel)
+// Hervorhebung: automatisch und neutral (Platz 1, Region mit bester Eignung in der kommenden Jahreszeit, Camp im Tageswechsel)
 // oder von der Redaktion gewählt (mit Enddatum). Partner- oder Werbestatus beeinflusst die Auswahl nie.
 const db = require('../db');
 const rankings = require('./rankings');
@@ -9,7 +9,7 @@ const camps = require('./camps');
 const regionGuide = require('./region-guide');
 
 const BLOCKS = {
-  about: { label: 'Über die Seite', picks: false },
+  about: { label: 'Kopfbereich: Kennzahlen und Grundsätze (immer oben)', picks: false, fixed: true },
   entities: { label: 'Objekte des Rankings (z. B. Hotels)', picks: true },
   camps: { label: 'Camp-Anbieter', picks: true },
   regions: { label: 'Trainingsregionen', picks: true },
@@ -48,10 +48,6 @@ function rotationIndex(count, today = new Date()) {
   if (!count) return -1;
   const day = Math.floor(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 86400000);
   return day % count;
-}
-
-function nextMonth(today = new Date()) {
-  return (today.getMonth() + 1) % 12 + 1;
 }
 
 // Kategorie-Balken für die Score-Karte (wie bisher im Hero)
@@ -105,18 +101,23 @@ async function campsBlock(siteId, pick) {
   return { featured, reason, others: list.filter((p) => p.id !== featured.id), count: list.length, MODELS: camps.MODELS };
 }
 
+// Regionen nach der Jahreszeit in zwei Monaten (Vorausplanung), z. B. Ende Oktober → Winter
 async function regionsBlock(ranking, siteId, pick) {
-  const month = nextMonth();
-  const rows = regionGuide.sortRegions(await regionGuide.load(ranking, siteId, { month }), { month, formula: ranking.formula });
+  const seasonKey = regionGuide.seasonFor();
+  const season = { key: seasonKey, ...regionGuide.SEASONS[seasonKey] };
+  const rows = regionGuide.sortRegions(await regionGuide.load(ranking, siteId, {}), { month: season.months, formula: ranking.formula });
   if (!rows.length) return null;
   let featured = null;
-  let reason = 'month';
+  let reason = 'season';
   if (editorialActive(pick)) {
     featured = rows.find((r) => r.slug === pick.slug) || null;
     if (featured) reason = 'editorial';
   }
   if (!featured) featured = rows[0];
-  return { featured, reason, month, others: rows.filter((r) => r.slug !== featured.slug), count: rows.length };
+  const values = (key) => regionGuide.monthValue(featured.climate, key, season.months);
+  const avg = { avg_high_c: values('avg_high_c'), rain_days: values('rain_days'), sunshine_h: values('sunshine_h'), sea_c: values('sea_c') };
+  const fitMonths = season.months.filter((m) => featured.bestMonths.includes(m)).length;
+  return { featured, reason, season, avg, fitMonths, others: rows.filter((r) => r.slug !== featured.slug), count: rows.length };
 }
 
 // Alle sichtbaren Bereiche mit Daten, in der eingestellten Reihenfolge. Bereiche ohne Inhalt entfallen.
@@ -151,4 +152,4 @@ async function saveConfig(siteId, blocks) {
   return clean;
 }
 
-module.exports = { BLOCKS, DEFAULT_ORDER, normalizeConfig, normalizePick, editorialActive, rotationIndex, nextMonth, load, stats, saveConfig };
+module.exports = { BLOCKS, DEFAULT_ORDER, normalizeConfig, normalizePick, editorialActive, rotationIndex, load, stats, saveConfig };

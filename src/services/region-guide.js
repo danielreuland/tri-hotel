@@ -30,9 +30,31 @@ const METRICS = {
   sea_c: { label: 'Wassertemperatur', short: 'Wasser', unit: '°C' },
 };
 
-// Sortierungen der Übersicht. key: Wert je Region (Monat oder Jahresmittel), dir: 1 aufsteigend, -1 absteigend
+// Jahreszeiten (Kalender, für alle Rankings gleich). Startseite zeigt die Jahreszeit in zwei Monaten (Vorausplanung).
+const SEASONS = {
+  winter: { label: 'Winter', months: [12, 1, 2], note: 'Sonne und Wärme, wenn es zu Hause kalt ist' },
+  fruehjahr: { label: 'Frühjahr', months: [3, 4, 5], note: 'Saisonvorbereitung: Grundlagen im Warmen' },
+  sommer: { label: 'Sommer', months: [6, 7, 8], note: 'Höhe, Seen und Küsten – wo es nicht zu heiß wird' },
+  herbst: { label: 'Herbst', months: [9, 10, 11], note: 'Saisonausklang und Neustart in der Wärme' },
+};
+
+function seasonFor(date = new Date()) {
+  const m = ((date.getMonth() + 2) % 12) + 1;
+  return Object.keys(SEASONS).find((k) => SEASONS[k].months.includes(m));
+}
+
+// Zeitraum aus ?monat=…: Monat 1–12 oder Jahreszeit (winter, fruehjahr …). months: Liste der Monate, label: „im Januar“
+function parsePeriod(q, monthNames) {
+  const n = Number(q);
+  if (Number.isInteger(n) && n >= 1 && n <= 12) return { key: String(n), month: n, months: [n], label: `im ${monthNames[n - 1]}`, name: monthNames[n - 1] };
+  const s = SEASONS[q];
+  if (s) return { key: q, month: null, months: s.months, label: `im ${s.label}`, name: s.label, season: q, note: s.note };
+  return null;
+}
+
+// Sortierungen der Übersicht. key: Wert je Region (Zeitraum oder Jahresmittel), dir: 1 aufsteigend, -1 absteigend
 const SORTS = {
-  standard: { label: 'Eignung im Monat' },
+  standard: { label: 'Eignung im Zeitraum' },
   sonne: { label: 'Meiste Sonne', metric: 'sunshine_h', dir: -1 },
   regen: { label: 'Wenigste Regentage', metric: 'rain_days', dir: 1 },
   wasser: { label: 'Wärmstes Wasser', metric: 'sea_c', dir: -1 },
@@ -42,14 +64,13 @@ const SORTS = {
 
 const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 
-// Wert einer Klimagröße im Monat (1–12) oder ohne Monat als Jahresmittel
+// Wert einer Klimagröße im Monat (1–12), als Mittel mehrerer Monate (Jahreszeit) oder ohne Angabe als Jahresmittel
 function monthValue(climate, metric, month) {
-  if (month) {
-    const row = climate.find((c) => Number(c.month) === month);
-    return row ? num(row[metric]) : null;
-  }
-  const v = climate.map((c) => num(c[metric])).filter((x) => x !== null);
-  return v.length ? Math.round((v.reduce((s, x) => s + x, 0) / v.length) * 10) / 10 : null;
+  const months = Array.isArray(month) ? month : month ? [month] : null;
+  const rows = months ? climate.filter((c) => months.includes(Number(c.month))) : climate;
+  const v = rows.map((c) => num(c[metric])).filter((x) => x !== null);
+  if (!v.length) return null;
+  return v.length === 1 ? v[0] : Math.round((v.reduce((s, x) => s + x, 0) / v.length) * 10) / 10;
 }
 
 // Spanne über das Jahr (für die Übersicht ohne Monat), z. B. {min: 15, max: 29}
@@ -63,17 +84,20 @@ function inBestTime(value, bt) {
   return (bt.min === undefined || value >= Number(bt.min)) && (bt.max === undefined || value <= Number(bt.max));
 }
 
-// Erklärung der Sortierung in Worten (aus der Formel des Rankings)
-function sortText(sort, month, formula, monthNames) {
+// Erklärung der Sortierung in Worten (aus der Formel des Rankings). period: aus parsePeriod oder null
+function sortText(sort, period, formula) {
   const bt = (formula || {}).best_time;
   const s = SORTS[sort] || SORTS.standard;
   if (sort === 'rad') return 'Sortiert nach der Radrevier-Bewertung aus OpenStreetMap (0–6).';
-  if (s.metric) return `Sortiert nach ${METRICS[s.metric].label} ${month ? `im ${monthNames[month - 1]}` : 'im Jahresmittel'}; Regionen ohne Wert am Ende.`;
-  if (!month) return 'Reihenfolge der Redaktion. Wähle einen Reisemonat, um nach Eignung zu sortieren.';
-  if (!bt || !bt.metric || !METRICS[bt.metric]) return 'Sortiert nach Regentagen im gewählten Monat.';
+  if (s.metric) return `Sortiert nach ${METRICS[s.metric].label} ${period ? period.label : 'im Jahresmittel'}; Regionen ohne Wert am Ende.`;
+  if (!period) return 'Reihenfolge der Redaktion. Wähle Reisemonat oder Jahreszeit, um nach Eignung zu sortieren.';
+  if (!bt || !bt.metric || !METRICS[bt.metric]) return `Sortiert nach Regentagen ${period.label}.`;
   const range = bt.min !== undefined && bt.max !== undefined ? `zwischen ${bt.min} und ${bt.max} ${METRICS[bt.metric].unit}`
     : bt.min !== undefined ? `ab ${bt.min} ${METRICS[bt.metric].unit}` : `bis ${bt.max} ${METRICS[bt.metric].unit}`;
-  return `Zuerst Regionen, deren ${METRICS[bt.metric].label} im ${monthNames[month - 1]} ${range} liegt (beste Reisezeit), dann nach wenigen Regentagen.`;
+  if (period.months.length > 1) {
+    return `Zuerst Regionen mit den meisten Monaten ${period.label}, deren ${METRICS[bt.metric].label} ${range} liegt (beste Reisezeit), dann nach wenigen Regentagen.`;
+  }
+  return `Zuerst Regionen, deren ${METRICS[bt.metric].label} ${period.label} ${range} liegt (beste Reisezeit), dann nach wenigen Regentagen.`;
 }
 
 // Regionen sortieren (rein, testbar). rows: [{ climate, bike, sort_order, name }]
@@ -93,8 +117,10 @@ function sortRegions(rows, { sort = 'standard', month = null, formula = {} } = {
     const m = SORTS[s].metric;
     return list.sort((a, b) => cmpNum(monthValue(a.climate, m, month), monthValue(b.climate, m, month), SORTS[s].dir) || byName(a, b));
   }
-  if (!month) return list.sort(byName);
-  const fit = (r) => (bt && bt.metric ? inBestTime(monthValue(r.climate, bt.metric, month), bt) : false);
+  if (!month || (Array.isArray(month) && !month.length)) return list.sort(byName);
+  // Eignung: Anzahl Monate des Zeitraums in der besten Reisezeit (ein Monat: 0 oder 1)
+  const months = Array.isArray(month) ? month : [month];
+  const fit = (r) => (bt && bt.metric ? months.filter((m) => inBestTime(monthValue(r.climate, bt.metric, m), bt)).length : 0);
   return list.sort((a, b) => (fit(b) - fit(a))
     || cmpNum(monthValue(a.climate, 'rain_days', month), monthValue(b.climate, 'rain_days', month), 1)
     || byName(a, b));
@@ -164,4 +190,4 @@ function parsePair(pair) {
   return [...new Set(slugs)].slice(0, 3);
 }
 
-module.exports = { hasRegions, METRICS, SORTS, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, load, pairSlug, parsePair };
+module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, load, pairSlug, parsePair };

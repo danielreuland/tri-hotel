@@ -8,11 +8,6 @@ const { MONTHS } = require('../lib/util');
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-function parseMonth(q) {
-  const m = Number(q);
-  return Number.isInteger(m) && m >= 1 && m <= 12 ? m : null;
-}
-
 const fmt = (v, digits = 0) => (v === null || v === undefined ? '–'
   : Number(v).toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }));
 
@@ -33,20 +28,24 @@ function viewHelpers(ranking) {
 router.get('/trainingsregionen', wrap(async (req, res, next) => {
   const ranking = req.hostRanking;
   if (!ranking || !(await guide.hasRegions(req.site.id))) return next();
-  const month = parseMonth(req.query.monat);
+  // Zeitraum: einzelner Monat oder Jahreszeit (?monat=3 bzw. ?monat=winter)
+  const period = guide.parsePeriod(req.query.monat, MONTHS);
+  const month = period ? period.month : null;
+  const months = period ? period.months : [];
   const sort = guide.SORTS[req.query.sortierung] ? req.query.sortierung : 'standard';
-  const rows = guide.sortRegions(await guide.load(ranking, req.site.id, { month }), { sort, month, formula: ranking.formula });
+  const rows = guide.sortRegions(await guide.load(ranking, req.site.id, { month }), { sort, month: months, formula: ranking.formula });
   const siteUrl = res.locals.siteUrl;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}/` }, { name: 'Trainingsregionen', url: `${siteUrl}/trainingsregionen` }];
   res.render('public/regions', {
-    title: month ? `Trainingsregionen im ${MONTHS[month - 1]} – Klima, Wasser, Radrevier` : 'Trainingsregionen im Überblick – Klima, Wasser, Radrevier',
+    title: period ? `Trainingsregionen ${period.label} – Klima, Wasser, Radrevier` : 'Trainingsregionen im Überblick – Klima, Wasser, Radrevier',
     description: `Trainingsregionen im Überblick: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier aus OpenStreetMap, geprüfte ${ranking.entity_label_pl} mit ${ranking.score_name}.`,
     canonical: `${siteUrl}/trainingsregionen`,
-    noindex: Boolean(month) || sort !== 'standard',
+    noindex: Boolean(period) || sort !== 'standard',
     jsonLd: [seo.breadcrumbLd(crumbs)],
-    rows, month, sort, ranking, crumbs,
+    rows, period, months, sort, ranking, crumbs,
     sorts: guide.SORTS,
-    sortText: guide.sortText(sort, month, ranking.formula, MONTHS),
+    seasons: guide.SEASONS,
+    sortText: guide.sortText(sort, period, ranking.formula),
     compareError: req.query.vergleich === 'zu-wenig',
     scripts: ['/static/js/regions.js'],
     ...viewHelpers(ranking),

@@ -29,9 +29,12 @@ test('Startseite: Camp im Tageswechsel – jeder kommt der Reihe nach dran, unab
   assert.equal(home.rotationIndex(3, new Date(2026, 10, 1)), home.rotationIndex(3, new Date(2026, 10, 1, 23, 59)));
 });
 
-test('Startseite: nächster Monat, Listenpfad je Ranking', () => {
-  assert.equal(home.nextMonth(new Date(2026, 9, 27)), 11);
-  assert.equal(home.nextMonth(new Date(2026, 11, 5)), 1);
+test('Startseite: Jahreszeit in zwei Monaten, Listenpfad je Ranking', () => {
+  const guide = require('../src/services/region-guide');
+  assert.equal(guide.seasonFor(new Date(2026, 9, 27)), 'winter');
+  assert.equal(guide.seasonFor(new Date(2027, 0, 10)), 'fruehjahr');
+  assert.equal(guide.seasonFor(new Date(2027, 3, 1)), 'sommer');
+  assert.equal(guide.seasonFor(new Date(2027, 6, 1)), 'herbst');
   assert.equal(seo.listPath({ is_default: true, entity_label_pl: 'Hotels', slug: 'triathlon-hotel' }), '/hotels');
   assert.equal(seo.listPath({ is_default: false, entity_label_pl: 'Gyms', slug: 'hyrox' }), '/rankings/hyrox');
   assert.match(seo.websiteLd({ name: 'x' }, 'https://x.de', '/hotels').potentialAction.target, /^https:\/\/x\.de\/hotels\?q=/);
