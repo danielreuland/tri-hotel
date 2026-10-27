@@ -85,6 +85,9 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - Eigene KI-Mail-Mustertexte (falls angepasst) haben den Abschnitt `{{#bestaetigen}}` nicht automatisch.
 
 ## Zu entscheiden (Daniel)
+- **Mögliche Dubletten Zafiro Palace Alcudia**: „Zafirco Palace Alcudia“ (Alcudia, 73), „Zafiro Palace“ (Mallorca, 72) und
+  „Zafiro Palace Alcudia“ (Port d'Alcúdia, 71) verweisen alle auf zafirohotels.com/…/zafiro-palace-alcudia/ – vermutlich ein Hotel
+  dreimal im Ranking. Prüfen und ggf. zusammenführen (Fakten, Fotos, Links, Anfragen übernehmen).
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
@@ -106,6 +109,12 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   nach Ketten unserer Hotels suchen (Zafiro, Viva, Grupotel, Barceló, Robinson/TUI, Playitas …), je Programm Deeplinks, Cookie-Dauer,
   Provision und Bedingungen (Marke, E-Mail, Gutscheine) prüfen. Technisch passt es ins bestehende Modell: je Kette ein Partnerprogramm
   mit Deeplink-Vorlage, Link je Hotel („direkt beim Hotel“ mit Provision, als Anzeige gekennzeichnet).
+  Geprüft 27.10. (öffentliche Seiten und Aggregatoren, Stand unsicher – im Konto bestätigen):
+  - **Hotels VIVA** (hotelsviva.com, 7 Hotels auf Mallorca, u. a. unser Viva Blue & Spa): Kampagne bei TradeTracker vorhanden
+    (DE-Listing offen, 30 Tage Cookie, Provision nicht öffentlich; Awin-Spiegel nennt 4 %).
+  - **Zafiro Hotels** (12 Hotels Mallorca/Menorca, bei uns Zafiro Tropic und Zafiro Palace Alcudia): TradeTracker DE und ES laut
+    Aggregator „geschlossen“ (ES 4 %); offen u. a. Webgains ES (6 %, DE geschlossen) und Impact.com ES. Bei Zafiro nachfragen,
+    über welches Netzwerk der deutsche Markt läuft.
 - **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
   daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
