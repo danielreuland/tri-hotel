@@ -699,21 +699,25 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .home-band { padding-block: 56px; border-bottom: 1px solid var(--border); }
 .home-band.alt { background: var(--surface-2); }
 .home-band.alt .card, .home-band.alt .score-card { background: var(--surface); }
-.home-band-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--col-gap); align-items: start; }
+.home-band-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--col-gap); align-items: stretch; }
 .home-band-text { display: grid; gap: 12px; align-content: start; }
 .home-band-text h2 { margin: 0; }
 .home-band-text p { margin: 0; max-width: 56ch; }
 .home-band-text .eyebrow { margin: 0; }
+.home-band-text .home-mini-list, .home-band-text .chips { margin-top: 10px; max-width: 56ch; }
 .home-band-side { display: grid; gap: 14px; min-width: 0; }
 .more-link { font-weight: 800; }
-.home-feature { display: grid; gap: 8px; text-decoration: none; color: inherit; }
+.home-feature { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; }
+/* Kasten rechts so hoch wie die Textspalte links; Inhalt oben, letzter Link unten */
+.home-band-side > .home-feature { height: 100%; }
+.home-band-side > .home-feature > :last-child { margin-top: auto; }
 .home-feature .caption { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--accent-strong); font-weight: 800; margin: 0; }
 .home-feature h3 { margin: 0; font-size: 1.6rem; }
 .home-feature h3 a { color: var(--heading); text-decoration: none; }
 .home-feature p { margin: 0; }
 .camp-feature header { display: flex; flex-wrap: wrap; gap: 6px; }
 .region-feature { overflow: hidden; }
-.region-feature .rg-photo { margin: -18px -18px 4px; }
+.region-feature .rg-photo { margin: -18px -18px 4px; aspect-ratio: 2 / 1; flex: none; }
 .home-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .home-stats div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
 .home-stats strong { display: block; font: 400 2.4rem/1 var(--head); color: var(--heading); }

@@ -59,6 +59,13 @@
       <h2>Die besten <%= ranking.entity_label_pl %></h2>
       <p>Sortiert nur nach <%= ranking.score_name %>. Im Ranking findest du alle <%= b.count %> geprüften <%= ranking.entity_label_pl %> mit Filtern nach Land, Reisemonat und Leistungen.</p>
       <p><a class="btn" href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a></p>
+      <% if (b.others.length) { %>
+        <ol class="home-mini-list">
+          <% b.others.slice(0, 3).forEach(function (e) { %>
+            <li><a href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="nm"><%= e.name %><small><%= e.city %></small></span><span class="score"><%= e.score %></span></a></li>
+          <% }) %>
+        </ol>
+      <% } %>
     </div>
     <div class="home-band-side">
       <% if (b.featured) { var f = b.featured; %>
@@ -78,13 +85,6 @@
           </ul>
         </a>
       <% } %>
-      <% if (b.others.length) { %>
-        <ol class="home-mini-list">
-          <% b.others.slice(0, 3).forEach(function (e) { %>
-            <li><a href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="nm"><%= e.name %><small><%= e.city %></small></span><span class="score"><%= e.score %></span></a></li>
-          <% }) %>
-        </ol>
-      <% } %>
     </div>
 
   <% } else if (b.key === 'camps') { var p = b.featured; var price = (p.prices || [])[0]; %>
@@ -93,6 +93,10 @@
       <h2>Camp-Anbieter</h2>
       <p>Organisierte Trainingslager mit Coach, als Gruppenreise oder im Sportresort. Alle <%= b.count %> Anbieter stehen neutral und alphabetisch in der Übersicht, mit Leistungen, Zielen und Preisen.</p>
       <p><a class="btn" href="/trainingscamp#anbieter">Alle Camp-Anbieter</a></p>
+      <div class="chips">
+        <% b.others.slice(0, 8).forEach(function (o) { %><a class="chip" href="/trainingscamp/anbieter/<%= o.slug %>"><%= o.name %></a><% }) %>
+      </div>
+      <p class="muted"><small>Du bietest Trainingscamps an? <a href="/trainingscamp/fuer-anbieter">Eintrag anfragen</a></small></p>
     </div>
     <div class="home-band-side">
       <article class="card home-feature camp-feature">
@@ -106,10 +110,6 @@
         <% if (price) { %><p><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
         <p><a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels →</a></p>
       </article>
-      <div class="chips">
-        <% b.others.slice(0, 8).forEach(function (o) { %><a class="chip" href="/trainingscamp/anbieter/<%= o.slug %>"><%= o.name %></a><% }) %>
-      </div>
-      <p class="muted"><small>Du bietest Trainingscamps an? <a href="/trainingscamp/fuer-anbieter">Eintrag anfragen</a></small></p>
     </div>
 
   <% } else if (b.key === 'regions') { var r = b.featured; var c = b.avg; var photo = siteMedia.regions[r.region.id]; var sm = b.season.months; %>
@@ -118,6 +118,9 @@
       <h2>Wohin im <%= b.season.label %>?</h2>
       <p><strong><%= b.season.note %>.</strong> Klima, Wassertemperatur, Wind und Radrevier aller Regionen im Überblick – sortiert nach Eignung im <%= b.season.label %> und direkt vergleichbar.</p>
       <p><a class="btn" href="/trainingsregionen?monat=<%= b.season.key %>">Alle Regionen im <%= b.season.label %></a></p>
+      <div class="chips">
+        <% b.others.forEach(function (o) { %><a class="chip" href="/region/<%= o.slug %>"><%= o.name %></a><% }) %>
+      </div>
     </div>
     <div class="home-band-side">
       <article class="card home-feature region-feature">
@@ -142,9 +145,6 @@
         </ol>
         <p class="muted"><small><%= r.hotels ? r.hotels + ' ' + (r.hotels === 1 ? ranking.entity_label_sg : ranking.entity_label_pl) + (r.topScore !== null ? ' · bester ' + ranking.score_name + ' ' + r.topScore : '') : 'Noch kein geprüftes ' + ranking.entity_label_sg %></small></p>
       </article>
-      <div class="chips">
-        <% b.others.forEach(function (o) { %><a class="chip" href="/region/<%= o.slug %>"><%= o.name %></a><% }) %>
-      </div>
     </div>
   <% } %>
 
