@@ -34,12 +34,30 @@ function readForm(b) {
 }
 
 async function render(res, extra = {}) {
-  const rows = await db.many(`SELECT r.*, s.name AS site_name FROM regions r JOIN sites s ON s.id = r.site_id ORDER BY s.name, r.sort_order, r.name`);
+  const rows = await db.many(
+    `SELECT r.*, s.name AS site_name, b.score AS bike_score, b.computed_at AS bike_at, b.error AS bike_error,
+            (SELECT count(*)::int FROM region_climate_monthly c WHERE c.region_id = r.id) AS climate_months
+       FROM regions r JOIN sites s ON s.id = r.site_id LEFT JOIN bike_areas b ON b.key = 'region:' || r.id
+      ORDER BY s.name, r.sort_order, r.name`);
   const sites = await db.many(`SELECT id, name FROM sites ORDER BY is_default DESC, name`);
   res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, ...extra });
 }
 
 router.get('/', wrap(async (req, res) => render(res, { flash: req.query.ok || null })));
+
+// Daten je Region (Klima mit Wind/Sonne/Wasser, Radrevier aus OSM) im Hintergrund berechnen – dauert je Region 1–3 Minuten
+const regionData = require('../services/region-data');
+router.post('/daten', wrap(async (req, res) => {
+  regionData.refreshAll({ force: req.body.alle === '1', log: (t) => console.log('[regionen]', t) }).catch((err) => console.error('[regionen]', err.message));
+  await logAction(req.session.admin.id, 'region', req.session.admin.id, 'refresh_all_region_data', { force: req.body.alle === '1' });
+  res.redirect(`/admin/regionen?ok=${encodeURIComponent('Berechnung läuft im Hintergrund (je Region 1–3 Minuten) – Seite später neu laden')}`);
+}));
+router.post('/:id/daten', wrap(async (req, res, next) => {
+  const region = await db.one('SELECT * FROM regions WHERE id = $1', [req.params.id]);
+  if (!region) return next();
+  regionData.refresh(region, { force: true, adminId: req.session.admin.id }).catch((err) => console.error('[regionen]', err.message));
+  res.redirect(`/admin/regionen?ok=${encodeURIComponent(`${region.name}: Berechnung läuft (1–3 Minuten) – Seite später neu laden`)}`);
+}));
 router.get('/:id', wrap(async (req, res, next) => {
   const edit = await db.one('SELECT * FROM regions WHERE id = $1', [req.params.id]);
   if (!edit) return next();

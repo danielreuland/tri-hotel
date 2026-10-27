@@ -18,6 +18,7 @@ async function start() {
   await boss.createQueue('inquiry-daily');
   await boss.createQueue('osm-retry');
   await boss.createQueue('geo-followup');
+  await boss.createQueue('region-data');
   await boss.createQueue('retention');
   await boss.createQueue('mail-poll');
   await boss.createQueue('camp-check');
@@ -26,6 +27,13 @@ async function start() {
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
   });
+
+  // Daten je Trainingsregion (Klima, Wasser, Radrevier): monatlich prüfen, berechnet wird nur Veraltetes (> 1 Jahr) oder Fehlendes
+  await boss.work('region-data', async () => {
+    const r = await require('../services/region-data').refreshAll({ log: (t) => console.log('[regionen]', t) });
+    if (r.length) console.log(`[jobs] Regionsdaten: ${r.length} Regionen aktualisiert`);
+  });
+  await boss.schedule('region-data', '0 4 2 * *');
 
   // Koordinaten im Admin geändert: Klima, Umgebung und Score nachziehen (ohne neue Auto-Prüfung)
   await boss.work('geo-followup', async (jobs) => {

@@ -4,7 +4,7 @@
 <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
 <div class="table-scroll">
 <table>
-  <tr><th>Region</th><th>Seite</th><th>Land</th><th class="num">Radius</th><th>Status</th></tr>
+  <tr><th>Region</th><th>Seite</th><th>Land</th><th class="num">Radius</th><th>Status</th><th>Daten (Klima, Wasser, Radrevier)</th></tr>
   <% rows.forEach(function (r) { %>
     <tr>
       <td><a href="/admin/regionen/<%= r.id %>"><%= r.name %></a><br><small class="muted"><%= r.name_in %></small></td>
@@ -12,9 +12,21 @@
       <td><%= r.country %></td>
       <td class="num"><%= Number(r.radius_km) %> km</td>
       <td><span class="badge"><%= r.status %></span></td>
+      <td><small>
+        <% if (r.data_computed_at) { %><%= formatDate(r.data_computed_at) %> · <% } %>
+        Klima <%= r.climate_months === 12 ? '✓' : '–' %> · Wasser <%= r.sea_point ? '✓ (' + String(r.sea_point.distance_km).replace('.', ',') + ' km)' : (r.climate_months ? 'Binnenland' : '–') %> ·
+        Radrevier <%= r.bike_score !== null && r.bike_score !== undefined ? String(Number(r.bike_score)).replace('.', ',') + '/6' : '–' %>
+        <% if (r.data_error || r.bike_error) { %><br><span style="color:var(--bad)"><%= r.data_error || r.bike_error %></span><% } %>
+      </small>
+      <form method="post" action="/admin/regionen/<%= r.id %>/daten" style="margin-top:4px" data-busy="Wird gestartet …"><button class="btn small secondary" type="submit">Aktualisieren</button></form></td>
     </tr>
   <% }) %>
 </table>
+</div>
+<div class="filters" style="margin-top:10px">
+  <form method="post" action="/admin/regionen/daten" data-busy="Wird gestartet …"><button class="btn small" type="submit">Fehlende Daten berechnen</button></form>
+  <form method="post" action="/admin/regionen/daten" data-busy="Wird gestartet …" data-confirm="Alle Regionen neu berechnen? Das dauert je Region 1–3 Minuten."><input type="hidden" name="alle" value="1"><button class="btn small secondary" type="submit">Alle neu berechnen</button></form>
+  <small class="muted">Klima, Wind, Sonne und Wassertemperatur von Open-Meteo; Radrevier aus OpenStreetMap. Automatisch jährlich.</small>
 </div>
 
 <% var e = edit || { status: 'active', sort_order: 100 }; %>

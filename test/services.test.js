@@ -99,3 +99,32 @@ test('submissions.mayMailSubmitter: nur bestätigte Melder-Adressen bekommen Mai
   assert.equal(mayMailSubmitter({ submitter_email: 'a@b.de', verified_at: new Date(), verified_by: 'admin' }), false, 'vom Admin statt Melder bestätigt');
   assert.equal(mayMailSubmitter({ submitter_email: null, verified_at: new Date(), verified_by: null }), false);
 });
+
+test('climate: erweiterte Monatswerte (Wind, windige Tage, Sonne) nur auf Wunsch', () => {
+  const daily = {
+    time: ['2024-03-01', '2024-03-02', '2025-03-01'],
+    temperature_2m_max: [20, 22, 21], temperature_2m_min: [12, 13, 12], precipitation_sum: [0, 2, 0],
+    wind_speed_10m_mean: [20, 30, 25], wind_speed_10m_max: [35, 45, 50], sunshine_duration: [36000, 28800, 32400],
+  };
+  const mar = climate.aggregateMonthly(daily)[2];
+  assert.equal(mar.wind_kmh, 25);
+  assert.equal(mar.windy_days, 1, '2 windige Tage in 2 Jahren');
+  assert.equal(mar.sunshine_h, 9);
+  const basic = climate.aggregateMonthly({ time: daily.time, temperature_2m_max: daily.temperature_2m_max, temperature_2m_min: daily.temperature_2m_min, precipitation_sum: daily.precipitation_sum })[2];
+  assert.equal(basic.wind_kmh, undefined, 'Hotels: unverändert ohne Wind');
+});
+
+test('climate: Wassertemperatur am nächsten Meerespunkt innerhalb der Region, sonst Binnenland', () => {
+  const center = { lat: 39.6, lng: 2.95 };
+  const cands = climate.seaCandidates(center, 60);
+  assert.equal(cands.length, 25);
+  const land = { latitude: 39.6, longitude: 2.95, daily: { sea_surface_temperature_mean: [null, null] } };
+  const near = { latitude: 39.45, longitude: 2.95, daily: { sea_surface_temperature_mean: [25.1, null] } };
+  const far = { latitude: 38.9, longitude: 2.95, daily: { sea_surface_temperature_mean: [26] } };
+  const results = cands.map((c, i) => (i === 3 ? far : i === 1 ? near : land));
+  const p = climate.pickSeaPoint(center, 60, cands, results);
+  assert.equal(p.lat, 39.45, 'nächster Treffer gewinnt');
+  assert.ok(p.distance_km < 20);
+  assert.equal(climate.pickSeaPoint(center, 60, cands, cands.map(() => land)), null, 'kein Meer → null');
+  assert.equal(climate.pickSeaPoint(center, 10, [center], [far]), null, 'Meer außerhalb des Radius zählt nicht');
+});
