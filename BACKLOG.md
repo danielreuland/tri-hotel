@@ -17,7 +17,9 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Pauschalreisen auf check24.net (Provision nur dort, 7 %), Link über a.check24.net/misc/click.php (pid 1179734, aid 18,
   tid = Slug), Hotel-Nummer = c24pp_hotel_id bzw. hotelId auf urlaub.check24.de (Barceló Lanzarote Active Resort 1677933).
   Beobachtung: Beim ersten Besuch mit Cookie-Banner blieb check24.net einmal auf der allgemeinen Suche (zweiter Aufruf ok).
-- **trivago und hotel.de (Awin) + Anbieter untereinander mit Logos – vorbereitet auf Branch `partner-logos` (28.10.2026), nicht live:**
+  Linkprüfung 27.10. (https://claude.ai/artifact/MwyM2n7v35cKkEpVtUP2BJ): 11 Hotels in DE/AT bei CHECK24 nicht buchbar (nur
+  Pauschalreisen) – Links entfernt, „gibt es nicht“ vermerkt (Migration 082). 13 Hotels noch ungeprüft (in der Prüfliste offen).
+- **trivago und hotel.de (Awin) + Anbieter untereinander mit Logos – Anbieter untereinander live seit 28.10.2026, trivago/hotel.de vorbereitet:**
   Migration 081 (Logo-Spalten, trivago-Programm inaktiv, hotel.de-Notiz, Beschriftungen „Preise prüfen bei …“,
   „Pauschalreise mit Flug bei CHECK24“), Logo-Upload im Admin (SVG/PNG/WebP ≤ 300 KB, Herkunft Pflicht, SVG ohne Skripte,
   Auslieferung unter /partner-logo/ mit strenger CSP), Kasten „Buchen & Anfragen“ als gleichrangige Zeilen in Admin-Reihenfolge,
