@@ -171,6 +171,16 @@ function bikeText(b) {
 
 // Beste Reisezeit mit Begründung (rein, testbar): Regel aus formula.best_time, Monate innerhalb und außerhalb,
 // dazu Auffälligkeiten bei Regen, Sonne, Wind und Wasser. Rückgabe { rule, best, outside: [], notes: [] }
+// Regel der besten Reisezeit in Worten, z. B. „Monate mit Ø Höchsttemperatur zwischen 16 und 28 °C“ (null ohne Regel)
+function bestTimeRule(formula) {
+  const bt = (formula || {}).best_time;
+  if (!bt || !bt.metric || !METRICS[bt.metric]) return null;
+  const M = METRICS[bt.metric];
+  const range = bt.min !== undefined && bt.max !== undefined ? `zwischen ${bt.min} und ${bt.max} ${M.unit}`
+    : bt.min !== undefined ? `ab ${bt.min} ${M.unit}` : `bis ${bt.max} ${M.unit}`;
+  return `Monate mit ${M.label} ${range}`;
+}
+
 function bestTimeReasons(climate, formula, monthNames) {
   const out = { rule: null, best: null, outside: [], notes: [] };
   const rows = (climate || []).map((c) => ({ ...c, month: Number(c.month) }));
@@ -180,9 +190,7 @@ function bestTimeReasons(climate, formula, monthNames) {
   const bt = (formula || {}).best_time;
   if (bt && bt.metric && METRICS[bt.metric]) {
     const M = METRICS[bt.metric];
-    const range = bt.min !== undefined && bt.max !== undefined ? `zwischen ${bt.min} und ${bt.max} ${M.unit}`
-      : bt.min !== undefined ? `ab ${bt.min} ${M.unit}` : `bis ${bt.max} ${M.unit}`;
-    out.rule = `Monate mit ${M.label} ${range}`;
+    out.rule = bestTimeRule(formula);
     const best = rows.filter((c) => inBestTime(val(c, bt.metric), bt));
     out.best = best.length ? ranges(best) : null;
     const above = rows.filter((c) => bt.max !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) > Number(bt.max));
@@ -336,4 +344,4 @@ function parsePair(pair) {
   return [...new Set(slugs)].slice(0, 3);
 }
 
-module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeReasons, regionFaq, climatePointNote, load, pairSlug, parsePair };
+module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeRule, bestTimeReasons, regionFaq, climatePointNote, load, pairSlug, parsePair };

@@ -427,6 +427,15 @@ function validateCriterion({ value_type, scoring, max_points }) {
 // Athleten-Score A (0–100) aus Bewertungen: Sterne 1–5 -> 0–100 (Mittel der Dimensionen je Bewertung),
 // Gewicht nach Alter des Aufenthalts, Bayes-Mittel mit C (bayes_c) und Startwert m (bayes_m).
 // reviews: [{ ratings: {dim: 1..5}, stay_month: Date|string }]; Ergebnis { score, count, weightSum, avgStars }
+// Rechenbeispiel für die Methodik-Seite (rein): n frische Bewertungen mit Ø stars Sternen, Fakten-Score F.
+// Alle Bewertungen mit Gewicht 1 (jünger als 12 Monate). Rückgabe { perReview, A, score }
+function exampleWithReviews(F, n, stars, formulaIn) {
+  const f = withDefaults(formulaIn);
+  const perReview = starsToScore(stars);
+  const A = (Number(f.bayes_c) * Number(f.bayes_m) + n * perReview) / (Number(f.bayes_c) + n);
+  return { perReview: round2(perReview), A: round2(A), score: Math.round(Number(f.fact_weight) * F + Number(f.athlete_weight) * A) };
+}
+
 function athleteScore(reviews, formulaIn, now = new Date()) {
   const f = withDefaults(formulaIn);
   let sumW = 0;
@@ -461,6 +470,7 @@ function athleteScore(reviews, formulaIn, now = new Date()) {
 
 module.exports = {
   athleteScore,
+  exampleWithReviews,
   DEFAULT_FORMULA,
   validateFormula,
   withDefaults,

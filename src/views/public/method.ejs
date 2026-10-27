@@ -1,14 +1,21 @@
 <%- include('../partials/head') %>
 
-<% var pageImg = siteMedia.slots.method; %>
+<% var pageImg = siteMedia.slots.method;
+   var de = function (v, d) { return Number(v).toLocaleString('de-DE', { minimumFractionDigits: d || 0, maximumFractionDigits: d === undefined ? 0 : d }); }; %>
 <% if (pageImg) { %>
   <figure class="page-photo">
     <img <%- imgAttrs(pageImg) %> sizes="(max-width: 1200px) 100vw, 1200px" alt="<%= pageImg.alt %>" fetchpriority="high">
     <figcaption class="photo-credit"><%= pageImg.credit %></figcaption>
   </figure>
 <% } %>
-<h1>So funktioniert der <%= ranking.score_name %></h1>
-<p class="lead">Der <%= ranking.score_name %> (0–100) setzt sich aus einem Fakten-Score und – sobald Bewertungen vorliegen – einem Athleten-Score zusammen. Formel und Kriterien sind vollständig öffentlich.</p>
+<h1><%= heading %></h1>
+<% if (intro.length) { %>
+  <% intro.forEach(function (p, i) { %><p class="<%= i === 0 ? 'lead' : '' %>"><%= p %></p><% }) %>
+<% } else { %>
+  <p class="lead">Der <%= ranking.score_name %> (0–100) setzt sich aus einem Fakten-Score und – sobald Bewertungen vorliegen – einem Athleten-Score zusammen. Formel und Kriterien sind vollständig öffentlich.</p>
+<% } %>
+
+<h2>Die Formel</h2>
 
 <div class="card">
   <p><strong><%= ranking.score_name %> = round(<%= String(formula.fact_weight).replace('.', ',') %> · F + <%= String(formula.athlete_weight).replace('.', ',') %> · A)</strong></p>
@@ -18,12 +25,42 @@
       <% if (formula.athlete_enabled) { %>Er fließt ab <%= formula.min_reviews %> Bewertungen ein; vorher gilt der Score als <em>vorläufig</em> und entspricht F.<% } else { %><strong>Derzeit fließen Bewertungen noch nicht in den <%= ranking.score_name %> ein</strong> – sie stehen getrennt auf jeder Seite. Bis dahin entspricht der Score F, dem Fakten-Score.<% } %>
       Antworten auf Faktenfragen in Bewertungen ändern den Score nie direkt; bestätigen mindestens zwei Gäste dasselbe, prüfen wir es als Hinweis.</li>
     <li><strong>Vollständigkeit:</strong> Ins Ranking kommt nur, wer mindestens <%= formula.min_completeness %> % der Punktegewichte belegt hat. Darunter ist die Seite sichtbar, aber als „Profil unvollständig“ markiert.</li>
-    <li><strong>Klima:</strong> Wetter und Reisezeit fließen nicht in den <%= ranking.score_name %> ein – die Saison hängt von deinem Trainingsplan ab, nicht von der Qualität des <%= ranking.entity_label_sg %>s. Auf jeder Seite zeigen wir stattdessen die <em>beste Reisezeit</em><% if (formula.best_time) { %> (Monate mit Ø <%= formula.best_time.min %>–<%= formula.best_time.max %> °C Tageshöchstwert, Open-Meteo)<% } %>.</li>
+    <li><strong>Klima:</strong> Wetter und Reisezeit fließen nicht in den <%= ranking.score_name %> ein – die Saison hängt von deinem Trainingsplan ab, nicht von der Qualität des <%= ranking.entity_label_sg %>s. Auf jeder Seite zeigen wir stattdessen die <em>beste Reisezeit</em><% if (bestTimeRule) { %> (<%= bestTimeRule %>, Klimadaten von Open-Meteo)<% } %>.</li>
     <li><strong>Aktualität:</strong> Werte, die älter als <%= formula.recheck_months %> Monate sind, werden neu geprüft.</li>
     <li><strong>Neutralität:</strong> Partner-, Affiliate- oder Werbestatus beeinflusst weder Score noch Reihenfolge.</li>
-    <li><strong>Wie wir uns finanzieren:</strong> Auf Profilseiten stehen als Anzeige gekennzeichnete Links zu Buchungs- und Bewertungsportalen. Bucht jemand darüber, erhalten wir eine Provision. Die Anbieter erscheinen alphabetisch; ob und wie viel Provision ein Anbieter zahlt, ändert nichts an der Darstellung, am Score oder an der Prüfung.</li>
+    <li><strong>Wie wir uns finanzieren:</strong> Auf Profilseiten stehen als Anzeige gekennzeichnete Links zu Buchungs- und Bewertungsportalen. Bucht jemand darüber, erhalten wir eine Provision. Die Reihenfolge dieser Anbieter legen wir fest; ob und wie viel Provision ein Anbieter zahlt, ändert nie den Score, die Reihenfolge der <%= ranking.entity_label_pl %> oder die Prüfung.</li>
   </ul>
 </div>
+
+<% if (example) { var ex = example; var detailCat = ex.cats[0]; %>
+<h2>Rechenbeispiel</h2>
+<p>Ein echtes Beispiel aus dem Ranking: <a href="<%= entityPath(ex.entity) %>"><%= ex.entity.name %></a><%= ex.entity.city ? ' (' + ex.entity.city + ')' : '' %> steht auf Platz <%= ex.entity.rank %> von <%= ex.total %>. So kommt sein <%= ranking.score_name %> zustande:</p>
+<% if (detailCat) { %>
+  <h3><%= detailCat.label %>: <%= de(detailCat.points) %> von <%= detailCat.max %> Punkten</h3>
+  <div class="table-scroll">
+    <table>
+      <tr><th>Kriterium</th><th>Angabe</th><th class="num">Punkte</th></tr>
+      <% detailCat.items.forEach(function (i) { %>
+        <tr><td><%= i.label %></td><td><%= i.known ? (i.value || '–') : 'noch unbekannt' %></td><td class="num"><%= i.known ? de(i.points) : '–' %> / <%= i.max %></td></tr>
+      <% }) %>
+    </table>
+  </div>
+<% } %>
+<h3>Alle Bereiche</h3>
+<div class="table-scroll">
+  <table>
+    <tr><th>Bereich</th><th class="num">Punkte</th></tr>
+    <% ex.cats.forEach(function (c) { %><tr><td><%= c.label %></td><td class="num"><%= de(c.points) %> / <%= c.max %></td></tr><% }) %>
+    <tr><th>Summe</th><th class="num"><%= de(ex.cats.reduce(function (s, c) { return s + c.points; }, 0)) %> / <%= ex.cats.reduce(function (s, c) { return s + c.max; }, 0) %></th></tr>
+  </table>
+</div>
+<div class="card method-example">
+  <p><strong>Heute:</strong> <%= ranking.score_name %> = F = <strong><%= ex.F %></strong> → <%= ex.label %><% if (ex.imputed) { %> <small class="muted">(noch unbekannte Werte zählen mit dem Durchschnitt aller geprüften <%= ranking.entity_label_pl %>, deshalb weicht F leicht vom Anteil der Summe ab)</small><% } %>.</p>
+  <p style="margin-bottom:0"><strong><%= formula.athlete_enabled ? 'Mit Bewertungen' : 'Später mit Bewertungen' %>:</strong> Angenommen, 6 Gäste bewerten im Schnitt mit 4,5 Sternen – das sind <%= de(ex.reviews.perReview, 1) %> von 100 (1 Stern = 0, 5 Sterne = 100). Das Bayes-Mittel zieht neue <%= ranking.entity_label_pl %> anfangs Richtung <%= formula.bayes_m %>:
+    A = (<%= formula.bayes_c %> · <%= formula.bayes_m %> + 6 · <%= de(ex.reviews.perReview, 1) %>) / (<%= formula.bayes_c %> + 6) ≈ <%= de(ex.reviews.A, 1) %>.
+    <%= ranking.score_name %> = round(<%= de(formula.fact_weight, 1) %> · <%= ex.F %> + <%= de(formula.athlete_weight, 1) %> · <%= de(ex.reviews.A, 1) %>) = <strong><%= ex.reviews.score %></strong>.</p>
+</div>
+<% } %>
 
 <h2>Score-Stufen</h2>
 <table>
@@ -46,6 +83,13 @@
   </div>
 <% }) %>
 
+<% if (faq.length) { %>
+<section class="area-faq" id="fragen">
+  <h2>Häufige Fragen</h2>
+  <% faq.forEach(function (f) { %><details><summary><%= f.q %></summary><p><%= f.a %></p></details><% }) %>
+</section>
+<% } %>
+
 <h2>Woher die Werte kommen</h2>
 <table>
   <tr><th>Stufe</th><th>Quelle</th></tr>
@@ -54,5 +98,13 @@
   <tr><td>3</td><td>von Nutzern bestätigt</td></tr>
   <tr><td>4</td><td>automatisch ermittelt (Website, OpenStreetMap, Open-Meteo) – wird vor der Veröffentlichung geprüft</td></tr>
 </table>
+
+
+<h2>Weiterlesen</h2>
+<ul class="method-links">
+  <% if (example && example.top.length) { %><li>Die <%= ranking.entity_label_pl %> mit dem höchsten <%= ranking.score_name %>: <% example.top.forEach(function (e, i) { %><%= i ? ', ' : '' %><a href="<%= entityPath(e) %>"><%= e.name %></a> (<%= e.score %>)<% }) %></li><% } %>
+  <li><a href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a> – mit Filtern nach Land, Reisemonat und Leistungen</li>
+  <% if (locals.regionGuide) { %><li><a href="/trainingsregionen">Trainingsregionen im Überblick</a> – Klima, Wasser und Radrevier je Region</li><% } %>
+</ul>
 
 <%- include('../partials/foot') %>

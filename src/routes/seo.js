@@ -77,6 +77,15 @@ router.get('/og/start.png', wrap(async (req, res, next) => {
   await sendPng(res, { eyebrow: content.hero_eyebrow || r.score_name, title: content.hero_title || r.name, subtitle: `${r.name} · ${r.score_name} 0–100`, site: req.site });
 }));
 
+// Methodik-Seite des Host-Rankings (/triscore)
+router.get('/og/methodik.png', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  if (!r) return next();
+  const criteria = (await rankings.getCriteria(r.id)).filter((c) => c.active !== false);
+  await sendPng(res, { eyebrow: `${r.score_name} · Methodik`, title: `So bewerten wir ${r.entity_label_pl}`,
+    subtitle: `${criteria.length} Kriterien · offene Formel · 0–100`, site: req.site });
+}));
+
 // Region oder Land des Host-Rankings
 router.get('/og/:kind(region|land)/:slug.png', wrap(async (req, res, next) => {
   const r = req.hostRanking;

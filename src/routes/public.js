@@ -309,14 +309,68 @@ async function renderEntity(req, res, ranking, slug) {
   return true;
 }
 
+// Platzhalter in Texten der Methodik-Seite (ranking.content.method_*): {score}, {objekte}, {objekt}, {kriterien}, {bereiche},
+// {min_completeness}, {recheck_months} – Zahlen kommen so immer aus den aktuellen Daten
+function fillMethod(text, vars) {
+  return String(text || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? String(vars[k]) : m));
+}
+
+// Rechenbeispiel: ein echtes Live-Objekt aus der Mitte des Rankings (möglichst vollständig geprüft), damit die Zahlen stimmen
+async function methodExample(ranking, categories, criteria) {
+  const { ranked } = await rankings.listLive(ranking, {});
+  if (!ranked.length) return null;
+  ranked.forEach((e, i) => { e.rank = i + 1; });
+  const mid = Math.floor(ranked.length / 2);
+  const byNear = ranked.map((e, i) => ({ e, d: Math.abs(i - mid) })).sort((a, b) => a.d - b.d);
+  const pick = (byNear.find((x) => Number(x.e.completeness) >= 100) || byNear[0]).e;
+  const [facts, climate, opts] = await Promise.all([rankings.getFacts(pick.id, ranking.id), rankings.getClimate(pick.id), rankings.scoreOptions(ranking)]);
+  const fm = rankings.factMap(facts);
+  const r = scoring.computeScore(criteria, fm, climate, opts);
+  const detail = new Map(r.details.map((d) => [d.criterionId, d]));
+  const cats = categories.map((cat) => {
+    const crit = criteria.filter((c) => c.category_id === cat.id && c.active !== false);
+    const items = crit.map((c) => {
+      const d = detail.get(c.id);
+      const v = fm[c.id];
+      return { label: c.label, max: c.max_points, known: Boolean(d && d.known), points: d && d.known ? d.points : null,
+        value: d && d.known && v !== undefined ? scoring.describeValue(c, v) : null };
+    });
+    return { label: cat.label, max: crit.reduce((sum, c) => sum + c.max_points, 0), points: items.reduce((sum, i) => sum + (i.points || 0), 0), items };
+  }).filter((c) => c.max > 0);
+  const F = Math.round(r.factScore);
+  return { entity: pick, total: ranked.length, cats, F, score: r.score, label: r.label, imputed: r.maxImputed > 0,
+    reviews: scoring.exampleWithReviews(F, 6, 4.5, ranking.formula), top: ranked.slice(0, 3) };
+}
+
 async function renderMethod(req, res, ranking) {
   const [categories, criteria] = await Promise.all([rankings.getCategories(ranking.id), rankings.getCriteria(ranking.id)]);
+  const formula = scoring.withDefaults(ranking.formula);
+  const content = ranking.content || {};
+  const vars = {
+    score: ranking.score_name, objekte: ranking.entity_label_pl, objekt: ranking.entity_label_sg, kriterien: criteria.length,
+    bereiche: (() => { const l = categories.map((c) => c.label); return l.length > 1 ? `${l.slice(0, -1).join(', ')} und ${l[l.length - 1]}` : l.join(''); })(),
+    min_completeness: formula.min_completeness, recheck_months: formula.recheck_months,
+  };
+  const intro = fillMethod(content.method_intro, vars).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const faq = (Array.isArray(content.method_faq) ? content.method_faq : [])
+    .map((f) => ({ q: fillMethod(f.q, vars), a: fillMethod(f.a, vars) })).filter((f) => f.q && f.a);
+  const canonical = `${res.locals.siteUrl}${ranking.is_default && req.hostRanking && req.hostRanking.id === ranking.id ? res.locals.scorePath : `/rankings/${ranking.slug}/methodik`}`;
+  const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
   res.render('public/method', {
-    title: `So funktioniert der ${ranking.score_name}`,
-    description: `Formel, Gewichte und alle ${criteria.length} Kriterien des ${ranking.score_name}: offen und für alle ${ranking.entity_label_pl} gleich. Partner und Werbung ändern den Score nicht.`,
-    canonical: `${res.locals.siteUrl}${ranking.is_default && req.hostRanking && req.hostRanking.id === ranking.id ? res.locals.scorePath : `/rankings/${ranking.slug}/methodik`}`,
+    title: content.method_title ? fillMethod(content.method_title, vars) : `So funktioniert der ${ranking.score_name}`,
+    description: content.method_description ? fillMethod(content.method_description, vars)
+      : `Formel, Gewichte und alle ${criteria.length} Kriterien des ${ranking.score_name}: offen und für alle ${ranking.entity_label_pl} gleich. Partner und Werbung ändern den Score nicht.`,
+    canonical,
+    ogImage: isHost ? `${res.locals.siteUrl}/og/methodik.png` : undefined,
+    jsonLd: faq.length ? [seo.faqLd(faq)] : [],
+    heading: content.method_h1 ? fillMethod(content.method_h1, vars) : `So funktioniert der ${ranking.score_name}`,
+    intro, faq,
+    example: await methodExample(ranking, categories, criteria.filter((c) => c.active !== false)),
+    bestTimeRule: regionGuide.bestTimeRule(ranking.formula),
+    listHref: seo.listPath(ranking),
+    entityPath: (e) => entityPath(ranking, e),
     ranking,
-    formula: scoring.withDefaults(ranking.formula),
+    formula,
     categories: categories.map((cat) => ({ ...cat, criteria: criteria.filter((c) => c.category_id === cat.id) })),
     totalPoints: criteria.reduce((s, c) => s + c.max_points, 0),
     explainScoring,
@@ -330,6 +384,7 @@ function explainScoring(c) {
     case 'option':
       return Object.entries(s.points)
         .filter(([k, p]) => p > 0 || (s.ko || []).includes(k))
+        .sort((a, b) => a[1] - b[1])
         .map(([k, p]) => `${(s.labels && s.labels[k]) || k} = ${(s.ko || []).includes(k) && c.is_ko ? 'K.O.' : p}`)
         .join(' · ') + (s.multi ? ' (mehrere möglich, es zählt die beste Angabe)' : '');
     case 'bool':
