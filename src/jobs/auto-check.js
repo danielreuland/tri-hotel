@@ -310,7 +310,7 @@ async function climateStep(subId, entity, label) {
       }
       await db.query(`UPDATE entities SET attributes = CASE WHEN $2::jsonb IS NULL THEN attributes - 'sea_point' ELSE attributes || jsonb_build_object('sea_point', $2::jsonb) END WHERE id = $1`,
         [entity.id, sea ? JSON.stringify(sea.points[0]) : null]);
-      seaText = sea ? ` Wassertemperatur aus ${sea.points[0].distance_km} km.` : ' Kein Meer in 20 km.';
+      seaText = sea ? ` Wassertemperatur aus ${sea.points[0].distance_km} km.` : ' Nicht am Meer (keine Küstenlinie in 3 km).';
     } catch (err) {
       seaText = ` Wassertemperatur nicht abrufbar (${err.message}).`;
     }

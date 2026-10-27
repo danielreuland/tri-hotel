@@ -4,7 +4,8 @@
 // sunshine_h = Sonnenstunden je Tag; Wassertemperatur separat über die Marine-API (seaTemperature, hotelSea):
 // Modellwerte vor der Küste (Raster etwa 8–9 km) – am Strand bzw. in Buchten kann es wärmer sein (Hinweis auf der Seite).
 const config = require('../config');
-const { distanceKm } = require('./geo');
+const geo = require('./geo');
+const { distanceKm } = geo;
 
 const ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
 const MARINE = 'https://marine-api.open-meteo.com/v1/marine';
@@ -157,8 +158,12 @@ async function seaTemperature(center, radiusKm, { mode = 'coast', fractions } = 
 // Hotel: Die Marine-API liefert zu jedem Punkt die nächste Meereszelle ihres Rasters (etwa 8–9 km, Buchten oft nicht
 // aufgelöst) – an flachen Küsten manchmal eine weit entfernte. Deshalb Hotelpunkt plus Punkte in 3 und 6 km rundum
 // abfragen (ein Aufruf) und die nächste Zelle nehmen; sie zählt, wenn sie höchstens HOTEL_SEA_KM entfernt ist.
+// Vorher: Liegt das Hotel überhaupt am Meer (OSM-Küstenlinie ≤ COAST_KM)? Sonst bekämen Hotels an Seen nahe der
+// Küste (z. B. Holsteinische Schweiz) einen Ostseewert.
 const HOTEL_SEA_KM = 20;
+const COAST_KM = 3;
 async function hotelSea(point) {
+  if (!(await geo.nearCoast(point, COAST_KM))) return null;
   const candidates = seaCandidates(point, 6, [0.5, 1]);
   const hit = pickSeaPoint(point, HOTEL_SEA_KM, candidates, await probe(candidates));
   if (!hit) return null;

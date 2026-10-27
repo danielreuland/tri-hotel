@@ -1,6 +1,7 @@
-// Wassertemperatur für vorhandene Hotels nachtragen (nächste Meereszelle ≤ 20 km; Binnenland ohne).
+// Wassertemperatur für vorhandene Hotels nachtragen (nur Hotels an der Küste: OSM-Küstenlinie ≤ 3 km, dann nächste Meereszelle ≤ 20 km).
 // Aufruf: node scripts/hotel-sea.js [--fehlende]   (--fehlende: nur Hotels ohne erfolgreichen Durchlauf)
-// Open-Meteo begrenzt die Anfragen: Pause zwischen den Hotels, bei 429 bis zu drei Wiederholungen mit Wartezeit.
+// Open-Meteo und Overpass begrenzen die Anfragen: Pause zwischen den Hotels, bei 429 bzw. Overpass-Fehlern bis zu drei
+// Wiederholungen mit Wartezeit. Hotels mit Fehler behalten ihren alten Wert und kommen mit --fehlende erneut dran.
 require('dotenv').config();
 const db = require('../src/db');
 const climate = require('../src/services/climate');
@@ -13,7 +14,7 @@ async function withRetry(fn) {
     try {
       return await fn();
     } catch (err) {
-      if (!/429/.test(err.message) || attempt >= 3) throw err;
+      if (!/429|Overpass/.test(err.message) || attempt >= 3) throw err;
       await sleep(30000 * (attempt + 1));
     }
   }
@@ -33,7 +34,7 @@ async function withRetry(fn) {
         `UPDATE entities SET attributes = (CASE WHEN $2::jsonb IS NULL THEN attributes - 'sea_point' ELSE attributes || jsonb_build_object('sea_point', $2::jsonb) END)
            || jsonb_build_object('sea_checked_at', now()::date) WHERE id = $1`,
         [e.id, sea ? JSON.stringify(sea.points[0]) : null]);
-      console.log(`${e.name}: ${sea ? `${sea.points[0].distance_km} km · Aug ${sea.months[7]} °C · Mär ${sea.months[2]} °C` : 'kein Meer in 20 km'}`);
+      console.log(`${e.name}: ${sea ? `${sea.points[0].distance_km} km · Aug ${sea.months[7]} °C · Mär ${sea.months[2]} °C` : 'nicht am Meer'}`);
     } catch (err) {
       errors += 1;
       console.log(`${e.name}: Fehler ${err.message}`);

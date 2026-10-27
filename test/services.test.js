@@ -147,9 +147,10 @@ test('climate: Region – je Richtung die küstennächste Meereszelle, doppelte 
   assert.deepEqual(pts.map((p) => p.lat).sort(), [39.1, 39.95]);
 });
 
-test('climate: Hotel – nächste Meereszelle der Marine-API zählt bis 20 km (Raster etwa 8–9 km), weiter weg = kein Meer', async () => {
+test('climate: Hotel – nur an der Küste (OSM ≤ 3 km); nächste Meereszelle zählt bis 20 km (Raster etwa 8–9 km)', async () => {
   const orig = global.fetch;
-  const reply = (cell) => async (url) => {
+  const reply = (cell, coast = true) => async (url) => {
+    if (url.includes('interpreter')) return { ok: true, json: async () => ({ elements: coast ? [{ id: 1 }] : [] }) };
     const daily = url.includes('2023-01-01') || /start_date=\d{4}-01-01/.test(url)
       ? { time: ['2025-01-15', '2025-08-15'], sea_surface_temperature_mean: [15, 26] }
       : { time: ['x'], sea_surface_temperature_mean: cell ? [27] : [null] };
@@ -166,6 +167,8 @@ test('climate: Hotel – nächste Meereszelle der Marine-API zählt bis 20 km (R
     assert.equal(await climate.hotelSea(hotel), null, 'Zelle in ~40 km zählt nicht');
     global.fetch = reply(null);
     assert.equal(await climate.hotelSea(hotel), null, 'Binnenland');
+    global.fetch = reply({ lat: 39.958336, lng: 3.1250153 }, false);
+    assert.equal(await climate.hotelSea(hotel), null, 'keine Küstenlinie in 3 km (z. B. Hotel an einem See)');
   } finally {
     global.fetch = orig;
   }

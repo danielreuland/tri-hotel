@@ -355,6 +355,17 @@ async function bathingWaters(point, radiusKm) {
   })).sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
+// Liegt der Punkt am Meer? OSM-Küstenlinie (natural=coastline) in einem Kasten von ±km um den Punkt.
+// Seen und Flüsse haben keine coastline – Hotels an Binnengewässern zählen damit nicht als Meerlage.
+async function nearCoast(point, km = 3) {
+  const dl = km / 111.32;
+  const dg = km / (111.32 * Math.cos((point.lat * Math.PI) / 180));
+  const r4 = (x) => Math.round(x * 1e4) / 1e4;
+  const bbox = [r4(point.lat - dl), r4(point.lng - dg), r4(point.lat + dl), r4(point.lng + dg)].join(',');
+  const data = await overpass(`[out:json][timeout:25];way["natural"="coastline"](${bbox});out ids 1;`, { timeoutMs: 30000 });
+  return (data.elements || []).length > 0;
+}
+
 // Gelände: Höhen auf einem Raster um den Punkt (OpenTopoData, Datensatz mapzen, eine Anfrage je Objekt)
 const TOPO = 'https://api.opentopodata.org/v1/mapzen';
 async function terrain(point, radiusKm, { steps = 3 } = {}) {
@@ -461,4 +472,4 @@ async function suggestFacts(point, criteria, ctx = {}) {
 module.exports = {
   locate,
   coreName, geocode, findWebsite, findOsmContact, nearest, applyRule, applyLengthRule, applyTerrainRule, poolLengthM, spanM,
-  bathingWaters, terrain, evaluateRule, distanceKm, suggestFacts, overpass, SELECTOR_RE };
+  bathingWaters, nearCoast, terrain, evaluateRule, distanceKm, suggestFacts, overpass, SELECTOR_RE };
