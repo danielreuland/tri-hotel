@@ -5,3 +5,7 @@
 ALTER TABLE regions ADD COLUMN IF NOT EXISTS climate_lat numeric(9,6);
 ALTER TABLE regions ADD COLUMN IF NOT EXISTS climate_lng numeric(9,6);
 ALTER TABLE regions ADD COLUMN IF NOT EXISTS climate_point jsonb;
+
+-- Zypern hat noch keine Hotels; die Automatik landet in der Ebene bei Nikosia (Juli ~39 °C). Trainingslager liegen an der
+-- Küste: Klimapunkt Limassol (Entscheidung Daniel, 27.10.2026). Im Admin änderbar.
+UPDATE regions SET climate_lat = 34.690000, climate_lng = 33.040000 WHERE slug = 'zypern' AND climate_lat IS NULL;
