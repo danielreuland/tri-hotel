@@ -99,6 +99,13 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen, nicht auf die Marken bieten.
 - **CHECK24-Nummern je Hotel** eintragen (Suchlink im Admin beim Hotel; Hotelnamen prüfen – die erste Nummer stimmt nicht
   immer) und den Link einmal im privaten Fenster testen.
+- **TradeTracker prüfen (Notiz 27.10.2026)**: Affiliate-Netzwerk (Sitz Berlin, laut eigener Angabe über 5.000 Advertiser,
+  Branche „Reisen und Urlaub“). Interessant sind weniger Portale als **Hotelketten mit eigenem Partnerprogramm**, z. B. Garden Hotels
+  und Insotel (Balearen), BlueBay Resorts (Spanien), Akzent Hotels (DE/Salzburg, 4 % je Buchung); dazu Metasuchen wie KAYAK/trivago
+  (Programme teils nur außerhalb DE). Vorgehen: als Publisher registrieren, im Kampagnenkatalog (Land Deutschland, Reisen und Urlaub)
+  nach Ketten unserer Hotels suchen (Zafiro, Viva, Grupotel, Barceló, Robinson/TUI, Playitas …), je Programm Deeplinks, Cookie-Dauer,
+  Provision und Bedingungen (Marke, E-Mail, Gutscheine) prüfen. Technisch passt es ins bestehende Modell: je Kette ein Partnerprogramm
+  mit Deeplink-Vorlage, Link je Hotel („direkt beim Hotel“ mit Provision, als Anzeige gekennzeichnet).
 - **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
   daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
