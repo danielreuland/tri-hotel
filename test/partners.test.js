@@ -75,3 +75,15 @@ test('Partner: Nummer von einem anderen Programm übernehmen (Hotels.com ← Exp
   assert.equal(partners.derivedUrl(hotelscom, expedia, 'https://www.expedia.de/h1786689.Hotel-Information'), 'https://de.hotels.com/h1786689.Hotel-Information');
   assert.equal(partners.derivedUrl(hotelscom, expedia, 'https://www.expedia.de/Hotel-Search'), null);
 });
+
+test('Partner: Nummer aus einem Parameter (CHECK24 c24pp_hotel_id), auch mitten in langen Adressen', () => {
+  const check24 = { id_url: 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id={id}' };
+  const long = 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_departure_date=2026-11-05&c24pp_hotel_id=18002&c24pp_region_id=552#/suche/angebot?hotelId=18002';
+  assert.equal(partners.idOf(check24, long), '18002');
+  assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002'), '18002');
+  assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?x_c24pp_hotel_id=18002'), null);
+  assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_region_id=552'), null);
+  const tpl = { link_template: 'https://a.check24.net/misc/click.php?pid=1179734&aid=18&tid={slug}&target_url={url_enc}' };
+  assert.equal(partners.buildUrl(tpl, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002', { slug: 'playitas-hotel-las-playitas' }),
+    'https://a.check24.net/misc/click.php?pid=1179734&aid=18&tid=playitas-hotel-las-playitas&target_url=https%3A%2F%2Fwww.check24.net%2Fpauschalreisen-vergleich%2F%3Fc24pp_hotel_id%3D18002');
+});

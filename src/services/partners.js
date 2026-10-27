@@ -14,11 +14,17 @@ function fromId(program, raw) {
 
 // Nummer aus einer Adresse lesen, die nach der Vorlage des Programms gebaut ist – auch aus langen Adressen mit Hotelnamen
 // (…/h1786689.Hotel-Information oder …/Playitas.h1786689.Hotel-Information → 1786689). Gesucht wird das letzte Pfadstück
-// vor {id} und der Text danach (bei Expedia „h“ und „.Hotel-Information“).
+// vor {id} und der Text danach (bei Expedia „h“ und „.Hotel-Information“). Steht {id} in einem Parameter
+// (CHECK24: ?c24pp_hotel_id={id}), zählt der Parameter an beliebiger Stelle der Adresse.
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function idOf(program, url) {
   if (!program || !program.id_url || !url || !program.id_url.includes('{id}')) return null;
   const [before, after] = program.id_url.split('{id}');
+  const param = /[?&]([\w.-]+)=$/.exec(before);
+  if (param) {
+    const m = new RegExp(`[?&]${escRe(param[1])}=(\\d{3,12})(?:[&#]|$)`).exec(String(url));
+    return m ? m[1] : null;
+  }
   const lead = before.slice(before.lastIndexOf('/') + 1);
   const tail = (after || '').split(/[/?#]/)[0];
   const m = new RegExp(`${escRe(lead)}(\\d{3,12})${escRe(tail)}(?:[/?#]|$)`).exec(String(url));
@@ -127,7 +133,9 @@ async function saveLinks(entityId, input, adminId) {
         if (old) { await db.query('DELETE FROM entity_links WHERE id = $1', [old.id]); changes.push({ program: p.code, kind, old: old.url, new: null }); }
         continue;
       }
-      const url = allowedUrl(p, fromId(p, raw));
+      // Adresse mit erkennbarer Hotel-Nummer auf die kurze Form der Vorlage bringen (ohne Reisedaten, die veralten)
+      const id = idOf(p, raw);
+      const url = allowedUrl(p, fromId(p, id || raw));
       if (!url) { errors.push(`${p.name} (${KINDS[kind]}): nur https-Adressen${p.domains.length ? ` von ${p.domains.join(', ')}` : ''}.`); continue; }
       if (old && old.url === url) continue;
       await db.query(

@@ -13,8 +13,9 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 ### Partner: Hotels.com und CHECK24 (Stand 27.10.2026)
 - **Hotels.com:** live und aktiv seit 27.10.2026 (Migration 065/066, übernimmt Hotel-IDs aus dem Expedia-Link über `id_from`).
   Bedingungen geprüft: 4 % Hotels, 7 Tage; Markenhinweis nennt Expedia, Inc.; sonst wie Expedia (siehe Notiz im Programm).
-- **CHECK24:** Daniel hat Zugriff aufs Partnerprogramm. Benötigt: Beispiel-Deeplink (Platzhalter für Ziel-URL, Unterkennung),
-  Adresse einer Hotelseite (feste Hotel-ID?), Bedingungen (Marke, verdeckte Links, Pixel, E-Mail). Danach anlegen wie Expedia.
+- **CHECK24:** vorbereitet im Branch `check24` (Migration 067, Programm inaktiv). Pauschalreisen auf check24.net,
+  Link über a.check24.net/misc/click.php (pid 1179734, aid 18, tid = Slug), Hotel-Nummer = c24pp_hotel_id (Playitas 18002).
+  Offen: kurze Form ohne Reisedaten im Browser testen, Bedingungen prüfen, veröffentlichen, Nummern je Hotel eintragen.
 
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
