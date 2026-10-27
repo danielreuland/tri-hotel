@@ -10,6 +10,12 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
+### Partner: Hotels.com und CHECK24 (Stand 27.10.2026)
+- **Hotels.com:** fertig im Branch `hotelscom` (Migration 065, Programm inaktiv, übernimmt Hotel-IDs aus dem Expedia-Link
+  über `id_from`). Offen: veröffentlichen (Merge nach main, Deploy), Programmbedingungen bei CJ prüfen, dann aktivieren.
+- **CHECK24:** Daniel hat Zugriff aufs Partnerprogramm. Benötigt: Beispiel-Deeplink (Platzhalter für Ziel-URL, Unterkennung),
+  Adresse einer Hotelseite (feste Hotel-ID?), Bedingungen (Marke, verdeckte Links, Pixel, E-Mail). Danach anlegen wie Expedia.
+
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
 Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /hotels (Suchen auf „/“ leiten weiter).
