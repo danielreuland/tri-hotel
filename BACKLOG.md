@@ -29,8 +29,8 @@ Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /h
 Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
 Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
 1. **Daten je Region – umgesetzt 27.10.** (siehe Erledigt): Klima je Monat am Klimapunkt der Region, Wasser vor der Küste,
-   Radrevier auch für Regionen ohne Hotels. Offen: Klimapunkt prüfen für Algarve (Hotels bei Sagres, Juli 24 °C – Lagos?),
-   Gran Canaria (Hotel im Hinterland, 376 m) und Kreta (ohne Hotels, automatisch 396 m – Chania/Heraklion?).
+   Radrevier auch für Regionen ohne Hotels. Klimapunkt ab 3 Hotels aus deren Lage, sonst Ort ≤ 400 m nahe der Mitte; fest gesetzt
+   (27.10.): Zypern Limassol, Algarve Lagos, Teneriffa Costa Adeje, Gran Canaria Maspalomas, Kreta Chania.
 2. **Übersicht `/trainingsregionen` – umgesetzt 27.10.** (siehe Erledigt).
 3. **Regionsseiten mit Kontext**: Klima je Monat inkl. Wind/Wasser/Sonne, Radrevier in Worten und Zahlen (Quelle OSM),
    Schwimmen/Laufen in der Region (Badegewässer, 50-m-Becken, Bahnen – soweit aus vorhandenen Abfragen ableitbar),
