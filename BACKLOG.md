@@ -18,7 +18,8 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   tid = Slug), Hotel-Nummer = c24pp_hotel_id bzw. hotelId auf urlaub.check24.de (Barceló Lanzarote Active Resort 1677933).
   Beobachtung: Beim ersten Besuch mit Cookie-Banner blieb check24.net einmal auf der allgemeinen Suche (zweiter Aufruf ok).
   Linkprüfung 27.10. (https://claude.ai/artifact/MwyM2n7v35cKkEpVtUP2BJ): 11 Hotels in DE/AT bei CHECK24 nicht buchbar (nur
-  Pauschalreisen) – Links entfernt, „gibt es nicht“ vermerkt (Migration 082). 13 Hotels noch ungeprüft (in der Prüfliste offen).
+  Pauschalreisen) – Links entfernt, „gibt es nicht“ vermerkt (Migration 082). Rest am 28.10. geprüft: Aktivhotel Santa Lucia
+  und MR Les Rotes ebenfalls nicht buchbar (Migration 083); 22 Hotels mit funktionierendem CHECK24-Link.
 - **trivago und hotel.de (Awin) + Anbieter untereinander mit Logos – Anbieter untereinander live seit 28.10.2026, trivago/hotel.de vorbereitet:**
   Migration 081 (Logo-Spalten, trivago-Programm inaktiv, hotel.de-Notiz, Beschriftungen „Preise prüfen bei …“,
   „Pauschalreise mit Flug bei CHECK24“), Logo-Upload im Admin (SVG/PNG/WebP ≤ 300 KB, Herkunft Pflicht, SVG ohne Skripte,
