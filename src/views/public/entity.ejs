@@ -66,7 +66,7 @@
         <% bookGroups.forEach(function (g) { %>
           <li><a class="book-row" href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise">
             <span class="book-logo"><% if (g.logo) { %><img src="<%= g.logo %>" alt="<%= g.name %>" width="120" height="28" loading="lazy"><% } else { %><strong><%= g.name %></strong><% } %></span>
-            <span class="book-go"><%= g.short_booking %><span class="arr" aria-hidden="true">↗</span></span>
+            <% var w = String(g.short_booking).split(" "), last = w.pop(); %><span class="book-go"><%= w.length ? w.join(" ") + " " : "" %><span class="nowrap"><%= last %><span class="arr" aria-hidden="true">↗</span></span></span>
           </a></li>
         <% }) %>
         <% if (entity.website) { %>
