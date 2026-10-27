@@ -16,8 +16,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 - **CHECK24:** live und aktiv seit 27.10.2026 (Migrationen 067, 069), Reihenfolge 4 = Hauptbutton, wo ein Link steht.
   Pauschalreisen auf check24.net (Provision nur dort, 7 %), Link über a.check24.net/misc/click.php (pid 1179734, aid 18,
   tid = Slug), Hotel-Nummer = c24pp_hotel_id bzw. hotelId auf urlaub.check24.de (Barceló Lanzarote Active Resort 1677933).
-  Offen: Nummern je Hotel eintragen (Suchlink im Admin beim Hotel); Kurzform öffnet beim ersten Besuch mit Cookie-Banner
-  evtl. nur die allgemeine Suche – im privaten Fenster prüfen.
+  Beobachtung: Beim ersten Besuch mit Cookie-Banner blieb check24.net einmal auf der allgemeinen Suche (zweiter Aufruf ok).
 
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
@@ -29,12 +28,10 @@ Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /h
 ### Trainingsregionen (Konzept 27.10.2026, von Daniel freigegeben)
 Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
 Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
-1. **Daten je Region – umgesetzt 27.10.** (Wasser: je Region Mittel küstennaher Meerespunkte, je Hotel nächste Meereszelle ≤ 10 km, Hinweis als Info-Tooltip): Klima je Monat für den Regionsmittelpunkt direkt von Open-Meteo (Tageshöchst-/
-   Tiefstwert, Regentage, Wind, Sonnenstunden, Wassertemperatur für Küstenregionen), Radrevier-Berechnung (OSM) auch für
-   Regionen ohne Hotels (Kreta, Zypern, Girona). Aktualisierung jährlich bzw. per Knopf im Admin.
-2. **Übersicht `/trainingsregionen` mit Menüpunkt – umgesetzt 27.10.** (Sortierung „Eignung“ aus `formula.best_time`, sonst Sonne/Regen/Wasser/Wind/Radrevier; Vergleichsseiten noindex): alle Regionen (auch ohne Hotels), Klima als Monatsraster mit besten Monaten,
-   Auswahl „Ich reise im …“ (Sortierung nach Eignung im Monat), je Region Radrevier mit 2–3 Kennzahlen, Wasser, Wind, Hotels
-   und bester TriScore, Camps; Direktvergleich von 2–3 Regionen (`/trainingsregionen/vergleich/a-vs-b`).
+1. **Daten je Region – umgesetzt 27.10.** (siehe Erledigt): Klima je Monat am Klimapunkt der Region, Wasser vor der Küste,
+   Radrevier auch für Regionen ohne Hotels. Offen: Klimapunkt prüfen für Algarve (Hotels bei Sagres, Juli 24 °C – Lagos?),
+   Gran Canaria (Hotel im Hinterland, 376 m) und Kreta (ohne Hotels, automatisch 396 m – Chania/Heraklion?).
+2. **Übersicht `/trainingsregionen` – umgesetzt 27.10.** (siehe Erledigt).
 3. **Regionsseiten mit Kontext**: Klima je Monat inkl. Wind/Wasser/Sonne, Radrevier in Worten und Zahlen (Quelle OSM),
    Schwimmen/Laufen in der Region (Badegewässer, 50-m-Becken, Bahnen – soweit aus vorhandenen Abfragen ableitbar),
    beste Reisezeit mit Begründung, Camps, Hotels; später Regionstext per KI (nach neuem Prompt).
@@ -92,12 +89,11 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 ## Zu erledigen (Daniel)
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
-- **Expedia scharf schalten** (technisch fertig, 26.10.): je Hotel unter Stammdaten → Partnerlinks → Expedia die
-  Expedia-Hotel-ID (z. B. 793891) oder die Adresse der Hotelseite eintragen; dann Partnerprogramme → Expedia aktiv,
-  Reihenfolge setzen (z. B. 5 = Hauptknopf). Einmal testen: „Preise prüfen“ → Adresse enthält
-  affcid=…cj.101907930.13904715.<hotel> und die richtige Hotelseite (Kurzform h{id}.Hotel-Information prüfen).
-  Regeln: keine Gutscheine, keine Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Titeln/Meta-Tags,
-  Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen (Lara).
+- **Expedia-IDs für die übrigen Hotels** eintragen (Expedia aktiv seit 26.10., 35 Hotels mit Link; Hotels.com übernimmt die
+  Nummer automatisch). Regeln: keine Gutscheine, keine Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Titeln/Meta-Tags,
+  Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen, nicht auf die Marken bieten.
+- **CHECK24-Nummern je Hotel** eintragen (Suchlink im Admin beim Hotel; Hotelnamen prüfen – die erste Nummer stimmt nicht
+  immer) und den Link einmal im privaten Fenster testen.
 - **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
   daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
@@ -113,6 +109,19 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 27.10. **Partner Hotels.com und CHECK24** (siehe oben): Hotels.com über CJ mit Expedia-Nummern (`id_from`), Markenhinweis
+  laut Bedingungen; CHECK24 Pauschalreisen mit Link wie aus dem Linkgenerator, Nummer aus Parameter (c24pp_hotel_id, hotelId),
+  eingefügte Adressen werden auf die kurze Form ohne Reisedaten gebracht (gilt für alle Programme), Datenschutz ergänzt.
+- 27.10. **Klimapunkt je Region** (Migration 068): Klima nicht mehr am Regionsmittelpunkt (Teneriffa lag auf 2345 m am Teide,
+  Januar 9 statt 22 °C), sondern am Admin-Punkt, sonst an der Lage der Hotels (Medoid), sonst an einem Ort ≤ 400 m nahe der
+  Mitte; Zypern = Limassol. Info-Tooltip „Ø max“ nennt Ort und Höhe. Neuberechnung `node scripts/region-data.js --klima`
+  (Radrevier bleibt), Pause gegen 429, Wasserwerte bleiben bei Fehlern stehen.
+- 27.10. **Wassertemperatur je Hotel** (Migration 063): nächste Meereszelle ≤ 20 km, nur bei Küstenlage (Höhe 0 in 3 km,
+  Open-Meteo-Höhenmodell); 33 Hotels mit Wert, 29 nicht am Meer. Hinweis als Info-Tooltip.
+- 27.10. **Trainingsregionen** Schritt 1+2: Daten je Region (Klima, Wind, Sonne, Wasser, Radrevier) und Übersicht
+  `/trainingsregionen` mit Fotos, Zeitraum (Monat oder Jahreszeit), Sortierung nach Eignung, Monatsraster, Vergleich von 2–3
+  Regionen (`/trainingsregionen/vergleich/a-vs-b`).
+- 27.10. **Startseite aus Bereichen** (Variante B), Hotelliste unter `/hotels`, Regionen nach Jahreszeit („Wohin im Winter?“).
 - 27.10. **Hotelseite Variante A**: Steckbrief oben (Score, Punkte je Kategorie, Kernfakten aus Kriterien mit
   „im Steckbrief zeigen“ – Admin → Rankings → Kriterium, Migration 061 – plus beste Reisezeit; Herleitung zum Aufklappen),
   Buchen & Anfragen daneben (am Handy nur die Leiste), Fotos als Streifen, Kopfzeile am Handy mit Menü-Knopf.
