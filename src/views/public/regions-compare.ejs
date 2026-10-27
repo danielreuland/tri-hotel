@@ -1,0 +1,62 @@
+<%- include('../partials/head') %>
+<% var anySea = rows.some(function (r) { return r.hasSea; }); %>
+
+<nav class="crumbs" aria-label="Brotkrumen">
+  <a href="/"><%= ranking.name %></a> › <a href="/trainingsregionen">Trainingsregionen</a> › <span><%= heading %></span>
+</nav>
+
+<section class="area-hero">
+  <p class="eyebrow">Trainingsregionen im Vergleich</p>
+  <h1><%= heading %></h1>
+  <p class="lead">Klima je Monat, Wasser, Wind, Radrevier und <%= ranking.entity_label_pl %> nebeneinander. Markiert ist jeweils die beste Reisezeit.</p>
+</section>
+
+<section>
+  <h2>Auf einen Blick</h2>
+  <div class="table-scroll">
+    <table class="compare-table region-compare">
+      <thead><tr><th></th><% rows.forEach(function (r) { %><th><a href="<%= regionPath(r) %>"><%= r.name %></a><br><small class="muted"><%= r.countryName %></small></th><% }) %></tr></thead>
+      <tbody>
+        <tr><th>Beste Reisezeit</th><% rows.forEach(function (r) { %><td><%= bestText(r.bestMonths) || '–' %></td><% }) %></tr>
+        <tr><th>Radrevier (OSM)</th><% rows.forEach(function (r) { %><td><%= r.bike ? fmt(r.bike.score, 1) + ' von 6' : '–' %></td><% }) %></tr>
+        <tr><th>Ruhige Straßen</th><% rows.forEach(function (r) { %><td><%= r.bike && r.bike.quietKm !== null ? fmt(r.bike.quietKm) + ' km' : '–' %></td><% }) %></tr>
+        <tr><th>Pässe</th><% rows.forEach(function (r) { %><td><%= r.bike && r.bike.passes !== null ? fmt(r.bike.passes) : '–' %></td><% }) %></tr>
+        <tr><th>Höhenunterschied</th><% rows.forEach(function (r) { %><td><%= r.bike && r.bike.reliefM !== null ? fmt(r.bike.reliefM) + ' m' : '–' %></td><% }) %></tr>
+        <tr><th>Geprüfte <%= ranking.entity_label_pl %></th><% rows.forEach(function (r) { %><td><% if (r.hotels) { %><a href="<%= regionPath(r) %>"><%= r.hotels %></a><% } else { %>–<% } %></td><% }) %></tr>
+        <tr><th>Bester <%= scoreName %></th><% rows.forEach(function (r) { %><td><%= r.topScore !== null ? r.topScore : '–' %><% if (r.top) { %><br><small class="muted"><%= r.top.name %></small><% } %></td><% }) %></tr>
+        <% if (locals.campGuide) { %><tr><th>Camp-Anbieter</th><% rows.forEach(function (r) { %><td><% if (r.camps) { %><a href="/trainingscamp?region=<%= encodeURIComponent(r.name) %>"><%= r.camps %></a><% } else { %>–<% } %></td><% }) %></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% metricKeys.forEach(function (key) {
+     if (key === 'sea_c' && !anySea) return;
+     var meta = METRICS[key]; var digits = key === 'sunshine_h' || key === 'windy_days' ? 1 : 0; %>
+  <section>
+    <h2><%= meta.label %> <small class="muted">(<%= meta.unit %>)</small>
+      <% if (key === 'sea_c') { %><%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Mittel küstennaher Meerespunkte je Region (Modellwert von Open-Meteo, Raster etwa 5 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %><% } %>
+    </h2>
+    <div class="table-scroll">
+      <table class="climate region-grid">
+        <tr><th></th><% MONTHS.forEach(function (m) { %><th><%= m.slice(0, 3) %></th><% }) %></tr>
+        <% rows.forEach(function (r) { %>
+          <tr><th><%= r.name %></th>
+            <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, key, m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %>"><%= v === null ? (key === 'sea_c' ? 'Binnen' : '–') : fmt(v, digits) %></td><% } %>
+          </tr>
+        <% }) %>
+      </table>
+    </div>
+  </section>
+<% }) %>
+
+<section>
+  <h2>Andere Regionen vergleichen</h2>
+  <p><a class="btn secondary" href="/trainingsregionen#vergleich">Zur Übersicht aller Trainingsregionen</a></p>
+</section>
+
+<section class="page-notes">
+  <p><small>Quellen: Klima und Wassertemperatur von Open-Meteo (Mittel der letzten drei vollen Jahre; Klima am Mittelpunkt der Region). Radrevier aus OpenStreetMap (© OpenStreetMap-Mitwirkende). Die Regionsdaten fließen nicht in den <%= scoreName %> ein; Regionen bekommen keinen eigenen Score.</small></p>
+</section>
+
+<%- include('../partials/foot') %>

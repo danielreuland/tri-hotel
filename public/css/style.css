@@ -640,11 +640,50 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .site-header.has-toggle.nav-open nav { display: flex; }
 }
 
-/* Info-Hinweis (Mouseover bzw. Antippen): kleines „i“, Text als Blase */
+/* Info-Hinweis (Mouseover bzw. Antippen): kleines „i“, Text als Blase. Fest positioniert, damit Tabellen-Scrollbereiche ihn
+   nicht abschneiden; site.js setzt die Lage am Symbol und hält ihn im Bildschirm. */
 .info-tip { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 1.05em; height: 1.05em; margin-left: 3px;
-  border-radius: 50%; border: 1px solid currentColor; font: 700 .7em/1 var(--body); color: var(--muted); cursor: help; vertical-align: .15em; }
-.info-tip-text { display: none; position: absolute; z-index: 20; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
-  width: max-content; max-width: min(280px, 80vw); padding: 8px 10px; border-radius: 8px; background: var(--text); color: var(--surface);
-  font: 400 .78rem/1.4 var(--body); text-align: left; white-space: normal; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+  border-radius: 50%; border: 1px solid currentColor; font: 700 .7em/1 var(--body); color: var(--muted); cursor: help; vertical-align: .15em;
+  text-transform: none; letter-spacing: normal; }
+.info-tip-text { display: none; position: fixed; z-index: 60; top: 0; left: 0; width: max-content; max-width: min(300px, calc(100vw - 32px));
+  padding: 8px 10px; border-radius: 8px; background: var(--text); color: var(--surface);
+  font: 400 .78rem/1.4 var(--body); text-align: left; white-space: normal; text-transform: none; letter-spacing: normal; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
 .info-tip:hover .info-tip-text, .info-tip:focus .info-tip-text, .info-tip:focus-within .info-tip-text { display: block; }
 .info-tip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Trainingsregionen: Übersicht und Vergleich */
+.region-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; margin: 8px 0 18px; }
+.region-filter label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .9rem; margin: 0; }
+.region-filter select { width: auto; min-width: 12em; }
+.region-sort-text { flex-basis: 100%; margin: 0; }
+.region-compare-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  padding: 10px 14px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.rg-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--col-gap); }
+.rg-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.rg-card.fits { border-color: var(--accent-strong); box-shadow: inset 4px 0 0 var(--accent-strong); }
+.rg-card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.rg-card h2 { margin: 0; font-size: 1.5rem; }
+.rg-card h2 a { color: var(--heading); text-decoration: none; }
+.rg-card p { margin: 0; }
+.rg-card .chip { white-space: nowrap; font-size: .85rem; }
+.region-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.region-stats div { min-width: 0; }
+.region-stats dt { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.region-stats dd { margin: 2px 0 0; font-weight: 700; font-size: .95rem; }
+.region-months-label { margin-top: -4px !important; }
+.month-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; list-style: none; margin: 0; padding: 0; }
+.month-strip li { text-align: center; font-size: .7rem; padding: 4px 0; border-radius: 4px; background: var(--surface-2); color: var(--muted); }
+.month-strip li.best { background: var(--accent-soft); color: var(--text); font-weight: 700; }
+.month-strip li.cur { outline: 2px solid var(--primary); outline-offset: -2px; }
+.region-best { font-size: .9rem; }
+.region-bike { display: flex; flex-direction: column; gap: 2px; font-size: .92rem; }
+.region-bike .muted { font-size: .85rem; }
+.region-hotels { font-size: .92rem; margin-top: auto !important; padding-top: 8px; border-top: 1px solid var(--border); }
+.region-grid th a { color: inherit; }
+.region-grid .cur { box-shadow: inset 0 0 0 2px var(--primary); }
+.region-compare th, .region-compare td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.region-compare tbody th { white-space: nowrap; color: var(--muted); font-weight: 600; }
+@media (max-width: 560px) {
+  .region-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.region-compare-end { margin: 14px 0 0; text-align: right; }

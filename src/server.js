@@ -103,6 +103,7 @@ app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/contact'));
 app.use('/', require('./routes/camp-requests'));
 app.use('/', require('./routes/camps'));
+app.use('/', require('./routes/regions'));
 app.use('/', require('./routes/partners'));
 app.use('/', require('./routes/reviews'));
 app.use('/', require('./routes/inquiry'));

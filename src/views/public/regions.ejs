@@ -1,0 +1,114 @@
+<%- include('../partials/head') %>
+<%
+  // Wert einer Region im gewählten Monat bzw. Spanne über das Jahr
+  function stat(r, key, digits) {
+    if (month) return fmt(monthValue(r.climate, key, month), digits);
+    var y = yearRange(r.climate, key);
+    if (!y) return '–';
+    return y.min === y.max ? fmt(y.min, digits) : fmt(y.min, digits) + '–' + fmt(y.max, digits);
+  }
+  var bt = (ranking.formula || {}).best_time;
+%>
+
+<nav class="crumbs" aria-label="Brotkrumen">
+  <a href="/"><%= ranking.name %></a> › <span>Trainingsregionen</span>
+</nav>
+
+<section class="area-hero">
+  <p class="eyebrow">Trainingsregionen</p>
+  <h1><%= month ? 'Trainingsregionen im ' + MONTHS[month - 1] : 'Trainingsregionen im Vergleich' %></h1>
+  <p class="lead">Klima je Monat, Wassertemperatur, Wind und Radrevier für <%= rows.length %> Regionen – dazu, wie viele geprüfte <%= ranking.entity_label_pl %> es dort gibt. Nur Daten mit Quelle, kein Regions-Score.</p>
+</section>
+
+<form class="region-filter card" method="get" action="/trainingsregionen">
+  <label>Ich reise im
+    <select name="monat">
+      <option value="">beliebigen Monat</option>
+      <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+    </select>
+  </label>
+  <label>Sortieren nach
+    <select name="sortierung">
+      <% Object.keys(sorts).forEach(function (k) { %><option value="<%= k %>" <%= sort === k ? 'selected' : '' %>><%= sorts[k].label %></option><% }) %>
+    </select>
+  </label>
+  <button class="btn small" type="submit">Anzeigen</button>
+  <p class="muted region-sort-text"><small><%= sortText %></small></p>
+</form>
+
+<form method="get" action="/trainingsregionen/vergleich" id="vergleich" class="region-compare-form">
+  <div class="region-compare-bar">
+    <span>Regionen direkt vergleichen: 2–3 auswählen</span>
+    <button class="btn small cta" type="submit">Vergleichen</button>
+  </div>
+  <% if (compareError) { %><p class="flash">Bitte mindestens zwei Regionen auswählen.</p><% } %>
+
+  <div class="rg-cards">
+    <% rows.forEach(function (r) { var best = bestText(r.bestMonths); var fitsMonth = month && r.bestMonths.indexOf(month) >= 0; %>
+      <article class="rg-card<%= fitsMonth ? ' fits' : '' %>">
+        <header>
+          <div>
+            <h2><a href="<%= regionPath(r) %>"><%= r.name %></a></h2>
+            <span class="muted"><%= r.countryName %></span>
+          </div>
+          <label class="chip"><input type="checkbox" name="r" value="<%= r.slug %>" data-compare> vergleichen</label>
+        </header>
+
+        <% if (r.climate.length) { %>
+          <dl class="region-stats">
+            <div><dt><%= METRICS.avg_high_c.short %></dt><dd><%= stat(r, 'avg_high_c') %> °C</dd></div>
+            <div><dt>Regentage</dt><dd><%= stat(r, 'rain_days') %></dd></div>
+            <div><dt>Sonne</dt><dd><%= stat(r, 'sunshine_h') %> h</dd></div>
+            <div><dt>Wind</dt><dd><%= stat(r, 'wind_kmh') %> km/h</dd></div>
+            <div><dt>Wasser <% if (r.hasSea) { %><%- include('../partials/info-tip', { text: seaTip(r) }) %><% } %></dt><dd><%= r.hasSea ? stat(r, 'sea_c') + ' °C' : 'Binnenland' %></dd></div>
+          </dl>
+          <p class="region-months-label muted"><small><%= month ? 'Werte im ' + MONTHS[month - 1] : 'Spanne über das Jahr (Monatsmittel)' %></small></p>
+          <ol class="month-strip" aria-label="Beste Reisezeit">
+            <% r.climate.forEach(function (c) { var isBest = r.bestMonths.indexOf(Number(c.month)) >= 0; %>
+              <li class="<%= isBest ? 'best' : '' %><%= month === Number(c.month) ? ' cur' : '' %>" title="<%= MONTHS[c.month - 1] %>: <%= fmt(c.avg_high_c) %> °C, <%= fmt(c.rain_days) %> Regentage<%= isBest ? ' – beste Reisezeit' : '' %>"><span><%= MONTHS[c.month - 1].slice(0, 1) %></span></li>
+            <% }) %>
+          </ol>
+          <p class="region-best"><%= best ? 'Beste Reisezeit: ' + best : 'Keine Monate in der besten Reisezeit' %></p>
+        <% } else { %>
+          <p class="muted">Klimadaten werden noch berechnet.</p>
+        <% } %>
+
+        <% if (r.bike) { %>
+          <p class="region-bike"><strong>Radrevier <%= fmt(r.bike.score, 1) %> von 6</strong>
+            <span class="muted"><% var bits = []; if (r.bike.quietKm !== null) bits.push(fmt(r.bike.quietKm) + ' km ruhige Straßen'); if (r.bike.passes) bits.push(fmt(r.bike.passes) + ' Pässe'); if (r.bike.reliefM !== null) bits.push(fmt(r.bike.reliefM) + ' m Höhenunterschied'); %><%= bits.join(' · ') %></span></p>
+        <% } %>
+
+        <p class="region-hotels">
+          <% if (r.hotels) { %>
+            <a href="<%= regionPath(r) %>"><%= r.hotels %> <%= r.hotels === 1 ? ranking.entity_label_sg : ranking.entity_label_pl %></a><% if (r.topScore !== null) { %> · bester <%= scoreName %> <strong><%= r.topScore %></strong><% } %>
+          <% } else { %>
+            <span class="muted">Noch kein geprüftes <%= ranking.entity_label_sg %></span>
+          <% } %>
+          <% if (r.camps && locals.campGuide) { %> · <a href="/trainingscamp?region=<%= encodeURIComponent(r.name) %>"><%= r.camps %> Camp-Anbieter</a><% } %>
+        </p>
+      </article>
+    <% }) %>
+  </div>
+  <p class="region-compare-end"><button class="btn small cta" type="submit">Ausgewählte Regionen vergleichen</button></p>
+</form>
+
+<section>
+  <h2>Monatsraster: <%= METRICS.avg_high_c.label %></h2>
+  <div class="table-scroll">
+    <table class="climate region-grid">
+      <tr><th></th><% MONTHS.forEach(function (m, i) { %><th class="<%= month === i + 1 ? 'cur' : '' %>"><a href="/trainingsregionen?monat=<%= i + 1 %>"><%= m.slice(0, 3) %></a></th><% }) %></tr>
+      <% rows.forEach(function (r) { %>
+        <tr><th><a href="<%= regionPath(r) %>"><%= r.name %></a></th>
+          <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, 'avg_high_c', m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %><%= month === m ? ' cur' : '' %>"><%= v === null ? '–' : fmt(v) %></td><% } %>
+        </tr>
+      <% }) %>
+    </table>
+  </div>
+  <p class="muted"><small>Markiert: beste Reisezeit<% if (bt && bt.metric && METRICS[bt.metric]) { %> (<%= METRICS[bt.metric].label %> <%= bt.min !== undefined && bt.max !== undefined ? bt.min + '–' + bt.max : bt.min !== undefined ? 'ab ' + bt.min : 'bis ' + bt.max %> <%= METRICS[bt.metric].unit %>)<% } %>. Monatsnamen anklicken, um nach Eignung in diesem Monat zu sortieren.</small></p>
+</section>
+
+<section class="page-notes">
+  <p><small>Quellen: Klima und Wassertemperatur von Open-Meteo (Mittel der letzten drei vollen Jahre; Klima am Mittelpunkt der Region, Wasser als Mittel küstennaher Meerespunkte). Radrevier aus OpenStreetMap (© OpenStreetMap-Mitwirkende), bewertet mit derselben Regel wie bei den <%= ranking.entity_label_pl %>. Die Regionsdaten fließen nicht in den <%= scoreName %> ein.</small></p>
+</section>
+
+<%- include('../partials/foot') %>

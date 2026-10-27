@@ -1,0 +1,60 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const guide = require('../src/services/region-guide');
+const { MONTHS } = require('../src/lib/util');
+
+const clim = (high, rain, extra = {}) => Array.from({ length: 12 }, (_, i) => ({ month: i + 1, avg_high_c: high[i], rain_days: rain[i], sunshine_h: null, wind_kmh: null, sea_c: null, ...extra }));
+const flat = (v) => Array(12).fill(v);
+const formula = { best_time: { metric: 'avg_high_c', min: 16, max: 28 } };
+
+test('Regionen: Eignung im Monat – zuerst beste Reisezeit, dann wenige Regentage', () => {
+  const rows = [
+    { name: 'Heiß', sort_order: 1, climate: clim(flat(32), flat(0)) },
+    { name: 'Nass', sort_order: 2, climate: clim(flat(20), flat(12)) },
+    { name: 'Trocken', sort_order: 3, climate: clim(flat(22), flat(2)) },
+  ];
+  assert.deepEqual(guide.sortRegions(rows, { month: 7, formula }).map((r) => r.name), ['Trocken', 'Nass', 'Heiß']);
+  // ohne Monat: Reihenfolge der Redaktion
+  assert.deepEqual(guide.sortRegions(rows, { formula }).map((r) => r.name), ['Heiß', 'Nass', 'Trocken']);
+});
+
+test('Regionen: andere Rankings – Bereich der besten Reisezeit kommt aus der Formel', () => {
+  const rows = [
+    { name: 'Kühl', sort_order: 1, climate: clim(flat(8), flat(5)) },
+    { name: 'Mild', sort_order: 2, climate: clim(flat(18), flat(5)) },
+  ];
+  const ski = { best_time: { metric: 'avg_high_c', max: 10 } };
+  assert.deepEqual(guide.sortRegions(rows, { month: 1, formula: ski }).map((r) => r.name), ['Kühl', 'Mild']);
+  assert.match(guide.sortText('standard', 1, ski, MONTHS), /bis 10 °C/);
+});
+
+test('Regionen: Sortierung nach Wasser – Binnenregionen (ohne Wert) am Ende, Jahresmittel ohne Monat', () => {
+  const rows = [
+    { name: 'Binnen', sort_order: 1, climate: clim(flat(20), flat(5)) },
+    { name: 'Kalt', sort_order: 2, climate: clim(flat(20), flat(5), { sea_c: 17 }) },
+    { name: 'Warm', sort_order: 3, climate: clim(flat(20), flat(5), { sea_c: 23 }) },
+  ];
+  assert.deepEqual(guide.sortRegions(rows, { sort: 'wasser', month: 8 }).map((r) => r.name), ['Warm', 'Kalt', 'Binnen']);
+  assert.deepEqual(guide.sortRegions(rows, { sort: 'wasser' }).map((r) => r.name), ['Warm', 'Kalt', 'Binnen']);
+  assert.equal(guide.monthValue(rows[1].climate, 'sea_c', null), 17);
+  assert.deepEqual(guide.yearRange(clim([10, 12, 30, 14, 15, 16, 17, 18, 19, 20, 21, 22], flat(1)), 'avg_high_c'), { min: 10, max: 30 });
+});
+
+test('Regionen: Radrevier sortiert absteigend, ohne Bewertung am Ende', () => {
+  const rows = [
+    { name: 'Ohne', sort_order: 1, climate: [], bike: null },
+    { name: 'Gut', sort_order: 2, climate: [], bike: { score: 5 } },
+    { name: 'Mittel', sort_order: 3, climate: [], bike: { score: 3.5 } },
+  ];
+  assert.deepEqual(guide.sortRegions(rows, { sort: 'rad' }).map((r) => r.name), ['Gut', 'Mittel', 'Ohne']);
+});
+
+test('Regionen: Vergleichs-URL', () => {
+  assert.deepEqual(guide.parsePair('mallorca-vs-gran-canaria'), ['mallorca', 'gran-canaria']);
+  assert.deepEqual(guide.parsePair('a-vs-a-vs-b-vs-c-vs-d'), ['a', 'b', 'c']);
+  assert.deepEqual(guide.parsePair('x<y>-vs-b'), ['b']);
+  assert.equal(guide.pairSlug(['a', 'b']), 'a-vs-b');
+  assert.deepEqual(guide.bikeFacts({ score: '3.5', metrics: { roads: { quietKm: 1393, passes: 48 }, terrain: { reliefM: 1625 } } }),
+    { score: 3.5, quietKm: 1393, passes: 48, reliefM: 1625, routes: null, computedAt: undefined });
+  assert.equal(guide.bikeFacts({ score: null }), null);
+});

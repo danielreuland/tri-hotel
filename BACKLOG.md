@@ -13,10 +13,10 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 ### Trainingsregionen (Konzept 27.10.2026, von Daniel freigegeben)
 Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
 Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
-1. **Daten je Region – in Arbeit (27.10.)**: Klima je Monat für den Regionsmittelpunkt direkt von Open-Meteo (Tageshöchst-/
+1. **Daten je Region – umgesetzt 27.10.** (Wasser: je Region Mittel küstennaher Meerespunkte, je Hotel nächste Meereszelle ≤ 10 km, Hinweis als Info-Tooltip): Klima je Monat für den Regionsmittelpunkt direkt von Open-Meteo (Tageshöchst-/
    Tiefstwert, Regentage, Wind, Sonnenstunden, Wassertemperatur für Küstenregionen), Radrevier-Berechnung (OSM) auch für
    Regionen ohne Hotels (Kreta, Zypern, Girona). Aktualisierung jährlich bzw. per Knopf im Admin.
-2. **Übersicht `/trainingsregionen` mit Menüpunkt**: alle Regionen (auch ohne Hotels), Klima als Monatsraster mit besten Monaten,
+2. **Übersicht `/trainingsregionen` mit Menüpunkt – umgesetzt 27.10.** (Sortierung „Eignung“ aus `formula.best_time`, sonst Sonne/Regen/Wasser/Wind/Radrevier; Vergleichsseiten noindex): alle Regionen (auch ohne Hotels), Klima als Monatsraster mit besten Monaten,
    Auswahl „Ich reise im …“ (Sortierung nach Eignung im Monat), je Region Radrevier mit 2–3 Kennzahlen, Wasser, Wind, Hotels
    und bester TriScore, Camps; Direktvergleich von 2–3 Regionen (`/trainingsregionen/vergleich/a-vs-b`).
 3. **Regionsseiten mit Kontext**: Klima je Monat inkl. Wind/Wasser/Sonne, Radrevier in Worten und Zahlen (Quelle OSM),

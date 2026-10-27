@@ -1,6 +1,7 @@
 const rankings = require('../services/rankings');
 const sites = require('../services/sites');
 const media = require('../services/media');
+const regionGuide = require('../services/region-guide');
 const fs = require('fs');
 const path = require('path');
 
@@ -28,6 +29,7 @@ async function rankingContext(req, res, next) {
     res.locals.siteUrl = sites.urlFor(site);
     res.locals.hostRanking = ranking;
     res.locals.campGuide = hasCampGuide(site);
+    res.locals.regionGuide = Boolean(ranking) && !req.path.startsWith('/admin') && (await regionGuide.hasRegions(site && site.id));
     // Stimmungsbilder der Site je Platz/Region (nur für öffentliche Seiten relevant, zwischengespeichert)
     res.locals.siteMedia = site && !req.path.startsWith('/admin') ? await media.forSite(site.id) : { slots: {}, regions: {} };
     res.locals.scorePath = ranking ? `/${slugify(ranking.score_name)}` : '/methodik';

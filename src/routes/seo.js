@@ -51,6 +51,8 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
     for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, priority: '0.9' });
     for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, priority: '0.7' });
   }
+  // Übersicht der Trainingsregionen (Vergleichsseiten sind noindex)
+  if (res.locals.regionGuide) urls.push({ loc: `${base}/trainingsregionen`, priority: '0.9' });
   // Trainingscamps (falls die Site die Seite hat)
   if (res.locals.campGuide) {
     urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });

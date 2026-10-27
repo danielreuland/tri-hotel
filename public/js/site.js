@@ -225,3 +225,29 @@ document.addEventListener('click', function (e) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 })();
+
+// Info-Hinweise: Blase am „i“ ausrichten (oberhalb, sonst unterhalb) und im Bildschirm halten; beim Scrollen mitführen
+(function () {
+  function place(tip) {
+    var box = tip.querySelector('.info-tip-text');
+    if (!box) return;
+    var r = tip.getBoundingClientRect();
+    var w = box.offsetWidth;
+    var h = box.offsetHeight;
+    var left = Math.min(Math.max(16, r.left + r.width / 2 - w / 2), window.innerWidth - w - 16);
+    var top = r.top - h - 8;
+    if (top < 8) top = r.bottom + 8;
+    box.style.left = Math.round(left) + 'px';
+    box.style.top = Math.round(top) + 'px';
+  }
+  function onEnter(e) {
+    var tip = e.target.closest && e.target.closest('.info-tip');
+    if (tip) requestAnimationFrame(function () { place(tip); });
+  }
+  document.addEventListener('mouseover', onEnter);
+  document.addEventListener('focusin', onEnter);
+  window.addEventListener('scroll', function () {
+    var a = document.activeElement;
+    if (a && a.classList && a.classList.contains('info-tip')) place(a);
+  }, { passive: true });
+})();
