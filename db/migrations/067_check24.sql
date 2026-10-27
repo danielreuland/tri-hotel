@@ -7,9 +7,13 @@
 -- Kurzlinks (c24n.de) nicht verwenden: das Ziel soll erkennbar bleiben.
 INSERT INTO partner_programs (code, name, domains, label_booking, label_reviews, link_template, link_params, id_url,
                               direct_link, status, sort_order, notes)
-VALUES ('check24', 'CHECK24', '{check24.net,check24.de}', 'Pauschalreise bei CHECK24', 'Bewertungen bei CHECK24',
+VALUES ('check24', 'CHECK24 Pauschalreise', '{check24.net,check24.de}', 'Pauschalreise bei CHECK24', 'Bewertungen bei CHECK24',
         'https://a.check24.net/misc/click.php?pid=1179734&aid=18&tid={slug}&target_url={url_enc}', '{}',
         'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id={id}',
         true, 'inactive', 7,
-        'CHECK24 Pauschalreisen (Flug + Hotel) über das CHECK24-Partnerprogramm, Partner-ID 1179734, Werbemittel 18. Eintragen: Hotel-Nummer (c24pp_hotel_id aus der Adresse des Angebots) oder die ganze Adresse – gespeichert wird die kurze Form ohne Reisedaten. Tracking-ID = Objekt-Slug. Vor dem Aktivieren: Programmbedingungen prüfen (Marke, E-Mail, Gutscheine), Provision eintragen.')
+        'CHECK24 Pauschalreisen (Flug + Hotel) über das CHECK24-Partnerprogramm der TARIF CHECK24 GmbH, Partner-ID 1179734, Werbemittel 18. '
+     || '7 % der Rechnungssumme netto, nur für angetretene Reisen. Eintragen: Hotel-Nummer (c24pp_hotel_id aus der Adresse des Angebots) '
+     || 'oder die ganze Adresse – gespeichert wird die kurze Form ohne Reisedaten. Tracking-ID = Objekt-Slug. Kein Markenhinweis nötig. '
+     || 'Bedingungen (Vertragsstrafe 2.500 € je Verstoß): nur freigegebene Werbemittel unverändert, keine Preise ändern, kein Cashback, '
+     || 'keine Logos/Namen der Reiseveranstalter aus dem Vergleich zeigen, CHECK24 nicht im Domainnamen, Newsletter nur an Double-Opt-in.')
 ON CONFLICT (code) DO NOTHING;
