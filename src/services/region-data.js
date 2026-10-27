@@ -11,6 +11,7 @@ const bikeArea = require('./bike-area');
 const { logAction } = require('../lib/audit');
 
 const MAX_AGE_DAYS = 365;
+const PAUSE_MS = 20000;
 const LOW_M = 400;   // „tiefer gelegen“: Orte bis zu dieser Höhe kommen als Klimapunkt in Frage
 
 // Hotel, das den anderen am nächsten liegt (Medoid) – ein echter Ort, kein Mittelwert zwischen Nord- und Südküste
@@ -68,6 +69,7 @@ async function climatePoint(region) {
   return { ...point, lat: Number(point.lat.toFixed(5)), lng: Number(point.lng.toFixed(5)), elevation_m: elevation === undefined ? null : Math.round(elevation) };
 }
 
+// sea === undefined: Wassertemperatur nicht neu ermittelt (Fehler) – vorhandene Werte bleiben stehen
 async function saveClimate(regionId, months, sea) {
   await db.tx(async (c) => {
     for (const m of months) {
@@ -76,8 +78,9 @@ async function saveClimate(regionId, months, sea) {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          ON CONFLICT (region_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c,
            rain_days = EXCLUDED.rain_days, wind_kmh = EXCLUDED.wind_kmh, windy_days = EXCLUDED.windy_days,
-           sunshine_h = EXCLUDED.sunshine_h, sea_c = EXCLUDED.sea_c`,
-        [regionId, m.month, m.avg_high_c, m.avg_low_c, m.rain_days, m.wind_kmh, m.windy_days, m.sunshine_h, sea ? sea.months[m.month - 1] : null]);
+           sunshine_h = EXCLUDED.sunshine_h, sea_c = CASE WHEN $10 THEN region_climate_monthly.sea_c ELSE EXCLUDED.sea_c END`,
+        [regionId, m.month, m.avg_high_c, m.avg_low_c, m.rain_days, m.wind_kmh, m.windy_days, m.sunshine_h,
+          sea ? sea.months[m.month - 1] : null, sea === undefined]);
     }
   });
 }
@@ -94,12 +97,13 @@ async function refresh(region, { force = false, adminId = null } = {}) {
     try {
       sea = await climate.seaTemperature(center, Number(region.radius_km), { mode: 'coast' });
     } catch (err) {
-      errors.push(`Wassertemperatur: ${err.message}`);
+      sea = undefined;
+      errors.push(`Wassertemperatur: ${err.message} (bisherige Werte bleiben)`);
     }
     await saveClimate(region.id, months, sea);
-    await db.query('UPDATE regions SET sea_point = $2, climate_point = $3 WHERE id = $1',
-      [region.id, sea ? JSON.stringify({ points: sea.points }) : null, JSON.stringify(point)]);
-    parts.push(`Klima 12 Monate (${climatePointText(point)})${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : ', Binnenregion (kein Meer im Radius)'}`);
+    await db.query(`UPDATE regions SET sea_point = CASE WHEN $4 THEN sea_point ELSE $2::jsonb END, climate_point = $3 WHERE id = $1`,
+      [region.id, sea ? JSON.stringify({ points: sea.points }) : null, JSON.stringify(point), sea === undefined]);
+    parts.push(`Klima 12 Monate (${climatePointText(point)})${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : sea === null ? ', Binnenregion (kein Meer im Radius)' : ''}`);
   } catch (err) {
     errors.push(`Klima: ${err.message}`);
   }
@@ -125,7 +129,8 @@ async function refreshAll({ force = false, all = force, log = () => {} } = {}) {
     `SELECT * FROM regions WHERE status = 'active' AND ($1 OR data_computed_at IS NULL OR data_error IS NOT NULL
        OR data_computed_at < now() - make_interval(days => $2)) ORDER BY sort_order, name`, [all, MAX_AGE_DAYS]);
   const out = [];
-  for (const r of list) {
+  for (const [i, r] of list.entries()) {
+    if (i) await new Promise((ok) => setTimeout(ok, PAUSE_MS));   // Open-Meteo drosselt bei vielen Anfragen am Stück (429)
     const res = await refresh(r, { force });
     log(`${r.name}: ${res.text}`);
     out.push({ region: r.name, ...res });
