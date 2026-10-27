@@ -1,7 +1,8 @@
 // Klima je Monat aus Open-Meteo (Archiv der letzten drei vollen Jahre).
 // avg_high_c / avg_low_c = Mittel der Tageshöchst-/-tiefstwerte, rain_days = Tage mit ≥ 1 mm Niederschlag.
 // Erweitert (Regionen): wind_kmh = mittlere Windgeschwindigkeit, windy_days = Tage mit Spitzenwind ≥ 40 km/h,
-// sunshine_h = Sonnenstunden je Tag; Wassertemperatur separat über die Marine-API (seaTemperature).
+// sunshine_h = Sonnenstunden je Tag; Wassertemperatur separat über die Marine-API (seaTemperature, hotelSea):
+// Modellwerte vor der Küste – am Strand bzw. in Buchten kann es wärmer sein (Hinweis auf der Seite).
 const config = require('../config');
 const { distanceKm } = require('./geo');
 
@@ -63,52 +64,98 @@ async function monthlyClimate({ lat, lng }, { extended = false } = {}) {
   return aggregateMonthly(json.daily);
 }
 
-// Suchpunkte: Mittelpunkt, dann Ringe bei 1/3, 2/3 und vollem Radius in 8 Richtungen (nächste zuerst)
-function seaCandidates({ lat, lng }, radiusKm) {
-  const out = [{ lat, lng }];
-  for (const f of [1 / 3, 2 / 3, 1]) {
+// Suchpunkte: Mittelpunkt, dann Ringe (Anteile des Radius) in 8 Richtungen; Reihenfolge: Ring für Ring
+function seaCandidates({ lat, lng }, radiusKm, fractions = [1 / 3, 2 / 3, 1]) {
+  const out = [{ lat, lng, ring: 0, dir: null }];
+  fractions.forEach((f, ri) => {
     const r = radiusKm * f;
     for (let k = 0; k < 8; k++) {
       const a = (k * Math.PI) / 4;
       out.push({
         lat: round4(lat + (r / 111.32) * Math.cos(a)),
         lng: round4(lng + (r / (111.32 * Math.cos((lat * Math.PI) / 180))) * Math.sin(a)),
+        ring: ri + 1, dir: k,
       });
     }
-  }
+  });
   return out;
 }
 const round4 = (x) => Math.round(x * 1e4) / 1e4;
 
-// Nächster Kandidat mit Meeresdaten innerhalb des Radius (Antwort der Marine-API je Kandidat: Werte oder nur null)
+const hasSea = (r) => r && r.daily && (r.daily.sea_surface_temperature_mean || []).some((v) => v !== null);
+const hitOf = (center, c, r) => ({ lat: r.latitude, lng: r.longitude, query: c, distance_km: round1(distanceKm(center, { lat: r.latitude, lng: r.longitude })) });
+
+// Hotel: nächste Meeres-Rasterzelle innerhalb des Radius
 function pickSeaPoint(center, radiusKm, candidates, results) {
   const hits = candidates
     .map((c, i) => ({ c, r: results[i] }))
-    .filter(({ r }) => r && r.daily && (r.daily.sea_surface_temperature_mean || []).some((v) => v !== null))
-    .map(({ c, r }) => ({ lat: r.latitude, lng: r.longitude, query: c, distance_km: round1(distanceKm(center, { lat: r.latitude, lng: r.longitude })) }))
+    .filter(({ r }) => hasSea(r))
+    .map(({ c, r }) => hitOf(center, c, r))
     .filter((h) => h.distance_km <= radiusKm)
     .sort((a, b) => a.distance_km - b.distance_km);
   return hits[0] || null;
 }
 
-// Wassertemperatur je Monat am nächsten Meerespunkt der Region; null im Binnenland
-async function seaTemperature(center, radiusKm) {
-  const candidates = seaCandidates(center, radiusKm);
-  const probe = new URLSearchParams({
-    latitude: candidates.map((c) => c.lat).join(','), longitude: candidates.map((c) => c.lng).join(','),
-    daily: 'sea_surface_temperature_mean', start_date: `${new Date().getFullYear() - 1}-07-01`, end_date: `${new Date().getFullYear() - 1}-07-03`, timezone: 'UTC',
+// Region: je Richtung die küstennächste Meereszelle (innerster Ring mit Wasser), doppelte Zellen nur einmal – bis zu 8 Punkte
+function pickCoastPoints(center, radiusKm, candidates, results) {
+  const byDir = new Map();
+  candidates.forEach((c, i) => {
+    const r = results[i];
+    if (!hasSea(r)) return;
+    const h = hitOf(center, c, r);
+    if (h.distance_km > radiusKm) return;
+    const key = c.dir === null ? 'center' : c.dir;
+    const old = byDir.get(key);
+    if (!old || c.ring < old.query.ring) byDir.set(key, h);
   });
-  const results = [].concat(await getJson(`${MARINE}?${probe}`));
-  const point = pickSeaPoint(center, radiusKm, candidates, results);
-  if (!point) return null;
-  const params = new URLSearchParams({ latitude: String(point.query.lat), longitude: String(point.query.lng), ...range(), daily: 'sea_surface_temperature_mean', timezone: 'UTC' });
-  const json = await getJson(`${MARINE}?${params}`);
-  const buckets = Array.from({ length: 12 }, () => []);
-  json.daily.time.forEach((day, i) => {
-    const v = json.daily.sea_surface_temperature_mean[i];
-    if (v !== null) buckets[Number(day.slice(5, 7)) - 1].push(v);
+  const seen = new Set();
+  return [...byDir.values()].filter((h) => {
+    const k = `${h.lat},${h.lng}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
   });
-  return { months: buckets.map(avg), point: { lat: point.lat, lng: point.lng, distance_km: point.distance_km } };
 }
 
-module.exports = { monthlyClimate, aggregateMonthly, seaTemperature, seaCandidates, pickSeaPoint, WINDY_KMH };
+async function probe(candidates) {
+  const year = new Date().getFullYear() - 1;
+  const params = new URLSearchParams({
+    latitude: candidates.map((c) => c.lat).join(','), longitude: candidates.map((c) => c.lng).join(','),
+    daily: 'sea_surface_temperature_mean', start_date: `${year}-07-01`, end_date: `${year}-07-03`, timezone: 'UTC',
+  });
+  return [].concat(await getJson(`${MARINE}?${params}`));
+}
+
+// Monatsmittel über mehrere Meerespunkte (ein Aufruf, drei Jahre)
+async function seaMonthly(points) {
+  const params = new URLSearchParams({
+    latitude: points.map((p) => p.query.lat).join(','), longitude: points.map((p) => p.query.lng).join(','),
+    ...range(), daily: 'sea_surface_temperature_mean', timezone: 'UTC',
+  });
+  const buckets = Array.from({ length: 12 }, () => []);
+  for (const json of [].concat(await getJson(`${MARINE}?${params}`))) {
+    json.daily.time.forEach((day, i) => {
+      const v = json.daily.sea_surface_temperature_mean[i];
+      if (v !== null) buckets[Number(day.slice(5, 7)) - 1].push(v);
+    });
+  }
+  return buckets.map(avg);
+}
+
+// Wassertemperatur vor der Küste (Modell, Raster ca. 5 km). mode 'nearest' (Hotel) oder 'coast' (Region: Mittel der Küste).
+// Rückgabe: { months: [12], points: [{lat, lng, distance_km}] } oder null (kein Meer im Radius)
+async function seaTemperature(center, radiusKm, { mode = 'coast', fractions } = {}) {
+  const candidates = seaCandidates(center, radiusKm, fractions);
+  const results = await probe(candidates);
+  const points = mode === 'nearest'
+    ? [pickSeaPoint(center, radiusKm, candidates, results)].filter(Boolean)
+    : pickCoastPoints(center, radiusKm, candidates, results);
+  if (!points.length) return null;
+  return { months: await seaMonthly(points), points: points.map((p) => ({ lat: p.lat, lng: p.lng, distance_km: p.distance_km })) };
+}
+
+// Hotel: nächste Meereszelle in bis zu 10 km (2, 5, 10 km in 8 Richtungen)
+const HOTEL_SEA_KM = 10;
+const hotelSea = (point) => seaTemperature(point, HOTEL_SEA_KM, { mode: 'nearest', fractions: [0.2, 0.5, 1] });
+
+module.exports = { monthlyClimate, aggregateMonthly, seaTemperature, hotelSea, seaCandidates, pickSeaPoint, pickCoastPoints, WINDY_KMH, HOTEL_SEA_KM };

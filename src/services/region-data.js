@@ -1,6 +1,6 @@
 // Trainingsregionen, Schritt 1: Daten je Region unabhängig von Hotels.
 // - Klima je Monat am Regionsmittelpunkt (Open-Meteo, mit Wind und Sonne)
-// - Wassertemperatur am nächsten Meerespunkt innerhalb der Region (Binnenregionen ohne)
+// - Wassertemperatur vor der Küste: Mittel der küstennächsten Meereszellen in bis zu 8 Richtungen (Binnenregionen ohne)
 // - Radrevier aus OpenStreetMap (bike_areas, gleiche Regel und Berechnung wie für die Hotels)
 // Aktualisierung: per Knopf im Admin oder automatisch, wenn älter als MAX_AGE_DAYS.
 const db = require('../db');
@@ -33,13 +33,13 @@ async function refresh(region, { force = false, adminId = null } = {}) {
     const months = await climate.monthlyClimate(center, { extended: true });
     let sea = null;
     try {
-      sea = await climate.seaTemperature(center, Number(region.radius_km));
+      sea = await climate.seaTemperature(center, Number(region.radius_km), { mode: 'coast' });
     } catch (err) {
       errors.push(`Wassertemperatur: ${err.message}`);
     }
     await saveClimate(region.id, months, sea);
-    await db.query('UPDATE regions SET sea_point = $2 WHERE id = $1', [region.id, sea ? JSON.stringify(sea.point) : null]);
-    parts.push(`Klima 12 Monate${sea ? `, Wasser ${sea.point.distance_km} km vom Mittelpunkt` : ', Binnenregion (kein Meer im Radius)'}`);
+    await db.query('UPDATE regions SET sea_point = $2 WHERE id = $1', [region.id, sea ? JSON.stringify({ points: sea.points }) : null]);
+    parts.push(`Klima 12 Monate${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : ', Binnenregion (kein Meer im Radius)'}`);
   } catch (err) {
     errors.push(`Klima: ${err.message}`);
   }

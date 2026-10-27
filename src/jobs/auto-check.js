@@ -292,7 +292,8 @@ async function saveAddress(entityId, address) {
 
 async function climateStep(subId, entity, label) {
   return step(subId, label, async () => {
-    const months = await climate.monthlyClimate({ lat: Number(entity.lat), lng: Number(entity.lng) });
+    const point = { lat: Number(entity.lat), lng: Number(entity.lng) };
+    const months = await climate.monthlyClimate(point);
     for (const m of months) {
       await db.query(
         `INSERT INTO climate_monthly (entity_id, month, avg_high_c, avg_low_c, rain_days) VALUES ($1,$2,$3,$4,$5)
@@ -300,7 +301,20 @@ async function climateStep(subId, entity, label) {
         [entity.id, m.month, m.avg_high_c, m.avg_low_c, m.rain_days]
       );
     }
-    return '12 Monate von Open-Meteo übernommen.';
+    // Wassertemperatur vor der Küste (nächste Meereszelle ≤ 10 km); Binnenland ohne. Fehler hier bremsen die Prüfung nicht.
+    let seaText = '';
+    try {
+      const sea = await climate.hotelSea(point);
+      for (let m = 1; m <= 12; m++) {
+        await db.query('UPDATE climate_monthly SET sea_c = $3 WHERE entity_id = $1 AND month = $2', [entity.id, m, sea ? sea.months[m - 1] : null]);
+      }
+      await db.query(`UPDATE entities SET attributes = CASE WHEN $2::jsonb IS NULL THEN attributes - 'sea_point' ELSE attributes || jsonb_build_object('sea_point', $2::jsonb) END WHERE id = $1`,
+        [entity.id, sea ? JSON.stringify(sea.points[0]) : null]);
+      seaText = sea ? ` Wassertemperatur aus ${sea.points[0].distance_km} km.` : ' Kein Meer in 10 km.';
+    } catch (err) {
+      seaText = ` Wassertemperatur nicht abrufbar (${err.message}).`;
+    }
+    return `12 Monate von Open-Meteo übernommen.${seaText}`;
   });
 }
 

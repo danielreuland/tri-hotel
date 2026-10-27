@@ -14,7 +14,7 @@
       <td><span class="badge"><%= r.status %></span></td>
       <td><small>
         <% if (r.data_computed_at) { %><%= formatDate(r.data_computed_at) %> · <% } %>
-        Klima <%= r.climate_months === 12 ? '✓' : '–' %> · Wasser <%= r.sea_point ? '✓ (' + String(r.sea_point.distance_km).replace('.', ',') + ' km)' : (r.climate_months ? 'Binnenland' : '–') %> ·
+        Klima <%= r.climate_months === 12 ? '✓' : '–' %> · Wasser <%= r.sea_point ? (r.sea_point.points ? '✓ (' + r.sea_point.points.length + ' Küstenpunkte)' : '✓') : (r.climate_months ? 'Binnenland' : '–') %> ·
         Radrevier <%= r.bike_score !== null && r.bike_score !== undefined ? String(Number(r.bike_score)).replace('.', ',') + '/6' : '–' %>
         <% if (r.data_error || r.bike_error) { %><br><span style="color:var(--bad)"><%= r.data_error || r.bike_error %></span><% } %>
       </small>

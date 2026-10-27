@@ -118,6 +118,7 @@ test('climate: Wassertemperatur am nächsten Meerespunkt innerhalb der Region, s
   const center = { lat: 39.6, lng: 2.95 };
   const cands = climate.seaCandidates(center, 60);
   assert.equal(cands.length, 25);
+  assert.equal(climate.seaCandidates(center, 10, [0.2, 0.5, 1]).length, 25);
   const land = { latitude: 39.6, longitude: 2.95, daily: { sea_surface_temperature_mean: [null, null] } };
   const near = { latitude: 39.45, longitude: 2.95, daily: { sea_surface_temperature_mean: [25.1, null] } };
   const far = { latitude: 38.9, longitude: 2.95, daily: { sea_surface_temperature_mean: [26] } };
@@ -127,4 +128,21 @@ test('climate: Wassertemperatur am nächsten Meerespunkt innerhalb der Region, s
   assert.ok(p.distance_km < 20);
   assert.equal(climate.pickSeaPoint(center, 60, cands, cands.map(() => land)), null, 'kein Meer → null');
   assert.equal(climate.pickSeaPoint(center, 10, [center], [far]), null, 'Meer außerhalb des Radius zählt nicht');
+});
+
+test('climate: Region – je Richtung die küstennächste Meereszelle, doppelte Zellen einmal', () => {
+  const center = { lat: 39.6, lng: 2.95 };
+  const cands = climate.seaCandidates(center, 60);
+  const land = { daily: { sea_surface_temperature_mean: [null] } };
+  const cell = (lat, lng) => ({ latitude: lat, longitude: lng, daily: { sea_surface_temperature_mean: [24] } });
+  // Richtung 0 (Norden): Ring 2 und 3 mit Wasser -> Ring 2 zählt; Richtung 4 (Süden): nur Ring 3; Richtung 1 liefert dieselbe Zelle wie Richtung 0
+  const results = cands.map((c) => {
+    if (c.dir === 0 && c.ring >= 2) return cell(c.ring === 2 ? 39.95 : 40.1, 2.95);
+    if (c.dir === 1 && c.ring === 3) return cell(39.95, 2.95);
+    if (c.dir === 4 && c.ring === 3) return cell(39.1, 2.95);
+    return land;
+  });
+  const pts = climate.pickCoastPoints(center, 60, cands, results);
+  assert.equal(pts.length, 2, 'Norden (Ring 2) und Süden, doppelte Zelle nur einmal');
+  assert.deepEqual(pts.map((p) => p.lat).sort(), [39.1, 39.95]);
 });
