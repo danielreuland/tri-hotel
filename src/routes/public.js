@@ -170,7 +170,15 @@ function trustText(fact, ranking) {
 
 async function renderEntity(req, res, ranking, slug) {
   const entity = await db.one(`SELECT * FROM entities WHERE entity_type = $1 AND slug = $2`, [ranking.entity_type, slug]);
-  if (!entity) return null;
+  if (!entity) {
+    // Alte Adresse eines zusammengeführten oder umbenannten Objekts: dauerhaft auf die neue umleiten
+    const moved = await db.one(
+      `SELECT e.slug FROM entity_slug_redirects r JOIN entities e ON e.id = r.entity_id WHERE r.entity_type = $1 AND r.old_slug = $2`,
+      [ranking.entity_type, slug]);
+    if (!moved) return null;
+    res.redirect(301, entityPath(ranking, moved));
+    return true;
+  }
   const er = await db.one(`SELECT * FROM entity_rankings WHERE entity_id = $1 AND ranking_id = $2 AND status = 'live'`, [entity.id, ranking.id]);
   if (!er) return null;
 

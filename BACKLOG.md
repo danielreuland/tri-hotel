@@ -10,13 +10,24 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
-### Partner: Hotels.com und CHECK24 (Stand 27.10.2026)
+### Partner: Hotels.com, CHECK24, trivago (Stand 27.10.2026)
 - **Hotels.com:** live und aktiv seit 27.10.2026 (Migration 065/066, übernimmt Hotel-IDs aus dem Expedia-Link über `id_from`).
   Bedingungen geprüft: 4 % Hotels, 7 Tage; Markenhinweis nennt Expedia, Inc.; sonst wie Expedia (siehe Notiz im Programm).
 - **CHECK24:** live und aktiv seit 27.10.2026 (Migrationen 067, 069), Reihenfolge 4 = Hauptbutton, wo ein Link steht.
   Pauschalreisen auf check24.net (Provision nur dort, 7 %), Link über a.check24.net/misc/click.php (pid 1179734, aid 18,
   tid = Slug), Hotel-Nummer = c24pp_hotel_id bzw. hotelId auf urlaub.check24.de (Barceló Lanzarote Active Resort 1677933).
   Beobachtung: Beim ersten Besuch mit Cookie-Banner blieb check24.net einmal auf der allgemeinen Suche (zweiter Aufruf ok).
+- **trivago (Partnerprogramm von Daniel freigeschaltet, 27.10.2026) – integrieren:** als Partnerprogramm im Admin anlegen
+  (`link_template`, `id_url`, ggf. `id_params`, Suchlink für die Hotel-Nummer). Vorher klären: Deeplink-Format je Hotel
+  (trivago-Item-ID oder Suche per Name), Vergütung (Klick oder Buchung), Cookie-Dauer, Tracking-Parameter (Slug wie bei CHECK24),
+  Markenregeln/Pflichthinweis, Verbote (E-Mail, Markenbieten). Metasuche zeigt mehrere Anbieter – Button-Text passt („Preise vergleichen“?).
+  Neutralität wie immer: kein Einfluss auf Score und Reihenfolge, als Anzeige gekennzeichnet.
+- **Preis-Buttons untereinander und mit Anbieterlogos (Frage 27.10.2026):** Heute ein Hauptbutton („Preise prüfen bei …“,
+  nach `sort_order`) und die übrigen Anbieter als Textlinks „Auch bei: …“. Vorschlag: bei 2+ Anbietern gleich große Zeilen
+  untereinander (Logo, „Preis prüfen ↗“), Reihenfolge fest nach `sort_order` – wirkt neutraler und ist klickfreundlicher;
+  mobile Leiste unten bleibt bei einem Button. Logos nur aus den offiziellen Werbemitteln der Programme (CJ/Expedia, Hotels.com,
+  CHECK24, trivago), lokal gespeichert (kein Hotlinking), Markenrichtlinien je Programm prüfen; neues Feld `logo` am Partnerprogramm
+  (Upload im Admin), ohne Logo nur der Name. Optional später: Preis je Anbieter, falls ein Programm eine Preis-API anbietet.
 
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
@@ -85,9 +96,6 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - Eigene KI-Mail-Mustertexte (falls angepasst) haben den Abschnitt `{{#bestaetigen}}` nicht automatisch.
 
 ## Zu entscheiden (Daniel)
-- **Mögliche Dubletten Zafiro Palace Alcudia**: „Zafirco Palace Alcudia“ (Alcudia, 73), „Zafiro Palace“ (Mallorca, 72) und
-  „Zafiro Palace Alcudia“ (Port d'Alcúdia, 71) verweisen alle auf zafirohotels.com/…/zafiro-palace-alcudia/ – vermutlich ein Hotel
-  dreimal im Ranking. Prüfen und ggf. zusammenführen (Fakten, Fotos, Links, Anfragen übernehmen).
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
@@ -115,6 +123,7 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   - **Zafiro Hotels** (12 Hotels Mallorca/Menorca, bei uns Zafiro Tropic und Zafiro Palace Alcudia): TradeTracker DE und ES laut
     Aggregator „geschlossen“ (ES 4 %); offen u. a. Webgains ES (6 %, DE geschlossen) und Impact.com ES. Bei Zafiro nachfragen,
     über welches Netzwerk der deutsche Markt läuft.
+  - Zafiro Palace Alcudia stand dreimal im Ranking – zusammengeführt mit Migration 080 (alte Adressen leiten per 301 um).
 - **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
   daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
