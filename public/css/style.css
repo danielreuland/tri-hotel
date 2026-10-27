@@ -744,7 +744,9 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .region-feature { overflow: hidden; }
 .region-feature .rg-photo { margin: -18px -18px 4px; aspect-ratio: 2 / 1; flex: none; }
 .home-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.home-stats div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.home-stats div, .home-stats a { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.home-stats a { display: block; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.home-stats a:hover, .home-stats a:focus-visible { border-color: var(--accent-strong); transform: translateY(-1px); }
 .home-stats strong { display: block; font: 400 2.4rem/1 var(--head); color: var(--heading); }
 .home-stats span { color: var(--muted); font-size: .88rem; }
 .home-principles { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -765,6 +767,6 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .home-mini-list .score { min-width: 44px; height: 44px; font-size: 1.6rem; border-radius: 10px; }
 .hero-about { display: grid; gap: 14px; align-self: center; }
 .hero-about .caption { color: var(--accent-strong); font-weight: 800; }
-.hero-about .home-stats div { background: var(--surface-2); border: 0; padding: 10px 12px; }
+.hero-about .home-stats div, .hero-about .home-stats a { background: var(--surface-2); border: 1px solid transparent; padding: 10px 12px; }
 .hero-about .home-stats strong { font-size: 2rem; }
 .hero-about .home-principles { font-size: .92rem; }

@@ -34,10 +34,10 @@
       <div class="score-card hero-about">
         <p class="caption">Über <%= site.name %></p>
         <div class="home-stats">
-          <div><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
-          <% if (regionGuide) { %><div><strong><%= stats.regions %></strong><span>Trainingsregionen</span></div><% } %>
-          <% if (campGuide) { %><div><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></div><% } %>
-          <div><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></div>
+          <a href="<%= listHref %>"><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></a>
+          <% if (regionGuide) { %><a href="/trainingsregionen"><strong><%= stats.regions %></strong><span>Trainingsregionen</span></a><% } %>
+          <% if (campGuide) { %><a href="/trainingscamp#anbieter"><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></a><% } %>
+          <a href="<%= scorePath %>"><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></a>
         </div>
         <ul class="home-principles">
           <li><strong>Neutral.</strong> Werbung und Partnerschaften ändern weder Score noch Reihenfolge.</li>

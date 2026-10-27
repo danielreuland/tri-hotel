@@ -142,7 +142,7 @@ async function stats(site, ranking) {
     `SELECT (SELECT count(*)::int FROM entity_rankings WHERE ranking_id = $2 AND status = 'live') AS entities,
             (SELECT count(*)::int FROM regions WHERE site_id = $1 AND status = 'active') AS regions,
             (SELECT count(*)::int FROM camp_providers WHERE site_id = $1 AND status = 'active') AS camps,
-            (SELECT count(*)::int FROM criteria WHERE ranking_id = $2) AS criteria`, [site.id, ranking.id]);
+            (SELECT count(*)::int FROM criteria WHERE ranking_id = $2 AND active) AS criteria`, [site.id, ranking.id]);
   return r || { entities: 0, regions: 0, camps: 0, criteria: 0 };
 }
 
