@@ -158,7 +158,7 @@ async function seaTemperature(center, radiusKm, { mode = 'coast', fractions } = 
 // Hotel: Die Marine-API liefert zu jedem Punkt die nächste Meereszelle ihres Rasters (etwa 8–9 km, Buchten oft nicht
 // aufgelöst) – an flachen Küsten manchmal eine weit entfernte. Deshalb Hotelpunkt plus Punkte in 3 und 6 km rundum
 // abfragen (ein Aufruf) und die nächste Zelle nehmen; sie zählt, wenn sie höchstens HOTEL_SEA_KM entfernt ist.
-// Vorher: Liegt das Hotel überhaupt am Meer (OSM-Küstenlinie ≤ COAST_KM)? Sonst bekämen Hotels an Seen nahe der
+// Vorher: Liegt das Hotel überhaupt am Meer (Höhe 0 im Umkreis von COAST_KM, siehe geo.nearCoast)? Sonst bekämen Hotels an Seen nahe der
 // Küste (z. B. Holsteinische Schweiz) einen Ostseewert.
 const HOTEL_SEA_KM = 20;
 const COAST_KM = 3;

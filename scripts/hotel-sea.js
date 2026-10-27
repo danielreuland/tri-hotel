@@ -1,6 +1,6 @@
-// Wassertemperatur für vorhandene Hotels nachtragen (nur Hotels an der Küste: OSM-Küstenlinie ≤ 3 km, dann nächste Meereszelle ≤ 20 km).
+// Wassertemperatur für vorhandene Hotels nachtragen (nur Hotels an der Küste: Meereshöhe 0 in ≤ 3 km, dann nächste Meereszelle ≤ 20 km).
 // Aufruf: node scripts/hotel-sea.js [--fehlende]   (--fehlende: nur Hotels ohne erfolgreichen Durchlauf)
-// Open-Meteo und Overpass begrenzen die Anfragen: Pause zwischen den Hotels, bei 429 bzw. Overpass-Fehlern bis zu drei
+// Open-Meteo begrenzt die Anfragen: Pause zwischen den Hotels, bei 429 bis zu drei
 // Wiederholungen mit Wartezeit. Hotels mit Fehler behalten ihren alten Wert und kommen mit --fehlende erneut dran.
 require('dotenv').config();
 const db = require('../src/db');
@@ -14,7 +14,7 @@ async function withRetry(fn) {
     try {
       return await fn();
     } catch (err) {
-      if (!/429|Overpass/.test(err.message) || attempt >= 3) throw err;
+      if (!/429/.test(err.message) || attempt >= 3) throw err;
       await sleep(30000 * (attempt + 1));
     }
   }
