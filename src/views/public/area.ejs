@@ -126,7 +126,7 @@
 <% if (d.featureGroups.length) { %>
 <section id="ausstattung">
   <h2>Was die <%= ranking.entity_label_pl %> <%= area.nameIn %> bieten</h2>
-  <p class="muted">Geprüfte Angaben der <%= d.count %> <%= d.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl %> hier – je Leistung, wie viele sie haben.</p>
+  <p class="muted"><%= d.count === 1 ? 'Geprüfte Angaben des einen ' + ranking.entity_label_sg + 's hier.' : 'Geprüfte Angaben der ' + d.count + ' ' + ranking.entity_label_pl + ' hier – je Leistung, wie viele sie haben.' %></p>
   <div class="area-groups">
     <% d.featureGroups.forEach(function (g) { %>
       <div class="card">

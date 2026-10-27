@@ -127,4 +127,6 @@ test('Regionsseite: beste Reisezeit mit Begründung aus formula.best_time', () =
   assert.equal(none.rule, null, 'ohne Regel im Ranking keine Reisezeit-Begründung, nur Auffälligkeiten');
   assert.ok(none.notes.length >= 3);
   assert.deepEqual(guide.bestTimeReasons([], {}, M), { rule: null, best: null, outside: [], notes: [] });
+  const close = guide.bestTimeReasons([{ month: 1, avg_high_c: 15.6 }, { month: 2, avg_high_c: 20 }], { best_time: { metric: 'avg_high_c', min: 16, max: 28 } }, M);
+  assert.deepEqual(close.outside, ['Januar darunter (ab 15,6 °C)'], 'knapp unter der Grenze mit Nachkommastelle');
 });

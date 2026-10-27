@@ -187,8 +187,16 @@ function bestTimeReasons(climate, formula, monthNames) {
     out.best = best.length ? ranges(best) : null;
     const above = rows.filter((c) => bt.max !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) > Number(bt.max));
     const below = rows.filter((c) => bt.min !== undefined && val(c, bt.metric) !== null && val(c, bt.metric) < Number(bt.min));
-    if (above.length) out.outside.push(`${ranges(above)} darüber (bis ${de(Math.max(...above.map((c) => val(c, bt.metric))))} ${M.unit})`);
-    if (below.length) out.outside.push(`${ranges(below)} darunter (ab ${de(Math.min(...below.map((c) => val(c, bt.metric))))} ${M.unit})`);
+    // Eine Nachkommastelle, wenn der gerundete Wert sonst wie die Grenze aussähe (15,6 °C „unter 16“)
+    const near = (v, limit) => (Math.round(v) === Number(limit) ? de(v, 1) : de(v));
+    if (above.length) {
+      const v = Math.max(...above.map((c) => val(c, bt.metric)));
+      out.outside.push(`${ranges(above)} darüber (bis ${near(v, bt.max)} ${M.unit})`);
+    }
+    if (below.length) {
+      const v = Math.min(...below.map((c) => val(c, bt.metric)));
+      out.outside.push(`${ranges(below)} darunter (ab ${near(v, bt.min)} ${M.unit})`);
+    }
   }
   const ext = (k, dir) => {
     const list = rows.filter((c) => val(c, k) !== null);
