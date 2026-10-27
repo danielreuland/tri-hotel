@@ -10,6 +10,19 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
+### Trainingsregionen (Konzept 27.10.2026, von Daniel freigegeben)
+Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
+Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
+1. **Daten je Region – in Arbeit (27.10.)**: Klima je Monat für den Regionsmittelpunkt direkt von Open-Meteo (Tageshöchst-/
+   Tiefstwert, Regentage, Wind, Sonnenstunden, Wassertemperatur für Küstenregionen), Radrevier-Berechnung (OSM) auch für
+   Regionen ohne Hotels (Kreta, Zypern, Girona). Aktualisierung jährlich bzw. per Knopf im Admin.
+2. **Übersicht `/trainingsregionen` mit Menüpunkt**: alle Regionen (auch ohne Hotels), Klima als Monatsraster mit besten Monaten,
+   Auswahl „Ich reise im …“ (Sortierung nach Eignung im Monat), je Region Radrevier mit 2–3 Kennzahlen, Wasser, Wind, Hotels
+   und bester TriScore, Camps; Direktvergleich von 2–3 Regionen (`/trainingsregionen/vergleich/a-vs-b`).
+3. **Regionsseiten mit Kontext**: Klima je Monat inkl. Wind/Wasser/Sonne, Radrevier in Worten und Zahlen (Quelle OSM),
+   Schwimmen/Laufen in der Region (Badegewässer, 50-m-Becken, Bahnen – soweit aus vorhandenen Abfragen ableitbar),
+   beste Reisezeit mit Begründung, Camps, Hotels; später Regionstext per KI (nach neuem Prompt).
+
 ### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
 Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten
 Titel, alt-Texte, HTTPS/HSTS, gzip, Ø 21 ms). Erledigt 26.10.: lange Titel gekürzt (seo.entityTitle), aggregateRating aus
