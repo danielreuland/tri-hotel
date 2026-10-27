@@ -593,3 +593,49 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .toast span { flex: 1; }
 .toast.fade { opacity: 0; transform: translateY(-6px); }
 .toast-x { border: 0; background: none; font-size: 1.2rem; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 2px; }
+
+/* Hotelseite Variante A: Steckbrief oben (Score, Punkte je Kategorie, Kernfakten), daneben Buchen & Anfragen */
+.entity-head { display: grid; gap: 4px; margin-top: 4px; }
+.entity-head h1 { margin: 0; }
+.entity-head p { margin: 0; }
+.entity-top { display: grid; gap: 16px; margin-top: 16px; align-items: start; }
+.entity-top.with-book { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.entity-top .book-box { margin: 0; }
+.entity-top .book-actions { grid-template-columns: 1fr; }
+.profile-card { display: grid; gap: 14px; }
+.profile-score { display: flex; gap: 14px; align-items: center; }
+.profile-label { font-size: 1.1rem; }
+.profile-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.profile-badges a.badge { text-decoration: none; }
+.profile-card .bars { margin: 0; }
+.bars .fill.low { background: var(--ok, #9a6700); }
+.key-facts { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.key-facts li { background: var(--accent-soft); color: var(--text); border-radius: 999px; padding: 4px 12px; font-size: .88rem; font-weight: 700; }
+.score-info summary { cursor: pointer; color: var(--accent-strong); font-weight: 700; font-size: .9rem; }
+.score-info p { margin: 8px 0 0; font-size: .9rem; color: var(--muted); }
+/* Fotos als schmaler Streifen */
+.gallery-wrap .gallery { grid-auto-rows: 120px; }
+.gallery-wrap .gallery[data-n="1"] { grid-auto-rows: 240px; }
+.gallery-wrap .gallery[data-n="2"] { grid-auto-rows: 200px; }
+@media (max-width: 860px) {
+  .entity-top.with-book { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  /* Am Handy übernimmt die Leiste unten „Buchen & Anfragen“ */
+  .entity-top .book-box.has-bar { display: none; }
+  .gallery-wrap .gallery, .gallery-wrap .gallery[data-n] { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; height: 190px; grid-auto-rows: auto; }
+  .gallery-wrap .gallery figure { flex: 0 0 82%; scroll-snap-align: start; grid-row: auto !important; grid-column: auto !important; }
+  .gallery-wrap .gallery figure:only-child { flex-basis: 100%; }
+}
+
+/* Kopfzeile am Handy: eine Zeile mit Menü-Knopf (nur mit JavaScript; sonst bleibt die Navigation sichtbar) */
+.nav-toggle { display: none; background: none; border: 1px solid rgba(255, 255, 255, .35); border-radius: 10px; width: 42px; height: 38px; color: inherit; cursor: pointer; padding: 0; }
+.nav-toggle-bars, .nav-toggle-bars::before, .nav-toggle-bars::after { display: block; width: 18px; height: 2px; background: currentColor; border-radius: 2px; position: relative; margin: 0 auto; }
+.nav-toggle-bars::before, .nav-toggle-bars::after { content: ""; position: absolute; left: 0; }
+.nav-toggle-bars::before { top: -6px; } .nav-toggle-bars::after { top: 6px; }
+@media (max-width: 700px) {
+  .site-header.has-toggle .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .site-header.has-toggle .wrap { flex-wrap: wrap; }
+  .site-header.has-toggle nav { display: none; width: 100%; flex-direction: column; align-items: flex-start; gap: 12px; padding-bottom: 14px; }
+  .site-header.has-toggle.nav-open nav { display: flex; }
+}

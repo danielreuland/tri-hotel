@@ -205,8 +205,8 @@ router.post('/:id/duplizieren', wrap(async (req, res) => {
           [copy.id, cat.code, cat.label, cat.sort_order])
       ).rows[0];
       await c.query(
-        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source)
-         SELECT $1, $2, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source FROM criteria WHERE category_id = $3`,
+        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source, highlight_order, highlight_label)
+         SELECT $1, $2, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source, highlight_order, highlight_label FROM criteria WHERE category_id = $3`,
         [copy.id, newCat.id, cat.id]
       );
     }
@@ -286,6 +286,8 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
     sort_order: Number(b.sort_order) || 0,
     active: b.active === 'on',
     link_source: LINK_SOURCES[b.link_source] ? b.link_source : null,
+    highlight_order: String(b.highlight_order || '').trim() === '' ? null : Math.max(1, Math.min(20, Number.parseInt(b.highlight_order, 10) || 1)),
+    highlight_label: String(b.highlight_label || '').trim().slice(0, 40) || null,
   };
   const { errors, warnings } = scoring.validateCriterion(c);
   if (parsed.error) errors.unshift('Punkteschema ist kein gültiges JSON.');
@@ -303,8 +305,9 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
       // Jede Katalogänderung erhöht die Version; danach werden die Scores neu berechnet.
       await db.query(
         `UPDATE criteria SET code=$3, label=$4, category_id=$5, value_type=$6, scoring=$7, max_points=$8, is_ko=$9,
-           sort_order=$10, active=$11, link_source=$12, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
-        [c.id, ranking.id, c.code, c.label, c.category_id, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source]
+           sort_order=$10, active=$11, link_source=$12, highlight_order=$13, highlight_label=$14, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
+        [c.id, ranking.id, c.code, c.label, c.category_id, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source,
+          c.highlight_order, c.highlight_label]
       );
       await logAction(req.session.admin.id, 'criterion', c.id, 'edit_criterion', {
         old: { scoring: old.scoring, max_points: old.max_points, is_ko: old.is_ko, active: old.active, version: old.version },
@@ -312,9 +315,10 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
       });
     } else {
       const row = await db.one(
-        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-        [ranking.id, c.category_id, c.code, c.label, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source]
+        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source, highlight_order, highlight_label)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+        [ranking.id, c.category_id, c.code, c.label, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source,
+          c.highlight_order, c.highlight_label]
       );
       await logAction(req.session.admin.id, 'criterion', row.id, 'create_criterion', { code: c.code, scoring: c.scoring });
     }

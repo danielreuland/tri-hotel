@@ -9,6 +9,8 @@
     <% if (locals.hostRanking) { %><a href="<%= locals.scorePath %>">Methodik</a><% } %>
   </div>
 </footer>
-<% if (typeof scripts !== 'undefined') { scripts.forEach(function (s) { %><script src="<%= s %>?v=<%= assetVersion %>" defer></script><% }) } %>
+<%# site.js auf jeder öffentlichen Seite (Menü am Handy, Ziele, Formulare); weitere Skripte je Seite %>
+<% var pageScripts = (typeof scripts !== 'undefined' ? scripts : []).slice(); if (pageScripts.indexOf('/static/js/site.js') < 0) pageScripts.unshift('/static/js/site.js'); %>
+<% pageScripts.forEach(function (s) { %><script src="<%= s %>?v=<%= assetVersion %>" defer></script><% }) %>
 </body>
 </html>

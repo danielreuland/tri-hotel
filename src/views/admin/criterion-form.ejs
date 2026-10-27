@@ -28,6 +28,10 @@ Optional "search_terms" (Synonyme für die Website-Auswertung): ["Kältebad","Kr
   </details>
   <label for="c-link">Verknüpfte Quelle <small class="muted">optional – wird neben dem Wert angezeigt und in der Prüfliste abgeglichen</small></label>
   <select id="c-link" name="link_source"><option value="">keine</option><% Object.keys(LINK_SOURCES).forEach(function (k) { %><option value="<%= k %>" <%= c.link_source === k ? 'selected' : '' %>><%= LINK_SOURCES[k] %></option><% }) %></select>
+  <div class="form-row">
+    <div><label for="c-hl">Im Steckbrief der Profilseite <small class="muted">Position 1, 2, 3 … – leer = nicht zeigen</small></label><input id="c-hl" name="highlight_order" type="number" min="1" max="20" value="<%= c.highlight_order || '' %>"></div>
+    <div><label for="c-hll">Kurzname im Steckbrief <small class="muted">optional, z. B. „Flughafen“ – sonst nur der Wert</small></label><input id="c-hll" name="highlight_label" type="text" maxlength="40" value="<%= c.highlight_label || '' %>"></div>
+  </div>
   <label class="inline"><input type="checkbox" name="is_ko" <%= c.is_ko ? 'checked' : '' %>> K.O.-Kriterium</label>
   <label class="inline"><input type="checkbox" name="active" <%= c.active !== false ? 'checked' : '' %>> aktiv</label>
   <p><button class="btn" type="submit">Speichern &amp; Scores neu berechnen</button> <% if (c.id) { %><small class="muted">Version <%= c.version %> → wird erhöht</small><% } %></p>

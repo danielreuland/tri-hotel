@@ -178,6 +178,17 @@ async function renderEntity(req, res, ranking, slug) {
     const known = items.filter((i) => i.points !== null);
     return { label: cat.label, items, points: known.reduce((s, i) => s + i.points, 0), max: items.reduce((s, i) => s + i.max, 0) };
   });
+  // Steckbrief (Hotelseite Variante A): Kernfakten aus Kriterien mit highlight_order – Auswahl und Kurznamen je Ranking im Admin
+  const highlights = criteria.filter((c) => c.highlight_order)
+    .sort((a, b) => a.highlight_order - b.highlight_order)
+    .map((c) => {
+      const fact = factByCrit.get(c.id);
+      const isClimate = c.scoring.type === 'climate';
+      if (!fact && !(isClimate && climateRow)) return null;
+      const v = scoring.describeValue(c, fact && fact.value, climateRow);
+      return v ? (c.highlight_label ? `${c.highlight_label}: ${v}` : v) : null;
+    })
+    .filter(Boolean);
 
   const entityFeatureList = await features.forEntity(ranking.entity_type, entity.id);
   const featureGroups = featureLib.groupFeatures(entityFeatureList);
@@ -240,6 +251,8 @@ async function renderEntity(req, res, ranking, slug) {
     eligible: result.eligible,
     minCompleteness: formula.min_completeness,
     groups,
+    highlights,
+    countryName: seo.countryName,
     featureGroups,
     climate,
     month,

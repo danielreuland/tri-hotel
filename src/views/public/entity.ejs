@@ -4,45 +4,58 @@
   <% crumbs.forEach(function (c, i) { %><% if (i < crumbs.length - 1) { %><a href="<%= c.url.replace(siteUrl, '') || '/' %>"><%= c.name %></a> › <% } else { %><span><%= c.name %></span><% } %><% }) %>
 </nav>
 
-<div class="grid grid-2" style="align-items:center">
-  <div>
-    <h1><%= entity.name %></h1>
-    <p class="muted"><%= entity.city %><%= entity.country ? ', ' + entity.country : '' %>
-      <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
-  </div>
-  <div style="display:flex;gap:16px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
-    <div>
-      <div class="muted"><%= ranking.score_name %></div>
-      <% if (result.score !== null) { %>
-        <div><strong><%= result.label %></strong></div>
-        <% if (result.provisional) { %><span class="badge warn">vorläufig</span><% } %>
-        <% if (!eligible) { %><span class="badge">Profil unvollständig</span><% } %>
-      <% } %>
-    </div>
-    <span class="score big <%= result.score === null ? 'none' : '' %>"><%= result.score === null ? '–' : result.score %></span>
-  </div>
-</div>
-
-<div class="card" style="margin-top:16px">
-  <p style="margin:0">
-    Fakten-Score <strong><%= result.factScore === null ? '–' : Math.round(result.factScore) %></strong> ·
-    Vollständigkeit <strong><%= Math.round(result.completeness) %> %</strong>
-    <small>(ins Ranking ab <%= minCompleteness %> %)</small> ·
-    <% if (athleteUsed) { %>Athleten-Score <strong><%= Math.round(result.athleteScore) %></strong> <small>(aus <%= reviewList.length %> Bewertungen)</small><% } else if (reviewList.length) { %><a href="#bewertungen">★ <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></a> <small>(nicht im <%= ranking.score_name %>)</small><% } else { %><a href="#bewertungen">Noch keine Bewertungen</a><% } %>
-  </p>
-  <% if (result.provisional) { %>
-    <p class="muted" style="margin:.5em 0 0">Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p>
-  <% } %>
-</div>
-
 <%# Buchen & Anfragen: ein Hauptknopf (erster Preis-Anbieter in Admin-Reihenfolge), weitere als Textzeile,
     „direkt beim Hotel“ immer dabei. Ohne Einfluss auf Score und Reihenfolge der Hotels. %>
 <% var bookGroups = partnerGroups.filter(function (g) { return g.kinds.indexOf('booking') >= 0; });
    var primary = bookGroups[0] || null; var others = bookGroups.slice(1);
    var reviewPartners = partnerGroups.filter(function (g) { return g.kinds.indexOf('reviews') >= 0; });
    var bookAd = bookGroups.some(function (g) { return g.monetized; }); %>
-<% if (primary || entity.website || hotelInquiryUrl) { %>
-  <section class="card book-box" id="buchen" style="margin-top:16px">
+<% var hasBook = Boolean(primary || entity.website || hotelInquiryUrl); var hasBar = Boolean(primary || hotelInquiryUrl);
+   var shownGroups = groups.filter(function (g) { return g.max > 0; }); %>
+
+<div class="entity-head">
+  <h1><%= entity.name %></h1>
+  <p class="muted"><%= [entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ') %>
+    <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
+</div>
+
+<%# Steckbrief: Score mit Punkten je Kategorie, Kernfakten; Herleitung zum Aufklappen. Daneben „Buchen & Anfragen“ (am Handy nur die Leiste unten). %>
+<div class="entity-top <%= hasBook ? 'with-book' : '' %>">
+  <section class="card profile-card" aria-label="Steckbrief">
+    <div class="profile-score">
+      <span class="score big <%= result.score === null ? 'none' : '' %>"><%= result.score === null ? '–' : result.score %></span>
+      <div>
+        <div class="muted"><%= ranking.score_name %></div>
+        <% if (result.score !== null) { %><strong class="profile-label"><%= result.label %></strong><% } %>
+        <div class="profile-badges">
+          <% if (result.provisional) { %><span class="badge warn">vorläufig</span><% } %>
+          <% if (!eligible) { %><span class="badge">Profil unvollständig</span><% } %>
+          <% if (reviewList.length) { %><a class="badge" href="#bewertungen">★ <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> · <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></a><% } %>
+        </div>
+      </div>
+    </div>
+    <% if (shownGroups.length) { %>
+      <ul class="bars">
+        <% shownGroups.forEach(function (g) { var pct = g.max ? Math.round(100 * g.points / g.max) : 0; %>
+          <li><span><%= g.label %></span><span class="track"><span class="fill <%= pct < 40 ? 'low' : '' %>" style="width:<%= pct %>%"></span></span><span class="val"><%= g.points %>/<%= g.max %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+    <% if (highlights.length || bestTime) { %>
+      <ul class="key-facts">
+        <% highlights.forEach(function (h) { %><li><%= h %></li><% }) %>
+        <% if (bestTime) { %><li>Beste Reisezeit: <%= bestTime %></li><% } %>
+      </ul>
+    <% } %>
+    <details class="score-info">
+      <summary>So entsteht der <%= ranking.score_name %></summary>
+      <p>Fakten-Score <strong><%= result.factScore === null ? '–' : Math.round(result.factScore) %></strong> aus geprüften Fakten · Vollständigkeit <strong><%= Math.round(result.completeness) %> %</strong> (ins Ranking ab <%= minCompleteness %> %)<% if (athleteUsed) { %> · Athleten-Score <strong><%= Math.round(result.athleteScore) %></strong> aus <%= reviewList.length %> Bewertungen<% } else if (reviewList.length) { %> · Bewertungen fließen noch nicht ein<% } %>.</p>
+      <% if (result.provisional) { %><p>Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p><% } %>
+      <p><a href="#fakten">Alle Fakten mit Quelle</a> · <a href="<%= scorePath %>">Formel und Kriterien</a></p>
+    </details>
+  </section>
+  <% if (hasBook) { %>
+  <section class="card book-box <%= hasBar ? 'has-bar' : '' %>" id="buchen">
     <div class="book-head">
       <h2 style="margin:0">Buchen &amp; Anfragen</h2>
       <% if (bookAd) { %><span class="ad-label">Anzeige</span><% } %>
@@ -62,6 +75,9 @@
       </p>
     <% } %>
   </section>
+  <% } %>
+</div>
+<% if (hasBook) { %>
   <% if (primary || hotelInquiryUrl) { %>
     <nav class="book-bar" aria-label="Buchen und Anfragen">
       <% if (primary) { %><a class="btn cta" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen</a><% } %>
@@ -152,7 +168,7 @@
 <div class="grid grid-2 grid-content" style="margin-top:8px">
   <section>
     <div class="facts-head">
-      <h2>Fakten</h2>
+      <h2 id="fakten">Fakten</h2>
       <button type="button" class="linklike" data-toggle-all="facts" data-open-text="alle zuklappen" data-closed-text="alle aufklappen">alle aufklappen</button>
     </div>
     <div class="facts-groups" id="facts">

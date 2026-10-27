@@ -212,3 +212,16 @@ document.addEventListener('click', function (e) {
   if (!a || !navigator.sendBeacon) return;
   try { navigator.sendBeacon(a.getAttribute('data-count')); } catch (err) { /* Zählung ist optional */ }
 }, true);
+
+// Handy: Menü in der Kopfzeile auf- und zuklappen (ohne JavaScript bleibt die Navigation sichtbar)
+(function () {
+  var header = document.querySelector('.site-header');
+  var btn = header && header.querySelector('.nav-toggle');
+  if (!btn) return;
+  btn.hidden = false;
+  header.classList.add('has-toggle');
+  btn.addEventListener('click', function () {
+    var open = header.classList.toggle('nav-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+})();
