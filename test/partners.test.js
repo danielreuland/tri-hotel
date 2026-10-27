@@ -107,6 +107,8 @@ test('Anbieterlogos: Adresse nur für eigene Upload-Dateinamen, Kurzbeschriftung
   assert.equal(partners.logoUrl(null), null);
   assert.equal(partners.shortLabel('Preise prüfen bei Expedia', 'Expedia'), 'Preise prüfen');
   assert.equal(partners.shortLabel('Pauschalreise mit Flug bei CHECK24', 'CHECK24'), 'Pauschalreise mit Flug');
+  assert.equal(partners.shortLabel('Pauschalreise mit Flug bei CHECK24', 'CHECK24 Pauschalreise'), 'Pauschalreise mit Flug');
+  assert.equal(partners.shortLabel('Preise bei Tripadvisor', 'Expedia'), 'Preise bei Tripadvisor', 'fremder Name bleibt stehen');
   assert.equal(partners.shortLabel('Preise vergleichen bei trivago', 'trivago'), 'Preise vergleichen');
   assert.equal(partners.shortLabel('Zum Angebot', 'trivago'), 'Zum Angebot', 'ohne Anbieternamen bleibt die Beschriftung');
   const [g] = partners.groupLinks([{ code: 'trivago', name: 'trivago', kind: 'booking', url: 'https://www.trivago.de/x',

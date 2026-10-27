@@ -86,11 +86,12 @@ const programFields = (p) => ({ code: p.code, name: p.name, label_booking: p.lab
 // Logo-Adresse (Datei aus dem Admin-Upload, Werbemittel des Programms) oder null
 const logoUrl = (file) => (file && /^[a-z0-9-]+\.(svg|png|webp)$/.test(file) ? `/partner-logo/${file}` : null);
 
-// Beschriftung neben dem Logo: „Preise prüfen bei Expedia“ → „Preise prüfen“ (der Name steht schon im Logo)
+// Beschriftung neben Logo bzw. Name: „Preise prüfen bei Expedia“ → „Preise prüfen“ – auch wenn der Anzeigename länger ist
+// („Pauschalreise mit Flug bei CHECK24“ bei „CHECK24 Pauschalreise“)
 function shortLabel(label, name) {
   const l = String(label || '').trim();
-  const cut = l.replace(new RegExp(`\\s+(bei|auf|über)\\s+${escRe(String(name || ''))}$`, 'i'), '');
-  return cut && cut !== l ? cut : l;
+  const m = /^(.+?)\s+(?:bei|auf|über)\s+(\S.*)$/i.exec(l);
+  return m && String(name || '').toLowerCase().startsWith(m[2].toLowerCase()) ? m[1] : l;
 }
 
 // Links eines Objekts für die öffentliche Seite: nur aktive Programme, in Admin-Reihenfolge.
