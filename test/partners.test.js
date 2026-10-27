@@ -83,7 +83,12 @@ test('Partner: Nummer aus einem Parameter (CHECK24 c24pp_hotel_id), auch mitten 
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002'), '18002');
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?x_c24pp_hotel_id=18002'), null);
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_region_id=552'), null);
-  const tpl = { link_template: 'https://a.check24.net/misc/click.php?pid=1179734&aid=18&tid={slug}&target_url={url_enc}' };
-  assert.equal(partners.buildUrl(tpl, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002', { slug: 'playitas-hotel-las-playitas' }),
-    'https://a.check24.net/misc/click.php?pid=1179734&aid=18&tid=playitas-hotel-las-playitas&target_url=https%3A%2F%2Fwww.check24.net%2Fpauschalreisen-vergleich%2F%3Fc24pp_hotel_id%3D18002');
+  // Link wie aus dem CHECK24-Linkgenerator (kurze Form eingegeben), Tracking-ID am Ende
+  const c24 = { id_url: 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id={id}&pid=1179734',
+    link_template: 'https://a.check24.net/misc/click.php?aid=18&pid=1179734&target_url={url_enc}&tid={slug}' };
+  const target = partners.fromId(c24, partners.idOf(c24, long));
+  assert.equal(target, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002&pid=1179734');
+  assert.equal(partners.idOf(c24, target), '18002');
+  assert.equal(partners.buildUrl(c24, target, { slug: 'playitas-hotel-las-playitas' }),
+    'https://a.check24.net/misc/click.php?aid=18&pid=1179734&target_url=https%3A%2F%2Fwww.check24.net%2Fpauschalreisen-vergleich%2F%3Fc24pp_hotel_id%3D18002%26pid%3D1179734&tid=playitas-hotel-las-playitas');
 });
