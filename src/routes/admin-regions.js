@@ -5,6 +5,9 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { slugify } = require('../lib/util');
 const regionData = require('../services/region-data');
+const regionText = require('../services/region-text');
+const describer = require('../services/describer');
+const config = require('../config');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -67,7 +70,78 @@ router.post('/:id/daten', wrap(async (req, res, next) => {
 router.get('/:id', wrap(async (req, res, next) => {
   const edit = await db.one('SELECT * FROM regions WHERE id = $1', [req.params.id]);
   if (!edit) return next();
-  render(res, { edit });
+  const text = await regionText.get(edit.id);
+  let textStale = false;
+  if (text && text.input_hash) {
+    const input = await regionText.gather(edit);
+    textStale = Boolean(input) && regionText.inputHash(input) !== text.input_hash;
+  }
+  render(res, { edit, text, textStale, textWords: text ? regionText.wordCount(text.body) : 0, flash: req.query.ok || null,
+    errors: req.query.fehler ? [req.query.fehler] : [] });
+}));
+
+// Regionstext: KI-Entwurf erzeugen (überschreibt den Entwurf, Status „Entwurf“), speichern, freigeben, zurückziehen, Notizen
+router.post('/:id/text/erzeugen', wrap(async (req, res, next) => {
+  const region = await db.one('SELECT * FROM regions WHERE id = $1', [req.params.id]);
+  if (!region) return next();
+  const back = `/admin/regionen/${region.id}`;
+  if (config.llm.provider !== 'anthropic') return res.redirect(`${back}?fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#text`);
+  const input = await regionText.gather(region);
+  if (!input) return res.redirect(`${back}?fehler=${encodeURIComponent('Die Site hat kein Standard-Ranking.')}#text`);
+  let out;
+  try {
+    out = await regionText.generate(input);
+  } catch (err) {
+    console.error('[region-text]', err.message);
+    return res.redirect(`${back}?fehler=${encodeURIComponent(`Text konnte nicht erzeugt werden: ${err.message.slice(0, 200)}`)}#text`);
+  }
+  if (out.usage) await require('../lib/llm').record({ purpose: 'region_text', model: out.usage.model, usage: out.usage.raw });
+  if (!out.text) return res.redirect(`${back}?fehler=${encodeURIComponent('Das Modell hat keinen Text geliefert.')}#text`);
+  await db.query(
+    `INSERT INTO region_texts (region_id, summary, body, generated_summary, generated_body, input_hash, model, generated_at, status, updated_by, updated_at)
+     VALUES ($1, $2, $3, $2, $3, $4, $5, now(), 'draft', $6, now())
+     ON CONFLICT (region_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, generated_summary = EXCLUDED.summary,
+       generated_body = EXCLUDED.body, input_hash = EXCLUDED.input_hash, model = EXCLUDED.model, generated_at = now(), status = 'draft',
+       updated_by = EXCLUDED.updated_by, updated_at = now()`,
+    [region.id, out.text.summary, out.text.body, regionText.inputHash(input), out.usage.model, req.session.admin.id]);
+  await logAction(req.session.admin.id, 'region', region.id, 'generate_region_text', { model: out.usage.model, words: regionText.wordCount(out.text.body) });
+  res.redirect(`${back}?ok=${encodeURIComponent('Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
+}));
+
+router.post('/:id/text', wrap(async (req, res, next) => {
+  const region = await db.one('SELECT * FROM regions WHERE id = $1', [req.params.id]);
+  if (!region) return next();
+  const back = `/admin/regionen/${region.id}`;
+  const summary = describer.shorten(req.body.summary, describer.SUMMARY_MAX);
+  const body = String(req.body.body || '').replace(/\r/g, '').trim().slice(0, 12000);
+  const action = ['save', 'publish', 'unpublish'].includes(req.body.action) ? req.body.action : 'save';
+  if (action === 'publish' && (!summary || !body)) return res.redirect(`${back}?fehler=${encodeURIComponent('Kurzbeschreibung und Text sind zum Freigeben nötig.')}#text`);
+  const existing = await regionText.get(region.id);
+  const hash = action === 'publish' ? regionText.inputHash(await regionText.gather(region)) : existing && existing.input_hash;
+  const status = action === 'publish' ? 'published' : action === 'unpublish' ? 'draft' : (existing ? existing.status : 'draft');
+  await db.query(
+    `INSERT INTO region_texts (region_id, summary, body, input_hash, status, published_at, published_by, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 = 'published' THEN now() END, CASE WHEN $5 = 'published' THEN $6::uuid END, $6, now())
+     ON CONFLICT (region_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+       status = EXCLUDED.status, updated_by = EXCLUDED.updated_by, updated_at = now(),
+       published_at = CASE WHEN EXCLUDED.status = 'published' AND $7 THEN now() ELSE region_texts.published_at END,
+       published_by = CASE WHEN EXCLUDED.status = 'published' AND $7 THEN EXCLUDED.updated_by ELSE region_texts.published_by END`,
+    [region.id, summary, body, hash, status, req.session.admin.id, action === 'publish']);
+  await logAction(req.session.admin.id, 'region', region.id, `region_text_${action}`, { status, words: regionText.wordCount(body) });
+  const msg = { save: 'Text gespeichert', publish: 'Text freigegeben – jetzt auf der Regionsseite sichtbar', unpublish: 'Text zurückgezogen' }[action];
+  res.redirect(`${back}?ok=${encodeURIComponent(msg)}#text`);
+}));
+
+router.post('/:id/text/notizen', wrap(async (req, res, next) => {
+  const region = await db.one('SELECT id FROM regions WHERE id = $1', [req.params.id]);
+  if (!region) return next();
+  const notes = String(req.body.notes || '').replace(/\r/g, '').trim().slice(0, 3000);
+  await db.query(
+    `INSERT INTO region_texts (region_id, notes, updated_by, updated_at) VALUES ($1, $2, $3, now())
+     ON CONFLICT (region_id) DO UPDATE SET notes = EXCLUDED.notes, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+    [region.id, notes, req.session.admin.id]);
+  await logAction(req.session.admin.id, 'region', region.id, 'region_text_notes', { length: notes.length });
+  res.redirect(`/admin/regionen/${region.id}?ok=${encodeURIComponent('Notizen gespeichert')}#text`);
 }));
 
 router.post('/:id?', wrap(async (req, res) => {

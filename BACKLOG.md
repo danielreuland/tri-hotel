@@ -35,7 +35,11 @@ Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
 3. **Regionsseiten mit Kontext – umgesetzt 27.10.**: Klima und Wasser je Monat aus den Regionsdaten (Klimapunkt), beste Reisezeit
    mit Begründung (Regel aus `formula.best_time`, Monate darüber/darunter, Regen, Sonne, Wind, Wasser), Radrevier in Zahlen
    und Sätzen (OSM), Ausstattung der Hotels je Gruppe (Schwimmen, Rad, Laufen … aus dem Leistungskatalog), Camps der Region,
-   Sprungleiste. Später: Badegewässer/50-m-Becken/Bahnen der Region per eigener Abfrage (Overpass), Regionstext per KI.
+   Sprungleiste. Später: Badegewässer/50-m-Becken/Bahnen der Region per eigener Abfrage (Overpass).
+4. **Regionstext und häufige Fragen (27.10.)**: eigener Text je Region (Landschaft, Klima/Reisezeit, Strecken und Gewässer je
+   Ranking-Kategorie, Anreise und Gepäck, Ruhetag, Fazit; 500–750 Wörter) als KI-Entwurf aus Regionsdaten + allgemein bekanntem
+   Wissen, Prüfung und Freigabe im Admin unter Regionen (Migration 074, `scripts/region-text.js`). Häufige Fragen nur aus Daten
+   mit FAQ-Schema. Regionen unter `region_min_entities` (2) bleiben noindex. Offen: Entwürfe prüfen und freigeben (Daniel).
 
 ### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
 Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten

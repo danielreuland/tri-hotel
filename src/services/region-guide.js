@@ -222,6 +222,62 @@ function bestTimeReasons(climate, formula, monthNames) {
   return out;
 }
 
+// Häufige Fragen zur Region, nur aus unseren Daten (rein, testbar). Rückgabe [{ q, a }]
+// region: { nameIn }, ranking: { entity_label_sg/pl, score_name, formula }, climate, bike (bikeFacts),
+// hotels: { count, top: { name, score } | null }, camps: [Name]
+function regionFaq({ region, ranking, climate = [], bike = null, hotels = { count: 0, top: null }, camps = [] }, monthNames) {
+  const out = [];
+  const mName = (c) => monthNames[Number(c.month) - 1];
+  const reasons = bestTimeReasons(climate, ranking.formula, monthNames);
+  if (reasons.rule) {
+    out.push({
+      q: `Wann ist die beste Reisezeit ${region.nameIn}?`,
+      a: reasons.best
+        ? `${reasons.best}. Als beste Reisezeit gelten hier ${reasons.rule}${reasons.outside.length ? ` – ${reasons.outside.join('; ')}` : ''}.`
+        : `Kein Monat liegt im Bereich der besten Reisezeit (${reasons.rule}).`,
+    });
+  }
+  const sea = climate.filter((c) => num(c.sea_c) !== null);
+  if (sea.length) {
+    const lo = sea.reduce((a, b) => (num(b.sea_c) < num(a.sea_c) ? b : a));
+    const hi = sea.reduce((a, b) => (num(b.sea_c) > num(a.sea_c) ? b : a));
+    const spring = sea.filter((c) => [3, 4, 5].includes(Number(c.month))).sort((a, b) => a.month - b.month);
+    out.push({
+      q: `Wie warm ist das Meer ${region.nameIn}?`,
+      a: `Zwischen ${de(lo.sea_c)} °C im ${mName(lo)} und ${de(hi.sea_c)} °C im ${mName(hi)}.`
+        + (spring.length ? ` Von März bis Mai: ${spring.map((c) => `${de(c.sea_c)} °C`).join(', ')}.` : '')
+        + ' Modellwerte vor der Küste, Mittel der letzten drei Jahre.',
+    });
+  }
+  const rain = climate.filter((c) => num(c.rain_days) !== null);
+  if (rain.length) {
+    const total = rain.reduce((s, c) => s + num(c.rain_days), 0);
+    const wet = rain.reduce((a, b) => (num(b.rain_days) > num(a.rain_days) ? b : a));
+    out.push({
+      q: `Wie oft regnet es ${region.nameIn}?`,
+      a: `Im Jahr gibt es rund ${de(total)} Tage mit mindestens 1 mm Regen, die meisten im ${mName(wet)} (${de(wet.rain_days)} Tage).`,
+    });
+  }
+  if (bike && bike.score !== null && bike.score !== undefined) {
+    out.push({ q: `Wie gut ist das Radrevier ${region.nameIn}?`, a: `${de(bike.score, 1)} von 6 Punkten in unserer Auswertung von OpenStreetMap. ${bikeText(bike).join(' ')}`.trim() });
+  }
+  if (hotels.count) {
+    out.push({
+      q: `Wie viele geprüfte ${ranking.entity_label_pl} gibt es ${region.nameIn}?`,
+      a: `${hotels.count} geprüfte${hotels.count === 1 ? 's' : ''} ${hotels.count === 1 ? ranking.entity_label_sg : ranking.entity_label_pl}.`
+        + `${hotels.top ? ` Den höchsten ${ranking.score_name} hat derzeit ${hotels.top.name} (${hotels.top.score}).` : ''}`
+        + ` Die Liste ist nur nach ${ranking.score_name} sortiert.`,
+    });
+  }
+  if (camps.length) {
+    out.push({
+      q: `Gibt es organisierte Trainingscamps ${region.nameIn}?`,
+      a: `Ja, ${camps.length} Anbieter ${camps.length === 1 ? 'hat' : 'haben'} hier Camps im Programm: ${camps.slice(0, 6).join(', ')}${camps.length > 6 ? ' und weitere' : ''}.`,
+    });
+  }
+  return out;
+}
+
 // Herkunft der Klimawerte einer Region in einem Satz (Tooltip und Quellenhinweis)
 const POINT_WHERE = { hotels: 'an der Lage der Hotels', auto: 'an einem tiefer gelegenen Ort nahe der Regionsmitte', admin: 'an einem typischen Trainingsort', center: 'in der Regionsmitte' };
 function climatePointNote(region) {
@@ -280,4 +336,4 @@ function parsePair(pair) {
   return [...new Set(slugs)].slice(0, 3);
 }
 
-module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeReasons, climatePointNote, load, pairSlug, parsePair };
+module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeReasons, regionFaq, climatePointNote, load, pairSlug, parsePair };

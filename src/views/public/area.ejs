@@ -30,10 +30,12 @@
   </div>
   <% if (rd) { %>
     <nav class="area-jump" aria-label="Auf dieser Seite">
+      <% if (text) { %><a href="#ueberblick">Region im Überblick</a><% } %>
       <a href="#reisezeit">Klima &amp; Reisezeit</a>
       <% if (rd.bike) { %><a href="#radrevier">Radrevier</a><% } %>
       <% if (d.featureGroups.length) { %><a href="#ausstattung">Ausstattung</a><% } %>
       <% if (regionCamps.length) { %><a href="#camps">Camps</a><% } %>
+      <% if (faq.length) { %><a href="#fragen">Häufige Fragen</a><% } %>
       <% if (locals.regionGuide) { %><a href="/trainingsregionen">Alle Regionen im Vergleich</a><% } %>
     </nav>
   <% } %>
@@ -75,6 +77,18 @@
     </ul>
   <% } %>
 </section>
+
+<% if (text) { %>
+<section id="ueberblick" class="area-text">
+  <h2><%= area.name %> im Überblick</h2>
+  <% text.blocks.forEach(function (b) { %>
+    <% if (b.type === 'h') { %><h3><%= b.text %></h3>
+    <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
+    <% } else { %><p><%= b.text %></p><% } %>
+  <% }) %>
+  <p class="muted"><small>Redaktionstext, mit KI-Unterstützung erstellt und von der Redaktion geprüft<%= text.published_at ? ', Stand ' + new Date(text.published_at).toLocaleDateString('de-DE') : '' %>. Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.</small></p>
+</section>
+<% } %>
 
 <% if (rd) { var bt = rd.reasons; %>
 <section id="reisezeit">
@@ -152,6 +166,15 @@
     <% }) %>
   </div>
   <p><a href="/trainingscamp?region=<%= encodeURIComponent(area.name) %>">Camps <%= area.nameIn %> vergleichen →</a></p>
+</section>
+<% } %>
+
+<% if (faq.length) { %>
+<section id="fragen" class="area-faq">
+  <h2>Häufige Fragen <%= area.nameIn %></h2>
+  <% faq.forEach(function (f) { %>
+    <details><summary><%= f.q %></summary><p><%= f.a %></p></details>
+  <% }) %>
 </section>
 <% } %>
 

@@ -130,3 +130,32 @@ test('Regionsseite: beste Reisezeit mit Begründung aus formula.best_time', () =
   const close = guide.bestTimeReasons([{ month: 1, avg_high_c: 15.6 }, { month: 2, avg_high_c: 20 }], { best_time: { metric: 'avg_high_c', min: 16, max: 28 } }, M);
   assert.deepEqual(close.outside, ['Januar darunter (ab 15,6 °C)'], 'knapp unter der Grenze mit Nachkommastelle');
 });
+
+test('Regionsseite: häufige Fragen nur aus Daten', () => {
+  const { MONTHS: M } = require('../src/lib/util');
+  const climate = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, avg_high_c: [16, 16, 18, 20, 23, 29, 31, 31, 27, 25, 20, 17][i],
+    rain_days: [8, 7, 10, 7, 12, 5, 4, 3, 8, 8, 8, 9][i], sea_c: [16, 15, 15, 17, 20, 24, 27, 28, 26, 24, 20, 17][i] }));
+  const ranking = { entity_label_sg: 'Hotel', entity_label_pl: 'Hotels', score_name: 'TriScore', formula: { best_time: { metric: 'avg_high_c', min: 16, max: 28 } } };
+  const faq = guide.regionFaq({ region: { nameIn: 'auf Mallorca' }, ranking, climate,
+    bike: { score: 5, reliefM: 912, flatShare: 0.3, passes: 0, quietKm: null, routes: 0 },
+    hotels: { count: 13, top: { name: 'Beispielhotel', score: 73 } }, camps: ['A', 'B'] }, M);
+  const q = faq.map((f) => f.q);
+  assert.deepEqual(q, ['Wann ist die beste Reisezeit auf Mallorca?', 'Wie warm ist das Meer auf Mallorca?', 'Wie oft regnet es auf Mallorca?',
+    'Wie gut ist das Radrevier auf Mallorca?', 'Wie viele geprüfte Hotels gibt es auf Mallorca?', 'Gibt es organisierte Trainingscamps auf Mallorca?']);
+  assert.match(faq[1].a, /^Zwischen 15 °C im Februar und 28 °C im August\. Von März bis Mai: 15 °C, 17 °C, 20 °C\./);
+  assert.match(faq[2].a, /rund 89 Tage/);
+  assert.match(faq[4].a, /13 geprüfte Hotels\. Den höchsten TriScore hat derzeit Beispielhotel \(73\)/);
+  assert.match(faq[5].a, /2 Anbieter haben hier Camps im Programm: A, B\./);
+  const bare = guide.regionFaq({ region: { nameIn: 'am Gardasee' }, ranking: { ...ranking, formula: {} }, climate: [] }, M);
+  assert.deepEqual(bare, [], 'ohne Daten keine Fragen');
+});
+
+test('Regionstext: Prompt nennt Kategorien aus dem Ranking, Wortzählung ohne Überschriften', () => {
+  const rt = require('../src/services/region-text');
+  const p = rt.prompt({ ranking: { name: 'Hyrox-Gyms', entity: 'Gym', entities: 'Gyms', categories: ['Geräte', 'Laufstrecke'] },
+    region: { name: 'Allgäu', name_in: 'im Allgäu', country: 'Deutschland' }, notes: '' });
+  assert.match(p, /„Hyrox-Gyms“/);
+  assert.match(p, /Regionsseite im Allgäu \(Deutschland\)/);
+  assert.match(p, /"Laufstrecke"/);
+  assert.equal(rt.wordCount('## Titel mit vier Worten\n\nEins zwei drei.\n\nVier fünf.'), 5);
+});

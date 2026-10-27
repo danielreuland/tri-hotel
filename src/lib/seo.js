@@ -158,6 +158,14 @@ function itemListLd(name, items) {
   };
 }
 
+function faqLd(items) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
+  };
+}
+
 function breadcrumbLd(items) {
   return {
     '@context': 'https://schema.org',
@@ -257,5 +265,5 @@ module.exports = {
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
   averageClimate, bestMonths, monthRanges, featureShares, featureGroupShares,
-  ldJson, websiteLd, itemListLd, breadcrumbLd, entityLd, listPath,
+  ldJson, websiteLd, itemListLd, breadcrumbLd, faqLd, entityLd, listPath,
 };

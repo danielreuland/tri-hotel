@@ -17,6 +17,7 @@ const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
 const home = require('../services/home');
 const regionGuide = require('../services/region-guide');
+const regionText = require('../services/region-text');
 const { slugify } = require('../lib/util');
 
 const router = express.Router();
@@ -463,6 +464,8 @@ async function renderArea(req, res, ranking, area) {
   // Regionen: Klima, Wasser und Radrevier aus den Regionsdaten (unabhängig von Hotels), Camps der Region
   let rd = null;
   let regionCamps = [];
+  let text = null;
+  let faq = [];
   if (area.type === 'region') {
     const [row] = await regionGuide.load(ranking, req.site.id, { slugs: [area.slug] });
     if (row && row.climate.length) {
@@ -472,6 +475,13 @@ async function renderArea(req, res, ranking, area) {
       d.bestMonths = row.bestMonths;
     }
     if (res.locals.campGuide) regionCamps = (await camps.list(req.site.id)).filter((p) => (p.regions || []).includes(area.name));
+    const t = await regionText.published(area.region.id);
+    if (t) text = { ...t, blocks: describer.parseBody(t.body) };
+    faq = regionGuide.regionFaq({
+      region: area, ranking, climate: rd ? rd.climate : [], bike: rd ? rd.bike : null,
+      hotels: { count: d.count, top: d.ranked[0] ? { name: d.ranked[0].name, score: d.ranked[0].score } : null },
+      camps: regionCamps.map((p) => p.name),
+    }, MONTHS_DE);
   }
   const siteUrl = res.locals.siteUrl;
   const base = rankingBase(ranking);
@@ -484,7 +494,7 @@ async function renderArea(req, res, ranking, area) {
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   res.render('public/area', {
     title: `${heading} – Ranking nach ${ranking.score_name}`,
-    description: (d.count
+    description: text && text.summary ? text.summary : (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
       + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Jeder Wert mit Quelle.',
@@ -495,8 +505,9 @@ async function renderArea(req, res, ranking, area) {
     jsonLd: [
       seo.breadcrumbLd(crumbs),
       ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
+      ...(faq.length ? [seo.faqLd(faq)] : []),
     ],
-    heading, ranking, area, d, month, best, crumbs, base, rd, regionCamps, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
+    heading, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
     countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug)),
     entityPath: (e) => entityPath(ranking, e),

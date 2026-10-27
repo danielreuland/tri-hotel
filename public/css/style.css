@@ -161,6 +161,13 @@ figcaption { font-size: .78rem; color: var(--muted); }
 .area-camps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
 .area-camps a.card { display: grid; gap: 6px; justify-items: start; text-decoration: none; color: inherit; }
 .area-camps a.card:hover { border-color: var(--accent-strong); }
+.area-text { max-width: 75ch; }
+.area-text h3 { margin: 18px 0 6px; font-size: 1.2rem; }
+.area-text p { margin: 0 0 10px; }
+.area-faq { max-width: 75ch; }
+.area-faq details { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.area-faq summary { font-weight: 700; cursor: pointer; }
+.area-faq details p { margin: 8px 0 0; }
 a.chip { text-decoration: none; color: var(--text); }
 a.chip:hover { border-color: var(--primary); }
 
