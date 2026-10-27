@@ -26,12 +26,15 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - Kleinigkeiten: /triscore ohne strukturierte Daten (z. B. FAQ), Länderseiten mit nur 1 Hotel (PT, IT, TR).
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
 
-### Hotelseite überarbeiten (Vorschläge 26.10.2026, Entscheidung offen)
-Befund und drei Varianten mit Handy-Skizzen: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN
-A Steckbrief zuerst (Score mit Balken je Disziplin + Kernfakten oben, klein), B nach Disziplinen (Einschätzung, Fakten mit
-Quelle, Leistungen, Athleten-Note je Disziplin zusammengeführt, mittel – passt zum neuen Text-Prompt), C Entscheidungshilfe
-(Hero, „passt / passt nicht“, Reisemonat, Mini-Vergleich, mittel bis groß). Für alle: Handy-Kopfzeile einzeilig, „Preise
-prüfen“ am Handy nur in der Leiste, Fotos als Streifen, Karten-Vorschau. Vorschlag: A jetzt, B mit dem neuen Prompt.
+### Hotelseite überarbeiten (Vorschläge 26.10.2026: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN)
+- **A Steckbrief – umgesetzt 27.10.** (siehe Erledigt).
+- **B nach Disziplinen – sobald Daniel den Prompt der Redaktionstexte überarbeitet hat.** Einschätzung, Fakten mit Quelle,
+  Leistungen, Athleten-Note und passende Fotos je Kategorie zusammenführen (Reiter bzw. Sprungmarken); „Unsere Einschätzung“,
+  „Leistungen auf einen Blick“ und „Fakten“ entfallen als getrennte Blöcke. Der neue Prompt sollte Texte je Kategorie liefern.
+- **C Entscheidungshilfe – wenn genügend Hotelfotos mit Nutzungsrecht vorliegen** (dauert voraussichtlich). Hero-Foto mit Score,
+  „Passt zu dir, wenn … / Eher nicht, wenn …“, Reisemonat wählen (Klima und Score je Monat), Mini-Vergleich mit zwei
+  Alternativen, Sprungleiste. Mini-Vergleich und „Passt zu dir“ ggf. vorab einzeln.
+- Offen aus „Gilt für jede Variante“: Karte als kleines Vorschaubild statt „Karte laden“-Fläche.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
@@ -39,6 +42,8 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
+- Admin → Rankings bearbeiten: Die Formel-Prüfung verlangt nur Zahlen, `best_time` ist aber ein Objekt – Speichern des
+  Rankings scheitert vermutlich mit „best_time muss eine Zahl sein“ (prüfen und Objekte für bekannte Schlüssel zulassen).
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
@@ -79,6 +84,9 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 27.10. **Hotelseite Variante A**: Steckbrief oben (Score, Punkte je Kategorie, Kernfakten aus Kriterien mit
+  „im Steckbrief zeigen“ – Admin → Rankings → Kriterium, Migration 061 – plus beste Reisezeit; Herleitung zum Aufklappen),
+  Buchen & Anfragen daneben (am Handy nur die Leiste), Fotos als Streifen, Kopfzeile am Handy mit Menü-Knopf.
 - 26.10. Board-Aufgabe „Partnerlink prüfen / generieren“ je Live-Hotel ohne Preis-Link eines aktiven Programms mit Provision;
   Provisions- und Markenhinweis klein am Seitenende.
 - 26.10. **Hotel-Liste im Admin**: Suche (Name, Ort, Website), Filter Land und Region, kombinierbar mit Status/Ranking.
