@@ -32,13 +32,18 @@
       </header>
       <h3><a href="/trainingscamp/anbieter/<%= p.slug %>"><%= p.name %></a></h3>
       <p class="muted where"><%= p.destinations.join(' · ') || 'Ziele nicht angegeben' %><%= p.seat ? ' — ' + p.seat : '' %></p>
+      <% var unknown = Object.keys(FLAGS).filter(function (k) { return flag(p, k) !== true && flag(p, k) !== false; }).length; %>
+      <% if (!price && unknown >= Math.ceil(Object.keys(FLAGS).length * 2 / 3)) { %>
+        <p class="muted camp-sparse">Auf der Website des Anbieters sind bisher kaum Angaben zu Leistungen und Preisen zu finden – Details direkt beim Anbieter.</p>
+      <% } else { %>
       <ul class="camp-flags">
         <% Object.keys(FLAGS).forEach(function (k) { %><li><%- mark(flag(p, k)) %> <%= FLAGS[k] %></li><% }) %>
       </ul>
+      <% } %>
       <% if (price) { %><p class="camp-price"><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
       <p class="camp-actions">
         <a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels</a>
-        <a class="btn small secondary" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
+        <a class="btn small secondary" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored nofollow noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
       </p>
     </article>
   <% }) %>

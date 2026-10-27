@@ -36,11 +36,14 @@ router.get('/trainingscamp', wrap(async (req, res, next) => {
   const guide = guideFor(req.site);
   if (!guide) return next();
   const filters = camps.parseFilters(req.query);
-  const [providers, regions] = await Promise.all([camps.list(req.site.id, filters), camps.regions(req.site.id)]);
+  const [providers, regions, all] = await Promise.all([camps.list(req.site.id, filters), camps.regions(req.site.id),
+    filters.active ? camps.list(req.site.id, {}) : null]);
   const siteUrl = res.locals.siteUrl;
   const m = guide.meta;
+  const fill = (t) => String(t || '').replace(/\{anbieter\}/g, String((all || providers).length));
   res.render(guide.view, {
-    title: m.title || 'Trainingscamp', description: m.description || '', canonical: `${siteUrl}/trainingscamp`,
+    title: fill(m.title) || 'Trainingscamp', description: fill(m.description), canonical: `${siteUrl}/trainingscamp`,
+    ogImage: m.og ? `${siteUrl}/og/trainingscamp.png` : undefined,
     noindex: filters.active, // gefilterte Ansichten nicht indexieren
     jsonLd: [
       seo.breadcrumbLd([{ name: req.site.name, url: `${siteUrl}/` }, { name: m.breadcrumb || 'Trainingscamp', url: `${siteUrl}/trainingscamp` }]),
@@ -48,6 +51,16 @@ router.get('/trainingscamp', wrap(async (req, res, next) => {
     ],
     faq: m.faq || [], providers, regions, filters, MODELS: camps.MODELS, FLAGS: camps.FLAGS, flag: camps.flag,
   });
+}));
+
+// Vorschaubild beim Teilen (Texte aus der Site-Vorlage trainingscamp.json → og)
+router.get('/og/trainingscamp.png', wrap(async (req, res, next) => {
+  const guide = guideFor(req.site);
+  if (!guide || !guide.meta.og) return next();
+  const n = String((await camps.list(req.site.id, {})).length);
+  const t = (x) => String(x || '').replace(/\{anbieter\}/g, n);
+  const buf = await require('../services/og').png({ eyebrow: t(guide.meta.og.eyebrow), title: t(guide.meta.og.title), subtitle: t(guide.meta.og.subtitle), site: req.site });
+  res.set('Cache-Control', 'public, max-age=86400').type('png').send(buf);
 }));
 
 async function renderProvider(req, res, p, extra = {}) {
@@ -63,7 +76,7 @@ async function renderProvider(req, res, p, extra = {}) {
     description: `${p.name}${p.destinations.length ? ` – Camps in ${p.destinations.slice(0, 4).join(', ')}` : ''}: Leistungen, Preisbeispiele und Hotels im Überblick. Neutral, ohne bezahlte Platzierung.`,
     canonical,
     jsonLd: [seo.breadcrumbLd([
-      { name: req.site.name, url: `${siteUrl}/` }, { name: 'Trainingscamp', url: `${siteUrl}/trainingscamp` }, { name: p.name, url: canonical },
+      { name: req.site.name, url: `${siteUrl}/` }, { name: 'Trainingslager', url: `${siteUrl}/trainingscamp` }, { name: p.name, url: canonical },
     ])],
     p, hotels, MODELS: camps.MODELS, FLAGS: camps.FLAGS, HOTEL_VALUES: camps.HOTEL_VALUES, FLIGHT_VALUES: camps.FLIGHT_VALUES, flag: camps.flag,
   });

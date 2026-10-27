@@ -114,6 +114,11 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 27.10. **Trainingslager-Seite (/trainingscamp) für Suchanfragen**: „Trainingslager“ in Titel, H1 und H2, eigene Abschnitte
+  „Was kostet ein Triathlon-Trainingslager?“ und „Trainingslager für Vereine und Gruppen“, Links auf die Regionsseiten, drei
+  neue häufige Fragen (Kosten, Buchungszeitpunkt, Trainingsstunden), eigenes OG-Bild, Sportresorts/Pauschalreiserecht/Leihrad
+  korrigiert, Anbieterpreise vereinheitlicht (Migration 079), Anbieter mit kaum Angaben kompakt. Entscheidung: keine eigenen
+  Artikel zu „beste Zeit“, „Kosten“, „Verein“ (Kannibalisierung) – diese Seite deckt sie ab.
 - 27.10. **TriScore-Seite für Suchanfragen**: Titel/Beschreibung/H1, Einstieg mit den typischen Fragen, häufige Fragen mit
   FAQ-Schema (Landingpage-Texte mit Platzhaltern), Rechenbeispiel mit echtem Hotel aus der Mitte des Rankings (inkl. Beispiel mit
   Bewertungen), eigenes OG-Bild, Links zu Top-Hotels und Regionen; Radrevier-Kriterium erklärt (OSM 0–6 → Skala 0–10).

@@ -1,24 +1,25 @@
 <%- include('../../partials/head') %>
-<% var link = function (slug, name) { return '<a href="/trainingscamp/anbieter/' + slug + '">' + name + '</a>'; }; %>
+<% var link = function (slug, name) { return '<a href="/trainingscamp/anbieter/' + slug + '">' + name + '</a>'; };
+   var region = function (slug, name) { return '<a href="/region/' + slug + '">' + name + '</a>'; }; %>
 
 <section class="guide-hero">
   <p class="eyebrow">Ratgeber Trainingslager</p>
-  <h1 class="hero-title">Triathlon-Trainingscamp: Lohnt es sich – und welches passt zu dir?</h1>
-  <p class="hero-text">Eine Woche nur Schwimmen, Radfahren, Laufen, Essen und Schlafen. Hier erfährst du, was ein Camp bringt, wann es in deine Saison passt und worauf du bei Anbieter, Hotel und Preis achten solltest.</p>
+  <h1 class="hero-title">Triathlon-Trainingslager: Lohnt sich ein Camp – und welches passt zu dir?</h1>
+  <p class="hero-text">Eine Woche nur Schwimmen, Radfahren, Laufen, Essen und Schlafen. Hier erfährst du, was ein Trainingslager bringt, wann es in deine Saison passt, was es kostet und worauf du bei Anbieter, Hotel und Preis achten solltest.</p>
   <div class="hero-actions">
     <a class="btn large cta" href="/trainingscamp/angebote" data-goal="Camp-Sammelanfrage-Start">Lass dir Angebote schicken</a>
     <a class="btn large secondary" href="#anbieter">Camp-Anbieter vergleichen</a>
     <a class="btn large secondary" href="#checkliste">Zur Checkliste</a>
   </div>
   <nav class="guide-toc" aria-label="Inhalt">
-    <a href="#warum">Warum</a><a href="#wann">Wann</a><a href="#checkliste">Checkliste</a><a href="#camp-typen">Camp-Typen</a><a href="#vereine">Für Vereine</a><a href="#anbieter">Anbieter</a><a href="#faq">FAQ</a>
+    <a href="#warum">Warum</a><a href="#wann">Beste Zeit</a><a href="#checkliste">Checkliste</a><a href="#camp-typen">Camp-Typen</a><a href="#vereine">Für Vereine</a><a href="#kosten">Kosten</a><a href="#anbieter">Anbieter</a><a href="#faq">FAQ</a>
   </nav>
 </section>
 
 <section id="warum" class="guide-section">
-  <p class="eyebrow">Warum ein Camp?</p>
-  <h2>Was du in einer Woche Camp schaffst, dauert zu Hause einen Monat</h2>
-  <p class="lead">Im Camp fallen Arbeit, Familie und Wetter als Ausreden weg. Du trainierst mehr, gezielter und mit jemandem, der dir zuschaut.</p>
+  <p class="eyebrow">Warum ein Trainingslager?</p>
+  <h2>Was du in einer Woche Trainingslager schaffst, dauert zu Hause einen Monat</h2>
+  <p class="lead">Im Trainingslager fallen Arbeit, Familie und Wetter als Ausreden weg. Du trainierst mehr, gezielter und mit jemandem, der dir zuschaut.</p>
   <div class="guide-cards">
     <article class="card"><h3>Umfang ohne Alltag</h3><p>Statt 8 bis 10 Stunden pro Woche sind 15 bis 20 Stunden möglich. Ein Trainingsblock, der zu Hause kaum unterzubringen ist.</p></article>
     <article class="card"><h3>Technik mit Coach</h3><p>Videoanalyse im Wasser, Lauf-ABC, Fahrtechnik in der Gruppe: Fehler, die du allein nicht siehst, werden sichtbar und korrigierbar.</p></article>
@@ -30,14 +31,14 @@
 </section>
 
 <section id="wann" class="guide-section">
-  <p class="eyebrow">Wann ist ein Camp sinnvoll?</p>
-  <h2>Das richtige Camp hängt vom Zeitpunkt in deiner Saison ab</h2>
-  <p class="lead">Ein Camp im November hat ein anderes Ziel als eines sechs Wochen vor deinem Hauptwettkampf.</p>
+  <p class="eyebrow">Beste Zeit</p>
+  <h2>Wann ist ein Triathlon-Trainingslager sinnvoll?</h2>
+  <p class="lead">Ein Trainingslager im November hat ein anderes Ziel als eines sechs Wochen vor deinem Hauptwettkampf. Wo es in welchem Monat warm genug ist, zeigen die <a href="/trainingsregionen">Trainingsregionen im Überblick</a>.</p>
   <ol class="guide-timeline" aria-label="Camp-Phasen im Jahresverlauf">
-    <li><span class="when">Nov – Jan</span><h3>Technik und Schwimmen</h3><p>Schwimm- und Technikcamps, oft auf Lanzarote, Fuerteventura oder Teneriffa. Wenig Umfang, viel Korrektur.</p></li>
-    <li><span class="when">Feb – März</span><h3>Grundlage aufbauen</h3><p>Der Klassiker: 1 bis 2 Wochen auf den Kanaren, ruhige Radkilometer, Schwimmen im 50-m-Becken.</p></li>
-    <li class="peak"><span class="when">März – Mai</span><h3>Umfang steigern</h3><p>Hochsaison auf Mallorca, auch in den Osterferien. Längere Ausfahrten, erste Intensitäten, Koppeltraining.</p></li>
-    <li><span class="when">Mai – Juli</span><h3>Wettkampfnah</h3><p>Kurze Camps ohne Flug in den Alpen oder an Seen, Freiwasser und Streckenbesichtigung, etwa in Kärnten oder Zell am See.</p></li>
+    <li><span class="when">Nov – Jan</span><h3>Technik und Schwimmen</h3><p>Schwimm- und Technikcamps, oft auf <%- region('lanzarote', 'Lanzarote') %>, <%- region('fuerteventura', 'Fuerteventura') %> oder <%- region('teneriffa', 'Teneriffa') %>. Wenig Umfang, viel Korrektur.</p></li>
+    <li><span class="when">Feb – März</span><h3>Grundlage aufbauen</h3><p>Der Klassiker: 1 bis 2 Wochen auf den Kanaren, etwa auf <%- region('gran-canaria', 'Gran Canaria') %> oder Fuerteventura, ruhige Radkilometer, Schwimmen im 50-m-Becken.</p></li>
+    <li class="peak"><span class="when">März – Mai</span><h3>Umfang steigern</h3><p>Hochsaison auf <%- region('mallorca', 'Mallorca') %>, auch in den Osterferien, dazu <%- region('girona', 'Girona') %> und die <%- region('costa-blanca', 'Costa Blanca') %>. Längere Ausfahrten, erste Intensitäten, Koppeltraining.</p></li>
+    <li><span class="when">Mai – Juli</span><h3>Wettkampfnah</h3><p>Kurze Camps ohne Flug in den Alpen oder an Seen, Freiwasser und Streckenbesichtigung, etwa am <%- region('gardasee', 'Gardasee') %>, in Kärnten, in <%- region('tirol', 'Tirol') %> oder in Zell am See im <%- region('salzburger-land', 'Salzburger Land') %>.</p></li>
   </ol>
   <div class="grid grid-2 grid-content">
     <div class="card tone-good"><h3>Ein Camp passt, wenn …</h3><ul>
@@ -56,7 +57,7 @@
 
 <section id="checkliste" class="guide-section">
   <p class="eyebrow">Was ist zu beachten?</p>
-  <h2>Die Checkliste vor der Buchung</h2>
+  <h2>Checkliste vor der Buchung deines Trainingslagers</h2>
   <p class="lead">Die meisten Enttäuschungen entstehen nicht beim Training, sondern bei falschen Erwartungen an Gruppe, Hotel und Preis.</p>
   <div class="guide-cards two">
     <div class="card"><h3>1 · Training und Gruppe</h3><ul>
@@ -73,12 +74,12 @@
     <div class="card"><h3>3 · Preis und Leistungen</h3><ul>
       <li>Was ist drin: Hotel, Verpflegung, Flug, Transfer oder nur die Campgebühr?</li>
       <li>Bei Coach-Camps fallen Hotel und Flug oft extra an, manchmal eine Handling-Gebühr.</li>
-      <li>Leihrad rechnen: etwa 60 bis 120 € pro Woche, je nach Modell.</li>
+      <li>Leihrad rechnen: als Richtwert etwa 90 bis 140 € pro Woche für ein Alu-Rennrad und 150 bis 250 € für ein gutes Carbon-Rad.</li>
       <li>Frühbucherrabatte laufen oft schon im Herbst aus.</li></ul></div>
     <div class="card"><h3>4 · Rad, Reise, Absicherung</h3><ul>
       <li>Eigenes Rad mitnehmen? Radkoffer, Fluggebühr und Montage einplanen.</li>
       <li>Reiserücktritts- und Gepäckversicherung für das Rad abschließen.</li>
-      <li>Pauschalreise oder Einzelbuchung? Nur die Pauschalreise bringt vollen Reiserechtsschutz.</li>
+      <li>Pauschalreise oder Einzelbuchung? Nur die Pauschalreise bringt den vollen Schutz nach Pauschalreiserecht, inklusive Insolvenzabsicherung (Sicherungsschein).</li>
       <li>Begleitpersonen ohne Sport: Gibt es Rabatte und Programm?</li></ul></div>
   </div>
 </section>
@@ -86,15 +87,15 @@
 <section id="camp-typen" class="guide-band">
   <div class="guide-band-inner">
     <p class="eyebrow">Camp-Typen</p>
-    <h2>Fünf Wege ins Trainingscamp</h2>
+    <h2>Fünf Arten von Trainingslagern</h2>
     <p class="lead">Anbieter unterscheiden sich weniger im Training als darin, was du buchst und von wem.</p>
     <div class="guide-cards">
       <article class="card"><h3>Reiseveranstalter</h3><p>Paket aus Hotel, Verpflegung und Camp, oft mit Flug. Großes Terminangebot, viele Trainer.</p>
         <p><strong>Geeignet für:</strong> alle, die eine Buchung wollen</p><p class="muted">Beispiele: <%- link('hannes-hawaii-tours', 'Hannes Hawaii Tours') %>, <%- link('ausdauerakademie', 'Ausdauerakademie') %></p></article>
       <article class="card"><h3>Coach-Camp</h3><p>Ein Coach oder Ex-Profi leitet selbst. Kleine Gruppen, persönlicher Stil, Hotel teils separat.</p>
         <p><strong>Geeignet für:</strong> Technik und individuelles Feedback</p><p class="muted">Beispiele: <%- link('leder-coaching', 'Leder Coaching') %>, <%- link('sonja-tajsich', 'Sonja Tajsich') %>, <%- link('jorge-sports', 'Jorge Sports') %>, <%- link('tricamp', 'Tricamp') %></p></article>
-      <article class="card"><h3>Sportresort</h3><p>Das Hotel ist die Trainingsanlage. Camps als günstiger Zusatz, du wohnst zwingend im Resort.</p>
-        <p><strong>Geeignet für:</strong> beste Anlagen, flexible Planung</p><p class="muted">Beispiele: <%- link('club-la-santa', 'Club La Santa') %>, <%- link('t3-training', 'Tenerife Top Training (T3)') %></p></article>
+      <article class="card"><h3>Sportresort</h3><p>Das Hotel ist die Trainingsanlage, Camps gibt es als günstigen Zusatz. Meist wohnst du im Resort; manche Trainingszentren bieten das Camp auch ohne Hotel an.</p>
+        <p><strong>Geeignet für:</strong> beste Anlagen, flexible Planung</p><p class="muted">Beispiele: <%- link('club-la-santa', 'Club La Santa') %> (Unterkunft im Resort Pflicht), <%- link('t3-training', 'Tenerife Top Training (T3)') %> (auch ohne Hotel), das Sportresort <a href="/hotel/playitas-hotel-las-playitas">Playitas</a> auf Fuerteventura</p></article>
       <article class="card"><h3>Spezial-Camp</h3><p>Für eine Zielgruppe: nur Frauen, Einsteiger, Familien, Ü50 oder eine Community.</p>
         <p><strong>Geeignet für:</strong> den Einstieg ohne Leistungsdruck</p><p class="muted">Beispiele: <%- link('sportingwomen', 'sportingWOMEN') %>, <%- link('plattfuss-podcast', 'Plattfuss Podcast') %></p></article>
     </div>
@@ -102,7 +103,8 @@
     <div id="vereine" class="guide-clubs">
       <div>
         <p class="eyebrow">Typ 5 · Vereins- und Gruppenreise</p>
-        <h3>Ihr bringt die Gruppe mit, der Anbieter organisiert den Rest</h3>
+        <h2>Trainingslager für Vereine und Gruppen</h2>
+        <p><strong>Ihr bringt die Gruppe mit, der Anbieter organisiert den Rest.</strong></p>
         <p>Ein Gruppenreise-Anbieter bucht Unterkunft, Poolzeiten und Transfer passend für euren Verein. Das Training leitet euer eigener Trainer, auf Wunsch mit Rad-Guides vor Ort. Ihr müsst nur noch anreisen.</p>
         <p><strong>Geeignet für:</strong> Vereine, Trainingsgruppen, Lauftreffs und Firmenteams ab etwa 10 Personen</p>
         <p class="muted">Beispiele: <%- link('pro-trainingtours', 'PRO.TrainingTours') %>, <%- link('t3-training', 'T3 Training (Gruppen &amp; Vereine)') %>, <%- link('club-la-santa', 'Club La Santa (Gruppenreisen)') %></p>
@@ -124,26 +126,28 @@
       </div>
     </div>
 
+    <h2 id="kosten" style="margin-top:28px">Was kostet ein Triathlon-Trainingslager?</h2>
+    <p>Der Preis hängt vor allem davon ab, was du buchst: nur das Training, Training mit Hotel oder eine Pauschalreise mit Flug. Dazu kommen je nach Angebot Leihrad, Radtransport im Flugzeug und Transfers. Die Preise der einzelnen Anbieter findest du unten im Vergleich.</p>
     <div class="guide-prices">
       <div><span>Nur Campgebühr</span><strong>200–450 €</strong><span>pro Woche, Hotel und Anreise extra</span></div>
       <div><span>Camp mit Hotel und Halbpension</span><strong>720–1.050 €</strong><span>pro Woche, ohne Flug</span></div>
       <div><span>Pauschalreise mit Flug</span><strong>ab ca. 1.800 €</strong><span>für 2 Wochen inkl. Campgebühr</span></div>
     </div>
-    <p class="muted"><small>Preise pro Person im Doppelzimmer, Saison 2026/27, Stand Oktober 2026, Angaben der Anbieter.</small></p>
+    <p class="muted"><small>Richtwerte pro Person, Unterkunft im Doppelzimmer, Saison 2026/27, Stand Oktober 2026, aus den Angaben der Anbieter.</small></p>
   </div>
 </section>
 
 <section id="anbieter" class="guide-section">
   <p class="eyebrow">Camp-Anbieter</p>
-  <h2>Alle Anbieter im Vergleich</h2>
+  <h2>Trainingslager-Anbieter im Vergleich</h2>
   <p class="lead">Wer bietet was – mit Hotel, mit Flug, für Einsteiger, für Frauen oder Familien? Neutral gelistet, ohne bezahlte Platzierungen.</p>
   <%- include('../../public/_camp-providers') %>
 </section>
 
 <section id="faq" class="guide-section narrow">
-  <h2>Häufige Fragen</h2>
+  <h2>Häufige Fragen zum Trainingslager</h2>
   <div class="faq">
-    <% faq.forEach(function (f) { %><details><summary><%= f.q %></summary><p><%= f.a %></p></details><% }) %>
+    <% faq.forEach(function (f) { %><details><summary><%= f.q %></summary><p><%= f.a %><% if (f.link && /^(#|\/)/.test(f.link.href)) { %> <a href="<%= f.link.href %>"><%= f.link.text %> →</a><% } %></p></details><% }) %>
   </div>
 </section>
 

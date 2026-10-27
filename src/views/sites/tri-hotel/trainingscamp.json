@@ -1,10 +1,24 @@
 {
-  "title": "Triathlon-Trainingscamp: Ratgeber und Anbieter im Vergleich",
-  "description": "Lohnt sich ein Triathlon-Trainingscamp? Checkliste, beste Zeit, Camp-Typen und alle Anbieter neutral im Vergleich – mit Preisen und Hotels.",
-  "breadcrumb": "Trainingscamp",
+  "title": "Triathlon-Trainingslager & Camps 2027: Ratgeber und {anbieter} Anbieter im Vergleich",
+  "description": "Lohnt sich ein Triathlon-Trainingslager? Beste Zeit, Checkliste, Kosten und {anbieter} Camp-Anbieter neutral im Vergleich – mit Preisen und Hotels.",
+  "breadcrumb": "Trainingslager",
+  "og": { "eyebrow": "Ratgeber Trainingslager", "title": "Triathlon-Trainingslager: welches Camp passt zu dir?", "subtitle": "{anbieter} Camp-Anbieter neutral im Vergleich" },
   "faq": [
     {
-      "q": "Bin ich als Einsteiger im Camp richtig?",
+      "q": "Was kostet ein Triathlon-Trainingslager?",
+      "a": "Eine Woche nur mit Campgebühr kostet etwa 200 bis 450 €, Hotel und Anreise kommen dazu. Camps mit Hotel und Halbpension liegen bei rund 720 bis 1.050 € pro Woche ohne Flug, Pauschalreisen mit Flug für zwei Wochen ab etwa 1.800 €. Dazu kommen gegebenenfalls Leihrad und Radtransport.",
+      "link": { "href": "#kosten", "text": "Preise im Überblick" }
+    },
+    {
+      "q": "Wann sollte ich ein Trainingslager buchen?",
+      "a": "Für das Frühjahr am besten schon im Herbst: Frühbucherrabatte laufen oft im Oktober oder November aus, und Termine in den Osterferien sind früh ausgebucht. Für Camps im Herbst und Winter reichen meist zwei bis drei Monate Vorlauf."
+    },
+    {
+      "q": "Wie viele Stunden trainiert man im Trainingslager?",
+      "a": "Typisch sind 15 bis 20 Stunden pro Woche, also deutlich mehr als zu Hause. Als Faustregel gilt: höchstens das Doppelte deiner üblichen Trainingswoche, mit mindestens einem lockeren Tag zur Halbzeit."
+    },
+    {
+      "q": "Bin ich als Einsteiger im Trainingslager richtig?",
       "a": "Ja, wenn du ein Einsteiger-Camp wählst. Viele Anbieter haben eigene Formate, in denen Kraulen keine Voraussetzung ist und Gruppenfahren am ersten Tag geübt wird."
     },
     {
@@ -13,7 +27,8 @@
     },
     {
       "q": "Mallorca oder Kanaren?",
-      "a": "Bis Anfang März sind die Kanaren wärmer und wetterstabiler. Ab März bietet Mallorca die abwechslungsreicheren Radstrecken und kürzere Flüge."
+      "a": "Bis Anfang März sind die Kanaren wärmer und wetterstabiler. Ab März bietet Mallorca die abwechslungsreicheren Radstrecken und kürzere Flüge.",
+      "link": { "href": "/trainingsregionen/vergleich/mallorca-vs-fuerteventura-vs-teneriffa", "text": "Mallorca, Fuerteventura und Teneriffa im Klimavergleich" }
     },
     {
       "q": "Eigenes Rad oder Leihrad?",
