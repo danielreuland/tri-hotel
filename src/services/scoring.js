@@ -35,6 +35,39 @@ const DEFAULT_FORMULA = {
 
 const CLIMATE_METRICS = ['avg_high_c', 'avg_low_c', 'rain_days'];
 
+// Formel aus dem Admin prüfen (rein, testbar). Jeder bekannte Schlüssel hat seinen Typ; unbekannte Schlüssel müssen
+// Zahlen sein (fängt Tippfehler ab). Rückgabe: Liste der Fehlermeldungen
+const UNKNOWN_POLICIES = ['ignore', 'average', 'half'];
+const BEST_TIME_METRICS = ['avg_high_c', 'avg_low_c', 'rain_days', 'sunshine_h', 'wind_kmh', 'windy_days', 'sea_c'];
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+function validateFormula(f) {
+  if (!f || typeof f !== 'object' || Array.isArray(f)) return ['Formel ist kein gültiges JSON-Objekt.'];
+  const errors = [];
+  for (const [k, v] of Object.entries(f)) {
+    if (k === 'athlete_enabled') {
+      if (typeof v !== 'boolean') errors.push('Formel: „athlete_enabled“ muss true oder false sein.');
+    } else if (k === 'unknown_policy') {
+      if (!UNKNOWN_POLICIES.includes(v)) errors.push(`Formel: „unknown_policy“ muss ${UNKNOWN_POLICIES.map((x) => `"${x}"`).join(', ')} sein.`);
+    } else if (k === 'review_age_weights') {
+      if (!Array.isArray(v) || v.some((p) => !Array.isArray(p) || p.length !== 2 || !isNum(p[0]) || !isNum(p[1]))) {
+        errors.push('Formel: „review_age_weights“ muss eine Liste aus [Monate, Gewicht] sein.');
+      }
+    } else if (k === 'best_time') {
+      const ok = v && typeof v === 'object' && !Array.isArray(v) && BEST_TIME_METRICS.includes(v.metric)
+        && (v.min !== undefined || v.max !== undefined)
+        && (v.min === undefined || isNum(v.min)) && (v.max === undefined || isNum(v.max))
+        && (v.min === undefined || v.max === undefined || v.min <= v.max);
+      if (!ok) errors.push(`Formel: „best_time“ braucht {"metric": ${BEST_TIME_METRICS.map((x) => `"${x}"`).join(' | ')}, "min": Zahl, "max": Zahl} (min oder max genügt).`);
+    } else if (!isNum(v)) {
+      errors.push(`Formel: „${k}“ muss eine Zahl sein.`);
+    }
+  }
+  const fw = f.fact_weight ?? DEFAULT_FORMULA.fact_weight;
+  const aw = f.athlete_weight ?? DEFAULT_FORMULA.athlete_weight;
+  if (isNum(fw) && isNum(aw) && Math.abs(fw + aw - 1) > 0.001) errors.push('Formel: fact_weight + athlete_weight muss 1 ergeben.');
+  return errors;
+}
+
 function withDefaults(formula) {
   return { ...DEFAULT_FORMULA, ...(formula || {}) };
 }
@@ -429,6 +462,7 @@ function athleteScore(reviews, formulaIn, now = new Date()) {
 module.exports = {
   athleteScore,
   DEFAULT_FORMULA,
+  validateFormula,
   withDefaults,
   pointsFor,
   optionValue,

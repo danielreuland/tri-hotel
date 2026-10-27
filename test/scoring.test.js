@@ -278,3 +278,27 @@ test('describeValue/validateCriterion: Mehrfachauswahl', () => {
   assert.deepEqual(s.validateCriterion({ value_type: 'option', scoring: poolMulti.scoring, max_points: 12 }).errors, []);
   assert.ok(s.validateCriterion({ value_type: 'option', scoring: { ...poolMulti.scoring, multi: 'ja' }, max_points: 12 }).errors.length);
 });
+
+test('Formel prüfen: gespeicherte Formel mit best_time, Schalter und Text ist gültig', () => {
+  const live = { bayes_c: 5, bayes_m: 70, best_time: { max: 28, min: 16, metric: 'avg_high_c' }, fact_weight: 0.6, min_reviews: 3,
+    athlete_weight: 0.4, recheck_months: 18, unknown_policy: 'average', athlete_enabled: false, min_completeness: 70,
+    region_min_entities: 2, unknown_default_share: 0.5 };
+  assert.deepEqual(s.validateFormula(live), []);
+  assert.deepEqual(s.validateFormula(s.DEFAULT_FORMULA), [], 'Vorlage für neue Rankings (mit review_age_weights) ist gültig');
+  assert.deepEqual(s.validateFormula({ fact_weight: 1, athlete_weight: 0 }), [], 'Ranking ohne Klima (z. B. Hyrox) braucht kein best_time');
+  assert.deepEqual(s.validateFormula({ best_time: { metric: 'rain_days', max: 6 } }), [], 'nur max genügt');
+});
+
+test('Formel prüfen: falsche Typen und Werte werden benannt', () => {
+  const errs = (f) => s.validateFormula(f).join(' | ');
+  assert.match(errs({ bayes_c: '5' }), /„bayes_c“ muss eine Zahl sein/);
+  assert.match(errs({ tippfehler: 'x' }), /„tippfehler“ muss eine Zahl sein/);
+  assert.match(errs({ athlete_enabled: 'ja' }), /athlete_enabled/);
+  assert.match(errs({ unknown_policy: 'egal' }), /unknown_policy/);
+  assert.match(errs({ review_age_weights: [[12]] }), /review_age_weights/);
+  assert.match(errs({ best_time: { metric: 'temperatur', min: 16 } }), /best_time/);
+  assert.match(errs({ best_time: { metric: 'avg_high_c' } }), /best_time/, 'ohne min und max');
+  assert.match(errs({ best_time: { metric: 'avg_high_c', min: 30, max: 20 } }), /best_time/, 'min größer als max');
+  assert.match(errs({ fact_weight: 0.7, athlete_weight: 0.4 }), /muss 1 ergeben/);
+  assert.deepEqual(s.validateFormula([]), ['Formel ist kein gültiges JSON-Objekt.']);
+});

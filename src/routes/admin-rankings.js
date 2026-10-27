@@ -51,13 +51,8 @@ function readRankingForm(body) {
   if (!f.name || !f.entity_label_sg || !f.entity_label_pl) errors.push('Name und Objekt-Beschriftungen sind Pflicht.');
 
   const formula = parseJson(f.formulaText, {});
-  if (formula.error || typeof formula.value !== 'object' || Array.isArray(formula.value)) errors.push('Formel ist kein gültiges JSON-Objekt.');
-  else {
-    for (const [k, v] of Object.entries(formula.value)) if (typeof v !== 'number') errors.push(`Formel: „${k}“ muss eine Zahl sein.`);
-    const fw = formula.value.fact_weight ?? 0.6;
-    const aw = formula.value.athlete_weight ?? 0.4;
-    if (Math.abs(fw + aw - 1) > 0.001) errors.push('Formel: fact_weight + athlete_weight muss 1 ergeben.');
-  }
+  if (formula.error) errors.push('Formel ist kein gültiges JSON-Objekt.');
+  else errors.push(...scoring.validateFormula(formula.value));
   const labels = parseJson(f.labelsText, []);
   if (labels.error || !Array.isArray(labels.value) || labels.value.some((l) => typeof l.min !== 'number' || !l.label)) {
     errors.push('Labels: JSON-Liste aus {"min": Zahl, "label": "Text"}.');

@@ -69,8 +69,6 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
-- Admin → Rankings bearbeiten: Die Formel-Prüfung verlangt nur Zahlen, `best_time` ist aber ein Objekt – Speichern des
-  Rankings scheitert vermutlich mit „best_time muss eine Zahl sein“ (prüfen und Objekte für bekannte Schlüssel zulassen).
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
@@ -109,6 +107,9 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 27.10. **Ranking speichern repariert**: Die Formel-Prüfung im Admin verlangte für jeden Schlüssel eine Zahl – die Formel des
+  Triathlon-Rankings (best_time, athlete_enabled, unknown_policy) und die Vorlage für neue Rankings (review_age_weights) ließen
+  sich nicht speichern. Jetzt Prüfung je Schlüssel (`scoring.validateFormula`), unbekannte Schlüssel weiter nur als Zahl.
 - 27.10. **Partner Hotels.com und CHECK24** (siehe oben): Hotels.com über CJ mit Expedia-Nummern (`id_from`), Markenhinweis
   laut Bedingungen; CHECK24 Pauschalreisen mit Link wie aus dem Linkgenerator, Nummer aus Parameter (c24pp_hotel_id, hotelId),
   eingefügte Adressen werden auf die kurze Form ohne Reisedaten gebracht (gilt für alle Programme), Datenschutz ergänzt.
