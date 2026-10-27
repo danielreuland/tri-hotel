@@ -716,6 +716,7 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .home-feature h3 a { color: var(--heading); text-decoration: none; }
 .home-feature p { margin: 0; }
 .camp-feature header { display: flex; flex-wrap: wrap; gap: 6px; }
+.home-summary { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
 .region-feature { overflow: hidden; }
 .region-feature .rg-photo { margin: -18px -18px 4px; aspect-ratio: 2 / 1; flex: none; }
 .home-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

@@ -107,6 +107,7 @@
         </header>
         <h3><a href="/trainingscamp/anbieter/<%= p.slug %>"><%= p.name %></a></h3>
         <p class="muted"><%= (p.destinations || []).join(' · ') || 'Ziele nicht angegeben' %></p>
+        <% if (p.summary) { %><p class="home-summary"><%= p.summary %></p><% } %>
         <% if (price) { %><p><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
         <p><a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels →</a></p>
       </article>
