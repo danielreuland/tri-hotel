@@ -99,6 +99,7 @@ async function collect() {
   //   (Fingerabdruck = fehlende Programme: erledigt bleibt erledigt, bis ein weiteres Programm dazukommt)
   const partnerSvc = require('./partners');
   const paying = (await db.many(`SELECT * FROM partner_programs WHERE status = 'active' ORDER BY sort_order, name`)).filter(partnerSvc.monetized);
+  const allPrograms = await db.many('SELECT id, code FROM partner_programs');
   if (paying.length) {
     for (const r of await db.many(
       `SELECT e.id AS entity_id, e.name, ${latestSub} AS sub_id,
@@ -107,7 +108,13 @@ async function collect() {
          FROM entities e JOIN entity_rankings er ON er.entity_id = e.id AND er.status = 'live'
          LEFT JOIN entity_links l ON l.entity_id = e.id
         GROUP BY e.id ORDER BY lower(e.name)`)) {
-      const missing = paying.filter((p) => !p.auto_search && !r.have.includes(p.id));
+      // Programme mit id_from (z. B. Hotels.com ← Expedia) gelten als vorhanden, wenn das Quellprogramm einen Link hat
+      const covered = (p) => {
+        if (!p.id_from) return false;
+        const src = allPrograms.find((x) => x.code === p.id_from);
+        return Boolean(src && r.have.includes(src.id));
+      };
+      const missing = paying.filter((p) => !p.auto_search && !r.have.includes(p.id) && !covered(p));
       if (!missing.length) continue;
       push({ source: 'partner_link', source_key: `partner-link:${r.entity_id}`, title: `${r.name} – Partnerlink prüfen / generieren`,
         detail: [{ level: 'todo', text: `${missing.map((p) => p.name).join(', ')}: Link fehlt – Seite des Hotels suchen und eintragen; gibt es keine: beim Hotel „nicht vorhanden“ anhaken` }],

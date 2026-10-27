@@ -55,6 +55,11 @@
       </div>
       <label>Adresse aus Nummer <small class="muted">optional – mit {id}; dann genügt beim Objekt die Nummer (z. B. Expedia-Hotel-ID)</small></label>
       <input name="id_url" type="text" value="<%= p.id_url || '' %>" placeholder="https://…{id}…">
+      <label>Nummer übernehmen von <small class="muted">optional – gleiche Hotel-IDs wie ein anderes Programm (z. B. Hotels.com ← Expedia): Ohne eigenen Link wird die Adresse aus dessen Nummer gebaut</small></label>
+      <select name="id_from">
+        <option value="">– nicht übernehmen –</option>
+        <% programs.filter(function (x) { return x.id_url && x.code !== p.code; }).forEach(function (x) { %><option value="<%= x.code %>" <%= p.id_from === x.code ? 'selected' : '' %>><%= x.name %></option><% }) %>
+      </select>
       <label>Notiz</label><textarea name="notes" rows="2"><%= p.notes || '' %></textarea>
       <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
     </form>

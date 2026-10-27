@@ -74,6 +74,7 @@ router.post('/:id', wrap(async (req, res, next) => {
     direct_link: b.direct_link === 'on',
     trademark_notice: String(b.trademark_notice || '').trim().slice(0, 300) || null,
     id_url: /^https:\/\/\S+\{id\}/.test(String(b.id_url || '').trim()) ? String(b.id_url).trim().slice(0, 300) : null,
+    id_from: /^[a-z0-9_-]{2,40}$/.test(String(b.id_from || '')) && b.id_from !== old.code ? b.id_from : null,
     link_params: parseParams(b.link_params),
     link_template: template,
     label_booking: String(b.label_booking || old.label_booking).trim().slice(0, 80),
@@ -83,9 +84,9 @@ router.post('/:id', wrap(async (req, res, next) => {
   };
   await db.query(
     `UPDATE partner_programs SET name=$2, link_params=$3, link_template=$4, label_booking=$5, label_reviews=$6, status=$7, notes=$8,
-       domains=$9, search_url=$10, auto_search=$11, sort_order=$12, direct_link=$13, trademark_notice=$14, id_url=$15, updated_at=now() WHERE id=$1`,
+       domains=$9, search_url=$10, auto_search=$11, sort_order=$12, direct_link=$13, trademark_notice=$14, id_url=$15, id_from=$16, updated_at=now() WHERE id=$1`,
     [old.id, upd.name, JSON.stringify(upd.link_params), upd.link_template, upd.label_booking, upd.label_reviews, upd.status, upd.notes,
-      upd.domains, upd.search_url, upd.auto_search, upd.sort_order, upd.direct_link, upd.trademark_notice, upd.id_url]);
+      upd.domains, upd.search_url, upd.auto_search, upd.sort_order, upd.direct_link, upd.trademark_notice, upd.id_url, upd.id_from]);
   await logAction(req.session.admin.id, 'partner_program', old.id, 'edit_partner_program', {
     status: { old: old.status, new: upd.status }, params: Object.keys(upd.link_params), template: Boolean(upd.link_template),
     sort_order: upd.sort_order, auto_search: upd.auto_search, domains: upd.domains,

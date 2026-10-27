@@ -300,6 +300,9 @@
               <div><label>Seite mit Preisen / Buchung<% if (p.id_url) { %> <small class="muted">– Adresse oder nur die Nummer</small><% } %></label><input name="links[<%= p.id %>][booking]" type="<%= p.id_url ? 'text' : 'url' %>" placeholder="<%= p.id_url ? 'https://… oder z. B. 793891' : 'https://' %>" value="<%= get('booking') %>"></div>
               <div><label>Bewertungsseite <small class="muted">optional</small></label><input name="links[<%= p.id %>][reviews]" type="url" placeholder="https://" value="<%= get('reviews') %>"></div>
             </div>
+            <% if (p.id_from && !get('booking')) { var srcP = partnerPrograms.find(function (x) { return x.code === p.id_from; }); var srcL = srcP && partnerLinks.find(function (x) { return x.program_id === srcP.id && x.kind === 'booking'; }); %>
+              <p style="margin:4px 0"><small class="muted"><%= srcL ? 'Ohne eigenen Link wird die Nummer aus dem ' + srcP.name + '-Link übernommen.' : 'Übernimmt die Nummer von ' + (srcP ? srcP.name : p.id_from) + ' – dort ist noch kein Link eingetragen.' %></small></p>
+            <% } %>
             <% if (!get('booking')) { %><label class="inline" style="margin:4px 0"><input type="checkbox" name="links[<%= p.id %>][absent]" <%= partnerAbsent.indexOf(p.id) >= 0 ? 'checked' : '' %>> <span><small>Bei <%= p.name %> nicht vorhanden – nicht mehr nachfragen</small></span></label><% } %>
             <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener"><%= /google\./.test(p.search_url) ? p.name + '-Seite des Hotels suchen ↗' : 'Bei ' + p.name + ' suchen ↗' %></a></small><% } %>
           </fieldset>

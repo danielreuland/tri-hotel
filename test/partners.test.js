@@ -64,3 +64,14 @@ test('Partnerlink aus Nummer (Expedia-Hotel-ID)', () => {
   assert.equal(partners.fromId(ex, 'https://www.expedia.de/x.h1.Hotel-Information'), 'https://www.expedia.de/x.h1.Hotel-Information', 'Adresse bleibt Adresse');
   assert.equal(partners.fromId({ id_url: null }, '793891'), '793891', 'ohne Vorlage keine Umwandlung');
 });
+
+test('Partner: Nummer von einem anderen Programm übernehmen (Hotels.com ← Expedia, gleiche Hotel-IDs)', () => {
+  const expedia = { id_url: 'https://www.expedia.de/h{id}.Hotel-Information' };
+  const hotelscom = { id_url: 'https://de.hotels.com/h{id}.Hotel-Information' };
+  assert.equal(partners.idOf(expedia, 'https://www.expedia.de/h1786689.Hotel-Information'), '1786689');
+  assert.equal(partners.idOf(expedia, 'https://www.expedia.de/Las-Playitas-Hotels-Playitas.h1786689.Hotel-Information?chkin=2026-11-01'), '1786689');
+  assert.equal(partners.idOf(expedia, 'https://www.expedia.de/Hotel-Search?destination=Mallorca'), null);
+  assert.equal(partners.idOf({ id_url: null }, 'https://www.expedia.de/h1.Hotel-Information'), null);
+  assert.equal(partners.derivedUrl(hotelscom, expedia, 'https://www.expedia.de/h1786689.Hotel-Information'), 'https://de.hotels.com/h1786689.Hotel-Information');
+  assert.equal(partners.derivedUrl(hotelscom, expedia, 'https://www.expedia.de/Hotel-Search'), null);
+});

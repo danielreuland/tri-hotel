@@ -12,6 +12,25 @@ function fromId(program, raw) {
   return program.id_url && /^\d{3,12}$/.test(v) ? program.id_url.replace(/\{id\}/g, v) : v;
 }
 
+// Nummer aus einer Adresse lesen, die nach der Vorlage des Programms gebaut ist – auch aus langen Adressen mit Hotelnamen
+// (…/h1786689.Hotel-Information oder …/Playitas.h1786689.Hotel-Information → 1786689). Gesucht wird das letzte Pfadstück
+// vor {id} und der Text danach (bei Expedia „h“ und „.Hotel-Information“).
+const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function idOf(program, url) {
+  if (!program || !program.id_url || !url || !program.id_url.includes('{id}')) return null;
+  const [before, after] = program.id_url.split('{id}');
+  const lead = before.slice(before.lastIndexOf('/') + 1);
+  const tail = (after || '').split(/[/?#]/)[0];
+  const m = new RegExp(`${escRe(lead)}(\\d{3,12})${escRe(tail)}(?:[/?#]|$)`).exec(String(url));
+  return m ? m[1] : null;
+}
+
+// Programm mit id_from (z. B. Hotels.com ← Expedia): Adresse aus der Nummer im Link des anderen Programms
+function derivedUrl(program, source, sourceUrl) {
+  const id = idOf(source, sourceUrl);
+  return id && program.id_url ? program.id_url.replace(/\{id\}/g, id) : null;
+}
+
 // Zieladresse zulässig? Nur https und – wenn das Programm Domains vorgibt – nur diese (inkl. Subdomains)
 function allowedUrl(program, raw) {
   let u;
@@ -58,6 +77,15 @@ async function linksFor(entityOrId) {
             p.direct_link, p.trademark_notice
        FROM entity_links l JOIN partner_programs p ON p.id = l.program_id
       WHERE l.entity_id = $1 AND p.status = 'active'`, [entity.id]);
+  // Nummer von einem anderen Programm übernehmen (id_from), wenn kein eigener Preis-Link eingetragen ist
+  for (const p of await db.many(`SELECT * FROM partner_programs WHERE status = 'active' AND id_from IS NOT NULL AND id_url IS NOT NULL`)) {
+    if (rows.some((r) => r.code === p.code && r.kind === 'booking')) continue;
+    const src = await db.one(
+      `SELECT l.url, s.id_url FROM entity_links l JOIN partner_programs s ON s.id = l.program_id
+        WHERE l.entity_id = $1 AND s.code = $2 AND l.kind = 'booking'`, [entity.id, p.id_from]);
+    const url = src && derivedUrl(p, src, src.url);
+    if (url) rows.push({ id: null, kind: 'booking', url, code: p.code, name: p.name, label_booking: p.label_booking, label_reviews: p.label_reviews, link_params: p.link_params, link_template: p.link_template, sort_order: p.sort_order, direct_link: p.direct_link, trademark_notice: p.trademark_notice, derived: true });
+  }
   for (const p of await db.many(`SELECT * FROM partner_programs WHERE status = 'active' AND auto_search IS NOT NULL`)) {
     if (rows.some((r) => r.code === p.code && r.kind === p.auto_search)) continue;
     const url = searchUrl(p, entity);
@@ -130,6 +158,17 @@ async function resolve(entityType, slug, code, kind) {
       WHERE e.entity_type = $1 AND e.slug = $2 AND p.code = $3 AND l.kind = $4 AND p.status = 'active'`,
     [entityType, slug, code, kind]);
   if (link) return link;
+  // Nummer aus dem Link eines anderen Programms (id_from)
+  if (kind === 'booking') {
+    const d = await db.one(
+      `SELECT p.*, l.url AS source_url, s.id_url AS source_id_url FROM partner_programs p
+         JOIN partner_programs s ON s.code = p.id_from
+         JOIN entities e ON e.entity_type = $1 AND e.slug = $2
+         JOIN entity_links l ON l.entity_id = e.id AND l.program_id = s.id AND l.kind = 'booking'
+        WHERE p.code = $3 AND p.status = 'active' AND p.id_url IS NOT NULL`, [entityType, slug, code]);
+    const url = d && derivedUrl(d, { id_url: d.source_id_url }, d.source_url);
+    if (url) return { id: null, program_id: d.id, url, link_params: d.link_params, link_template: d.link_template, derived: true };
+  }
   const p = await db.one(`SELECT * FROM partner_programs WHERE code = $1 AND status = 'active' AND auto_search = $2`, [code, kind]);
   const entity = p && await db.one('SELECT id, name, city FROM entities WHERE entity_type = $1 AND slug = $2', [entityType, slug]);
   const url = entity && searchUrl(p, entity);
@@ -161,4 +200,4 @@ async function stats(days = 30) {
   return { byProgram, top };
 }
 
-module.exports = { KINDS, fromId, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
