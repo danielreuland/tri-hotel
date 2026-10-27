@@ -16,8 +16,15 @@
 
 <section class="area-hero">
   <p class="eyebrow">Trainingsregionen</p>
-  <h1><%= month ? 'Trainingsregionen im ' + MONTHS[month - 1] : 'Trainingsregionen im Vergleich' %></h1>
-  <p class="lead">Klima je Monat, Wassertemperatur, Wind und Radrevier für <%= rows.length %> Regionen – dazu, wie viele geprüfte <%= ranking.entity_label_pl %> es dort gibt. Nur Daten mit Quelle, kein Regions-Score.</p>
+  <h1><%= month ? 'Trainingsregionen im ' + MONTHS[month - 1] : 'Trainingsregionen im Überblick' %></h1>
+  <p class="lead">Wo lohnt sich das Trainingslager in welchem Monat? Hier findest du alle Regionen mit denselben Daten nebeneinander – aus offenen Datenquellen und jeweils mit Quelle.</p>
+  <ul class="region-intro">
+    <li><strong>Klima je Monat:</strong> Tageshöchst­temperatur, Regentage, Sonnenstunden und Wind, dazu die Wassertemperatur an der Küste – und die Monate mit der besten Reisezeit.</li>
+    <li><strong>Radrevier:</strong> Bewertung aus OpenStreetMap mit ruhigen Straßen-Kilometern, Pässen und Höhenunterschied.</li>
+    <li><strong><%= ranking.entity_label_pl %><%= locals.campGuide ? ' und Camps' : '' %>:</strong> wie viele geprüfte <%= ranking.entity_label_pl %> es in der Region gibt und der beste <%= scoreName %><%= locals.campGuide ? ', dazu passende Camp-Anbieter' : '' %>.</li>
+    <li><strong>Dein Reisemonat:</strong> Wähle unten „Ich reise im …“, um die Regionen nach Eignung in diesem Monat zu sortieren, oder kreuze 2–3 Regionen für den Direktvergleich an.</li>
+  </ul>
+  <p class="muted"><small>Regionen bekommen bewusst keinen eigenen Score – du entscheidest, was dir wichtig ist.</small></p>
 </section>
 
 <form class="region-filter card" method="get" action="/trainingsregionen">

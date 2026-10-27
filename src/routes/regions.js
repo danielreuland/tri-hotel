@@ -39,8 +39,8 @@ router.get('/trainingsregionen', wrap(async (req, res, next) => {
   const siteUrl = res.locals.siteUrl;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}/` }, { name: 'Trainingsregionen', url: `${siteUrl}/trainingsregionen` }];
   res.render('public/regions', {
-    title: month ? `Trainingsregionen im ${MONTHS[month - 1]} – Klima, Wasser, Radrevier` : 'Trainingsregionen im Vergleich – Klima, Wasser, Radrevier',
-    description: `${rows.length} Trainingsregionen im Vergleich: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier aus OpenStreetMap, geprüfte ${ranking.entity_label_pl} mit ${ranking.score_name}.`,
+    title: month ? `Trainingsregionen im ${MONTHS[month - 1]} – Klima, Wasser, Radrevier` : 'Trainingsregionen im Überblick – Klima, Wasser, Radrevier',
+    description: `Trainingsregionen im Überblick: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier aus OpenStreetMap, geprüfte ${ranking.entity_label_pl} mit ${ranking.score_name}.`,
     canonical: `${siteUrl}/trainingsregionen`,
     noindex: Boolean(month) || sort !== 'standard',
     jsonLd: [seo.breadcrumbLd(crumbs)],
