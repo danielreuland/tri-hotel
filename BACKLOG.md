@@ -11,8 +11,8 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 - hotel.de: Such-Adresse mit {q} eintragen (Format unbekannt), damit auch Hotels ohne eigenen Link einen Preis-Link bekommen.
 
 ### Partner: Hotels.com und CHECK24 (Stand 27.10.2026)
-- **Hotels.com:** fertig im Branch `hotelscom` (Migration 065, Programm inaktiv, übernimmt Hotel-IDs aus dem Expedia-Link
-  über `id_from`). Offen: veröffentlichen (Merge nach main, Deploy), Programmbedingungen bei CJ prüfen, dann aktivieren.
+- **Hotels.com:** live und aktiv seit 27.10.2026 (Migration 065/066, übernimmt Hotel-IDs aus dem Expedia-Link über `id_from`).
+  Bedingungen geprüft: 4 % Hotels, 7 Tage; Markenhinweis nennt Expedia, Inc.; sonst wie Expedia (siehe Notiz im Programm).
 - **CHECK24:** Daniel hat Zugriff aufs Partnerprogramm. Benötigt: Beispiel-Deeplink (Platzhalter für Ziel-URL, Unterkennung),
   Adresse einer Hotelseite (feste Hotel-ID?), Bedingungen (Marke, verdeckte Links, Pixel, E-Mail). Danach anlegen wie Expedia.
 
