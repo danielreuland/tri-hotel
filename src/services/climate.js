@@ -154,15 +154,14 @@ async function seaTemperature(center, radiusKm, { mode = 'coast', fractions } = 
   return { months: await seaMonthly(points), points: points.map((p) => ({ lat: p.lat, lng: p.lng, distance_km: p.distance_km })) };
 }
 
-// Hotel: Die Marine-API liefert zu einem Punkt automatisch die nächste Meereszelle (Raster etwa 8–9 km, Buchten oft
-// nicht aufgelöst). Gefragt wird deshalb nur der Hotelpunkt; die Zelle zählt, wenn sie höchstens HOTEL_SEA_KM entfernt ist.
+// Hotel: Die Marine-API liefert zu jedem Punkt die nächste Meereszelle ihres Rasters (etwa 8–9 km, Buchten oft nicht
+// aufgelöst) – an flachen Küsten manchmal eine weit entfernte. Deshalb Hotelpunkt plus Punkte in 3 und 6 km rundum
+// abfragen (ein Aufruf) und die nächste Zelle nehmen; sie zählt, wenn sie höchstens HOTEL_SEA_KM entfernt ist.
 const HOTEL_SEA_KM = 20;
 async function hotelSea(point) {
-  const query = { lat: point.lat, lng: point.lng };
-  const [r] = await probe([query]);
-  if (!hasSea(r)) return null;
-  const hit = hitOf(point, query, r);
-  if (hit.distance_km > HOTEL_SEA_KM) return null;
+  const candidates = seaCandidates(point, 6, [0.5, 1]);
+  const hit = pickSeaPoint(point, HOTEL_SEA_KM, candidates, await probe(candidates));
+  if (!hit) return null;
   return { months: await seaMonthly([hit]), points: [{ lat: hit.lat, lng: hit.lng, distance_km: hit.distance_km }] };
 }
 
