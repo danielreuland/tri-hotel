@@ -37,7 +37,8 @@
     <dl class="dash-list">
       <div><dt>offen</dt><dd><a href="/admin/aufgaben"><%= n(t.open) %></a><% if (t.in_progress) { %> · <%= t.in_progress %> in Arbeit<% } %></dd></div>
       <div><dt>neu in 7 Tagen</dt><dd><%= n(t.new7) %></dd></div>
-      <div><dt>erledigt in 7 Tagen</dt><dd><%= n(t.done7) %> von Hand · <%= n(t.done7_auto) %> automatisch</dd></div>
+      <div><dt>erledigt in 7 Tagen</dt><dd><%= n(t.done7) %></dd></div>
+      <div><dt>davon Anlass erledigt · von Hand geschlossen</dt><dd><%= n(t.done7_auto) %> · <%= n(t.done7 - t.done7_auto) %></dd></div>
     </dl>
     <% if (t.sources.length) { %>
       <h3>Offen nach Art</h3>

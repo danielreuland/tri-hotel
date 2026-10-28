@@ -62,7 +62,9 @@ async function load(site) {
          FROM camp_leads WHERE site_id = $1`, [site.id]),
     db.one(
       `SELECT count(*) FILTER (WHERE status <> 'done')::int AS open, count(*) FILTER (WHERE status = 'in_progress')::int AS in_progress,
-              count(*) FILTER (WHERE status = 'done' AND done_at > now() - interval '7 days' AND NOT done_auto)::int AS done7,
+              -- erledigt = von Hand nach „Erledigt“ gezogen oder vom System geschlossen, weil der Anlass erledigt ist
+              -- (z. B. Partnerlink eingetragen); beides zählt
+              count(*) FILTER (WHERE status = 'done' AND done_at > now() - interval '7 days')::int AS done7,
               count(*) FILTER (WHERE status = 'done' AND done_at > now() - interval '7 days' AND done_auto)::int AS done7_auto,
               count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS new7
          FROM admin_tasks`),
