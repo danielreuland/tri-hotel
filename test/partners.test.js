@@ -122,6 +122,23 @@ test('Partner: Nummer mit festem Präfix im Parameter (trivago search=100-{id}),
   assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002;x'), '18002');
 });
 
+test('Partner: hotel.de – Nummer aus Detailseite (hn) oder Ergebnisliste (hotelTeaserKey[0]), Reisedaten fallen weg', () => {
+  const hotelde = { id_url: 'https://www.hotel.de/de/detail?hn={id}', id_params: ['hotelTeaserKey[0]'], domains: ['hotel.de'],
+    link_template: 'https://www.awin1.com/cread.php?awinmid=16018&awinaffid=3127993&clickref={slug}&ued={url_enc}' };
+  const detail = 'https://www.hotel.de/de/detail?hn=251368&location=%25187875&startDateDay=28&startDateMonth=10&startDateYear=2026&currency=EUR&rooms=1&numberOfAdults%5B0%5D=1';
+  const list = 'https://www.hotel.de/de/list?location=%25187875&hotelTeaserKey%5B0%5D=251368&perimeter=30&orderBy=Recommendations';
+  assert.equal(partners.idOf(hotelde, detail), '251368');
+  assert.equal(partners.idOf(hotelde, list), '251368', 'kodierte Klammern');
+  assert.equal(partners.idOf(hotelde, 'https://www.hotel.de/de/list?hotelTeaserKey[0]=251368'), '251368');
+  assert.equal(partners.idOf(hotelde, 'https://www.hotel.de/de/list?hotelTeaserKey%5B1%5D=251368'), null, 'nur der erste Treffer');
+  assert.equal(partners.idOf(hotelde, 'https://www.hotel.de/de/list?location=%25187875'), null, 'Ort ist keine Hotelnummer');
+  assert.equal(partners.idOf(hotelde, 'https://www.hotel.de/de/list?q=%ZZ&hotelTeaserKey[0]=251368'), '251368', 'kaputte Kodierung wirft nicht');
+  const target = partners.fromId(hotelde, partners.idOf(hotelde, list));
+  assert.equal(target, 'https://www.hotel.de/de/detail?hn=251368');
+  assert.equal(partners.buildUrl(hotelde, target, { slug: 'playitas-hotel-las-playitas' }),
+    'https://www.awin1.com/cread.php?awinmid=16018&awinaffid=3127993&clickref=playitas-hotel-las-playitas&ued=https%3A%2F%2Fwww.hotel.de%2Fde%2Fdetail%3Fhn%3D251368');
+});
+
 test('Anbieterlogos: Adresse nur für eigene Upload-Dateinamen, Kurzbeschriftung neben dem Logo', () => {
   assert.equal(partners.logoUrl('trivago-1730000000000.svg'), '/partner-logo/trivago-1730000000000.svg');
   assert.equal(partners.logoUrl('../etc/passwd'), null);

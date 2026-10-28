@@ -80,7 +80,7 @@ router.post('/:id', wrap(async (req, res, next) => {
     trademark_notice: String(b.trademark_notice || '').trim().slice(0, 300) || null,
     id_url: /^https:\/\/\S+\{id\}/.test(String(b.id_url || '').trim()) ? String(b.id_url).trim().slice(0, 300) : null,
     id_from: /^[a-z0-9_-]{2,40}$/.test(String(b.id_from || '')) && b.id_from !== old.code ? b.id_from : null,
-    id_params: String(b.id_params || '').split(/[\s,]+/).filter((x) => /^[\w.-]{1,40}$/.test(x)).slice(0, 5),
+    id_params: String(b.id_params || '').split(/[\s,]+/).filter((x) => /^[\w.[\]-]{1,40}$/.test(x)).slice(0, 5),
     link_params: parseParams(b.link_params),
     link_template: template,
     label_booking: String(b.label_booking || old.label_booking).trim().slice(0, 80),

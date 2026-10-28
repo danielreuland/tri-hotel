@@ -40,7 +40,10 @@ function idOf(program, url) {
     const tail = (after || '').split(/[/?#]/)[0];
     m = new RegExp(`${escRe(lead)}(\\d{3,12})${escRe(tail)}(?:[/?#]|$)`).exec(u);
   }
-  for (const name of program.id_params || []) m = m || paramRe(name).exec(u);
+  // weitere Parameter auch in kodierter Schreibweise (hotel.de: hotelTeaserKey%5B0%5D=251368 = hotelTeaserKey[0]=251368)
+  let plain = u;
+  try { plain = decodeURIComponent(u); } catch { /* ungültige Kodierung: nur Original prüfen */ }
+  for (const name of program.id_params || []) m = m || paramRe(name).exec(u) || paramRe(name).exec(plain);
   return m ? m[1] : null;
 }
 

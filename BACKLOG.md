@@ -35,8 +35,9 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   kein eigener Parameter nötig. Awin zählt den Klick (Test 28.10.2026). **trivago aktiv seit Migration 084** (Vorlage, `id_url`, Playitas-Link); `idOf`/`fromId`
   erkennen Präfix im Parameter (`100-`) und Reisedaten nach `;`. Offen: trivago-Nummern für die übrigen Hotels (Aufgaben
   „Partnerlink prüfen“), trivago-Logo aus der brand toolbox hochladen.
-  hotel.de: Awin-Programm-ID 16018 (aus Bannercode). Offen: Deeplink-Format (hotel.de-Hotelseite), Logo in brauchbarer Größe
-  (Awin-Werbemittel nur 100×19 px). Allgemein: Provisionssätze aus Awin,
+  hotel.de: Awin-Programm-ID 16018, **aktiv seit Migration 085** (Ziel `https://www.hotel.de/de/detail?hn=<Nummer>`, getestet:
+  landet beim Hotel, Klick gezählt, Awin hängt `awc` an; Nummer auch aus `hotelTeaserKey[0]` der Ergebnisliste; Logo 200×37
+  aus Awin-Werbemitteln hochgeladen). Offen: hotel.de-Nummern für die übrigen Hotels (Aufgaben „Partnerlink prüfen“). Allgemein: Provisionssätze aus Awin,
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
 
