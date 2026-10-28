@@ -25,8 +25,14 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   „Pauschalreise mit Flug bei CHECK24“), Logo-Upload im Admin (SVG/PNG/WebP ≤ 300 KB, Herkunft Pflicht, SVG ohne Skripte,
   Auslieferung unter /partner-logo/ mit strenger CSP), Kasten „Buchen & Anfragen“ als gleichrangige Zeilen in Admin-Reihenfolge,
   „Direkt beim Hotel“ zuletzt; Handy-Leiste unverändert (erster Anbieter).
-  Offen vor dem Aktivieren: Awin-Publisher-ID und Programm-IDs (trivago, hotel.de), trivago-Tracking-ID (ist sie im Awin-Link
-  enthalten?), Deeplink-Format je Hotel (trivago-Hotel-Nummer bzw. hotel.de-Hotelseite), Provisionsmodell/-sätze aus Awin,
+  Geklärt (28.10.2026): Awin-Publisher-ID 3127993, trivago-Programm-ID 105923 (aus Widget-/Bannercode). Awin bietet für trivago
+  nur Banner/Widget an (beides nicht verwenden: nicht hotelbezogen, Fremdskript, Bild-Hotlinking) – stattdessen Deeplink
+  `https://www.awin1.com/cread.php?awinmid=105923&awinaffid=3127993&clickref={slug}&ued={url_enc}`. Hoteladresse bei trivago:
+  `https://www.trivago.de/de/lm/<name>?search=100-<Nummer>` (Playitas: 100-179546); Reisedaten `;dr-…;drs-…` und
+  `#accommodation-overlay` weglassen. Getestet: Deeplink mit vollem Pfad und mit nur `https://www.trivago.de/de/srl?search=100-<Nummer>`
+  landen beide beim Hotel → je Hotel reicht die Nummer (`id_url` mit `search=100-{id}`; `idOf` muss den Präfix „100-“ im
+  Parameter erkennen, mit Tests). Noch offen: zählt Awin den Klick (Daniel prüft), trivago-Tracking-ID nötig?
+  Offen hotel.de: Awin-Programm-ID, Deeplink-Format (hotel.de-Hotelseite). Allgemein: Provisionssätze aus Awin,
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
 
