@@ -1,5 +1,6 @@
--- Klicks auf Partnerlinks bis einschließlich 28.10.2026 waren Testklicks (Linkprüfung, Awin-/CJ-/CHECK24-Tests): zurücksetzen.
--- Je Programm ein Eintrag im Audit-Log mit der Zahl der entfernten Klicks. Camp-Klicks bleiben unverändert.
+-- Klicks auf Partnerlinks und zu Camp-Anbietern bis einschließlich 28.10.2026 waren Testklicks (Linkprüfung, Awin-/CJ-/
+-- CHECK24-Tests, Prüfung der Anbieter-Links): zurücksetzen. Je Programm bzw. Anbieter ein Eintrag im Audit-Log mit der Zahl
+-- der entfernten Klicks.
 INSERT INTO admin_actions (entity_type, entity_id, action, diff)
 SELECT 'partner_program', p.id, 'reset_partner_clicks',
        jsonb_build_object('until', '2026-10-28', 'clicks', sum(c.clicks), 'reason', 'Testklicks')
@@ -18,6 +19,12 @@ SELECT 'partner_program', c.target_id, 'reset_partner_clicks',
        jsonb_build_object('until', '2026-10-28', 'clicks', sum(c.clicks), 'kind', 'partner_search', 'reason', 'Testklicks')
   FROM outbound_clicks c
  WHERE c.kind = 'partner_search' AND c.day <= '2026-10-28'
+ GROUP BY c.target_id
+UNION ALL
+SELECT 'camp_provider', c.target_id, 'reset_camp_clicks',
+       jsonb_build_object('until', '2026-10-28', 'clicks', sum(c.clicks), 'reason', 'Testklicks')
+  FROM outbound_clicks c
+ WHERE c.kind = 'camp' AND c.day <= '2026-10-28'
  GROUP BY c.target_id;
 
-DELETE FROM outbound_clicks WHERE kind IN ('entity_link', 'partner_search') AND day <= '2026-10-28';
+DELETE FROM outbound_clicks WHERE kind IN ('entity_link', 'partner_search', 'camp') AND day <= '2026-10-28';
