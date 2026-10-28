@@ -88,7 +88,7 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
   blog.triprep.de/wann-und-wohin-ins-trainingslager, 5 folgbare Links auf /, /hotels, /trainingsregionen, /trainingscamp).
   triprep-Blog am 28.10. umgebaut (eigene, server-seitig gerenderte Seite je Artikel, Canonical auf sich selbst, BlogPosting,
   echte Links auf der Blog-Startseite, 404 für unbekannte Adressen; von außen geprüft). Sitemaps von blog.triprep.de
-  und tri-hotel.de am 28.10. neu eingereicht. Offen (Daniel): Artikel per URL-Prüfung zur Indexierung beantragen. Optional bei triprep: nur eine H1 je Artikel
+  und tri-hotel.de am 28.10. neu eingereicht. Indexierung des Artikels beantragt (28.10.). Optional bei triprep: nur eine H1 je Artikel
   (derzeit 3: „TriPrep Blog“, Artikeltitel, H1 im Artikeltext); Linktexte beschreibend statt Adressen, ggf. Regionsseiten verlinken.
 - Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
   demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
