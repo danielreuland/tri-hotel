@@ -84,7 +84,7 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - Erledigt 28.10.: /hotels mit eigenem Titel, H1 und Beschreibung (rankings.content list_title/list_h1/list_description,
   Migration 086) statt der Startseiten-Beschreibung; Sitemap mit lastmod auch für Start, Liste, Methodik, Regionen, Länder;
   Schrägstrich am Ende per 301 (/hotels/ → /hotels). /triscore hatte bereits FAQ-Daten.
-- Backlinks: erster Blogartikel mit Links von Daniel (27.10.).
+- Backlinks: erster Blogartikel mit Links von Daniel (erstellt 27.10., live seit 28.10.).
 - Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
   demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
