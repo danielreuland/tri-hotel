@@ -20,7 +20,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Linkprüfung 27.10. (https://claude.ai/artifact/MwyM2n7v35cKkEpVtUP2BJ): 11 Hotels in DE/AT bei CHECK24 nicht buchbar (nur
   Pauschalreisen) – Links entfernt, „gibt es nicht“ vermerkt (Migration 082). Rest am 28.10. geprüft: Aktivhotel Santa Lucia
   und MR Les Rotes ebenfalls nicht buchbar (Migration 083); 22 Hotels mit funktionierendem CHECK24-Link.
-- **trivago und hotel.de (Awin) + Anbieter untereinander mit Logos – Anbieter untereinander live seit 28.10.2026, trivago/hotel.de vorbereitet:**
+- **trivago und hotel.de (Awin) + Anbieter untereinander mit Logos – live seit 28.10.2026:**
   Migration 081 (Logo-Spalten, trivago-Programm inaktiv, hotel.de-Notiz, Beschriftungen „Preise prüfen bei …“,
   „Pauschalreise mit Flug bei CHECK24“), Logo-Upload im Admin (SVG/PNG/WebP ≤ 300 KB, Herkunft Pflicht, SVG ohne Skripte,
   Auslieferung unter /partner-logo/ mit strenger CSP), Kasten „Buchen & Anfragen“ als gleichrangige Zeilen in Admin-Reihenfolge,
@@ -110,8 +110,6 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
-- Admin-Dashboard (/admin, 28.10.): Seitenaufrufe erscheinen, sobald `PLAUSIBLE_API_KEY` in der Server-`.env` steht (Daniel).
-  Hotelliste liegt jetzt unter /admin/objekte im Bereich Inhalte (alte /admin?status=…-Links leiten weiter).
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
@@ -164,6 +162,9 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 28./29.10.: Admin-Dashboard als Startseite (/admin) mit Seitenaufrufen aus Plausible (`PLAUSIBLE_API_KEY` in der Server-`.env`),
+  Partnerlink-Abdeckung und Klicks; Hotelliste unter Inhalte (/admin/objekte); Partnerlinks in den Hoteldetails klappbar;
+  Test-Klicks bis 28.10. zurückgesetzt (Migration 087: 41 Partner-, 78 Camp-Klicks).
 - 27.10. **Trainingslager-Seite (/trainingscamp) für Suchanfragen**: „Trainingslager“ in Titel, H1 und H2, eigene Abschnitte
   „Was kostet ein Triathlon-Trainingslager?“ und „Trainingslager für Vereine und Gruppen“, Links auf die Regionsseiten, drei
   neue häufige Fragen (Kosten, Buchungszeitpunkt, Trainingsstunden), eigenes OG-Bild, Sportresorts/Pauschalreiserecht/Leihrad
