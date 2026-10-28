@@ -34,7 +34,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Parameter erkennen, mit Tests). trivago-Tracking-ID: hängt Awin bei der Weiterleitung selbst an (`cip=…&cip_tc=Tri-hotel_3127993&cip_ext_id=<clickref>`),
   kein eigener Parameter nötig. Awin zählt den Klick (Test 28.10.2026). **trivago aktiv seit Migration 084** (Vorlage, `id_url`, Playitas-Link); `idOf`/`fromId`
   erkennen Präfix im Parameter (`100-`) und Reisedaten nach `;`. Offen: trivago-Nummern für die übrigen Hotels (Aufgaben
-  „Partnerlink prüfen“), trivago-Logo aus der brand toolbox hochladen.
+  „Partnerlink prüfen“). Logo hochgeladen 28.10.
   hotel.de: Awin-Programm-ID 16018, **aktiv seit Migration 085** (Ziel `https://www.hotel.de/de/detail?hn=<Nummer>`, getestet:
   landet beim Hotel, Klick gezählt, Awin hängt `awc` an; Nummer auch aus `hotelTeaserKey[0]` der Ergebnisliste; Logo 200×37
   aus Awin-Werbemitteln hochgeladen). Offen: hotel.de-Nummern für die übrigen Hotels (Aufgaben „Partnerlink prüfen“). Allgemein: Provisionssätze aus Awin,
@@ -84,7 +84,12 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - Erledigt 28.10.: /hotels mit eigenem Titel, H1 und Beschreibung (rankings.content list_title/list_h1/list_description,
   Migration 086) statt der Startseiten-Beschreibung; Sitemap mit lastmod auch für Start, Liste, Methodik, Regionen, Länder;
   Schrägstrich am Ende per 301 (/hotels/ → /hotels). /triscore hatte bereits FAQ-Daten.
-- Backlinks: erster Blogartikel mit Links von Daniel (erstellt 27.10., live seit 28.10.).
+- Backlinks: erster Blogartikel mit Links von Daniel (erstellt 27.10., live seit 28.10.:
+  blog.triprep.de/wann-und-wohin-ins-trainingslager, 5 folgbare Links auf /, /hotels, /trainingsregionen, /trainingscamp).
+  Problem (geprüft 28.10.): Der triprep-Blog lädt Artikel nur per JavaScript über `#post/<slug>`; die saubere Adresse liefert
+  die leere Hülle mit Titel „Blog – TriPrep“ und Canonical auf die Blog-Startseite → Artikel nicht indexierbar, Links wirkungslos.
+  Umbau in der triprep-Sitzung (eigene, server-seitig gerenderte Seite je Artikel). Danach: Artikel in der Search Console von
+  blog.triprep.de zur Indexierung beantragen; Linktexte beschreibend statt Adressen, ggf. direkte Links auf Regionsseiten.
 - Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
   demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
@@ -142,8 +147,8 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
     Aggregator „geschlossen“ (ES 4 %); offen u. a. Webgains ES (6 %, DE geschlossen) und Impact.com ES. Bei Zafiro nachfragen,
     über welches Netzwerk der deutsche Markt läuft.
   - Zafiro Palace Alcudia stand dreimal im Ranking – zusammengeführt mit Migration 080 (alte Adressen leiten per 301 um).
-- **hotel.de (über Awin) – später**: Programm hat keine Deeplinks; nur Startseiten-Links wären auf Hotelseiten irreführend,
-  daher bis auf Weiteres inaktiv. Wieder aufgreifen, wenn Deeplinks oder ein Such-Link möglich sind.
+- **trivago- und hotel.de-Nummern je Hotel** eintragen (Aufgaben „Partnerlink prüfen“, Google-Suchlink im Admin beim Hotel;
+  trivago mit oder ohne „100-“, hotel.de aus detail?hn= oder der Ergebnisliste).
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
   indexierte Seiten zeigt.
 - Plausible: Ziel „Hotel-Anfrage-Start“ anlegen (Klick auf „Trainingslager anfragen“).
