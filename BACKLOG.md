@@ -41,6 +41,72 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
 
+### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
+Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
+Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /hotels (Suchen auf „/“ leiten weiter).
+- Später: Monats-Planer aus Variante C in den Hero („Ich plane im …“ → Einträge passen sich an).
+- Später (mit Partner-CRM): gebuchte Plätze je Bereich, immer zusätzlich und als „Anzeige“ gekennzeichnet, nie anstelle der
+  neutralen Auswahl; ändert weder Score noch Reihenfolge.
+
+### Trainingsregionen (Konzept 27.10.2026, von Daniel freigegeben)
+Ziel: Regionen eigenständig auffindbar und vergleichbar machen, v. a. beim Klima; mehr Kontext je Regionsseite. Kein neuer
+Gesamt-Score für Regionen (Neutralität) – nur Daten mit Quelle.
+1. **Daten je Region – umgesetzt 27.10.** (siehe Erledigt): Klima je Monat am Klimapunkt der Region, Wasser vor der Küste,
+   Radrevier auch für Regionen ohne Hotels. Klimapunkt ab 3 Hotels aus deren Lage, sonst Ort ≤ 400 m nahe der Mitte; fest gesetzt
+   (27.10.): Zypern Limassol, Algarve Lagos, Teneriffa Costa Adeje, Gran Canaria Maspalomas, Kreta Chania.
+2. **Übersicht `/trainingsregionen` – umgesetzt 27.10.** (siehe Erledigt).
+3. **Regionsseiten mit Kontext – umgesetzt 27.10.**: Klima und Wasser je Monat aus den Regionsdaten (Klimapunkt), beste Reisezeit
+   mit Begründung (Regel aus `formula.best_time`, Monate darüber/darunter, Regen, Sonne, Wind, Wasser), Radrevier in Zahlen
+   und Sätzen (OSM), Ausstattung der Hotels je Gruppe (Schwimmen, Rad, Laufen … aus dem Leistungskatalog), Camps der Region,
+   Sprungleiste. Später: Badegewässer/50-m-Becken/Bahnen der Region per eigener Abfrage (Overpass).
+4. **Regionstext, Vergleich und häufige Fragen (27.10.)**: eigener Redaktionstext je Region (Einstieg oben mit Stärke und
+   Kehrseite, Landschaft, Klima/Reisezeit, Wind wo prägend, Radfahren, Schwimmen, Laufen, Anreise und Radtransport, Ruhetag,
+   „Für wen eignet sich …?“, 390–570 Wörter) plus „X oder Y?“ mit Link zum Direktvergleich, per Migration gepflegt (region_texts,
+   ohne Admin-Bearbeitung, Entscheidung Daniel). Titel/H1 nach Suchbegriffen („Triathlon-Trainingslager auf …“, Vorlagen in den
+   Landingpage-Texten). Häufige Fragen nur aus Daten (inkl. Wind) mit FAQ-Schema. Ausstattung erst ab 3 Hotels, bei 2 als
+   Gemeinsamkeiten. Regionen unter `region_min_entities` (2) bleiben noindex.
+   Offen: Angaben in den Texten (Transferzeiten, Anstiege, Flugzeiten) bei Gelegenheit vor Ort bzw. beim Anbieter gegenprüfen.
+
+### 1. SEO – Bestandsaufnahme 26.10.2026 und nächste Schritte
+Technik ist solide (76 Sitemap-URLs alle 200, je eine H1, Canonical, Beschreibung 70–160 Zeichen, og:image, keine doppelten
+Titel, alt-Texte, HTTPS/HSTS, gzip, Ø 21 ms). Erledigt 26.10.: lange Titel gekürzt (seo.entityTitle), aggregateRating aus
+Athleten-Bewertungen. Offen, nach Wirkung sortiert:
+- **Redaktionstexte** (zuerst Daniel: Prompt der Hotelbeschreibung nachschärfen, dann Sammelaktion): nur 10 von 42 Live-Hotels haben einen freigegebenen Text („Unsere Einschätzung“) – eigener, einzigartiger
+  Inhalt ist der größte Hebel. Vorschlag: Sammelaktion „Entwurf erzeugen“ für alle Live-Hotels ohne Text (ca. 3 Cent je Text)
+  + Board-Karte „Text prüfen und freigeben“.
+- **Mehr Hotels je Region**: Teneriffa, Gardasee, Algarve haben nur 1 Hotel (Regionsseite bleibt unter der Mindestzahl 2 noindex),
+  Kreta/Zypern/Girona 0. Die 99 geparkten Import-Hotels würden das füllen (siehe „Zu entscheiden“).
+- **Dünne Seiten**: 21 Camp-Anbieter-Profile und /region/fuerteventura haben < 300 Wörter. Anbieter-Profile anreichern
+  (Kurzprofil, Leistungen, Zielorte, Hotels, Preise ausformulieren; ggf. KI-Entwurf wie bei Hotels) oder bis dahin noindex.
+- **Search Console** (ab ca. Anfang November aussagekräftig): Indexierung, Suchanfragen, CTR je Seite auswerten → Titel/
+  Beschreibungen gezielt nachschärfen, Themen für neue Seiten ableiten.
+- Kleinigkeiten: /triscore ohne strukturierte Daten (z. B. FAQ), Länderseiten mit nur 1 Hotel (PT, IT, TR).
+- Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
+
+### Hotelseite überarbeiten (Vorschläge 26.10.2026: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN)
+- **A Steckbrief – umgesetzt 27.10.** (siehe Erledigt).
+- **B nach Disziplinen – sobald Daniel den Prompt der Redaktionstexte überarbeitet hat.** Einschätzung, Fakten mit Quelle,
+  Leistungen, Athleten-Note und passende Fotos je Kategorie zusammenführen (Reiter bzw. Sprungmarken); „Unsere Einschätzung“,
+  „Leistungen auf einen Blick“ und „Fakten“ entfallen als getrennte Blöcke. Der neue Prompt sollte Texte je Kategorie liefern.
+- **C Entscheidungshilfe – wenn genügend Hotelfotos mit Nutzungsrecht vorliegen** (dauert voraussichtlich). Hero-Foto mit Score,
+  „Passt zu dir, wenn … / Eher nicht, wenn …“, Reisemonat wählen (Klima und Score je Monat), Mini-Vergleich mit zwei
+  Alternativen, Sprungleiste. Mini-Vergleich und „Passt zu dir“ ggf. vorab einzeln.
+- Offen aus „Gilt für jede Variante“: Karte als kleines Vorschaubild statt „Karte laden“-Fläche.
+
+### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
+Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
+Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
+Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
+
+## Kleinere offene Punkte
+- Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
+- Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
+- Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
+- Reihenfolge verknüpfter Hotels beim Camp-Anbieter folgt der Liste (alphabetisch), nicht der Klickreihenfolge.
+- Landingpage „Trainingslager für Vereine“ (später).
+- Grunddaten: bei stark verschobenen Koordinaten alte automatische Umgebungswerte (Stufe 4) ggf. verwerfen statt behalten.
+- Eigene KI-Mail-Mustertexte (falls angepasst) haben den Abschnitt `{{#bestaetigen}}` nicht automatisch.
+
 ## Zu entscheiden (Daniel)
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
