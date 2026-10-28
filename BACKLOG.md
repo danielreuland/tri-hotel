@@ -31,7 +31,8 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   `https://www.trivago.de/de/lm/<name>?search=100-<Nummer>` (Playitas: 100-179546); Reisedaten `;dr-…;drs-…` und
   `#accommodation-overlay` weglassen. Getestet: Deeplink mit vollem Pfad und mit nur `https://www.trivago.de/de/srl?search=100-<Nummer>`
   landen beide beim Hotel → je Hotel reicht die Nummer (`id_url` mit `search=100-{id}`; `idOf` muss den Präfix „100-“ im
-  Parameter erkennen, mit Tests). Noch offen: zählt Awin den Klick (Daniel prüft), trivago-Tracking-ID nötig?
+  Parameter erkennen, mit Tests). trivago-Tracking-ID: hängt Awin bei der Weiterleitung selbst an (`cip=…&cip_tc=Tri-hotel_3127993&cip_ext_id=<clickref>`),
+  kein eigener Parameter nötig. Noch offen: zählt Awin den Klick in den Berichten (Daniel prüft).
   Offen hotel.de: Awin-Programm-ID, Deeplink-Format (hotel.de-Hotelseite). Allgemein: Provisionssätze aus Awin,
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
