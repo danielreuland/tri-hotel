@@ -46,13 +46,13 @@ async function overview(ranking, siteId) {
   const all = [...ranked, ...incomplete];
   const min = minEntities(ranking);
   const regionList = (await regions(siteId)).map((r) => {
-    const n = all.filter((e) => seo.inRegion(e, r)).length;
-    return { ...regionArea(r), count: n, indexable: n >= min };
+    const members = all.filter((e) => seo.inRegion(e, r));
+    return { ...regionArea(r), count: members.length, indexable: members.length >= min, lastmod: seo.latest(members.map((e) => e.updated_at)) };
   });
   const codes = [...new Set(all.map((e) => e.country).filter(Boolean))].sort();
   const countryList = codes.map((c) => {
-    const n = all.filter((e) => e.country === c).length;
-    return { ...countryArea(c), count: n, indexable: n >= min };
+    const members = all.filter((e) => e.country === c);
+    return { ...countryArea(c), count: members.length, indexable: members.length >= min, lastmod: seo.latest(members.map((e) => e.updated_at)) };
   });
   return { regions: regionList, countries: countryList };
 }

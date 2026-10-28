@@ -93,12 +93,20 @@ async function renderList(req, res, ranking) {
   const overview = await areas.overview(ranking, req.site.id);
   const listHref = seo.listPath(ranking);
   const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
-  // Startseite des Host-Rankings ist die Bereichsübersicht; die Liste hat einen eigenen Titel
-  const listTitle = isHost ? `${ranking.entity_label_pl} im Ranking nach ${ranking.score_name}` : (content.meta_title || ranking.name);
+  // Startseite des Host-Rankings ist die Bereichsübersicht; die Liste hat eigene Texte (content.list_title, list_h1,
+  // list_description, Platzhalter {anzahl}, {objekte}, {objekt}, {score}), damit sie nicht mit der Startseite konkurriert
+  const listVars = { anzahl: allRanked.length, objekte: ranking.entity_label_pl, objekt: ranking.entity_label_sg, score: ranking.score_name };
+  const defaultDesc = `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`;
+  const listTitle = isHost
+    ? (content.list_title ? fillMethod(content.list_title, listVars) : `${ranking.entity_label_pl} im Ranking nach ${ranking.score_name}`)
+    : (content.meta_title || ranking.name);
+  const listDesc = isHost
+    ? (content.list_description ? fillMethod(content.list_description, listVars) : defaultDesc)
+    : (content.meta_description || defaultDesc);
   res.render('public/ranking', {
     title: listTitle,
-    description: content.meta_description
-      || `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`,
+    description: listDesc,
+    listH1: content.list_h1 ? fillMethod(content.list_h1, listVars) : `${ranking.entity_label_pl} im Ranking`,
     canonical: `${siteUrl}${listHref}`,
     // Suchergebnis- und Filterseiten nicht indexieren (doppelte Inhalte)
     noindex: searchActive,

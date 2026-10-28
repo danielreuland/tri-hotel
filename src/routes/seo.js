@@ -4,6 +4,7 @@ const db = require('../db');
 const config = require('../config');
 const rankings = require('../services/rankings');
 const areas = require('../services/areas');
+const camps = require('../services/camps');
 const og = require('../services/og');
 const scoring = require('../services/scoring');
 const seo = require('../lib/seo');
@@ -38,26 +39,30 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
   const all = await db.many(`SELECT * FROM rankings WHERE site_id = $1 AND status = 'active' ORDER BY is_default DESC, name`, [site.id]);
   for (const ranking of all) {
     const bp = basePath(ranking);
-    urls.push({ loc: `${base}${bp || '/'}`, priority: '1.0' });
-    if (ranking.is_default) urls.push({ loc: `${base}${seo.listPath(ranking)}`, priority: '0.9' });
-    urls.push({ loc: `${base}${ranking.is_default ? res.locals.scorePath : `${bp}/methodik`}`, priority: '0.5' });
     const live = await db.many(
       `SELECT e.slug, GREATEST(e.updated_at, er.updated_at) AS lastmod FROM entity_rankings er JOIN entities e ON e.id = er.entity_id
         WHERE er.ranking_id = $1 AND er.status = 'live' ORDER BY e.slug`,
       [ranking.id]
     );
+    // Start und Liste ändern sich mit ihren Objekten, die Methodik mit dem Ranking
+    const listMod = seo.latest([ranking.updated_at, ...live.map((e) => e.lastmod)]);
+    urls.push({ loc: `${base}${bp || '/'}`, lastmod: listMod, priority: '1.0' });
+    if (ranking.is_default) urls.push({ loc: `${base}${seo.listPath(ranking)}`, lastmod: listMod, priority: '0.9' });
+    urls.push({ loc: `${base}${ranking.is_default ? res.locals.scorePath : `${bp}/methodik`}`, lastmod: seo.latest([ranking.updated_at]), priority: '0.5' });
     for (const e of live) urls.push({ loc: `${base}${entityPath(ranking, e.slug)}`, lastmod: e.lastmod, priority: '0.8' });
     // Regionen und Länder nur, wenn genug Einträge (keine dünnen Seiten)
     const ov = await areas.overview(ranking, site.id);
-    for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, priority: '0.9' });
-    for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, priority: '0.7' });
+    for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, lastmod: r.lastmod, priority: '0.9' });
+    for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, lastmod: c.lastmod, priority: '0.7' });
   }
   // Übersicht der Trainingsregionen (Vergleichsseiten sind noindex)
   if (res.locals.regionGuide) urls.push({ loc: `${base}/trainingsregionen`, priority: '0.9' });
   // Trainingscamps (falls die Site die Seite hat)
   if (res.locals.campGuide) {
     urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });
-    const cps = await db.many(`SELECT slug, updated_at FROM camp_providers WHERE site_id = $1 AND status = 'active' ORDER BY slug`, [site.id]);
+    // nur Profile mit ausreichend eigenem Text (die übrigen sind noindex)
+    const cps = (await db.many(`SELECT slug, summary, updated_at FROM camp_providers WHERE site_id = $1 AND status = 'active' ORDER BY slug`, [site.id]))
+      .filter(camps.indexable);
     for (const c of cps) urls.push({ loc: `${base}/trainingscamp/anbieter/${c.slug}`, lastmod: c.updated_at, priority: '0.6' });
   }
   const body = urls.map((u) => `  <url><loc>${xmlEsc(u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}<priority>${u.priority}</priority></url>`).join('\n');

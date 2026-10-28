@@ -75,6 +75,7 @@ async function renderProvider(req, res, p, extra = {}) {
     title: `${p.name}: Camps, Preise und Hotels`,
     description: `${p.name}${p.destinations.length ? ` – Camps in ${p.destinations.slice(0, 4).join(', ')}` : ''}: Leistungen, Preisbeispiele und Hotels im Überblick. Neutral, ohne bezahlte Platzierung.`,
     canonical,
+    noindex: !camps.indexable(p),
     jsonLd: [seo.breadcrumbLd([
       { name: req.site.name, url: `${siteUrl}/` }, { name: 'Trainingslager', url: `${siteUrl}/trainingscamp` }, { name: p.name, url: canonical },
     ])],

@@ -8,7 +8,7 @@
   <tr><th>Anbieter</th><th>Typ</th><th>Ziele</th><th class="num">Hotels</th><th class="num">Klicks 30 T.</th><th class="num">gesamt</th><th>Status</th></tr>
   <% rows.forEach(function (p) { var s = stats[p.id] || { last30: 0, total: 0 }; %>
     <tr>
-      <td><a href="/admin/camps/<%= p.id %>"><strong><%= p.name %></strong></a><% if (p.partner) { %> <span class="badge warn">Partner</span><% } %><br><small class="muted">/trainingscamp/anbieter/<%= p.slug %></small></td>
+      <td><a href="/admin/camps/<%= p.id %>"><strong><%= p.name %></strong></a><% if (p.partner) { %> <span class="badge warn">Partner</span><% } %><% if (p.status === 'active' && !indexable(p)) { %> <span class="badge" title="Kurzprofil unter <%= minProfileWords %> Wörtern: nicht in Suchmaschinen">noindex</span><% } %><br><small class="muted">/trainingscamp/anbieter/<%= p.slug %></small></td>
       <td><small><%= MODELS[p.model] %></small></td>
       <td><small><%= p.destinations.join(', ') %></small></td>
       <td class="num"><%= p.hotels %><% if (p.linked) { %> <small class="muted">(<%= p.linked %> im Ranking)</small><% } %></td>

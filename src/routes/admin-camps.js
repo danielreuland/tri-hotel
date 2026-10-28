@@ -90,7 +90,8 @@ router.get('/', wrap(async (req, res) => {
     `SELECT p.*, (SELECT count(*)::int FROM camp_provider_hotels h WHERE h.provider_id = p.id) AS hotels,
             (SELECT count(*)::int FROM camp_provider_hotels h WHERE h.provider_id = p.id AND h.entity_id IS NOT NULL) AS linked
        FROM camp_providers p WHERE p.site_id = $1 ORDER BY p.status, lower(p.name)`, [sid]);
-  res.render('admin/camps', { title: 'Camp-Anbieter', rows, stats: await camps.clickStats(sid), MODELS: camps.MODELS, flash: req.query.ok || null });
+  res.render('admin/camps', { title: 'Camp-Anbieter', rows, stats: await camps.clickStats(sid), MODELS: camps.MODELS, flash: req.query.ok || null,
+    indexable: camps.indexable, minProfileWords: camps.MIN_PROFILE_WORDS });
 }));
 
 async function renderForm(res, p, extra = {}) {
@@ -102,7 +103,7 @@ async function renderForm(res, p, extra = {}) {
   const suggestions = freeRows.map((h) => ({ row: h, hit: camps.suggestEntity(h, options.filter((o) => !selectedIds.includes(o.id))) })).filter((x) => x.hit);
   const pricesText = (p.prices || []).map((x) => [x.label, x.duration, x.price, x.included, x.excluded].join(' | ')).join('\n');
   res.render('admin/camp-form', { title: p.id ? `Anbieter: ${p.name}` : 'Neuer Anbieter', p, hotelsText, entityOptions: options, selectedIds, suggestions, pricesText, MODELS: camps.MODELS, HOTEL_VALUES: camps.HOTEL_VALUES, FLIGHT_VALUES: camps.FLIGHT_VALUES,
-    QUALIFICATION: campCheck.QUALIFICATION, errors: [], flash: null, flashError: null, pendingHotels: [], ...extra });
+    QUALIFICATION: campCheck.QUALIFICATION, profileWords: camps.profileWords, minProfileWords: camps.MIN_PROFILE_WORDS, errors: [], flash: null, flashError: null, pendingHotels: [], ...extra });
 }
 
 // Neu: nur Name + Website, dann automatische Prüfung (Entwurf, öffentlich erst nach Freigabe)

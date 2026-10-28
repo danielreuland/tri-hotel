@@ -24,3 +24,10 @@ test('camps.outboundUrl: Kampagnenkennung anhängen, vorhandene nicht überschre
   assert.equal(camps.outboundUrl({ website: 'https://a.example/?utm_source=partner' }), 'https://a.example/?utm_source=partner');
   assert.match(camps.outboundUrl({ website: 'https://a.example/', partner: true, partner_url: 'https://aff.example/r?id=7' }), /^https:\/\/aff\.example\/r\?id=7/);
 });
+
+test('camps.indexable: Profil erst ab Mindestzahl eigener Wörter in Suchmaschinen', () => {
+  assert.equal(camps.profileWords({ summary: 'Coach-Camps auf Lanzarote – für Einsteiger und Profis.' }), 7);
+  assert.equal(camps.profileWords({ summary: null }), 0);
+  assert.equal(camps.indexable({ summary: 'kurz und knapp' }), false);
+  assert.equal(camps.indexable({ summary: Array(camps.MIN_PROFILE_WORDS).fill('Wort').join(' ') }), true);
+});

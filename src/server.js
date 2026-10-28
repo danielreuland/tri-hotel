@@ -82,6 +82,13 @@ if (config.noindex) {
 }
 
 
+// Eine Adresse je Seite: /hotels/ → /hotels (nur Seitenaufrufe, Formulare bleiben unberührt)
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const to = require('./lib/seo').withoutTrailingSlash(req.originalUrl);
+  return to ? res.redirect(301, to) : next();
+});
+
 app.use(sameOrigin);
 app.use(rankingContext);
 

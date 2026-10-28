@@ -252,6 +252,21 @@ function entityTitle(name, place, scorePart) {
   return `${name.slice(0, room).replace(/[\s,;:&–-]+\S*$/, '').trim()}…${tail}`;
 }
 
+// Jüngstes Datum einer Liste (für lastmod in der Sitemap), null ohne gültige Werte
+function latest(dates) {
+  const t = (dates || []).map((d) => (d ? new Date(d).getTime() : NaN)).filter((n) => !Number.isNaN(n));
+  return t.length ? new Date(Math.max(...t)) : null;
+}
+
+// Pfad ohne Schrägstrich am Ende (/hotels/ → /hotels); null, wenn nichts zu tun ist
+function withoutTrailingSlash(url) {
+  const i = url.indexOf('?');
+  const p = i < 0 ? url : url.slice(0, i);
+  if (p.length < 2 || !p.endsWith('/')) return null;
+  const stripped = p.replace(/\/+$/, '');
+  return stripped && !stripped.startsWith('//') ? stripped + (i < 0 ? '' : url.slice(i)) : null;
+}
+
 function fitTitle(title, brand) {
   const t = String(title || '').trim();
   const withBrand = brand ? `${t} · ${brand}` : t;
@@ -275,5 +290,5 @@ module.exports = {
   googleMapsEmbedUrl,
   countryName, countryIn, countrySlug, countryFromSlug, distanceKm, inRegion,
   averageClimate, bestMonths, monthRanges, bestTimeText, featureShares, featureGroupShares,
-  ldJson, websiteLd, itemListLd, breadcrumbLd, faqLd, entityLd, listPath,
+  ldJson, websiteLd, itemListLd, breadcrumbLd, faqLd, entityLd, listPath, latest, withoutTrailingSlash,
 };

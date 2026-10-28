@@ -114,3 +114,20 @@ test('Hotel-Daten: Sterne der Athleten nur mit veröffentlichten Bewertungen', (
   assert.equal(seo.entityLd(base).aggregateRating, undefined);
   assert.deepEqual(seo.entityLd({ ...base, reviewCount: 3, reviewAvg: '4.333' }).aggregateRating, { '@type': 'AggregateRating', ratingValue: 4.3, ratingCount: 3, bestRating: 5, worstRating: 1 });
 });
+
+test('Sitemap-Datum: jüngster gültiger Wert', () => {
+  assert.equal(seo.latest(['2026-10-01', new Date('2026-10-20T08:00:00Z'), null, 'kaputt']).toISOString().slice(0, 10), '2026-10-20');
+  assert.equal(seo.latest([]), null);
+  assert.equal(seo.latest([null, undefined]), null);
+});
+
+test('Schrägstrich am Ende wird weitergeleitet, Startseite und Fremd-Hosts nicht', () => {
+  assert.equal(seo.withoutTrailingSlash('/hotels/'), '/hotels');
+  assert.equal(seo.withoutTrailingSlash('/hotels/?land=ES'), '/hotels?land=ES');
+  assert.equal(seo.withoutTrailingSlash('/region/fuerteventura//'), '/region/fuerteventura');
+  assert.equal(seo.withoutTrailingSlash('/hotels'), null);
+  assert.equal(seo.withoutTrailingSlash('/'), null);
+  assert.equal(seo.withoutTrailingSlash('/?q=a/'), null);
+  // kein offener Redirect auf //andere-seite.de
+  assert.equal(seo.withoutTrailingSlash('//evil.example/'), null);
+});

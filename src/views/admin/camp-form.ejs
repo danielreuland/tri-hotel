@@ -19,6 +19,7 @@
     <div><label>Sitz</label><input name="seat" type="text" value="<%= p.seat || '' %>"></div>
   </div>
   <label>Kurzprofil <small class="muted">in eigenen Worten, keine Werbetexte übernehmen</small></label><textarea name="summary" rows="3"><%= p.summary || '' %></textarea>
+  <% var words = profileWords(p); %><small class="muted"><%= words %> Wörter · <%= words >= minProfileWords ? 'Profil wird von Suchmaschinen indexiert' : 'ab ' + minProfileWords + ' Wörtern indexieren Suchmaschinen das Profil (bis dahin noindex, nicht in der Sitemap)' %></small>
   <div class="form-row">
     <div><label>Website *</label><input name="website" type="url" required value="<%= p.website || '' %>"></div>
   </div>

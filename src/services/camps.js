@@ -28,6 +28,15 @@ function flag(p, key) {
   return v === true ? true : v === false ? false : null;
 }
 
+// Suchmaschinen: Anbieter-Profile erst mit eigenem Kurzprofil ab MIN_PROFILE_WORDS Wörtern indexieren (sonst dünne Seite)
+const MIN_PROFILE_WORDS = 100;
+function profileWords(p) {
+  return (String((p && p.summary) || '').match(/[\p{L}\p{N}]+(?:[-'’][\p{L}\p{N}]+)*/gu) || []).length;
+}
+function indexable(p) {
+  return profileWords(p) >= MIN_PROFILE_WORDS;
+}
+
 function parseFilters(q) {
   const f = {
     model: MODELS[q.typ] ? q.typ : null,
@@ -233,4 +242,4 @@ async function clickStats(siteId) {
 }
 
 module.exports = {
-  matchEntity, autoLink, entityOptions, providerOptions, suggestEntity, saveProviderHotels, setEntityProviders, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };
+  matchEntity, autoLink, entityOptions, providerOptions, suggestEntity, saveProviderHotels, setEntityProviders, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, MIN_PROFILE_WORDS, profileWords, indexable, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };

@@ -76,11 +76,17 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
   + Board-Karte „Text prüfen und freigeben“.
 - **Mehr Hotels je Region**: Teneriffa, Gardasee, Algarve haben nur 1 Hotel (Regionsseite bleibt unter der Mindestzahl 2 noindex),
   Kreta/Zypern/Girona 0. Die 99 geparkten Import-Hotels würden das füllen (siehe „Zu entscheiden“).
-- **Dünne Seiten**: 21 Camp-Anbieter-Profile und /region/fuerteventura haben < 300 Wörter. Anbieter-Profile anreichern
-  (Kurzprofil, Leistungen, Zielorte, Hotels, Preise ausformulieren; ggf. KI-Entwurf wie bei Hotels) oder bis dahin noindex.
+- **Dünne Seiten**: 21 Camp-Anbieter-Profile und /region/fuerteventura haben < 300 Wörter. Umgesetzt 28.10.: Anbieter-Profile
+  mit Kurzprofil unter 100 Wörtern sind noindex und nicht in der Sitemap (Admin zeigt „noindex“ und die Wortzahl; Stand 28.10.
+  alle 22). Offen: Kurzprofile anreichern (Leistungen, Zielorte, Hotels, Preise ausformulieren; ggf. KI-Entwurf wie bei Hotels).
 - **Search Console** (ab ca. Anfang November aussagekräftig): Indexierung, Suchanfragen, CTR je Seite auswerten → Titel/
   Beschreibungen gezielt nachschärfen, Themen für neue Seiten ableiten.
-- Kleinigkeiten: /triscore ohne strukturierte Daten (z. B. FAQ), Länderseiten mit nur 1 Hotel (PT, IT, TR).
+- Erledigt 28.10.: /hotels mit eigenem Titel, H1 und Beschreibung (rankings.content list_title/list_h1/list_description,
+  Migration 086) statt der Startseiten-Beschreibung; Sitemap mit lastmod auch für Start, Liste, Methodik, Regionen, Länder;
+  Schrägstrich am Ende per 301 (/hotels/ → /hotels). /triscore hatte bereits FAQ-Daten.
+- Backlinks: erster Blogartikel mit Links von Daniel (27.10.).
+- Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
+  demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
 
 ### Hotelseite überarbeiten (Vorschläge 26.10.2026: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN)
