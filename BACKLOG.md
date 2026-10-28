@@ -86,10 +86,10 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
   Schrägstrich am Ende per 301 (/hotels/ → /hotels). /triscore hatte bereits FAQ-Daten.
 - Backlinks: erster Blogartikel mit Links von Daniel (erstellt 27.10., live seit 28.10.:
   blog.triprep.de/wann-und-wohin-ins-trainingslager, 5 folgbare Links auf /, /hotels, /trainingsregionen, /trainingscamp).
-  Problem (geprüft 28.10.): Der triprep-Blog lädt Artikel nur per JavaScript über `#post/<slug>`; die saubere Adresse liefert
-  die leere Hülle mit Titel „Blog – TriPrep“ und Canonical auf die Blog-Startseite → Artikel nicht indexierbar, Links wirkungslos.
-  Umbau in der triprep-Sitzung (eigene, server-seitig gerenderte Seite je Artikel). Danach: Artikel in der Search Console von
-  blog.triprep.de zur Indexierung beantragen; Linktexte beschreibend statt Adressen, ggf. direkte Links auf Regionsseiten.
+  triprep-Blog am 28.10. umgebaut (eigene, server-seitig gerenderte Seite je Artikel, Canonical auf sich selbst, BlogPosting,
+  echte Links auf der Blog-Startseite, 404 für unbekannte Adressen; von außen geprüft). Offen (Daniel): Search Console von
+  blog.triprep.de – Sitemap neu einreichen, Artikel zur Indexierung beantragen. Optional bei triprep: nur eine H1 je Artikel
+  (derzeit 3: „TriPrep Blog“, Artikeltitel, H1 im Artikeltext); Linktexte beschreibend statt Adressen, ggf. Regionsseiten verlinken.
 - Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
   demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
