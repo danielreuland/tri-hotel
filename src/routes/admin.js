@@ -166,9 +166,18 @@ const foldJs = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/
 const QUEUE_LIMIT = 300;
 const { countryName, inRegion } = require('../lib/seo');
 
-// Hotel-Liste: Status-Pillen, Ranking, Suche (Name, Ort, Website), Land, Region – alles kombinierbar.
-// Zahlen an Pillen und Auswahllisten berücksichtigen die jeweils anderen Filter.
+// Startseite: Dashboard. Alte Listen-Adressen (/admin?status=…) leiten auf die Liste unter /admin/objekte.
 router.get('/', wrap(async (req, res) => {
+  if (['status', 'ranking', 'q', 'land', 'region'].some((k) => req.query[k] !== undefined)) {
+    return res.redirect(`/admin/objekte${req.originalUrl.slice(req.originalUrl.indexOf('?'))}`);
+  }
+  const data = await require('../services/dashboard').load(req.site || (await db.one('SELECT * FROM sites ORDER BY is_default DESC LIMIT 1')));
+  res.render('admin/dashboard', { title: 'Dashboard', d: data, plausibleKey: Boolean(config.plausibleApiKey) });
+}));
+
+// Objekt-Liste: Status-Pillen, Ranking, Suche (Name, Ort, Website), Land, Region – alles kombinierbar.
+// Zahlen an Pillen und Auswahllisten berücksichtigen die jeweils anderen Filter.
+router.get('/objekte', wrap(async (req, res) => {
   const status = STATUS_LABELS[req.query.status] ? req.query.status : req.query.status === 'alle' ? null : 'admin_review';
   const rankingId = UUID_RE.test(req.query.ranking || '') ? req.query.ranking : null;
   const q = String(req.query.q || '').trim().slice(0, 100);

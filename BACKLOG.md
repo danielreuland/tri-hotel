@@ -110,6 +110,8 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
+- Admin-Dashboard (/admin, 28.10.): Seitenaufrufe erscheinen, sobald `PLAUSIBLE_API_KEY` in der Server-`.env` steht (Daniel).
+  Hotelliste liegt jetzt unter /admin/objekte im Bereich Inhalte (alte /admin?status=…-Links leiten weiter).
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.

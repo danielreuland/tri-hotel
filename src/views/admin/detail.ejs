@@ -12,7 +12,7 @@
   var climateRow = climate.find(function (c) { return c.month === result.month }) || null;
 %>
 
-<p><a href="/admin">← <%= adminNav.objectsLabel %></a></p>
+<p><a href="/admin/objekte">← <%= adminNav.objectsLabel %></a></p>
 <h1><%= entity ? entity.name : sub.entity_name %></h1>
 <% if (entity && entity.name !== sub.entity_name) { %><p class="muted" style="margin-top:-8px"><small>gemeldet als „<%= sub.entity_name %>“</small></p><% } %>
 <p>

@@ -1,0 +1,13 @@
+<%# Säulen je Tag (eine Reihe): series = [{ day: 'YYYY-MM-DD', value }], name = Bezeichnung der Reihe, Werte per Hover %>
+<% var maxV = Math.max.apply(null, series.map(function (s) { return s.value; }).concat([1]));
+   var fmt = function (d) { return new Date(d + 'T00:00:00Z').toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', timeZone: 'UTC' }); };
+   var total = series.reduce(function (s, x) { return s + x.value; }, 0); %>
+<figure class="day-bars">
+  <div class="day-bars-plot" role="img" aria-label="<%= name %> je Tag, <%= fmt(series[0].day) %> bis <%= fmt(series[series.length - 1].day) %>, zusammen <%= total %>, höchster Tag <%= maxV %>">
+    <span class="day-bars-max"><%= maxV %></span>
+    <% series.forEach(function (s) { %>
+      <span class="day-bar" title="<%= fmt(s.day) %>: <%= s.value %> <%= name %>"><i style="height:<%= s.value ? Math.max(Math.round(s.value / maxV * 100), 3) : 0 %>%"></i></span>
+    <% }) %>
+  </div>
+  <figcaption class="day-bars-axis"><span><%= fmt(series[0].day) %></span><span>heute</span></figcaption>
+</figure>

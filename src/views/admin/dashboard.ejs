@@ -1,0 +1,129 @@
+<%- include('../partials/admin-head') %>
+<% if (!d) { %>
+  <h1>Dashboard</h1><p class="muted">Noch kein Standard-Ranking angelegt.</p>
+<% } else {
+  var o = d.objects, t = d.tasks, P = d.partners, label = d.ranking.entity_label_pl;
+  var n = function (x) { return Number(x || 0).toLocaleString('de-DE'); };
+  var usd = function (x) { return Number(x || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'; };
+  var v = d.visits && !d.visits.error ? d.visits : null;
+  var comm = d.comm; var commTotal = comm.mail + comm.contact + comm.answers + d.camps.leads.open + d.reviews.pending; %>
+<div class="page-head"><h1>Dashboard</h1><p class="muted page-actions"><%= d.ranking.name %> · Stand <%= new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }) %></p></div>
+
+<section class="kpis" aria-label="Kennzahlen">
+  <a class="kpi" href="/admin/objekte?status=live"><strong><%= n(o.live) %></strong><span><%= label %> live</span><small><%= o.live7 ? '+' + o.live7 + ' in 7 Tagen' : 'keine neuen in 7 Tagen' %></small></a>
+  <a class="kpi" href="/admin/objekte"><strong><%= n(o.review) %></strong><span>in Prüfung</span><small><%= o.new7 %> neue Meldungen in 7 Tagen</small></a>
+  <a class="kpi" href="/admin/aufgaben"><strong><%= n(t.open) %></strong><span>Aufgaben offen</span><small><%= t.done7 %> erledigt in 7 Tagen</small></a>
+  <a class="kpi" href="/admin/postfach"><strong><%= n(commTotal) %></strong><span>Kommunikation offen</span><small>Mails, Kontakt, Antworten, Anfragen</small></a>
+  <a class="kpi" href="/admin/partner"><strong><%= n(P.clicks.c7) %></strong><span>Partner-Klicks 7 Tage</span><small><%= n(P.clicks.c30) %> in 30 Tagen</small></a>
+  <div class="kpi"><strong><%= v ? n(v.week.pageviews) : '–' %></strong><span>Seitenaufrufe 7 Tage</span><small><%= v ? n(v.week.visitors) + ' Besucher' : (d.visits && d.visits.error ? 'Plausible nicht erreichbar' : 'Plausible nicht verbunden') %></small></div>
+</section>
+
+<div class="dash-grid">
+  <section class="card">
+    <h2><%= label %></h2>
+    <dl class="dash-list">
+      <div><dt>live</dt><dd><%= n(o.live) %></dd></div>
+      <div><dt>davon Profil unvollständig</dt><dd><%= n(o.incomplete) %></dd></div>
+      <div><dt>in Prüfung</dt><dd><a href="/admin/objekte"><%= n(o.review) %></a></dd></div>
+      <div><dt>warten auf Bestätigung / Auto-Prüfung</dt><dd><%= n(o.pending) %></dd></div>
+      <div><dt>Redaktionstext veröffentlicht</dt><dd><%= n(o.texts.published) %> von <%= n(o.live) %><% if (o.texts.drafts) { %> · <a href="/admin/ki-texte"><%= o.texts.drafts %> Entwürfe</a><% } %></dd></div>
+      <div><dt>mit freigegebenem Foto</dt><dd><%= n(o.withImage) %> von <%= n(o.live) %></dd></div>
+      <div><dt>Bewertungen veröffentlicht</dt><dd><%= n(d.reviews.published) %><% if (d.reviews.pending) { %> · <a href="/admin/bewertungen"><%= d.reviews.pending %> zu prüfen</a><% } %></dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Aufgaben</h2>
+    <dl class="dash-list">
+      <div><dt>offen</dt><dd><a href="/admin/aufgaben"><%= n(t.open) %></a><% if (t.in_progress) { %> · <%= t.in_progress %> in Arbeit<% } %></dd></div>
+      <div><dt>neu in 7 Tagen</dt><dd><%= n(t.new7) %></dd></div>
+      <div><dt>erledigt in 7 Tagen</dt><dd><%= n(t.done7) %> von Hand · <%= n(t.done7_auto) %> automatisch</dd></div>
+    </dl>
+    <% if (t.sources.length) { %>
+      <h3>Offen nach Art</h3>
+      <dl class="dash-list"><% t.sources.forEach(function (s) { %><div><dt><%= s.label %></dt><dd><%= n(s.n) %></dd></div><% }) %></dl>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <h2>Kommunikation</h2>
+    <dl class="dash-list">
+      <div><dt>neue Mails im Postfach</dt><dd><a href="/admin/postfach"><%= n(comm.mail) %></a></dd></div>
+      <div><dt>Kontaktnachrichten offen</dt><dd><a href="/admin/kontakt"><%= n(comm.contact) %></a></dd></div>
+      <div><dt>Betreiber-Antworten zu prüfen</dt><dd><a href="/admin/anfragen"><%= n(comm.answers) %></a></dd></div>
+      <div><dt>Anfragen: Entwürfe · versendet</dt><dd><a href="/admin/anfragen"><%= n(comm.inquiry_drafts) %></a> · <%= n(comm.inquiries_sent) %></dd></div>
+      <div><dt>Camp-Anfragen offen</dt><dd><a href="/admin/camp-anfragen"><%= n(d.camps.leads.open) %></a></dd></div>
+      <div><dt>Bewertungen zu prüfen</dt><dd><a href="/admin/bewertungen"><%= n(d.reviews.pending) %></a></dd></div>
+    </dl>
+  </section>
+
+  <section class="card dash-wide">
+    <h2>Partnerlinks <small class="muted">Abdeckung der <%= n(o.live) %> Live-<%= label %> · Klicks</small></h2>
+    <div class="table-scroll"><table class="dash-table">
+      <thead><tr><th>Programm</th><th class="num">Link</th><th class="num">übernommen</th><th class="num">nicht vorhanden</th><th class="num">fehlt</th><th>Abdeckung</th><th class="num">Klicks 7 T.</th><th class="num">30 T.</th></tr></thead>
+      <tbody>
+        <% P.programs.forEach(function (p) { %>
+          <tr>
+            <td><a href="/admin/partner?offen=<%= p.code %>#p-<%= p.code %>"><%= p.name %></a><% if (!p.monetized) { %> <small class="muted">ohne Provision</small><% } %></td>
+            <td class="num"><%= p.links %></td><td class="num"><%= p.derived || '–' %></td><td class="num"><%= p.absent || '–' %></td>
+            <td class="num"><%= p.missing ? p.missing : '–' %></td>
+            <td><span class="share" title="<%= p.share %> % mit Link"><i style="width:<%= p.share %>%"></i></span> <small><%= p.share %> %</small></td>
+            <td class="num"><%= p.clicks7 %></td><td class="num"><%= p.clicks30 %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table></div>
+    <p class="muted" style="margin:6px 0 0"><small>„übernommen“ = Nummer aus einem anderen Programm (z. B. Hotels.com aus Expedia). Programme ohne Provision und ohne eingetragene Links sind ausgeblendet.</small></p>
+    <h3>Klicks zu Buchungspartnern je Tag (30 Tage)</h3>
+    <%- include('_bars', { series: P.days.map(function (x) { return { day: x.day, value: x.partner }; }), name: 'Klicks' }) %>
+    <% if (P.top.length) { %>
+      <h3>Meistgeklickt (30 Tage)</h3>
+      <dl class="dash-list"><% P.top.forEach(function (x) { %><div><dt><%= x.name %> <small class="muted">· <%= x.program %></small></dt><dd><%= x.clicks %></dd></div><% }) %></dl>
+    <% } %>
+  </section>
+
+  <section class="card dash-wide">
+    <h2>Seitenaufrufe <small class="muted">Plausible</small></h2>
+    <% if (v) { %>
+      <dl class="dash-list cols">
+        <div><dt>Besucher 7 Tage</dt><dd><%= n(v.week.visitors) %></dd></div>
+        <div><dt>Seitenaufrufe 7 Tage</dt><dd><%= n(v.week.pageviews) %></dd></div>
+        <div><dt>Besucher 30 Tage</dt><dd><%= n(v.month.visitors) %></dd></div>
+        <div><dt>Seitenaufrufe 30 Tage</dt><dd><%= n(v.month.pageviews) %></dd></div>
+      </dl>
+      <h3>Besucher je Tag (30 Tage)</h3>
+      <%- include('_bars', { series: v.days.map(function (x) { return { day: String(x.date).slice(0, 10), value: Number(x.visitors) || 0 }; }), name: 'Besucher' }) %>
+      <div class="dash-cols">
+        <div><h3>Top-Seiten (7 Tage)</h3><dl class="dash-list"><% v.pages.forEach(function (x) { %><div><dt><%= x.page %></dt><dd><%= n(x.pageviews) %></dd></div><% }) %></dl></div>
+        <div><h3>Quellen (7 Tage)</h3><dl class="dash-list"><% v.sources.forEach(function (x) { %><div><dt><%= x.source %></dt><dd><%= n(x.visitors) %></dd></div><% }) %></dl></div>
+      </div>
+    <% } else if (d.visits && d.visits.error) { %>
+      <p class="muted">Plausible ist gerade nicht erreichbar oder der API-Schlüssel passt nicht (Server-Log: „[analytics]“).</p>
+    <% } else { %>
+      <p class="muted">Noch nicht verbunden: <code>PLAUSIBLE_API_KEY</code> in der <code>.env</code> auf dem Server eintragen (Plausible → Einstellungen → API-Schlüssel) und die App neu laden.</p>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <h2>Camps &amp; Regionen</h2>
+    <dl class="dash-list">
+      <div><dt>Camp-Anbieter freigegeben</dt><dd><a href="/admin/camps"><%= n(d.camps.active) %></a><% if (d.camps.review) { %> · <%= d.camps.review %> in Prüfung<% } %></dd></div>
+      <div><dt>davon von Suchmaschinen indexiert</dt><dd><%= n(d.camps.indexable) %> <small class="muted">(Kurzprofil ab <%= d.camps.minWords %> Wörtern)</small></dd></div>
+      <div><dt>Klicks zu Camp-Anbietern</dt><dd><%= n(d.camps.clicks.c7) %> · <%= n(d.camps.clicks.c30) %> <small class="muted">(7 · 30 Tage)</small></dd></div>
+      <div><dt>Camp-Anfragen</dt><dd><%= n(d.camps.leads.new7) %> · <%= n(d.camps.leads.new30) %> <small class="muted">(7 · 30 Tage)</small></dd></div>
+      <div><dt>Regionen</dt><dd><a href="/admin/regionen"><%= n(d.regions.total) %></a> · <%= n(d.regions.indexable) %> mit eigener Seite im Index</dd></div>
+      <div><dt>Länder mit <%= label %></dt><dd><%= n(d.regions.countries) %></dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Kosten &amp; Dienste</h2>
+    <dl class="dash-list">
+      <div><dt>KI (7 Tage)</dt><dd><%= usd(d.costs.week) %></dd></div>
+      <div><dt>KI (30 Tage)</dt><dd><%= usd(d.costs.month) %></dd></div>
+      <% d.costs.api.forEach(function (a) { %><div><dt>Aufrufe <%= a.service %> (30 Tage)</dt><dd><%= n(a.n) %></dd></div><% }) %>
+    </dl>
+  </section>
+</div>
+<% } %>
+<%- include('../partials/admin-foot') %>

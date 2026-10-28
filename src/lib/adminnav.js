@@ -1,17 +1,10 @@
-// Admin-Navigation: fünf Bereiche, Unterpunkte als Reiter auf der Seite.
+// Admin-Navigation: fünf Bereiche (Dashboard, Aufgaben, Kommunikation, Inhalte, Einstellungen), Unterpunkte als Reiter auf der Seite.
 // Der Bereich ergibt sich aus der Adresse; die Bezeichnung der Objekte (z. B. „Hotels“) kommt aus dem Standard-Ranking.
 const db = require('../db');
 
 const SECTIONS = [
+  { key: 'start', label: 'Dashboard', tabs: [{ href: '/admin', label: 'Dashboard', match: /^\/admin\/?$/ }] },
   { key: 'aufgaben', label: 'Aufgaben', tabs: [{ href: '/admin/aufgaben', label: 'Board' }] },
-  {
-    key: 'objekte', label: null, // Beschriftung aus rankings.entity_label_pl
-    tabs: [
-      { href: '/admin', label: 'Liste', match: /^\/admin\/?$|^\/admin\/meldungen\// },
-      { href: '/admin/neu', label: 'Anlegen' },
-      { href: '/admin/google-orte', label: 'Google-IDs' },
-    ],
-  },
   {
     key: 'kommunikation', label: 'Kommunikation',
     tabs: [
@@ -25,6 +18,8 @@ const SECTIONS = [
   {
     key: 'inhalte', label: 'Inhalte',
     tabs: [
+      // Objekte (Beschriftung aus rankings.entity_label_pl): Liste, Detail, Anlegen, Google-IDs
+      { href: '/admin/objekte', label: null, match: /^\/admin\/(objekte|meldungen|neu|google-orte)(\/|$)/ },
       { href: '/admin/startseite', label: 'Startseite' },
       { href: '/admin/bilder', label: 'Objektbilder' },
       { href: '/admin/medien', label: 'Seitenbilder' },

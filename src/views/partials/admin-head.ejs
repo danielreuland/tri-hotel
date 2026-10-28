@@ -43,7 +43,7 @@
 <div class="wrap">
 <% if (locals.admin && locals.adminNav && adminNav.section) { var cur = adminNav.sections.find(function (s) { return s.key === adminNav.section; }); if (cur.tabs.length > 1) { %>
   <nav class="admin-subnav" aria-label="<%= cur.label || adminNav.objectsLabel %>">
-    <% cur.tabs.forEach(function (t) { %><a href="<%= t.href %>" class="<%= adminNav.tab === t.href ? 'on' : '' %>"><%= t.label %></a><% }) %>
+    <% cur.tabs.forEach(function (t) { %><a href="<%= t.href %>" class="<%= adminNav.tab === t.href ? 'on' : '' %>"><%= t.label || adminNav.objectsLabel %></a><% }) %>
   </nav>
 <% } } %>
 <%# Rückmeldungen schweben oben rechts – sichtbar, auch wenn die Seite zu einem Abschnitt springt (#text, #stammdaten …) %>

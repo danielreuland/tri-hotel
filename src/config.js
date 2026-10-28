@@ -72,6 +72,9 @@ module.exports = {
   noindex: process.env.NOINDEX === 'true',
   // Plausible (ohne Cookies), z. B. https://analytics.triprep.de/js/script.outbound-links.tagged-events.js
   plausibleSrc: process.env.PLAUSIBLE_SRC || null,
+  // Stats API fürs Admin-Dashboard (Schlüssel aus Plausible → Einstellungen → API-Schlüssel); URL sonst aus PLAUSIBLE_SRC
+  plausibleApiKey: process.env.PLAUSIBLE_API_KEY || null,
+  plausibleApiUrl: process.env.PLAUSIBLE_API_URL || null,
   // Admin-Login: Google (empfohlen) und optional Passwort
   // Maps Embed API (Zwei-Klick-Karte mit Google-Bewertungen); Schlüssel auf die eigenen Domains beschränken
   googleMapsEmbedKey: process.env.GOOGLE_MAPS_EMBED_KEY || null,

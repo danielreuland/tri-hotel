@@ -1,15 +1,16 @@
 <%- include('../partials/admin-head') %>
-<h1><%= adminNav.objectsLabel %></h1>
+<div class="page-head"><h1><%= adminNav.objectsLabel %></h1>
+  <p class="page-actions"><a class="btn small" href="/admin/neu">Anlegen</a> <a class="btn small secondary" href="/admin/google-orte">Google-IDs</a></p></div>
 <% var countOf = function (s) { var c = counts.find(function (x) { return x.status === s }); return c ? c.n : 0 };
    var totalAll = counts.reduce(function (sum, x) { return sum + x.n }, 0);
    var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' }));
    // Link mit allen aktuellen Filtern, einzelne Werte überschreibbar
    var link = function (over) {
      var p = Object.assign({ status: status || 'alle', ranking: rankingId || '', q: q || '', land: land || '', region: regionId || '' }, over);
-     return '/admin?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
+     return '/admin/objekte?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
    };
    var filtered = Boolean(q || land || regionId || rankingId); %>
-<form class="filters queue-filters" method="get" action="/admin" role="search">
+<form class="filters queue-filters" method="get" action="/admin/objekte" role="search">
   <input type="hidden" name="status" value="<%= status || 'alle' %>">
   <label class="sr-only" for="qf-q">Name oder Ort</label>
   <input id="qf-q" type="search" name="q" value="<%= q %>" placeholder="Name, Ort oder Website suchen" autocomplete="off">
