@@ -301,6 +301,12 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .new-task { position: relative; }
 /* Admin Partnerprogramme: je Programm ein- und ausklappbar */
 .partner-prog { margin-bottom: 12px; }
+.link-prog { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin: 0 0 8px; }
+.link-prog > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; cursor: pointer; }
+.link-prog > summary::-webkit-details-marker { display: none; }
+.link-prog > summary::after { content: "›"; margin-left: auto; font-size: 1.3rem; line-height: 1; color: var(--muted); transition: transform .2s; }
+.link-prog[open] > summary { margin-bottom: 8px; }
+.link-prog[open] > summary::after { transform: rotate(90deg); }
 .partner-prog > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-weight: 400; }
 .partner-prog > summary::-webkit-details-marker { display: none; }
 .partner-prog > summary h3 { margin: 0; }

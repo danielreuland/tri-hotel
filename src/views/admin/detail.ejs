@@ -290,12 +290,23 @@
     </section>
 
     <section class="card" style="margin-top:16px" id="partnerlinks" data-tab="stammdaten">
-      <h2 style="margin-top:0">Partnerlinks</h2>
+      <h2 style="margin-top:0">Partnerlinks <small class="muted" style="font-weight:400">zum Bearbeiten aufklappen</small></h2>
       <p class="muted" style="margin-top:0"><small>Links zur Seite dieses <%= ranking.entity_label_sg %>s beim jeweiligen Anbieter. Erscheinen auf der Profilseite im Kasten „Buchen &amp; Anfragen“ als Anzeige – in der Reihenfolge aus den Partnerprogrammen, ohne Einfluss auf Score oder Reihenfolge der Hotels. Die Partnerkennung wird automatisch ergänzt (<a href="/admin/partner">Partnerprogramme</a>).</small></p>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/partnerlinks">
         <% partnerPrograms.forEach(function (p) { var get = function (kind) { var l = partnerLinks.find(function (x) { return x.program_id === p.id && x.kind === kind; }); return l ? l.url : ''; }; %>
-          <fieldset style="border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:0 0 10px">
-            <legend><strong><%= p.name %></strong> <small class="muted"><%= p.status === 'active' ? '' : '· inaktiv – wird nicht angezeigt' %><%= p.domains.length ? ' · nur ' + p.domains.join(', ') : '' %></small></legend>
+          <%
+            // Stand je Anbieter für die eingeklappte Zeile
+            var srcProg = p.id_from && partnerPrograms.find(function (x) { return x.code === p.id_from; });
+            var srcLink = srcProg && partnerLinks.find(function (x) { return x.program_id === srcProg.id && x.kind === 'booking'; });
+            var state = get('booking') ? ['good', 'Link eingetragen']
+              : srcLink ? ['good', 'Nummer von ' + srcProg.name]
+              : partnerAbsent.indexOf(p.id) >= 0 ? ['', 'nicht vorhanden']
+              : p.status !== 'active' ? ['', 'inaktiv – wird nicht angezeigt']
+              : ['warn', 'fehlt'];
+          %>
+          <details class="link-prog">
+            <summary><strong><%= p.name %></strong> <span class="badge <%= state[0] %>"><%= state[1] %></span><% if (get('reviews')) { %> <span class="badge">Bewertungen</span><% } %>
+              <% if (p.domains.length) { %><small class="muted">nur <%= p.domains.join(', ') %></small><% } %></summary>
             <div class="form-row">
               <div><label>Seite mit Preisen / Buchung<% if (p.id_url) { %> <small class="muted">– Adresse oder nur die Nummer</small><% } %></label><input name="links[<%= p.id %>][booking]" type="<%= p.id_url ? 'text' : 'url' %>" placeholder="<%= p.id_url ? 'https://… oder z. B. 793891' : 'https://' %>" value="<%= get('booking') %>"></div>
               <div><label>Bewertungsseite <small class="muted">optional</small></label><input name="links[<%= p.id %>][reviews]" type="url" placeholder="https://" value="<%= get('reviews') %>"></div>
@@ -305,7 +316,7 @@
             <% } %>
             <% if (!get('booking')) { %><label class="inline" style="margin:4px 0"><input type="checkbox" name="links[<%= p.id %>][absent]" <%= partnerAbsent.indexOf(p.id) >= 0 ? 'checked' : '' %>> <span><small>Bei <%= p.name %> nicht vorhanden – nicht mehr nachfragen</small></span></label><% } %>
             <% if (p.search_url) { %><small><a href="<%= p.search_url.replace('{q}', encodeURIComponent(entity.name + ' ' + (entity.city || ''))) %>" target="_blank" rel="noopener"><%= /google\./.test(p.search_url) ? p.name + '-Seite des Hotels suchen ↗' : 'Bei ' + p.name + ' suchen ↗' %></a></small><% } %>
-          </fieldset>
+          </details>
         <% }) %>
         <button class="btn small" type="submit">Partnerlinks speichern</button>
       </form>
