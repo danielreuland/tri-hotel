@@ -299,6 +299,15 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 /* Admin: Kanban-Board „Aufgaben“ */
 .board-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .new-task { position: relative; }
+/* Admin Partnerprogramme: je Programm ein- und ausklappbar */
+.partner-prog { margin-bottom: 12px; }
+.partner-prog > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-weight: 400; }
+.partner-prog > summary::-webkit-details-marker { display: none; }
+.partner-prog > summary h3 { margin: 0; }
+.partner-prog > summary .book-logo img { height: 20px; max-width: 90px; }
+.partner-prog > summary::after { content: "›"; margin-left: auto; font-size: 1.4rem; line-height: 1; color: var(--muted); transition: transform .2s; }
+.partner-prog[open] > summary { margin-bottom: 12px; }
+.partner-prog[open] > summary::after { transform: rotate(90deg); }
 .new-task > summary { list-style: none; cursor: pointer; }
 .new-task > summary::-webkit-details-marker { display: none; }
 .new-task[open] > form { position: absolute; right: 0; z-index: 5; width: min(420px, 90vw); margin-top: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .15); }

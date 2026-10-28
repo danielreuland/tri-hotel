@@ -17,13 +17,14 @@
   </details>
 <% } %>
 
-<h2>Programme</h2>
+<h2>Programme <small class="muted">zum Bearbeiten aufklappen</small></h2>
 <% programs.forEach(function (p) { var params = Object.keys(p.link_params || {}).map(function (k) { return k + '=' + p.link_params[k]; }).join('\n'); %>
-  <section class="card" style="margin-bottom:12px" id="p-<%= p.code %>">
-    <h3 style="margin-top:0"><span class="muted"><%= p.sort_order %> ·</span> <%= p.name %>
+  <details class="card partner-prog" id="p-<%= p.code %>" <%= open === p.code ? 'open' : '' %>>
+    <summary><h3><span class="muted"><%= p.sort_order %> ·</span> <%= p.name %></h3>
       <span class="badge <%= p.status === 'active' ? 'good' : '' %>"><%= p.status === 'active' ? 'aktiv' : 'inaktiv' %></span>
-      <span class="badge <%= monetized(p) ? 'good' : 'warn' %>"><%= monetized(p) ? 'mit Partnerkennung' : 'ohne Partnerkennung' %></span></h3>
-    <% if (p.notes) { %><p class="muted" style="margin-top:0"><small><%= p.notes %></small></p><% } %>
+      <span class="badge <%= monetized(p) ? 'good' : 'warn' %>"><%= monetized(p) ? 'mit Partnerkennung' : 'ohne Partnerkennung' %></span>
+      <% if (p.logo_file) { %><span class="book-logo"><img src="/partner-logo/<%= p.logo_file %>" alt="Logo <%= p.name %>" height="20"></span><% } %></summary>
+    <% if (p.notes) { %><p class="muted"><small><%= p.notes %></small></p><% } %>
     <form method="post" action="/admin/partner/<%= p.id %>">
       <div class="form-row">
         <div><label>Anzeigename</label><input name="name" type="text" value="<%= p.name %>"></div>
@@ -78,7 +79,7 @@
       <p style="margin-bottom:0"><button class="btn small secondary" type="submit">Logo hochladen</button>
         <% if (p.logo_file) { %><label class="inline" style="margin-left:12px"><input type="checkbox" name="remove"> <span>Logo entfernen</span></label><% } %></p>
     </form>
-  </section>
+  </details>
 <% }) %>
 <section class="card">
   <h3 style="margin-top:0">Weiteres Programm anlegen</h3>

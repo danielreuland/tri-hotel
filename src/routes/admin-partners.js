@@ -29,6 +29,7 @@ router.get('/', wrap(async (req, res) => {
   res.render('admin/partners', {
     title: 'Partnerprogramme', programs: await partners.programs(), stats: await partners.stats(days), days,
     monetized: partners.monetized, flash: req.query.ok || null, error: req.query.fehler || null,
+    open: String(req.query.offen || ''),
   });
 }));
 
@@ -54,7 +55,7 @@ router.post('/neu', wrap(async (req, res) => {
     if (err.code !== '23505') throw err;
     return res.redirect(`/admin/partner?fehler=${encodeURIComponent('Ein Programm mit diesem Kürzel gibt es schon.')}`);
   }
-  res.redirect(`/admin/partner?ok=${encodeURIComponent(`${name} angelegt – Kennung eintragen und aktivieren`)}#p-${code}`);
+  res.redirect(`/admin/partner?ok=${encodeURIComponent(`${name} angelegt – Kennung eintragen und aktivieren`)}&offen=${code}#p-${code}`);
 }));
 
 router.post('/:id', wrap(async (req, res, next) => {
@@ -64,10 +65,10 @@ router.post('/:id', wrap(async (req, res, next) => {
   const b = req.body;
   const template = String(b.link_template || '').trim() || null;
   if (template && (!/^https:\/\//.test(template) || !/\{url(_enc)?\}/.test(template))) {
-    return res.redirect(`/admin/partner?fehler=${encodeURIComponent('Deeplink-Vorlage: https-Adresse mit {url} oder {url_enc}.')}`);
+    return res.redirect(`/admin/partner?fehler=${encodeURIComponent('Deeplink-Vorlage: https-Adresse mit {url} oder {url_enc}.')}&offen=${old.code}#p-${old.code}`);
   }
   const searchUrl = String(b.search_url || '').trim() || null;
-  if (!validSearch(searchUrl)) return res.redirect(`/admin/partner?fehler=${encodeURIComponent('Such-Adresse: https mit Platzhalter {q}.')}`);
+  if (!validSearch(searchUrl)) return res.redirect(`/admin/partner?fehler=${encodeURIComponent('Such-Adresse: https mit Platzhalter {q}.')}&offen=${old.code}#p-${old.code}`);
   const domains = b.domains !== undefined ? parseDomains(b.domains) : old.domains;
   const upd = {
     name: String(b.name || old.name).trim().slice(0, 80),
@@ -96,7 +97,7 @@ router.post('/:id', wrap(async (req, res, next) => {
     status: { old: old.status, new: upd.status }, params: Object.keys(upd.link_params), template: Boolean(upd.link_template),
     sort_order: upd.sort_order, auto_search: upd.auto_search, domains: upd.domains,
   });
-  res.redirect(`/admin/partner?ok=${encodeURIComponent(`${upd.name} gespeichert`)}`);
+  res.redirect(`/admin/partner?ok=${encodeURIComponent(`${upd.name} gespeichert`)}&offen=${old.code}#p-${old.code}`);
 }));
 
 // Logo aus den Werbemitteln des Programms (SVG, PNG oder WebP, klein). Herkunft ist Pflicht – wie bei Bildern.
@@ -111,7 +112,7 @@ router.post('/:id/logo', logoUpload.single('logo'), wrap(async (req, res, next) 
   if (!UUID_RE.test(req.params.id)) return next();
   const p = await db.one('SELECT * FROM partner_programs WHERE id = $1', [req.params.id]);
   if (!p) return next();
-  const back = (msg, ok) => res.redirect(`/admin/partner?${ok ? 'ok' : 'fehler'}=${encodeURIComponent(msg)}#p-${p.code}`);
+  const back = (msg, ok) => res.redirect(`/admin/partner?${ok ? 'ok' : 'fehler'}=${encodeURIComponent(msg)}&offen=${p.code}#p-${p.code}`);
   const removeOld = () => { if (p.logo_file) fs.rm(path.join(LOGO_DIR, path.basename(p.logo_file)), { force: true }, () => {}); };
   if (req.body.remove === 'on') {
     removeOld();
