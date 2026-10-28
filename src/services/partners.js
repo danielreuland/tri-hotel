@@ -6,27 +6,35 @@ const db = require('../db');
 
 const KINDS = { booking: 'Preise / Buchung', reviews: 'Bewertungen' };
 
-// Nur eine Nummer eingetragen (z. B. Expedia-Hotel-ID 793891)? Dann Adresse aus der Vorlage des Programms (id_url mit {id})
+// Nur eine Nummer eingetragen (z. B. Expedia-Hotel-ID 793891)? Dann Adresse aus der Vorlage des Programms (id_url mit {id}).
+// Steht vor {id} ein fester Präfix im Parameter (trivago: ?search=100-{id}), darf die Nummer auch mit Präfix kommen (100-179546).
 function fromId(program, raw) {
-  const v = String(raw || '').trim();
+  let v = String(raw || '').trim();
+  const pre = program.id_url && idParam(program.id_url);
+  if (pre && pre.prefix && v.startsWith(pre.prefix) && /^\d{3,12}$/.test(v.slice(pre.prefix.length))) v = v.slice(pre.prefix.length);
   return program.id_url && /^\d{3,12}$/.test(v) ? program.id_url.replace(/\{id\}/g, v) : v;
 }
 
 // Nummer aus einer Adresse lesen, die nach der Vorlage des Programms gebaut ist – auch aus langen Adressen mit Hotelnamen
 // (…/h1786689.Hotel-Information oder …/Playitas.h1786689.Hotel-Information → 1786689). Gesucht wird das letzte Pfadstück
 // vor {id} und der Text danach (bei Expedia „h“ und „.Hotel-Information“). Steht {id} in einem Parameter
-// (CHECK24: ?c24pp_hotel_id={id}), zählt der Parameter an beliebiger Stelle der Adresse.
+// (CHECK24: ?c24pp_hotel_id={id}), zählt der Parameter an beliebiger Stelle der Adresse – auch mit festem Präfix vor der Nummer
+// (trivago: ?search=100-{id}) und mit weiteren Angaben nach einem Semikolon, auch kodiert (trivago: search=100-179546;dr-20261117-… bzw. %3Bdr-…).
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // id_params: weitere Parameternamen mit derselben Nummer, z. B. hotelId in Adressen von urlaub.check24.de
-const paramRe = (name) => new RegExp(`[?&#]${escRe(name)}=(\\d{3,12})(?:[&#]|$)`);
+const paramRe = (name, prefix = '') => new RegExp(`[?&#]${escRe(name)}=${escRe(prefix)}(\\d{3,12})(?:[&#;%]|$)`);
+function idParam(idUrl) {
+  const m = /[?&]([\w.-]+)=([^?&#=]*)$/.exec(String(idUrl).split('{id}')[0]);
+  return m ? { name: m[1], prefix: m[2] } : null;
+}
 function idOf(program, url) {
   if (!program || !program.id_url || !url || !program.id_url.includes('{id}')) return null;
   const u = String(url);
   const [before, after] = program.id_url.split('{id}');
-  const param = /[?&]([\w.-]+)=$/.exec(before);
+  const param = idParam(program.id_url);
   let m;
   if (param) {
-    m = paramRe(param[1]).exec(u);
+    m = paramRe(param.name, param.prefix).exec(u);
   } else {
     const lead = before.slice(before.lastIndexOf('/') + 1);
     const tail = (after || '').split(/[/?#]/)[0];

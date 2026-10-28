@@ -32,7 +32,9 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
   `#accommodation-overlay` weglassen. Getestet: Deeplink mit vollem Pfad und mit nur `https://www.trivago.de/de/srl?search=100-<Nummer>`
   landen beide beim Hotel → je Hotel reicht die Nummer (`id_url` mit `search=100-{id}`; `idOf` muss den Präfix „100-“ im
   Parameter erkennen, mit Tests). trivago-Tracking-ID: hängt Awin bei der Weiterleitung selbst an (`cip=…&cip_tc=Tri-hotel_3127993&cip_ext_id=<clickref>`),
-  kein eigener Parameter nötig. Awin zählt den Klick (Test 28.10.2026). Nächster Schritt: Vorlage/`id_url` setzen, `idOf` erweitern, aktivieren.
+  kein eigener Parameter nötig. Awin zählt den Klick (Test 28.10.2026). **trivago aktiv seit Migration 084** (Vorlage, `id_url`, Playitas-Link); `idOf`/`fromId`
+  erkennen Präfix im Parameter (`100-`) und Reisedaten nach `;`. Offen: trivago-Nummern für die übrigen Hotels (Aufgaben
+  „Partnerlink prüfen“), trivago-Logo aus der brand toolbox hochladen.
   Offen hotel.de: Awin-Programm-ID, Deeplink-Format (hotel.de-Hotelseite). Allgemein: Provisionssätze aus Awin,
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).

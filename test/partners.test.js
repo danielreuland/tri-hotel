@@ -100,6 +100,28 @@ test('Partner: Nummer aus einem Parameter (CHECK24 c24pp_hotel_id), auch mitten 
     'https://a.check24.net/misc/click.php?aid=18&pid=1179734&target_url=https%3A%2F%2Fwww.check24.net%2Fpauschalreisen-vergleich%2F%3Fc24pp_hotel_id%3D18002%26pid%3D1179734&tid=playitas-hotel-las-playitas');
 });
 
+test('Partner: Nummer mit festem Präfix im Parameter (trivago search=100-{id}), Reisedaten fallen weg', () => {
+  const trivago = { id_url: 'https://www.trivago.de/de/srl?search=100-{id}', domains: ['trivago.de'],
+    link_template: 'https://www.awin1.com/cread.php?awinmid=105923&awinaffid=3127993&clickref={slug}&ued={url_enc}' };
+  const full = 'https://www.trivago.de/de/lm/playitas-hotel-sports-resort-las-playitas?search=100-179546;dr-20261117-20261122;drs-40#accommodation-overlay';
+  assert.equal(partners.idOf(trivago, full), '179546');
+  assert.equal(partners.idOf(trivago, 'https://www.trivago.de/de/srl?search=100-179546'), '179546');
+  assert.equal(partners.idOf(trivago, 'https://www.trivago.de/de/lm/x?search=100-179546%3Bdr-20261117-20261122'), '179546', 'Semikolon kodiert');
+  assert.equal(partners.idOf(trivago, 'https://www.trivago.de/de/srl?search=200-14328'), null, 'anderer Präfix (Ort statt Unterkunft)');
+  assert.equal(partners.idOf(trivago, 'https://www.trivago.de/de/srl?search=100-179546x'), null);
+  assert.equal(partners.fromId(trivago, '179546'), 'https://www.trivago.de/de/srl?search=100-179546');
+  assert.equal(partners.fromId(trivago, ' 100-179546 '), 'https://www.trivago.de/de/srl?search=100-179546', 'Nummer mit Präfix');
+  assert.equal(partners.fromId(trivago, '200-179546'), '200-179546', 'fremder Präfix bleibt Eingabe (wird dann abgelehnt)');
+  const target = partners.fromId(trivago, partners.idOf(trivago, full));
+  assert.equal(partners.allowedUrl(trivago, target), target);
+  assert.equal(partners.buildUrl(trivago, target, { slug: 'playitas-hotel-las-playitas' }),
+    'https://www.awin1.com/cread.php?awinmid=105923&awinaffid=3127993&clickref=playitas-hotel-las-playitas&ued=https%3A%2F%2Fwww.trivago.de%2Fde%2Fsrl%3Fsearch%3D100-179546');
+  // Vorlagen ohne Präfix verhalten sich wie bisher
+  const check24 = { id_url: 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id={id}' };
+  assert.equal(partners.fromId(check24, '18002'), 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002');
+  assert.equal(partners.idOf(check24, 'https://www.check24.net/pauschalreisen-vergleich/?c24pp_hotel_id=18002;x'), '18002');
+});
+
 test('Anbieterlogos: Adresse nur für eigene Upload-Dateinamen, Kurzbeschriftung neben dem Logo', () => {
   assert.equal(partners.logoUrl('trivago-1730000000000.svg'), '/partner-logo/trivago-1730000000000.svg');
   assert.equal(partners.logoUrl('../etc/passwd'), null);
