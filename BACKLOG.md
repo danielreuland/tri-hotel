@@ -124,8 +124,8 @@ dorthin weiter (später ggf. eigenes Thema). Erster Artikel live: https://fitnes
 im Repo unter static-sites/, siehe README dort). Achtung Aktualität: World Triathlon nennt die Disziplin seit 28.10.2026
 „Hybrid Racing“ (Feb. 2026: „Hyathlon“) – Artikel bei neuen Meldungen (Long Form Agreement, Regelwerk) nachziehen.
 Geplante Unterseiten: /fitness-racing/geschichte/, /hyrox/, /hyathlon/, /world-triathlon/, /training/ (erst verlinken, wenn live).
-Offen: hybrid-hotel.de zeigt noch auf IONOS (217.160.0.107 + AAAA) – A-Einträge @ und www auf 87.106.155.249, AAAA löschen;
-danach Nginx-Weiterleitung + Zertifikat. Search Console für fitnessracing-hotel.de einrichten, Sitemap einreichen. Eigenes Repo für den Hub.
+hybrid-hotel.de (+ www) leitet seit 29.10. per 302 (vorübergehend, Domain bleibt frei für späteres Thema) auf
+fitnessracing-hotel.de weiter, mit Zertifikat. Offen: Search Console für fitnessracing-hotel.de einrichten, Sitemap einreichen. Eigenes Repo für den Hub.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu

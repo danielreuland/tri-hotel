@@ -7,6 +7,8 @@ Statische Seiten für Domains, die (noch) nicht von der tri-hotel-App ausgeliefe
 | `fitnessracing-hotel.de/` | `/var/www/fitnessracing-hotel.de/html` | Artikel `/fitness-racing/`; wird beim Start des Fitness-Racing-Rankings eine Site der App (gleiche URLs behalten) |
 | `danielreuland.com/` | `/var/www/danielreuland.com/html` | Platzhalter, wird durch die Hub-App ersetzt |
 
+`hybrid-hotel.de.nginx.conf`: hybrid-hotel.de (+ www) leitet vorübergehend (302) auf fitnessracing-hotel.de weiter, kein eigener Inhalt.
+
 `nginx.conf` je Ordner ist eine Kopie von `/etc/nginx/sites-available/<domain>` (nur zur Dokumentation, wird nicht hochgeladen).
 
 Veröffentlichen (nur auf ausdrückliches „veröffentlichen“):
