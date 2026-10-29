@@ -41,6 +41,18 @@ app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge
 // Kartenbibliothek Leaflet aus dem eigenen Server (kein CDN, keine Datenübertragung an Dritte)
 app.use('/static/vendor/leaflet', express.static(path.join(__dirname, '..', 'node_modules', 'leaflet', 'dist'), { maxAge: config.isProd ? '30d' : 0 }));
 
+// Für Ausfallüberwachung (extern und Server-Wächter): App läuft und Datenbank antwortet. Vor der Session, legt nichts an.
+app.get('/healthz', async (req, res) => {
+  res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' });
+  try {
+    await Promise.race([db.one('SELECT 1'), new Promise((_, reject) => setTimeout(() => reject(new Error('Zeitüberschreitung')), 3000))]);
+    res.type('text').send('ok');
+  } catch (err) {
+    console.error('[healthz]', err.message);
+    res.status(503).type('text').send('db');
+  }
+});
+
 app.use(
   session({
     store: new PgSession({ pool: db.pool, tableName: 'session' }),

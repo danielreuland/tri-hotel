@@ -1,0 +1,13 @@
+# Server-Wächter (scripts/watchdog.js), ausgelöst von server-watchdog.timer.
+# Einrichten: cp deploy/server-watchdog.* /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now server-watchdog.timer
+[Unit]
+Description=Server-Wächter: Platte, Speicher, PM2, Websites, Zertifikate, Backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www/tri-hotel
+Environment=PM2_HOME=/root/.pm2
+ExecStart=/usr/bin/node scripts/watchdog.js
+TimeoutStartSec=120
+Nice=10

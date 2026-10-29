@@ -127,7 +127,31 @@ Geplante Unterseiten: /fitness-racing/geschichte/, /hyrox/, /hyathlon/, /world-t
 hybrid-hotel.de (+ www) leitet seit 29.10. per 302 (vorübergehend, Domain bleibt frei für späteres Thema) auf
 fitnessracing-hotel.de weiter, mit Zertifikat. Search Console fitnessracing-hotel.de: Domain-Property bestätigt (TXT), Sitemap eingereicht und Indexierung von
 /fitness-racing/ beantragt (29.10.). Status direkt danach „konnte nicht abgerufen werden“, Sitemap technisch ok (200, gültiges XML);
-in einigen Tagen prüfen. Offen: eigenes Repo für den Hub.
+in einigen Tagen prüfen.
+**Nächste Schritte (29.10.):**
+1. ~~DNS danielreuland.com, hybrid-hotel.de, fitnessracing-hotel.de~~ – erledigt 29.10.
+2. **Hub-Repo** `danielreuland/danielreuland-com` in eigener Sitzung starten – Start-Prompt: `docs/prompts/hub-start.md`
+   (Ziele, CRM-Regeln, Datenmodell-Vorschlag, Server/Port 3020, Arbeitsweise). Daniel legt Repo und Sitzung an.
+3. **Interne API in tri-hotel** (hier): `/internal/v1/entities`, `/camp-providers`, `/stats`, nur lesend, nur über
+   127.0.0.1, HMAC je App (`INTERNAL_API_KEYS`), Protokoll je Aufruf, Tests; Nginx `/internal/` → 404. Vertrag:
+   `docs/internal-api.md` (gilt für beide Sitzungen; Änderungen dort festhalten).
+4. **Fitness-Racing-Ranking** (fitnessracing-hotel.de): Entwurf Kriterienkatalog mit Punkten und Gewichten (Geräte der
+   8 Stationen – SkiErg, Rudergerät, Sled, Wall Balls, Kettlebells, Sandsäcke –, Rig/Langhantel, Laufstrecke/-bahn,
+   Hyrox-Kurse/Training Club, Camps, Klima …) → Daniel legt ihn im Admin an; danach Site fitnessracing-hotel.de in der
+   App (Multi-Site), statische Seiten mit gleichen URLs übernehmen.
+
+### Ausfallüberwachung (begonnen 29.10.2026, sicherheitsrelevant)
+Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fällt der Server ganz aus, kann er nichts melden).
+- Gebaut 29.10. (noch nicht live): `/healthz` in tri-hotel (App + DB, `ok`/503); `scripts/watchdog.js` + `src/lib/watchdog.js`
+  (Tests) als systemd-Timer alle 5 min (`deploy/server-watchdog.*`): Platte ≥ 85 %, freier RAM < 150 MB, PM2-Apps nicht online
+  oder Absturzschleife (> 3 Neustarts je Lauf), Websites (tri-hotel /healthz, triprep, api.triprep /health, analytics,
+  danielreuland.com, fitnessracing-hotel.de), Zertifikate < 14 Tage, Backup fehlgeschlagen/älter 30 h, fehlgeschlagene
+  Systemdienste, PM2-Logs > 1 GB. Mail bei neuem Problem, Erinnerung alle 24 h, Mail „behoben“. Probelauf auf dem Server ok.
+- Offen (nach „veröffentlichen“): Deploy, `WATCHDOG_MAIL_TO` in die Server-.env, Timer einrichten, Testmail.
+- Offen (Daniel): externes Konto anlegen – Vorschlag Better Stack (Free: 10 Monitore, 3-min-Takt, Heartbeat) → Monitore für
+  tri-hotel.de/healthz (Schlüsselwort „ok“), triprep.de, api.triprep.de/health, danielreuland.com, fitnessracing-hotel.de +
+  Heartbeat-URL → `WATCHDOG_HEARTBEAT_URL`. UptimeRobot nur, wenn die AGB gewerbliche Nutzung im Free-Plan erlauben.
+- Offen: `pm2-logrotate` (Größe/Anzahl der PM2-Logs begrenzen; Anlass: 7,7-GB-Log des triprep-workers).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
@@ -181,7 +205,7 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   indexierte Seiten zeigt.
 - Plausible: Ziel „Hotel-Anfrage-Start“ anlegen (Klick auf „Trainingslager anfragen“).
 - Hunter.io-Konto („account restricted“) prüfen.
-- Ausfallüberwachung (UptimeRobot), Plausible-Ziel „Hotelvergleich“ + Eigenschaften `anbieter`/`art`, Gewerbeanmeldung vor Provisionen.
+- Plausible-Ziel „Hotelvergleich“ + Eigenschaften `anbieter`/`art`, Gewerbeanmeldung vor Provisionen.
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
 
 ## Zur Info: Server-Konfiguration (nur `.env`, nicht im Repo)
