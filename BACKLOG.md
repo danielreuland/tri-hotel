@@ -104,6 +104,14 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
   Alternativen, Sprungleiste. Mini-Vergleich und „Passt zu dir“ ggf. vorab einzeln.
 - Offen aus „Gilt für jede Variante“: Karte als kleines Vorschaubild statt „Karte laden“-Fläche.
 
+### Dach danielreuland.com (Idee 29.10.2026, Einschätzung im Chat)
+danielreuland.com als Dach mit Links zu triprep, tri-hotel, hybrid-hotel …; eigener Admin mit Kunden-/Partnerverwaltung;
+Seiten sprechen per API miteinander. Einschätzung: machbar auf dem bestehenden Server; Empfehlung eigene Hub-App mit eigener
+DB, Projekte behalten ihre Daten, Austausch über versionierte interne API mit Schlüssel je App, schrittweise (Startseite →
+Hub-Admin mit Kennzahlen → CRM → gemeinsamer Login). hybrid-hotel ggf. als zweite Site im tri-hotel-Code (Multi-Site/
+Multi-Ranking vorhanden). Offen (Daniel): Was ist hybrid-hotel, wer nutzt den Admin, Umfang CRM (Pipeline, Verträge,
+Provisionen/Rechnungen?), Domain danielreuland.com (noch kein DNS-Eintrag). Ersetzt das geplante Partner-CRM im tri-hotel-Admin.
+
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
 Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
