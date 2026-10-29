@@ -139,6 +139,9 @@ in einigen Tagen prüfen.
    8 Stationen – SkiErg, Rudergerät, Sled, Wall Balls, Kettlebells, Sandsäcke –, Rig/Langhantel, Laufstrecke/-bahn,
    Hyrox-Kurse/Training Club, Camps, Klima …) → Daniel legt ihn im Admin an; danach Site fitnessracing-hotel.de in der
    App (Multi-Site), statische Seiten mit gleichen URLs übernehmen.
+   Gestaltung (29.10.): Palette „Halle“ (Schwarz + Signalgelb) gewählt, Schriften wie tri-hotel lokal, Fotos Unsplash
+   (Victor Freitas, Kyle Kranz) selbst ausgeliefert mit Urhebervermerk; Fuß „Unabhängiges Portal, nicht mit HYROX verbunden“.
+   Keine Fotos mit HYROX-/Sponsor-Logos (zwei Kandidaten deshalb verworfen). Für die App später als Palette in src/lib/palettes.js.
 5. **Admin-Aufteilung** Hub ↔ Apps entschieden 29.10.: `docs/admin-aufteilung.md` (Grundregel + Tabelle tri-hotel,
    Serverbetrieb in `ops/` des Hub-Repos). Offen: triprep-Bestandsaufnahme – Prompt `docs/prompts/triprep-admin-inventory.md`,
    Ergebnis in die Aufteilung übernehmen.
