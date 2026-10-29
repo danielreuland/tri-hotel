@@ -1,0 +1,94 @@
+/* fitnessracing-hotel.de – statische Seiten bis zum Start des Rankings. Keine externen Schriften oder Skripte. */
+:root {
+  --bg: #f6f5f1; --surface: #ffffff; --fg: #1b1f22; --muted: #5b6268; --line: #dedbd2;
+  --accent: #c2410c; --accent-ink: #9a3412; --accent-soft: #fdeee4; --note: #eef3f6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #131618; --surface: #1b1f22; --fg: #e9ebec; --muted: #9ca4aa; --line: #2d3338;
+          --accent: #fb8a4c; --accent-ink: #fdba8c; --accent-soft: #2a1d15; --note: #1b252b; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent-ink); text-underline-offset: 2px; }
+a:hover { color: var(--accent); }
+.wrap { max-width: 46rem; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+
+.site-head { border-bottom: 1px solid var(--line); background: var(--surface); }
+.site-head .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem 1.2rem; padding-block: .8rem; }
+.brand { font-weight: 700; letter-spacing: -.01em; color: var(--fg); text-decoration: none; }
+.brand b { color: var(--accent); }
+.site-head nav { display: flex; gap: 1rem; font-size: .9rem; }
+.site-head nav a { color: var(--muted); text-decoration: none; }
+.site-head nav a:hover { color: var(--fg); }
+
+.crumbs { font-size: .85rem; color: var(--muted); margin: 1.6rem 0 0; }
+.crumbs a { color: var(--muted); }
+article h1, .home h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.15; letter-spacing: -.015em; margin: .5rem 0 .8rem; text-wrap: balance; }
+.meta { font-size: .88rem; color: var(--muted); margin: 0 0 1.6rem; }
+.lead { font-size: 1.12rem; }
+h2 { font-size: 1.5rem; line-height: 1.25; margin: 2.8rem 0 .8rem; text-wrap: balance; scroll-margin-top: 1rem; }
+h3 { font-size: 1.12rem; margin: 1.8rem 0 .5rem; text-wrap: balance; scroll-margin-top: 1rem; }
+p, ul, ol { margin: 0 0 1rem; }
+li { margin-bottom: .35rem; }
+
+.facts { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.4rem 0 2rem; }
+.facts h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 .6rem; }
+.facts dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0; }
+.facts dt { font-weight: 600; }
+.facts dd { margin: 0; }
+@media (max-width: 520px) { .facts dl { grid-template-columns: 1fr; } .facts dd { margin-bottom: .5rem; } }
+
+.toc { background: var(--note); border-radius: 6px; padding: 1rem 1.2rem; margin: 0 0 1rem; font-size: .95rem; }
+.toc strong { display: block; margin-bottom: .4rem; }
+.toc ol { margin: 0; padding-left: 1.2rem; }
+.toc li { margin-bottom: .15rem; }
+
+.table { overflow-x: auto; margin: 1rem 0 1.4rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: .55rem .75rem; border-bottom: 1px solid var(--line); }
+thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--bg); white-space: nowrap; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+tbody th { font-weight: 600; }
+td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+caption { caption-side: bottom; text-align: left; font-size: .8rem; color: var(--muted); padding: .5rem .75rem; }
+
+.timeline { list-style: none; padding: 0; margin: 1.2rem 0 1.6rem; border-left: 2px solid var(--line); }
+.timeline li { position: relative; padding: 0 0 1.1rem 1.4rem; margin: 0; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: .45rem; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.timeline li.now::before { background: var(--accent); }
+.timeline time { display: block; font-weight: 700; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+
+.note { background: var(--note); border-radius: 6px; padding: .8rem 1rem; font-size: .95rem; margin: 1rem 0 1.4rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1rem 0 1.4rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.1rem; min-width: 0; }
+.card h3 { margin: 0 0 .2rem; }
+.card .where { font-size: .85rem; color: var(--muted); margin: 0 0 .6rem; }
+.card ul { padding-left: 1.1rem; font-size: .95rem; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+.faq details { border-bottom: 1px solid var(--line); padding: .7rem 0; }
+.faq summary { cursor: pointer; font-weight: 600; }
+.faq details p { margin: .6rem 0 0; }
+
+.cta { background: var(--accent-soft); border-radius: 8px; padding: 1.2rem 1.3rem; margin: 2.6rem 0 1rem; }
+.cta h2 { margin: 0 0 .4rem; font-size: 1.25rem; }
+.cta p:last-child { margin-bottom: 0; }
+
+.sources { font-size: .88rem; color: var(--muted); }
+.sources ol { padding-left: 1.2rem; }
+.sources a { word-break: break-word; }
+
+.site-foot { border-top: 1px solid var(--line); margin-top: 3rem; padding-block: 1.4rem 2rem; font-size: .85rem; color: var(--muted); }
+.site-foot details { margin-top: .5rem; }
+.site-foot summary { cursor: pointer; display: inline; }
+.site-foot a { color: inherit; }
+
+.home { padding-block: 12vh 2rem; }
+.home ul.links { list-style: none; padding: 0; border-top: 1px solid var(--line); }
+.home ul.links li { border-bottom: 1px solid var(--line); margin: 0; }
+.home ul.links a { display: flex; justify-content: space-between; gap: 1rem; padding: .9rem 0; color: inherit; text-decoration: none; }
+.home ul.links a:hover strong { color: var(--accent); }
+.home ul.links small { color: var(--muted); text-align: right; }
+.kicker { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 2rem 0 .6rem; }

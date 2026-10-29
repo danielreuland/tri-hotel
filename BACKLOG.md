@@ -119,8 +119,13 @@ Stand 29.10.: danielreuland.com live als statische Platzhalterseite (Projekte, I
 Zertifikat, Logs /var/log/nginx/danielreuland.com 7 Tage (in /etc/logrotate.d/tri-hotel-nginx). Wird durch die Hub-App ersetzt.
 fitnessracing-hotel.de (Fitnessracing/Hyrox) ebenso als Platzhalter „in Vorbereitung“ (noindex) live, gleicher Aufbau unter
 /var/www/fitnessracing-hotel.de/html. Impressum beider Seiten: daniel@danielreuland.com.
-Offen: hybrid-hotel.de zeigt noch auf IONOS (217.160.0.107 + AAAA) – A-Einträge auf 87.106.155.249, AAAA löschen, falls genutzt;
-klären, welche Domain das Hybrid-/Hyrox-Ranking bekommt; eigenes Repo für den Hub.
+Entscheidung 29.10.: fitnessracing-hotel.de = Hauptdomain des Fitness-Racing-/Hyrox-Rankings; hybrid-hotel.de leitet vorerst
+dorthin weiter (später ggf. eigenes Thema). Erster Artikel live: https://fitnessracing-hotel.de/fitness-racing/ (statisch, Quellen
+im Repo unter static-sites/, siehe README dort). Achtung Aktualität: World Triathlon nennt die Disziplin seit 28.10.2026
+„Hybrid Racing“ (Feb. 2026: „Hyathlon“) – Artikel bei neuen Meldungen (Long Form Agreement, Regelwerk) nachziehen.
+Geplante Unterseiten: /fitness-racing/geschichte/, /hyrox/, /hyathlon/, /world-triathlon/, /training/ (erst verlinken, wenn live).
+Offen: hybrid-hotel.de zeigt noch auf IONOS (217.160.0.107 + AAAA) – A-Einträge @ und www auf 87.106.155.249, AAAA löschen;
+danach Nginx-Weiterleitung + Zertifikat. Search Console für fitnessracing-hotel.de einrichten, Sitemap einreichen. Eigenes Repo für den Hub.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
