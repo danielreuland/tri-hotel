@@ -57,6 +57,7 @@ a:hover { color: var(--link-hover); }
 .eyebrow { display: inline-block; font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: .22rem .6rem; border-radius: 4px; background: var(--signal); color: var(--signal-ink); }
 .hero h1 { font: 400 clamp(2.5rem, 7vw, 4.6rem)/.95 var(--head); letter-spacing: .015em; margin: .6rem 0 .5rem; text-wrap: balance; max-width: 16ch; color: #fff; }
 .hero .meta { color: rgba(255,255,255,.82); font-size: .9rem; margin: 0; }
+.hero .meta a { color: #fff; }
 .credit { position: absolute; z-index: 1; top: .6rem; right: max(.6rem, env(safe-area-inset-right)); font-size: .72rem; color: rgba(255,255,255,.8); background: rgba(0,0,0,.45); padding: .15rem .5rem; border-radius: 4px; }
 .credit a { color: inherit; }
 
