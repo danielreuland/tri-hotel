@@ -114,7 +114,10 @@ Entscheidungen Daniel (29.10.): hybrid-hotel = eigenes Ranking (Hyrox; CrossFit 
 Admin vorerst nur Daniel; Rollen später, z. B. über die Board-Labels. danielreuland.com = persönliche Seite mit Projekten.
 CRM Schritt 1: Firmen und Kontakte (Firma hat mehrere Kontakte, Kontakt höchstens eine Firma); Kontakt ↔ triprep-Nutzer,
 Firma ↔ Hotel oder Camp-Anbieter in tri-hotel. Pipeline, Verträge, Rechnungen erst Phase 2+.
-Offen: DNS für danielreuland.com und hybrid-hotel.de; eigenes Repo für den Hub.
+Stand 29.10.: danielreuland.com live als statische Platzhalterseite (Projekte, Impressum, Datenschutz) – Server:
+/var/www/danielreuland.com/html, Nginx-Site `danielreuland.com` (www und http → https://danielreuland.com), Let's-Encrypt-
+Zertifikat, Logs /var/log/nginx/danielreuland.com 7 Tage (in /etc/logrotate.d/tri-hotel-nginx). Wird durch die Hub-App ersetzt.
+Offen: DNS für hybrid-hotel.de; eigenes Repo für den Hub; Mailadresse @danielreuland.com fürs Impressum (derzeit info@tri-hotel.de).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
