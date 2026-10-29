@@ -139,15 +139,18 @@ in einigen Tagen prüfen.
    8 Stationen – SkiErg, Rudergerät, Sled, Wall Balls, Kettlebells, Sandsäcke –, Rig/Langhantel, Laufstrecke/-bahn,
    Hyrox-Kurse/Training Club, Camps, Klima …) → Daniel legt ihn im Admin an; danach Site fitnessracing-hotel.de in der
    App (Multi-Site), statische Seiten mit gleichen URLs übernehmen.
+5. **Admin-Aufteilung** Hub ↔ Apps entschieden 29.10.: `docs/admin-aufteilung.md` (Grundregel + Tabelle tri-hotel,
+   Serverbetrieb in `ops/` des Hub-Repos). Offen: triprep-Bestandsaufnahme – Prompt `docs/prompts/triprep-admin-inventory.md`,
+   Ergebnis in die Aufteilung übernehmen.
 
 ### Ausfallüberwachung (begonnen 29.10.2026, sicherheitsrelevant)
 Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fällt der Server ganz aus, kann er nichts melden).
-- Gebaut 29.10. (noch nicht live): `/healthz` in tri-hotel (App + DB, `ok`/503); `scripts/watchdog.js` + `src/lib/watchdog.js`
+- **Live seit 29.10.** (Timer alle 5 min, Mails an daniel@danielreuland.com, Testmail versendet): `/healthz` in tri-hotel (App + DB, `ok`/503); `scripts/watchdog.js` + `src/lib/watchdog.js`
   (Tests) als systemd-Timer alle 5 min (`deploy/server-watchdog.*`): Platte ≥ 85 %, freier RAM < 150 MB, PM2-Apps nicht online
   oder Absturzschleife (> 3 Neustarts je Lauf), Websites (tri-hotel /healthz, triprep, api.triprep /health, analytics,
   danielreuland.com, fitnessracing-hotel.de), Zertifikate < 14 Tage, Backup fehlgeschlagen/älter 30 h, fehlgeschlagene
   Systemdienste, PM2-Logs > 1 GB. Mail bei neuem Problem, Erinnerung alle 24 h, Mail „behoben“. Probelauf auf dem Server ok.
-- Offen (nach „veröffentlichen“): Deploy, `WATCHDOG_MAIL_TO` in die Server-.env, Timer einrichten, Testmail.
+- Umzug nach `ops/` im Hub-Repo, sobald es steht (Aufteilung: `docs/admin-aufteilung.md`).
 - Offen (Daniel): externes Konto anlegen – Vorschlag Better Stack (Free: 10 Monitore, 3-min-Takt, Heartbeat) → Monitore für
   tri-hotel.de/healthz (Schlüsselwort „ok“), triprep.de, api.triprep.de/health, danielreuland.com, fitnessracing-hotel.de +
   Heartbeat-URL → `WATCHDOG_HEARTBEAT_URL`. UptimeRobot nur, wenn die AGB gewerbliche Nutzung im Free-Plan erlauben.

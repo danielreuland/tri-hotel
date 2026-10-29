@@ -107,7 +107,7 @@ Die Werte 0,6/0,4, C, m und Mindest-Vollständigkeit stammen aus `rankings.formu
 ## Später (nicht in Version 1 bauen)
 
 - Version 2: Bewertungen (7 Dimensionen, Faktencheck-Fragen), Vergleich von bis zu 3 Hotels (`/vergleich/a-vs-b-vs-c`, nur innerhalb eines Rankings)
-- Phase 2: Partner-CRM im Admin (Priorität), danach `/partner-werden`, mehrere Buchungslinks je Hotel, Klick-Tracking `/go/:hotel/:anbieter`, Provisionsabrechnung
+- Phase 2: Partner-CRM, `/partner-werden` und Provisionsabrechnung kommen **nicht** in den tri-hotel-Admin, sondern in den Hub danielreuland.com (Entscheidung 29.10.2026, Aufteilung in `docs/admin-aufteilung.md`; Datenaustausch nur über `docs/internal-api.md`). In tri-hotel bleiben Partnerprogramm-Technik, Buchungslinks je Hotel und Klick-Tracking.
 
 ## Konventionen
 

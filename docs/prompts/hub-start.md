@@ -42,6 +42,26 @@ Die Apps tauschen Daten über eine versionierte interne API aus. Der Vertrag fü
 - Die tri-hotel-Seite der API baut eine andere Sitzung im tri-hotel-Repo. Bis sie live ist: Client gegen den Vertrag mit
   Tests (gemockte Antworten) bauen. triprep bekommt später einen eigenen Vertrag (Nutzersuche nur per exakter E-Mail).
 
+## Was gehört in den Hub – und was nicht (entschieden)
+Die Aufteilung der Admin-Bereiche steht im tri-hotel-Repo unter `docs/admin-aufteilung.md` – bitte lesen. Kurz:
+- **Grundregel:** In der App bleibt, was die Daten oder Regeln dieser App betrifft. Ins Dach kommt, was über alle Projekte
+  geht: Firmen/Kontakte, Geschäftsbeziehungen, Verträge, Rechnungen/Provisionen, Gesamtübersicht, Serverbetrieb.
+- Der Hub liest nie direkt in fremden Datenbanken und schreibt in v1 nichts in die Apps.
+- Partnerprogramme und Camp-Anbieter sind **geteilt**: Technik und Inhalte bleiben in tri-hotel, Firma, Ansprechpartner,
+  Konditionen, Verträge und Rechnungen kommen in den Hub.
+- triprep: Bestandsaufnahme läuft noch; Ergebnis wird in `docs/admin-aufteilung.md` (tri-hotel-Repo) ergänzt.
+
+## Serverbetrieb im Hub-Repo (Ordner `ops/`)
+Serverweite Dinge gehören ins Dach, laufen aber **unabhängig von der Hub-App** (eigenes `ops/package.json`, eigene
+Konfigurationsdatei z. B. `/etc/server-watchdog.env`), damit sie auch melden, wenn der Hub ausfällt:
+- **Server-Wächter** übernehmen: heute im tri-hotel-Repo (`scripts/watchdog.js`, `src/lib/watchdog.js` mit Tests,
+  `deploy/server-watchdog.service` und `.timer`), aktiv seit 29.10.2026, mailt an daniel@danielreuland.com. Umzug: nach
+  `ops/` kopieren, von der tri-hotel-Konfiguration lösen, Timer auf den neuen Pfad umstellen, Zustandsdatei
+  `/var/lib/server-watchdog/state.json` weiterverwenden; danach im tri-hotel-Repo entfernen (dort Bescheid geben).
+- Nginx-Konfigurationen, Backup-Skript (`/usr/local/sbin/server-backup.sh`), Logrotate als dokumentierte Vorlagen.
+- Im Hub-Admin eine Seite „Server“ mit dem Status des Wächters (liest die Zustandsdatei).
+- Jede App behält ihren eigenen `/healthz`.
+
 ## Technik (wie in meinen anderen Projekten)
 - Node.js 20 + Express, server-seitiges Rendering mit EJS, PostgreSQL 16, Tests mit `node:test` (`npm test`), Migrationen in
   `db/migrations/` (nummeriert), Konfiguration nur über `.env` (Vorlage `.env.example`, keine Secrets im Repo oder Chat).
@@ -78,3 +98,4 @@ Die Apps tauschen Daten über eine versionierte interne API aus. Der Vertrag fü
 3. Admin-Login (Konto per Skript anlegen), Firmen und Kontakte anlegen/bearbeiten/suchen, Audit-Log.
 4. Verknüpfung Firma ↔ tri-hotel-Hotel/Camp-Anbieter über die interne API (sobald tri-hotel sie bereitstellt).
 5. Danach Deployment-Plan (PM2, Nginx, Datenbank) – erst nach meinem „veröffentlichen“.
+6. Server-Wächter nach `ops/` umziehen (siehe oben).
