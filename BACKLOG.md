@@ -154,7 +154,8 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 - Offen (Daniel): externes Konto anlegen – Vorschlag Better Stack (Free: 10 Monitore, 3-min-Takt, Heartbeat) → Monitore für
   tri-hotel.de/healthz (Schlüsselwort „ok“), triprep.de, api.triprep.de/health, danielreuland.com, fitnessracing-hotel.de +
   Heartbeat-URL → `WATCHDOG_HEARTBEAT_URL`. UptimeRobot nur, wenn die AGB gewerbliche Nutzung im Free-Plan erlauben.
-- Offen: `pm2-logrotate` (Größe/Anzahl der PM2-Logs begrenzen; Anlass: 7,7-GB-Log des triprep-workers).
+- `pm2-logrotate` 3.0.0 eingerichtet 29.10. (gilt für alle PM2-Apps): je Log max. 50 MB, täglich um Mitternacht, 10 Dateien
+  behalten, gzip, Prüfung alle 5 min; `pm2 save` ausgeführt. Testmail des Wächters angekommen (29.10.).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
