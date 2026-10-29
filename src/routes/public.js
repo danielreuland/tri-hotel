@@ -74,8 +74,9 @@ async function renderList(req, res, ranking) {
   const featureMap = await features.forEntities(ranking.entity_type, all.map((e) => e.id));
   const featureSets = new Map([...featureMap].map(([id, list]) => [id, new Set(list.map((f) => f.code))]));
   for (const e of all) e.features = (featureMap.get(e.id) || []).filter((f) => f.filterable).slice(0, 4);
-  const ranked = featureLib.applySearch(allRanked, search, featureSets);
-  const incomplete = featureLib.applySearch(allIncomplete, search, featureSets);
+  const featureGroups = featureLib.alternativeGroups(filterFeatures);
+  const ranked = featureLib.applySearch(allRanked, search, featureSets, featureGroups);
+  const incomplete = featureLib.applySearch(allIncomplete, search, featureSets, featureGroups);
 
   // Score-Karte im Hero: bestplatziertes Objekt mit Punkten je Kategorie (unabhängig von der Suche)
   let topCard = null;

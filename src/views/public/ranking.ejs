@@ -112,6 +112,7 @@
               <label class="chip"><input type="checkbox" name="l" value="<%= f.code %>" <%= search.features.indexOf(f.code) >= 0 ? 'checked' : '' %>> <span><%= f.label %></span></label>
             <% }) %>
           </div>
+          <p class="hint">Mehrere Angaben zum selben Merkmal (z. B. Beckenlängen) gelten als „oder“, verschiedene Leistungen müssen alle vorhanden sein.</p>
         </details>
       <% } %>
       <div class="search-actions">

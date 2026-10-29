@@ -61,20 +61,32 @@ function normalize(s) {
   return String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
 }
 
-// Filtert eine Liste von Objekten. featureSets: Map(entityId -> Set(feature codes))
+// Leistungen aus derselben Angabe (gleiches Kriterium, z. B. verschiedene Beckenlängen) sind Alternativen:
+// ein Objekt hat dort meist nur die beste Angabe. Schlüssel je Leistung: 'ranking:kriterium' bzw. der eigene Code.
+function alternativeGroups(catalog) {
+  return new Map((catalog || []).map((f) => [f.code, f.derive ? `${f.derive.ranking}:${f.derive.criterion}` : f.code]));
+}
+
+// Filtert eine Liste von Objekten. featureSets: Map(entityId -> Set(feature codes)); groups: alternativeGroups(catalog).
+// Gewählte Leistungen derselben Gruppe sind „oder“-verknüpft, verschiedene Gruppen „und“.
 // Sortierung bleibt unverändert (nur nach Score – Neutralität).
-function applySearch(list, search, featureSets) {
+function applySearch(list, search, featureSets, groups = new Map()) {
   const q = normalize(search.q);
+  const wanted = new Map();
+  for (const c of search.features) {
+    const key = groups.get(c) || c;
+    wanted.set(key, [...(wanted.get(key) || []), c]);
+  }
   return list.filter((e) => {
     if (q && !normalize(`${e.name} ${e.city || ''}`).includes(q)) return false;
     if (search.country && e.country !== search.country) return false;
     if (search.minScore && !(e.score >= search.minScore)) return false;
-    if (search.features.length) {
+    if (wanted.size) {
       const have = featureSets.get(e.id) || new Set();
-      if (!search.features.every((c) => have.has(c))) return false;
+      if (![...wanted.values()].every((codes) => codes.some((c) => have.has(c)))) return false;
     }
     return true;
   });
 }
 
-module.exports = { valueMatches, entityFeatures, groupFeatures, parseSearch, isActive, applySearch };
+module.exports = { valueMatches, entityFeatures, groupFeatures, parseSearch, isActive, alternativeGroups, applySearch };

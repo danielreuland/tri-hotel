@@ -62,6 +62,23 @@ test('Suche filtert nach Text, Land, Mindest-Score und allen gewählten Leistung
   assert.deepEqual(run({}), ['a', 'b', 'c'], 'Reihenfolge bleibt (nur nach Score)');
 });
 
+test('Suche: Leistungen aus derselben Angabe sind „oder“, verschiedene Angaben „und“', () => {
+  const catalog = [
+    { code: 'pool_50', derive: { ranking: 'tri', criterion: 'swim_pool', values: ['pool_50_hotel'] } },
+    { code: 'pool_25', derive: { ranking: 'tri', criterion: 'swim_pool', values: ['pool_25_hotel'] } },
+    { code: 'sauna', derive: { ranking: 'tri', criterion: 'rec_sauna', values: [true] } },
+    { code: 'vegan' }, // ohne Ableitung: eigene Gruppe
+  ];
+  const groups = lib.alternativeGroups(catalog);
+  const list = [{ id: 'a', score: 90 }, { id: 'b', score: 80 }, { id: 'c', score: 70 }];
+  const sets = new Map([['a', new Set(['pool_50'])], ['b', new Set(['pool_25', 'sauna'])], ['c', new Set(['sauna', 'vegan'])]]);
+  const run = (features) => lib.applySearch(list, { q: '', country: null, minScore: null, features }, sets, groups).map((e) => e.id);
+  assert.deepEqual(run(['pool_50', 'pool_25']), ['a', 'b'], 'Beckenlängen: oder');
+  assert.deepEqual(run(['pool_50', 'pool_25', 'sauna']), ['b'], 'Becken (oder) und Sauna');
+  assert.deepEqual(run(['sauna', 'vegan']), ['c'], 'verschiedene Leistungen: und');
+  assert.deepEqual(lib.applySearch(list, { q: '', features: ['pool_50', 'pool_25'] }, sets).map((e) => e.id), [], 'ohne Gruppen wie bisher: und');
+});
+
 test('valueMatches: Mehrfachauswahl – jede gewählte Ausprägung zählt (z. B. 50- und 25-m-Becken im Hotel)', () => {
   const v = { option: 'pool_50_hotel', options: ['pool_50_hotel', 'pool_25_hotel'] };
   assert.ok(lib.valueMatches(v, ['pool_25_hotel']));
