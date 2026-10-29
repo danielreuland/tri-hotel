@@ -109,8 +109,12 @@ danielreuland.com als Dach mit Links zu triprep, tri-hotel, hybrid-hotel …; ei
 Seiten sprechen per API miteinander. Einschätzung: machbar auf dem bestehenden Server; Empfehlung eigene Hub-App mit eigener
 DB, Projekte behalten ihre Daten, Austausch über versionierte interne API mit Schlüssel je App, schrittweise (Startseite →
 Hub-Admin mit Kennzahlen → CRM → gemeinsamer Login). hybrid-hotel ggf. als zweite Site im tri-hotel-Code (Multi-Site/
-Multi-Ranking vorhanden). Offen (Daniel): Was ist hybrid-hotel, wer nutzt den Admin, Umfang CRM (Pipeline, Verträge,
-Provisionen/Rechnungen?), Domain danielreuland.com (noch kein DNS-Eintrag). Ersetzt das geplante Partner-CRM im tri-hotel-Admin.
+Multi-Ranking vorhanden). Ersetzt das geplante Partner-CRM im tri-hotel-Admin.
+Entscheidungen Daniel (29.10.): hybrid-hotel = eigenes Ranking (Hyrox; CrossFit ggf. später, eigenes oder gemeinsames).
+Admin vorerst nur Daniel; Rollen später, z. B. über die Board-Labels. danielreuland.com = persönliche Seite mit Projekten.
+CRM Schritt 1: Firmen und Kontakte (Firma hat mehrere Kontakte, Kontakt höchstens eine Firma); Kontakt ↔ triprep-Nutzer,
+Firma ↔ Hotel oder Camp-Anbieter in tri-hotel. Pipeline, Verträge, Rechnungen erst Phase 2+.
+Offen: DNS für danielreuland.com und hybrid-hotel.de; eigenes Repo für den Hub.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
