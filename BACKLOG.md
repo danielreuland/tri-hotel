@@ -125,7 +125,9 @@ im Repo unter static-sites/, siehe README dort). Achtung Aktualität: World Tria
 „Hybrid Racing“ (Feb. 2026: „Hyathlon“) – Artikel bei neuen Meldungen (Long Form Agreement, Regelwerk) nachziehen.
 Geplante Unterseiten: /fitness-racing/geschichte/, /hyrox/, /hyathlon/, /world-triathlon/, /training/ (erst verlinken, wenn live).
 hybrid-hotel.de (+ www) leitet seit 29.10. per 302 (vorübergehend, Domain bleibt frei für späteres Thema) auf
-fitnessracing-hotel.de weiter, mit Zertifikat. Offen: Search Console für fitnessracing-hotel.de einrichten, Sitemap einreichen. Eigenes Repo für den Hub.
+fitnessracing-hotel.de weiter, mit Zertifikat. Search Console fitnessracing-hotel.de: Domain-Property bestätigt (TXT), Sitemap eingereicht und Indexierung von
+/fitness-racing/ beantragt (29.10.). Status direkt danach „konnte nicht abgerufen werden“, Sitemap technisch ok (200, gültiges XML);
+in einigen Tagen prüfen. Offen: eigenes Repo für den Hub.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
