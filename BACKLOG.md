@@ -119,6 +119,9 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - Eigene KI-Mail-Mustertexte (falls angepasst) haben den Abschnitt `{{#bestaetigen}}` nicht automatisch.
 
 ## Zu entscheiden (Daniel)
+- **KI-Budget Oktober aufgebraucht** (20,08 von 20 $ am 29.10.; Sperre greift automatisch über `LLM_MONTHLY_BUDGET_USD`):
+  Redaktionstexte, Prüfung der 99 Importe und Camp-Prüfungen erst ab 01.11.2026. Oktober-Verbrauch: Extraktion 14,09 $,
+  Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $.
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.

@@ -120,6 +120,10 @@
   <section class="card">
     <h2>Kosten &amp; Dienste</h2>
     <dl class="dash-list">
+      <% var B = d.costs.budget; if (B && B.budget) { var over = B.usd >= B.budget; %>
+        <div><dt>KI-Monatsbudget</dt><dd><span class="badge <%= over ? 'bad' : B.usd >= B.budget * 0.8 ? 'warn' : 'good' %>"><%= over ? 'aufgebraucht' : Math.round(B.usd / B.budget * 100) + ' %' %></span> <%= usd(B.usd) %> von <%= usd(B.budget) %></dd></div>
+        <% if (over) { %><p class="muted" style="margin:4px 0 8px"><small>KI-Aufrufe (Auto-Prüfung, Texte, Camp-Prüfung, Anfrage-Mails) sind bis zum Monatsersten gesperrt.</small></p><% } %>
+      <% } %>
       <div><dt>KI (7 Tage)</dt><dd><%= usd(d.costs.week) %></dd></div>
       <div><dt>KI (30 Tage)</dt><dd><%= usd(d.costs.month) %></dd></div>
       <% d.costs.api.forEach(function (a) { %><div><dt>Aufrufe <%= a.service %> (30 Tage)</dt><dd><%= n(a.n) %></dd></div><% }) %>

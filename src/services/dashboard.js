@@ -6,6 +6,7 @@ const areas = require('./areas');
 const tasks = require('./tasks');
 const partners = require('./partners');
 const analytics = require('./analytics');
+const llm = require('../lib/llm');
 
 // Tagesreihe der letzten `days` Tage bis `today` (inklusive), fehlende Tage mit 0: [{ day: 'YYYY-MM-DD', ...keys }]
 function daySeries(rows, days, today, keys) {
@@ -123,7 +124,7 @@ async function load(site) {
     comm,
     // Programme ohne Provision und ohne Links (z. B. reine Suchlinks) blenden wir aus
     partners: { programs: programs.map((p) => ({ ...coverage(p, objects.live), monetized: partners.monetized(p) })).filter((p) => p.monetized || p.links > 0), clicks: partnerClicks, days, top: topClicks },
-    costs: { ...costs, api: apiCalls },
+    costs: { ...costs, api: apiCalls, budget: await llm.monthSpend() },
     visits: await analytics.overview(site.primary_domain),
   };
 }
