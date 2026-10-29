@@ -178,6 +178,11 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - **KI-Budget Oktober aufgebraucht** (20,08 von 20 $ am 29.10.; Sperre greift automatisch über `LLM_MONTHLY_BUDGET_USD`):
   Redaktionstexte, Prüfung der 99 Importe und Camp-Prüfungen erst ab 01.11.2026. Oktober-Verbrauch: Extraktion 14,09 $,
   Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $.
+- **Import 01.11.2026, 08:00 (geplant, Daniel 29.10.):** 20 neue Hotels aus dem Abgleich sports-hotels.com
+  (`data/imports/2026-10-29-sports-hotels-lap-pool.*`) + Auto-Prüfung für 7 passende geparkte Importe (scripts/rerun-auto-check.js),
+  einmaliger systemd-Timer `hotel-import-2026-11-01` auf dem Server (überlebt keinen Neustart – sonst von Hand starten, Befehl
+  siehe `systemctl cat hotel-import-2026-11-01.service`). Ca. 4,30 $ KI/Places. Danach: Ergebnisse in der Warteschlange prüfen.
+  Ursache der Abbrüche vom 22.10. geklärt: manueller Abbruch per pg-boss-cancel um 19:23 (kein Code, kein Fehler).
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
