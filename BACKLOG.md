@@ -117,7 +117,10 @@ Firma ↔ Hotel oder Camp-Anbieter in tri-hotel. Pipeline, Verträge, Rechnungen
 Stand 29.10.: danielreuland.com live als statische Platzhalterseite (Projekte, Impressum, Datenschutz) – Server:
 /var/www/danielreuland.com/html, Nginx-Site `danielreuland.com` (www und http → https://danielreuland.com), Let's-Encrypt-
 Zertifikat, Logs /var/log/nginx/danielreuland.com 7 Tage (in /etc/logrotate.d/tri-hotel-nginx). Wird durch die Hub-App ersetzt.
-Offen: DNS für hybrid-hotel.de; eigenes Repo für den Hub; Mailadresse @danielreuland.com fürs Impressum (derzeit info@tri-hotel.de).
+fitnessracing-hotel.de (Fitnessracing/Hyrox) ebenso als Platzhalter „in Vorbereitung“ (noindex) live, gleicher Aufbau unter
+/var/www/fitnessracing-hotel.de/html. Impressum beider Seiten: daniel@danielreuland.com.
+Offen: hybrid-hotel.de zeigt noch auf IONOS (217.160.0.107 + AAAA) – A-Einträge auf 87.106.155.249, AAAA löschen, falls genutzt;
+klären, welche Domain das Hybrid-/Hyrox-Ranking bekommt; eigenes Repo für den Hub.
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
