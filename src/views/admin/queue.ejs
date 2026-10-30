@@ -38,15 +38,30 @@
   <% }) %>
   <a class="badge <%= status === null ? 'accent' : '' %>" href="<%= link({ status: 'alle' }) %>">alle (<%= totalAll %>)</a>
 </div>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% var LISTING = { draft: 'in Vorbereitung', in_review: 'in Prüfung', live: 'live' }; %>
+<form id="bulk-rankings" method="post" action="/admin/objekte/rankings-pruefen" class="filters" style="align-items:center;margin:8px 0">
+  <input type="hidden" name="back" value="<%= backUrl %>">
+  <small class="muted">Markierte</small>
+  <label class="sr-only" for="bulk-ranking">Ranking</label>
+  <select id="bulk-ranking" name="ranking_id" required>
+    <option value="">für Ranking prüfen …</option>
+    <% allRankings.forEach(function (r) { %><option value="<%= r.id %>"><%= r.name %><%= r.status === 'draft' ? ' (Entwurf)' : '' %></option><% }) %>
+  </select>
+  <button class="btn small" type="submit">Prüfung starten</button>
+  <small class="muted">– eigene Prüfung je Ranking, nur fehlende Werte werden ergänzt. Kandidaten je Ranking unter <a href="/admin/rankings">Rankings</a> → Kandidaten.</small>
+</form>
 <% if (total > rows.length) { %><p class="muted"><small>Angezeigt werden die neuesten <%= rows.length %> von <%= total %> Treffern – Suche oder Filter eingrenzen.</small></p><% } %>
 <div class="table-scroll">
 <table>
-  <tr><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Offen</th><th>Hinweis</th></tr>
+  <tr><th><span class="sr-only">Markieren</span></th><th>Eingang</th><th>Name</th><th>Ranking</th><th>Status</th><th class="num">Score</th><th class="num">Vollst.</th><th>Offen</th><th>Hinweis</th></tr>
   <% rows.forEach(function (r) { %>
     <tr>
+      <td><% if (r.entity_id) { %><input type="checkbox" name="entity_ids" value="<%= r.entity_id %>" form="bulk-rankings" aria-label="<%= r.current_name || r.entity_name %> markieren"><% } %></td>
       <td><%= formatDate(r.created_at) %></td>
       <td><a href="/admin/meldungen/<%= r.id %>"><%= r.current_name || r.entity_name %></a><br><small><% if (r.current_name && r.current_name !== r.entity_name) { %>gemeldet als „<%= r.entity_name %>“ · <% } %><%= r.city %>, <%= r.country %> · <%= r.created_by_admin ? 'angelegt von ' + (r.created_by_email || 'Admin') : (r.submitter_email ? 'eingereicht von ' + r.submitter_email : 'eingereicht') %></small></td>
-      <td><small><%= r.ranking_name %></small></td>
+      <td><small><%= r.ranking_name %></small><% (r.otherRankings || []).forEach(function (m) { %><br><span class="badge <%= m.status === 'live' ? 'good' : '' %>" title="Stand im Ranking <%= m.ranking %>"><small><%= m.ranking %>: <%= LISTING[m.status] || m.status %><%= m.score !== null && m.score !== undefined ? ' · ' + m.score : '' %></small></span><% }) %></td>
       <td><span class="badge"><%= STATUS_LABELS[r.status] %></span></td>
       <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>
       <td class="num"><% if (r.score === null || r.score === undefined) { %>–<% } else if (incomplete) { %><span class="muted" title="Nur wenige Werte bekannt – der Score ist noch nicht aussagekräftig"><%= r.score %></span><br><small class="muted">unvollständig</small><% } else { %><%= r.score %><% } %></td>
@@ -55,7 +70,7 @@
       <td><% if (r.possible_duplicate_name) { %><span class="badge warn">mögliche Dublette</span> <small><%= r.possible_duplicate_name %></small><% } %><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
   <% }) %>
-  <% if (!rows.length) { %><tr><td colspan="8" class="muted"><%= filtered ? 'Keine ' + adminNav.objectsLabel + ' gefunden.' : 'Keine Meldungen in diesem Status.' %><% if (filtered) { %> <a href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %></td></tr><% } %>
+  <% if (!rows.length) { %><tr><td colspan="9" class="muted"><%= filtered ? 'Keine ' + adminNav.objectsLabel + ' gefunden.' : 'Keine Meldungen in diesem Status.' %><% if (filtered) { %> <a href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %></td></tr><% } %>
 </table>
 </div>
 <% locals.scripts = ['/static/js/site.js'] %>

@@ -242,3 +242,11 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
   window.addEventListener('hashchange', function () { fromHash(true); });
   fromHash(true);
 })();
+
+// „alle“ markieren: Kontrollkästchen mit data-check-all schaltet alle Kästchen derselben Tabelle
+document.addEventListener('change', function (e) {
+  if (!e.target.matches('[data-check-all]')) return;
+  var table = e.target.closest('table');
+  if (!table) return;
+  table.querySelectorAll('input[type="checkbox"]:not([data-check-all])').forEach(function (b) { b.checked = e.target.checked; });
+});

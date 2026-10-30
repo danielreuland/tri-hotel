@@ -273,6 +273,30 @@
       <% } %>
     </section>
 
+    <section class="card" style="margin-top:16px" id="rankings" data-tab="stammdaten">
+      <h2 style="margin-top:0">Rankings</h2>
+      <p class="muted" style="margin-top:0"><small>In welchen Rankings dieses <%= ranking.entity_label_sg %> geprüft wird. „Prüfen“ startet eine eigene Prüfung für das Ranking (fehlende Werte, Prüfliste, Freigabe je Ranking); geteilte Werte wie Sauna oder Flughafen sind schon da.</small></p>
+      <% var LISTING = { draft: 'in Vorbereitung', in_review: 'in Prüfung', live: 'live', rejected: 'nicht im Ranking' }; %>
+      <div class="table-scroll"><table>
+        <tr><th>Ranking</th><th>Stand</th><th class="num">Score</th><th></th></tr>
+        <% memberships.forEach(function (m) { var inRanking = m.status && m.status !== 'rejected'; var current = m.id === ranking.id; %>
+          <tr>
+            <td><%= m.name %><% if (m.ranking_status === 'draft') { %> <span class="badge">Entwurf</span><% } %><% if (current) { %> <small class="muted">· diese Prüfung</small><% } %></td>
+            <td><% if (inRanking) { %><span class="badge <%= m.status === 'live' ? 'good' : 'warn' %>"><%= LISTING[m.status] %></span><% } else { %><span class="muted"><%= m.status === 'rejected' ? 'entfernt' : '–' %></span><% } %></td>
+            <td class="num"><%= inRanking && m.score !== null ? m.score : '–' %><% if (inRanking && m.completeness !== null) { %><br><small class="muted"><%= Math.round(m.completeness) %> %</small><% } %></td>
+            <td style="white-space:nowrap">
+              <% if (inRanking && m.sub_id && !current) { %><a class="btn small secondary" href="/admin/meldungen/<%= m.sub_id %>">öffnen</a><% } %>
+              <% if (!inRanking) { %>
+                <form method="post" action="/admin/objekte/<%= entity.id %>/rankings/<%= m.id %>/pruefen" style="display:inline"><input type="hidden" name="back" value="<%= sub.id %>"><button class="btn small" type="submit">Prüfen</button></form>
+              <% } else { %>
+                <form method="post" action="/admin/objekte/<%= entity.id %>/rankings/<%= m.id %>/entfernen" style="display:inline" data-confirm="<%= entity.name %> aus „<%= m.name %>“ nehmen?<%= m.status === 'live' ? ' Das Hotel ist dort live und wird offline genommen.' : '' %> Werte und andere Rankings bleiben erhalten."><input type="hidden" name="back" value="<%= sub.id %>"><button class="btn small secondary" type="submit">Entfernen</button></form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </table></div>
+    </section>
+
     <section class="card" style="margin-top:16px" id="camp-anbieter" data-tab="stammdaten">
       <h2 style="margin-top:0">Camp-Anbieter in diesem <%= ranking.entity_label_sg %></h2>
       <p class="muted" style="margin-top:0"><small>Anbieter, die hier Trainingscamps durchführen. Erscheinen auf der Profilseite und beim Anbieter, ohne Einfluss auf Score oder Reihenfolge (<a href="/admin/camps">alle Camp-Anbieter</a>).</small></p>

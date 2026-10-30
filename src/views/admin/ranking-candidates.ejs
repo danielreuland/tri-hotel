@@ -1,0 +1,28 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/rankings/<%= ranking.id %>">← <%= ranking.name %></a></p>
+<h1>Kandidaten für <%= ranking.name %><% if (ranking.status === 'draft') { %> <span class="badge">Entwurf</span><% } %></h1>
+<p class="muted">Objekte aus anderen Rankings (in Prüfung oder live), die hier noch nicht geprüft werden.<% if (ranking.candidate_rule) { %> Vorauswahl nach der Kandidaten-Regel des Rankings – mindestens <%= ranking.candidate_rule.min || 1 %> Treffer, meiste zuerst. Die Regel rät nur vor; entscheiden tust du.<% } else { %> Für dieses Ranking ist keine Kandidaten-Regel hinterlegt (Ranking bearbeiten → „Kandidaten-Regel“), daher stehen alle Objekte hier.<% } %></p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% if (ranking.candidate_rule) { %><p class="pill-row"><a class="badge <%= all ? '' : 'accent' %>" href="?">passende (Regel)</a> <a class="badge <%= all ? 'accent' : '' %>" href="?alle=1">alle Objekte</a></p><% } %>
+<% if (!list.length) { %>
+  <p class="card">Keine Kandidaten gefunden.<% if (!all && ranking.candidate_rule) { %> <a href="?alle=1">Alle Objekte zeigen</a><% } %></p>
+<% } else { %>
+<form method="post" class="card">
+  <input type="hidden" name="alle" value="<%= all ? '1' : '' %>">
+  <p style="margin-top:0"><button class="btn" type="submit">Markierte für „<%= ranking.name %>“ prüfen</button>
+    <small class="muted">Startet je Objekt eine eigene Prüfung: Die Auto-Prüfung ergänzt nur fehlende Werte (Website-Auswertung, wenige Cent je Objekt), geteilte Werte sind schon da. Freigabe danach wie gewohnt.</small></p>
+  <div class="table-scroll"><table>
+    <tr><th><label class="inline" style="margin:0"><input type="checkbox" data-check-all> alle</label></th><th>Objekt</th><th>Treffer</th><th>Andere Rankings</th></tr>
+    <% list.forEach(function (e) { %>
+      <tr>
+        <td><input type="checkbox" name="entity_ids" value="<%= e.id %>" aria-label="<%= e.name %> markieren"></td>
+        <td><%= e.name %><br><small class="muted"><%= [e.city, e.country].filter(Boolean).join(', ') %></small></td>
+        <td><% if (e.hits.length) { %><strong><%= e.n %></strong> <small><%= e.hits.join(' · ') %></small><% } else { %><span class="muted">–</span><% } %></td>
+        <td><small><%= e.elsewhere || '' %></small></td>
+      </tr>
+    <% }) %>
+  </table></div>
+</form>
+<% } %>
+<%- include('../partials/admin-foot') %>

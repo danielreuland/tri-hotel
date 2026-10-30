@@ -4,6 +4,7 @@ const express = require('express');
 const db = require('../db');
 const rankings = require('../services/rankings');
 const scoring = require('../services/scoring');
+const memberships = require('../services/memberships');
 const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 
@@ -43,6 +44,7 @@ function readRankingForm(body) {
     formulaText: String(body.formula || '{}'),
     labelsText: String(body.labels || '[]'),
     contentText: String(body.content || '{}'),
+    candidateText: String(body.candidate_rule || '').trim(),
     site_id: UUID_RE.test(body.site_id || '') ? body.site_id : null,
   };
   if (!f.site_id) errors.push('Bitte eine Site wählen.');
@@ -59,9 +61,13 @@ function readRankingForm(body) {
   }
   const content = parseJson(f.contentText, {});
   if (content.error || typeof content.value !== 'object' || Array.isArray(content.value)) errors.push('Landingpage-Texte: JSON-Objekt aus Texten.');
+  const candidate = f.candidateText ? parseJson(f.candidateText, null) : { value: null };
+  if (candidate.error) errors.push('Kandidaten-Regel ist kein gültiges JSON.');
+  else errors.push(...memberships.validateCandidateRule(candidate.value));
   f.formula = formula.value;
   f.labels = labels.value;
   f.content = content.value;
+  f.candidate_rule = candidate.value;
   return { f, errors };
 }
 
@@ -126,6 +132,7 @@ async function renderEdit(req, res, ranking, { errors = [], form = null } = {}) 
       formulaText: JSON.stringify(ranking.formula, null, 2),
       labelsText: JSON.stringify(ranking.labels, null, 2),
       contentText: JSON.stringify(ranking.content || {}, null, 2),
+      candidateText: ranking.candidate_rule ? JSON.stringify(ranking.candidate_rule, null, 2) : '',
     },
     categories,
     criteria,
@@ -154,9 +161,10 @@ router.post('/:id', wrap(async (req, res, next) => {
   try {
     await db.query(
       `UPDATE rankings SET code=$2, slug=$3, name=$4, score_name=$5, description=$6, entity_type=$7, entity_label_sg=$8,
-         entity_label_pl=$9, subdomain=$10, formula=$11, labels=$12, status=$13, content=$14, site_id=$15, updated_at=now() WHERE id=$1`,
+         entity_label_pl=$9, subdomain=$10, formula=$11, labels=$12, status=$13, content=$14, site_id=$15, candidate_rule=$16, updated_at=now() WHERE id=$1`,
       [ranking.id, f.code, f.slug, f.name, f.score_name, f.description, f.entity_type, f.entity_label_sg, f.entity_label_pl,
-        f.subdomain, JSON.stringify(f.formula), JSON.stringify(f.labels), f.status, JSON.stringify(f.content), f.site_id]
+        f.subdomain, JSON.stringify(f.formula), JSON.stringify(f.labels), f.status, JSON.stringify(f.content), f.site_id,
+        f.candidate_rule ? JSON.stringify(f.candidate_rule) : null]
     );
   } catch (err) {
     if (err.code !== '23505') throw err;
@@ -237,6 +245,29 @@ router.post('/:id/kategorien/:cid', wrap(async (req, res) => {
     [req.params.id, req.params.cid, String(req.body.label || '').trim(), Number(req.body.sort_order) || 0]);
   await logAction(req.session.admin.id, 'ranking', req.params.id, 'edit_category', { id: req.params.cid, label: req.body.label });
   res.redirect(`/admin/rankings/${req.params.id}?ok=Kategorie+gespeichert#kategorien`);
+}));
+
+// ---------- Kandidaten: vorhandene Objekte für dieses Ranking prüfen lassen ----------
+
+router.get('/:id/kandidaten', wrap(async (req, res, next) => {
+  const ranking = await rankings.getRanking(req.params.id);
+  if (!ranking) return next();
+  const all = req.query.alle === '1';
+  const list = await memberships.candidates(ranking, { onlyMatches: !all });
+  res.render('admin/ranking-candidates', {
+    title: `Kandidaten: ${ranking.name}`, ranking, list, all, flash: req.query.ok || null, error: req.query.fehler || null,
+  });
+}));
+
+router.post('/:id/kandidaten', wrap(async (req, res, next) => {
+  const ranking = await rankings.getRanking(req.params.id);
+  if (!ranking) return next();
+  const ids = [...new Set([].concat(req.body.entity_ids || []).filter((id) => UUID_RE.test(id)))];
+  const back = `/admin/rankings/${ranking.id}/kandidaten${req.body.alle === '1' ? '?alle=1&' : '?'}`;
+  if (!ids.length) return res.redirect(`${back}fehler=${encodeURIComponent('Bitte mindestens ein Objekt markieren.')}`);
+  const r = await memberships.startChecks(ids, ranking.id, req.session.admin.id);
+  const msg = `${r.created} Prüfungen gestartet${r.existing ? `, ${r.existing} liefen schon` : ''}${r.errors.length ? ` – nicht möglich: ${[...new Set(r.errors)].join('; ')}` : ''}. Sie erscheinen unter Objekte mit dem Ranking-Filter.`;
+  res.redirect(`${back}${r.errors.length && !r.created ? 'fehler' : 'ok'}=${encodeURIComponent(msg)}`);
 }));
 
 // ---------- Kriterien ----------

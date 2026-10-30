@@ -12,6 +12,7 @@ const config = require('../config');
 const rankings = require('../services/rankings');
 const scoring = require('../services/scoring');
 const submissions = require('../services/submissions');
+const membershipSvc = require('../services/memberships');
 const inquiries = require('../services/inquiries');
 const featureService = require('../services/features');
 const { requireAdmin } = require('../middleware/context');
@@ -226,10 +227,14 @@ router.get('/objekte', wrap(async (req, res) => {
     const l = await reviewlist.load(r.id);
     if (l) r.review = { open: l.review.open, blockers: l.review.blockers };
   }
-  const allRankings = await db.many(`SELECT id, name FROM rankings ORDER BY name`);
+  // Stand in den anderen Rankings je Objekt (Marken in der Liste)
+  const statusByEntity = await membershipSvc.statusMap([...new Set(rows.filter((r) => r.entity_id).map((r) => r.entity_id))]);
+  for (const r of rows) r.otherRankings = (statusByEntity.get(r.entity_id) || []).filter((m) => m.ranking_id !== r.ranking_id && m.status !== 'rejected');
+  const allRankings = await db.many(`SELECT id, name, status FROM rankings WHERE status <> 'archived' ORDER BY is_default DESC, name`);
   res.render('admin/queue', {
     title: 'Warteschlange', rows, total: matching.length, limit: QUEUE_LIMIT, status, rankingId, counts, allRankings,
     q, land, regionId: region ? region.id : null, countries, regionOptions,
+    flash: req.query.ok || null, error: req.query.fehler || null, backUrl: req.originalUrl,
   });
 }));
 
@@ -324,7 +329,10 @@ async function loadDetail(id) {
   const mailDefaultPersona = adminMail.defaultPersona(mailPersonas, null);
   // Grunddaten (Website, Google-Eintrag, Koordinaten) – Voraussetzung für die Auto-Prüfung
   const basicsMissing = entity ? basics.missing(entity) : [];
+  // Rankings dieses Objekts (Stand je Ranking, Prüfen/Entfernen)
+  const memberships = entity ? await membershipSvc.forEntity(entity.id, ranking.site_id) : [];
   return {
+    memberships,
     basicsMissing, BASICS_KEYS: basics.KEYS, placesEnabledForBasics: places.enabled(),
     mailThread, mailPersonas, mailDefaultPersona,
     partnerAbsent, campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
@@ -701,6 +709,46 @@ router.post('/google-orte/:entityId/verwerfen', wrap(async (req, res, next) => {
   if (!UUID_RE.test(req.params.entityId)) return next();
   await places.dismiss(req.params.entityId);
   res.redirect(`/admin/google-orte?ok=Vorschlag+verworfen#e-${req.params.entityId}`);
+}));
+
+// ---------- Rankings je Objekt ----------
+
+// Rückweg: zur Meldung, von der aus geklickt wurde (sonst Objektliste)
+const rankingBack = (b) => (UUID_RE.test(String(b || '')) ? `/admin/meldungen/${b}` : '/admin/objekte');
+
+router.post('/objekte/:entityId/rankings/:rankingId/pruefen', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId) || !UUID_RE.test(req.params.rankingId)) return next();
+  try {
+    const r = await membershipSvc.startCheck(req.params.entityId, req.params.rankingId, req.session.admin.id);
+    const msg = r.created ? 'Prüfung gestartet – die Auto-Prüfung ergänzt die fehlenden Werte' : 'Für dieses Ranking läuft schon eine Prüfung';
+    res.redirect(`/admin/meldungen/${r.submissionId}?ok=${encodeURIComponent(msg)}`);
+  } catch (err) {
+    res.redirect(`${rankingBack(req.body.back)}?fehler=${encodeURIComponent(err.message)}#rankings`);
+  }
+}));
+
+router.post('/objekte/:entityId/rankings/:rankingId/entfernen', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId) || !UUID_RE.test(req.params.rankingId)) return next();
+  let q;
+  try {
+    const r = await membershipSvc.removeFromRanking(req.params.entityId, req.params.rankingId, req.session.admin.id);
+    q = `ok=${encodeURIComponent(r.wasLive ? 'Aus dem Ranking genommen (war live, jetzt offline)' : 'Aus dem Ranking genommen')}`;
+  } catch (err) {
+    q = `fehler=${encodeURIComponent(err.message)}`;
+  }
+  res.redirect(`${rankingBack(req.body.back)}?${q}#rankings`);
+}));
+
+// Sammelaktion aus der Objektliste: markierte Objekte für ein Ranking prüfen lassen
+router.post('/objekte/rankings-pruefen', wrap(async (req, res) => {
+  const ids = [...new Set([].concat(req.body.entity_ids || []).filter((id) => UUID_RE.test(id)))];
+  const rankingId = UUID_RE.test(req.body.ranking_id || '') ? req.body.ranking_id : null;
+  const back = String(req.body.back || '').startsWith('/admin/') ? req.body.back : '/admin/objekte';
+  const sep = back.includes('?') ? '&' : '?';
+  if (!rankingId || !ids.length) return res.redirect(`${back}${sep}fehler=${encodeURIComponent('Bitte Objekte markieren und ein Ranking wählen.')}`);
+  const r = await membershipSvc.startChecks(ids, rankingId, req.session.admin.id);
+  const msg = `${r.created} Prüfungen gestartet${r.existing ? `, ${r.existing} liefen schon` : ''}${r.errors.length ? ` – nicht möglich: ${[...new Set(r.errors)].join('; ')}` : ''}`;
+  res.redirect(`${back}${sep}${r.errors.length && !r.created ? 'fehler' : 'ok'}=${encodeURIComponent(msg)}`);
 }));
 
 router.post('/meldungen/:id/freigeben', wrap(async (req, res) => {

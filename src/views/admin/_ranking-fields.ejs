@@ -30,3 +30,6 @@
 <label>Landingpage-Texte (JSON)</label>
 <textarea class="code" name="content" style="min-height:150px"><%= r.contentText %></textarea>
 <small class="muted">hero_eyebrow · hero_title · hero_highlight (Wort im Titel, das farbig wird) · hero_text · cta_title · cta_text · list_title · list_h1 · list_description (Liste /&lt;Objekte&gt;, Platzhalter {anzahl}, {objekte}, {score}) – leere Felder fallen auf Name und Beschreibung zurück.</small>
+<label>Kandidaten-Regel (JSON, optional)</label>
+<textarea class="code" name="candidate_rule" style="min-height:90px" placeholder='{"min":2,"any":[{"ranking":"triathlon-hotel","criterion":"rec_gym","values":["athletic"],"label":"Kraftraum"}]}'><%= r.candidateText || '' %></textarea>
+<small class="muted">Welche Werte aus anderen Rankings auf Eignung hindeuten – Objekte mit mindestens „min“ Treffern erscheinen unter „Kandidaten“ und lassen sich gesammelt prüfen.</small>

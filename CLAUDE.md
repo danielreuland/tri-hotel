@@ -68,6 +68,7 @@ Admin (`/admin`, Login, ein Admin):
 - Aktionen: Freigeben · Ablehnen mit Begründung (löst Absage-Mail aus) · Zurückstellen mit Notiz
 - Hotel selbst anlegen: gleicher Prozess ohne Bestätigungsmail (für die ersten 50 Hotels)
 - **Rankings verwalten:** Ranking anlegen/bearbeiten (Name, Scorename, Objekttyp, Formel, Labels, Status), Kategorien und Kriterien pflegen (Punkteschema, K.O., Reihenfolge), Punktesumme-Prüfung, „Ranking duplizieren“ als Vorlage, Neuberechnung aller Scores nach Änderung (Kriterienversion hochzählen)
+- **Rankings je Objekt** (`services/memberships.js`): Block „Rankings“ auf der Objektseite (Prüfen/Entfernen), Sammelaktion in der Objektliste, Kandidaten je Ranking (`rankings.candidate_rule`, Migration 091). „Prüfen“ = eigene Admin-Meldung für das Ranking, gleicher Ablauf wie jede Meldung; „Entfernen“ setzt den Eintrag auf `rejected`, ohne Mail.
 - Bilder: Upload mit Pflichtangaben Quelle/Lizenz/Urhebervermerk/Nachweis, Freigabe, Ablaufwarnung bei `valid_until`
 - Aufgaben: strittige Werte, fällige Nachprüfungen (Werte älter als 18 Monate)
 - Audit-Log

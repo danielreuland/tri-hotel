@@ -1,6 +1,7 @@
 <%- include('../partials/admin-head') %>
 <p><a href="/admin/rankings">← Rankings</a></p>
 <h1><%= ranking.name %> <% if (ranking.is_default) { %><span class="badge accent">Standard</span><% } %></h1>
+<p><a class="btn small secondary" href="/admin/rankings/<%= ranking.id %>/kandidaten">Kandidaten – vorhandene <%= ranking.entity_label_pl %> für dieses Ranking prüfen</a></p>
 <% if (errors.length) { %><div class="errors"><ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul></div><% } %>
 
 <form method="post" class="card">
