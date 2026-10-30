@@ -125,7 +125,7 @@ router.get('/go/camp/:slug', wrap(async (req, res, next) => {
   const p = req.site && (await camps.bySlug(req.site.id, req.params.slug));
   if (!p) return next();
   // Bots und Vorschau-Abrufe nicht zählen
-  if (!/bot|crawl|spider|preview|slurp|facebookexternalhit/i.test(req.get('user-agent') || '')) await camps.countClick(p.id);
+  if (!/bot|crawl|spider|preview|slurp|facebookexternalhit/i.test(req.get('user-agent') || '')) await camps.countClick(p.id, require('../services/partners').clickSource({ von: req.query.von, referer: req.get('referer') }));
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.redirect(302, camps.outboundUrl(p, req.site.primary_domain));
 }));

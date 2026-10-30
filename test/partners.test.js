@@ -165,3 +165,14 @@ test('Logo-Upload: SVG mit aktiven Inhalten wird abgelehnt', () => {
   assert.equal(unsafeSvg('<svg><use xlink:href="https://evil.example/x.svg#a"/></svg>'), true);
   assert.equal(unsafeSvg('<svg><use xlink:href="#a"/></svg>'), false);
 });
+
+test('clickSource: Parameter ?von vor Referer, nur Hostname ohne www, sonst „direkt“', () => {
+  const p = require('../src/services/partners');
+  assert.equal(p.clickSource({ von: 'fitnessracing-hotel.de', referer: 'https://tri-hotel.de/hotel/x' }), 'fitnessracing-hotel.de');
+  assert.equal(p.clickSource({ referer: 'https://www.tri-hotel.de/hotel/club-la-santa?x=1' }), 'tri-hotel.de');
+  assert.equal(p.clickSource({ referer: 'https://fitnessracing-hotel.de/' }), 'fitnessracing-hotel.de');
+  assert.equal(p.clickSource({ von: 'https://www.FitnessRacing-Hotel.de/fitness-racing/' }), 'fitnessracing-hotel.de');
+  assert.equal(p.clickSource({ von: '<script>', referer: '' }), 'direkt');
+  assert.equal(p.clickSource({ von: 'ohnepunkt' }), 'direkt');
+  assert.equal(p.clickSource({}), 'direkt');
+});

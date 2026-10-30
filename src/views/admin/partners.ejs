@@ -9,6 +9,15 @@
   <tr><th>Programm</th><th>Eigene Links</th><th>Klicks eigene Links</th><th>Klicks Suchlinks</th></tr>
   <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td><td><%= p.auto_search || p.search_clicks ? p.search_clicks : '–' %></td></tr><% }) %>
 </table></div>
+<% if (stats.bySource.length) { var srcNames = {}; stats.bySource.forEach(function (r) { srcNames[r.source] = (srcNames[r.source] || 0) + r.clicks; }); %>
+  <h3 style="margin-bottom:4px">Nach Herkunftsseite</h3>
+  <p class="muted" style="margin-top:0"><small>Von welcher Seite der Klick kam: Parameter <code>?von=</code> am Link, sonst der Referer. „nicht erfasst“ = Klicks vor Einführung der Herkunftserfassung (30.10.2026).</small></p>
+  <div class="table-scroll"><table>
+    <tr><th>Herkunft</th><th>Programm</th><th class="num">Klicks</th></tr>
+    <% stats.bySource.forEach(function (r) { %><tr><td><%= r.source || 'nicht erfasst' %></td><td><%= r.program %></td><td class="num"><%= r.clicks %></td></tr><% }) %>
+    <% Object.keys(srcNames).forEach(function (k) { %><tr><th><%= k || 'nicht erfasst' %> gesamt</th><th></th><th class="num"><%= srcNames[k] %></th></tr><% }) %>
+  </table></div>
+<% } %>
 <% if (stats.top.length) { %>
   <details style="margin:8px 0 20px"><summary>Meistgeklickte Links</summary>
     <div class="table-scroll"><table><tr><th>Objekt</th><th>Programm</th><th>Art</th><th>Klicks</th></tr>

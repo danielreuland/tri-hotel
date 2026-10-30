@@ -220,11 +220,25 @@ async function resolve(entityType, slug, code, kind) {
 }
 
 // Klicks nur als Anzahl je Tag (keine personenbezogenen Daten); Suchlinks je Programm
-async function countClick(link) {
+// Herkunftsseite eines Klicks: Parameter ?von=<domain> am Link (z. B. von fitnessracing-hotel.de), sonst Host des Referers,
+// sonst „direkt“. Nur der Hostname wird gespeichert (ohne www), keine personenbezogenen Daten.
+function clickSource({ von, referer } = {}) {
+  const host = (v) => {
+    const raw = String(v || '').trim().toLowerCase();
+    if (!raw) return null;
+    let h = raw;
+    try { h = new URL(/^[a-z][a-z0-9+.-]*:\/\//.test(raw) ? raw : `https://${raw}`).hostname; } catch { return null; }
+    h = h.replace(/^www\./, '');
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(h) && h.length <= 60 ? h : null;
+  };
+  return host(von) || host(referer) || 'direkt';
+}
+
+async function countClick(link, source = '') {
   const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, clicks) VALUES ($1, $2, current_date, 1)
-     ON CONFLICT (kind, target_id, day) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target]);
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, current_date, $3, 1)
+     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target, String(source || '').slice(0, 60)]);
 }
 
 // Admin-Übersicht: Klicks der letzten Tage je Programm und je Objekt
@@ -241,7 +255,14 @@ async function stats(days = 30) {
        FROM outbound_clicks c JOIN entity_links l ON l.id = c.target_id JOIN partner_programs p ON p.id = l.program_id JOIN entities e ON e.id = l.entity_id
       WHERE c.kind = 'entity_link' AND c.day > current_date - $1::int
       GROUP BY e.name, p.name, l.kind ORDER BY clicks DESC LIMIT 15`, [days]);
-  return { byProgram, top };
+  // Herkunftsseite je Programm (eigene Links und Suchlinks zusammen)
+  const bySource = await db.many(
+    `SELECT c.source, p.name AS program, sum(c.clicks)::int AS clicks
+       FROM outbound_clicks c
+       JOIN partner_programs p ON p.id = CASE WHEN c.kind = 'partner_search' THEN c.target_id ELSE (SELECT program_id FROM entity_links WHERE id = c.target_id) END
+      WHERE c.kind IN ('entity_link', 'partner_search') AND c.day > current_date - $1::int
+      GROUP BY c.source, p.name ORDER BY c.source = '', sum(c.clicks) DESC`, [days]);
+  return { byProgram, top, bySource };
 }
 
-module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, countClick, stats };
+module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, stats };

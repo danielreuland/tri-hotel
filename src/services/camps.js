@@ -223,11 +223,12 @@ function outboundUrl(p, siteHost) {
   }
 }
 
-async function countClick(providerId) {
+// source: Herkunftsseite (partners.clickSource)
+async function countClick(providerId, source = '') {
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, clicks) VALUES ('camp', $1, current_date, 1)
-     ON CONFLICT (kind, target_id, day) DO UPDATE SET clicks = outbound_clicks.clicks + 1`,
-    [providerId]
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ('camp', $1, current_date, $2, 1)
+     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`,
+    [providerId, String(source || '').slice(0, 60)]
   );
 }
 
