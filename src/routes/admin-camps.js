@@ -61,6 +61,7 @@ function readForm(b) {
     status: ['draft', 'active', 'rejected', 'archived'].includes(b.status) ? b.status : 'draft',
     // Vereinbarung für Anfragen (Baustein B)
     lead_active: b.lead_active === 'on',
+    hotel_submissions: b.hotel_submissions === 'on',
     lead_email: String(b.lead_email || '').trim().toLowerCase().slice(0, 200) || null,
     lead_model: ['per_lead', 'commission', 'free'].includes(b.lead_model) ? b.lead_model : null,
     lead_fee: b.lead_fee !== undefined && String(b.lead_fee).trim() !== '' ? Number(String(b.lead_fee).replace(',', '.')) : null,
@@ -212,8 +213,9 @@ router.post('/:id?', wrap(async (req, res) => {
       // Hotels: Auswahl aus dem Ranking + freie Zeilen; nichts wird über den Namen automatisch verknüpft
       const hotels = await camps.saveProviderHotels(c, pid, { entityIds: f.entityIds, free: f.free });
       await c.query(
-        `UPDATE camp_providers SET match_months = $2, match_levels = $3, group_min = $4, group_max = $5, exclusive_groups = $6, price_min = $7, price_max = $8 WHERE id = $1`,
-        [pid, f.match_months, f.match_levels, f.group_min, f.group_max, f.exclusive_groups, f.price_min, f.price_max]);
+        `UPDATE camp_providers SET match_months = $2, match_levels = $3, group_min = $4, group_max = $5, exclusive_groups = $6, price_min = $7, price_max = $8,
+           hotel_submissions = $9 WHERE id = $1`,
+        [pid, f.match_months, f.match_levels, f.group_min, f.group_max, f.exclusive_groups, f.price_min, f.price_max, f.hotel_submissions]);
       // Kontakt: geänderte Werte gelten als vom Admin eingetragen
       await c.query(
         `UPDATE camp_providers SET

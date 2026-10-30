@@ -360,6 +360,10 @@ async function matchHotels(p, hotels, note) {
       out.push({ name: h.name, result: 'submitted', submission: row.submission_id });
       continue;
     }
+    if (p.hotel_submissions === false) {
+      out.push({ name: h.name, result: 'skipped', reason: 'Hotel-Meldungen für diesen Anbieter ausgeschaltet' });
+      continue;
+    }
     const sub = ranking && (await createHotelSubmission(p, h, ranking, note));
     if (sub) {
       await db.query('UPDATE camp_provider_hotels SET submission_id = $2 WHERE id = $1', [row.id, sub.id]);

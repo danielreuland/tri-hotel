@@ -23,6 +23,7 @@
   <div class="form-row">
     <div><label>Website *</label><input name="website" type="url" required value="<%= p.website || '' %>"></div>
   </div>
+  <label class="inline"><input type="checkbox" name="hotel_submissions" <%= p.hotel_submissions === false ? '' : 'checked' %>> Automatische Prüfung legt unbekannte Hotels als Meldungen an <small class="muted">(aus: gefundene Hotels nur im Prüfbericht, z. B. bei großen Reiseplattformen)</small></label>
   <% var CSRC = { website: 'von der Website', hunter: 'über Hunter.io', admin: 'vom Admin eingetragen' }; var hsug = ((p.check_report || {}).hunter || {}).suggestion; %>
   <div class="form-row">
     <div><label for="cp-email">Kontakt-E-Mail <small class="muted">allgemein, nicht der Empfänger von Anfragen</small></label>
