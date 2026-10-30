@@ -44,7 +44,7 @@
     <tr style="<%= c.active ? '' : 'opacity:.5' %>">
       <td><small><%= c.category_label %></small></td>
       <td><a href="/admin/rankings/<%= ranking.id %>/kriterien/<%= c.id %>"><%= c.label %></a><br><small class="muted"><%= c.code %></small></td>
-      <td><small><%= VALUE_TYPES[c.value_type] %> · <%= c.scoring.type %><%= c.scoring.auto ? ' · auto' : '' %></small></td>
+      <td><small><%= VALUE_TYPES[c.value_type] %> · <%= c.scoring.type %><%= c.scoring.auto ? ' · auto' : '' %><%= c.share_key ? ' · geteilt (' + c.share_key + ')' : '' %></small></td>
       <td class="num"><%= c.max_points %></td>
       <td><%= c.is_ko ? 'K.O.' : '' %></td>
       <td class="num"><%= c.version %></td>

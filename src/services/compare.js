@@ -65,7 +65,7 @@ async function load(ranking, slugs) {
 
   // Kriterien je Kategorie (Klima-Kriterien zählen nicht und werden nicht verglichen)
   const sections = categories.map((cat) => {
-    const rows = criteria.filter((c) => c.category_id === cat.id && c.scoring.type !== 'climate').map((c) => {
+    const rows = criteria.filter((c) => c.category_id === cat.id && !scoring.isDerived(c)).map((c) => {
       const cells = entities.map((e) => {
         const f = e.factBy.get(c.id);
         const d = e.detailBy.get(c.id);

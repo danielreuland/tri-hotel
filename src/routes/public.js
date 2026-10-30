@@ -213,13 +213,18 @@ async function renderEntity(req, res, ranking, slug) {
       const fact = factByCrit.get(c.id);
       const d = detailByCrit.get(c.id);
       const isClimate = c.scoring.type === 'climate';
+      const isBonus = c.scoring.type === 'bonus';
       return {
         label: c.label,
-        value: scoring.describeValue(c, fact && fact.value, climateRow),
+        // Bonus: kein eigener Wert, Ergebnis aus den genannten Kriterien
+        value: isBonus ? (d.known ? (d.points > 0 ? 'alle vorhanden' : 'nicht vollständig') : null)
+          : scoring.describeValue(c, fact && fact.value, climateRow),
         points: d.known ? d.points : null,
         imputed: d.known ? null : d.imputed,
         max: d.max,
-        source: isClimate ? (climateRow ? 'Open-Meteo, Mittel der letzten 3 Jahre' : null) : fact ? trustText(fact, ranking) : null,
+        source: isClimate ? (climateRow ? 'Open-Meteo, Mittel der letzten 3 Jahre' : null)
+          : isBonus ? (d.known ? `berechnet aus: ${requiresLabels(c, criteria)}` : null)
+          : fact ? trustText(fact, ranking) : null,
         evidenceUrl: fact && fact.evidence_url,
         disputed: fact && fact.disputed,
         linkSource: c.link_source || null,
@@ -390,14 +395,21 @@ async function renderMethod(req, res, ranking) {
     formula,
     categories: categories.map((cat) => ({ ...cat, criteria: criteria.filter((c) => c.category_id === cat.id) })),
     totalPoints: criteria.reduce((s, c) => s + c.max_points, 0),
-    explainScoring,
+    explainScoring: (c) => explainScoring(c, criteria),
   });
 }
 
+// Bezeichnungen der Kriterien, die ein Bonus voraussetzt
+function requiresLabels(c, criteria) {
+  return [].concat(c.scoring.requires || []).map((code) => (criteria.find((x) => x.code === code) || {}).label || code).join(', ');
+}
+
 // Punkteschema in Worten für die öffentliche Methodik-Seite
-function explainScoring(c) {
+function explainScoring(c, criteria = []) {
   const s = c.scoring;
   switch (s.type) {
+    case 'bonus':
+      return `+${s.points}, wenn alles vorhanden ist: ${requiresLabels(c, criteria)}`;
     case 'option':
       return Object.entries(s.points)
         .filter(([k, p]) => p > 0 || (s.ko || []).includes(k))

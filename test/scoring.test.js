@@ -302,3 +302,72 @@ test('Formel prüfen: falsche Typen und Werte werden benannt', () => {
   assert.match(errs({ fact_weight: 0.7, athlete_weight: 0.4 }), /muss 1 ergeben/);
   assert.deepEqual(s.validateFormula([]), ['Formel ist kein gültiges JSON-Objekt.']);
 });
+
+// --- Zweites Ranking: Fitness Racing (HybridScore) mit Bonus-Kriterium ---
+const fr = [
+  { id: 'sled', code: 'hy_sled', label: 'Schlitten', max_points: 9, scoring: { type: 'bool', points_true: 9 } },
+  { id: 'ski', code: 'hy_skierg', label: 'SkiErg', max_points: 5, scoring: { type: 'option', points: { two_plus: 5, one: 3, none: 0 } } },
+  { id: 'row', code: 'hy_row', label: 'Rudergerät', max_points: 4, scoring: { type: 'option', points: { two_plus: 4, one: 2, none: 0 } } },
+  { id: 'bar', code: 'hy_barbell', label: 'Langhantel', max_points: 4, scoring: { type: 'bool', points_true: 4 } },
+  { id: 'bonus', code: 'hy_bonus_stations', label: 'Bonus', max_points: 5,
+    scoring: { type: 'bonus', requires: ['hy_sled', 'hy_skierg', 'hy_row'], points: 5 } },
+];
+const frDetail = (facts) => s.computeScore(fr, facts, [], { formula: { unknown_policy: 'ignore' } }).details.find((d) => d.code === 'hy_bonus_stations');
+
+test('Bonus: alle vorausgesetzten Kriterien vorhanden → Bonuspunkte', () => {
+  const d = frDetail({ sled: { bool: true }, ski: { option: 'one' }, row: { option: 'two_plus' } });
+  assert.equal(d.known, true);
+  assert.equal(d.points, 5);
+});
+
+test('Bonus: eins sicher ohne Punkte → 0 (bekannt), auch wenn ein anderes noch unbekannt ist', () => {
+  const d = frDetail({ sled: { bool: false }, ski: { option: 'two_plus' } });
+  assert.equal(d.known, true);
+  assert.equal(d.points, 0);
+});
+
+test('Bonus: eins noch unbekannt → Bonus unbekannt; Langhantel (nicht vorausgesetzt) ändert nichts', () => {
+  const d = frDetail({ sled: { bool: true }, ski: { option: 'one' }, bar: { bool: true } });
+  assert.equal(d.known, false);
+  assert.equal(d.points, 0);
+});
+
+test('Bonus: unbekannter Code in requires → ungültig; max_points deckelt', () => {
+  const bad = { ...fr[4], scoring: { ...fr[4].scoring, requires: ['hy_sled', 'gibt_es_nicht'] } };
+  const d = s.computeScore([...fr.slice(0, 4), bad], { sled: { bool: true } }, [], {}).details.find((x) => x.code === 'hy_bonus_stations');
+  assert.equal(d.invalid, true);
+  const byCode = new Map([['a', { known: true, points: 1 }]]);
+  assert.equal(s.bonusPoints({ max_points: 3, scoring: { type: 'bonus', requires: ['a'], points: 5 } }, byCode).points, 3);
+});
+
+test('Bonus zählt im Fakten-Score und in der Vollständigkeit wie jedes Kriterium', () => {
+  const r = s.computeScore(fr, { sled: { bool: true }, ski: { option: 'two_plus' }, row: { option: 'two_plus' }, bar: { bool: true } }, [], { formula: { unknown_policy: 'ignore', min_completeness: 0 } });
+  assert.equal(r.completeness, 100);
+  assert.equal(r.factScore, 100);
+});
+
+test('isDerived: Klima und Bonus haben keinen eigenen Wert', () => {
+  assert.equal(s.isDerived({ scoring: { type: 'bonus' } }), true);
+  assert.equal(s.isDerived({ scoring: { type: 'climate' } }), true);
+  assert.equal(s.isDerived({ scoring: { type: 'bool' } }), false);
+  assert.equal(s.isDerived({}), false);
+});
+
+test('validateCriterion: Bonus braucht requires und points, max_points = points', () => {
+  assert.deepEqual(s.validateCriterion({ value_type: 'bonus', scoring: fr[4].scoring, max_points: 5 }).errors, []);
+  assert.ok(s.validateCriterion({ value_type: 'bonus', scoring: { type: 'bonus', requires: [], points: 5 }, max_points: 5 }).errors.length);
+  assert.ok(s.validateCriterion({ value_type: 'bonus', scoring: { type: 'bonus', requires: ['a'] }, max_points: 5 }).errors.length);
+  assert.ok(s.validateCriterion({ value_type: 'bool', scoring: fr[4].scoring, max_points: 5 }).errors.length, 'falscher Werttyp');
+  assert.equal(s.maxFromScoring(fr[4].scoring), 5);
+});
+
+test('validateShared: gleicher Werttyp und gleiche Ausprägungen, Punkte dürfen abweichen', () => {
+  const triAirport = { code: 'log_airport', value_type: 'option', scoring: { type: 'option', points: { within_60min: 3, within_90min: 2, longer: 0 } } };
+  const frAirport = { code: 'log_airport', value_type: 'option', scoring: { type: 'option', points: { within_60min: 2, within_90min: 1, longer: 0 } } };
+  assert.deepEqual(s.validateShared(frAirport, triAirport), []);
+  assert.ok(s.validateShared(frAirport, { ...triAirport, scoring: { type: 'option', points: { within_60min: 3, longer: 0 } } }).length, 'Ausprägungen');
+  assert.ok(s.validateShared(frAirport, { ...triAirport, scoring: { ...triAirport.scoring, multi: true } }).length, 'multi');
+  assert.ok(s.validateShared({ code: 'x', value_type: 'bool', scoring: { type: 'bool', points_true: 3 } }, triAirport).length, 'Werttyp');
+  assert.deepEqual(s.validateShared({ code: 'a', value_type: 'bool', scoring: { type: 'bool', points_true: 3 } }, { code: 'a', value_type: 'bool', scoring: { type: 'bool', points_true: 2 } }), []);
+  assert.ok(s.validateShared(fr[4], { ...fr[4] }).length, 'Bonus nicht teilbar');
+});

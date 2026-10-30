@@ -2,6 +2,8 @@
 // Wird bei jedem Aufruf aus dem aktuellen Stand berechnet – erledigte Punkte verschwinden von selbst.
 // level: 'block' = verhindert Freigabe oder Ranking · 'todo' = bitte prüfen · 'hint' = empfohlen
 
+const { isDerived } = require('./scoring'); // Klima/Bonus haben keinen eigenen Wert
+
 // Schrittname ohne Zusatz („Umgebung (OpenStreetMap), Versuch 2“ -> „Umgebung (OpenStreetMap)“)
 const stepKey = (name) => String(name || '').split(',')[0].trim();
 
@@ -38,7 +40,7 @@ function build(d, dismissals = []) {
   const disputed = facts.filter((f) => f.disputed);
   if (disputed.length) add('todo', `${disputed.length} strittige ${disputed.length === 1 ? 'Wert' : 'Werte'} klären.`, 'fakten', null, 'disputed');
   const have = new Set(facts.map((f) => f.criterion_id));
-  const missing = criteria.filter((c) => c.scoring.type !== 'climate' && !have.has(c.id)).sort((a, b) => b.max_points - a.max_points);
+  const missing = criteria.filter((c) => !isDerived(c) && !have.has(c.id)).sort((a, b) => b.max_points - a.max_points);
   const minCompleteness = Number((ranking.formula || {}).min_completeness ?? 70);
   if (missing.length) {
     const names = missing.slice(0, 5).map((c) => `${c.label} (${c.max_points})`).join(', ');

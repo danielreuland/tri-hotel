@@ -357,7 +357,7 @@
             <tr><th colspan="5"><h3 style="margin:.4em 0"><%= cat.label %></h3></th></tr>
             <% criteria.filter(function (c) { return c.category_id === cat.id }).forEach(function (c) {
                  var f = factByCrit[c.id]; var d = detailByCrit[c.id]; var s = c.scoring; var name = 'facts[' + c.id + ']'; var cur = valueString(c, f); %>
-              <% var state = s.type === 'climate' ? (climateRow ? 'ok' : 'missing') : !f ? 'missing' : f.disputed ? 'disputed' : f.trust_level === 4 ? 'auto' : 'ok'; %>
+              <% var state = s.type === 'bonus' ? (d && d.known ? 'ok' : 'missing') : s.type === 'climate' ? (climateRow ? 'ok' : 'missing') : !f ? 'missing' : f.disputed ? 'disputed' : f.trust_level === 4 ? 'auto' : 'ok'; %>
               <tr class="crit-row state-<%= state %> <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
                 <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %>
                   <% if (state === 'auto') { %> <span class="badge warn" data-state-badge>Vorschlag</span> <button type="button" class="btn small" data-accept-fact title="Wert unverändert als „Admin geprüft“ übernehmen – wird sofort gespeichert">✓ Übernehmen</button><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
@@ -367,7 +367,9 @@
                   <% if (state === 'auto' && f.evidence_text) { %><br><small class="evidence">„<%= f.evidence_text.slice(0, 160) %><%= f.evidence_text.length > 160 ? '…' : '' %>“<% if (f.evidence_url) { %> <a href="<%= f.evidence_url %>" target="_blank" rel="noopener">Quelle ↗</a><% } %></small><% } %>
                 </td>
                 <td style="min-width:190px">
-                  <% if (s.type === 'climate') { %>
+                  <% if (s.type === 'bonus') { %>
+                    <small class="muted">automatisch: +<%= s.points %>, wenn vorhanden: <%= [].concat(s.requires || []).map(function (code) { var x = criteria.find(function (k) { return k.code === code }); return x ? x.label : code; }).join(', ') %></small>
+                  <% } else if (s.type === 'climate') { %>
                     <%= describeValue(c, null, climateRow) || 'keine Klimadaten' %><br><small class="muted"><%= result.month ? 'bester Monat: ' + MONTHS[result.month - 1] : '' %></small>
                   <% } else if (s.type === 'option' && s.multi) { var curList = [].concat(cur || []); %>
                     <div class="multi-opts" data-multi>
@@ -391,7 +393,7 @@
                 </td>
                 <td class="pts num"><span data-pts><%= d && d.known ? d.points : '–' %></span></td>
                 <td style="min-width:240px">
-                  <% if (s.type !== 'climate') { %>
+                  <% if (s.type !== 'climate' && s.type !== 'bonus') { %>
                     <select name="<%= name %>[trust]" data-trust>
                       <% Object.keys(TRUST_LABELS).forEach(function (t) { %><option value="<%= t %>" <%= (f ? f.trust_level : 2) == t ? 'selected' : '' %>><%= TRUST_LABELS[t] %></option><% }) %>
                     </select>
@@ -399,10 +401,10 @@
                     <details style="margin-top:4px"><summary><small>Textausschnitt<%= f && f.evidence_text ? ' ✓' : '' %></small></summary>
                       <textarea name="<%= name %>[evidence_text]" style="min-height:60px"><%= f ? f.evidence_text || '' : '' %></textarea>
                     </details>
-                  <% } else { %><small class="muted">Open-Meteo</small><% } %>
+                  <% } else { %><small class="muted"><%= s.type === 'bonus' ? 'berechnet' : 'Open-Meteo' %></small><% } %>
                 </td>
                 <td>
-                  <% if (s.type !== 'climate') { %>
+                  <% if (s.type !== 'climate' && s.type !== 'bonus') { %>
                     <label class="inline" style="margin:0"><input type="checkbox" name="<%= name %>[disputed]" <%= f && f.disputed ? 'checked' : '' %>><small>strittig</small></label>
                     <% if (f) { %><small class="muted"><%= formatDate(f.checked_at) %></small><% } %>
                   <% } %>

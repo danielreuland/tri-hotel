@@ -12,6 +12,9 @@
 //   rating  {"min":0,"max":n}                                                     Wert {"number":x}
 //   bands   {"bands":[{"min":a,"max":b,"points":n}]}                              Wert {"number":x}
 //   climate {"metric":"avg_high_c"|"avg_low_c"|"rain_days","bands":[...]}         Wert aus climate_monthly
+//   bonus   {"requires":["<code>",...],"points":n}                                kein eigener Wert: n Punkte, wenn alle
+//           genannten Kriterien desselben Rankings vorhanden sind (Punkte > 0); eins sicher ohne Punkte → 0;
+//           sonst (eins noch unbekannt) unbekannt
 //
 // Unbekannte Kriterien (formula.unknown_policy):
 //   'ignore'  – zählen nicht (Score über die bekannten Punkte; belohnt Lücken – nur als Altverhalten)
@@ -104,9 +107,32 @@ function maxFromScoring(scoring) {
     case 'bands':
     case 'climate':
       return Math.max(0, ...(scoring.bands || []).map((b) => Number(b.points) || 0));
+    case 'bonus':
+      return Number(scoring.points) || 0;
     default:
       return 0;
   }
+}
+
+// Kriterium ohne eigenen Faktenwert (Klima aus climate_monthly, Bonus aus anderen Kriterien) – kein Eingabefeld,
+// keine Anfrage, keine „fehlt“-Meldung
+function isDerived(criterion) {
+  const t = ((criterion && criterion.scoring) || {}).type;
+  return t === 'climate' || t === 'bonus';
+}
+
+// Punkte eines Bonus-Kriteriums aus den Ergebnissen der übrigen Kriterien (Map code -> pointsFor-Ergebnis)
+function bonusPoints(criterion, byCode) {
+  const s = criterion.scoring || {};
+  const unknown = { known: false, points: 0, ko: false, invalid: false };
+  const req = [].concat(s.requires || []).map((code) => byCode.get(code));
+  if (!req.length || req.some((r) => !r || r.invalid)) return { ...unknown, invalid: true };
+  if (req.some((r) => r.known && !(r.points > 0))) return { known: true, points: 0, ko: false, invalid: false };
+  if (req.some((r) => !r.known)) return unknown;
+  let points = Number(s.points) || 0;
+  const cap = toNumber(criterion.max_points);
+  if (cap !== null) points = Math.min(points, cap);
+  return { known: true, points, ko: false, invalid: false };
 }
 
 // Auswahl (eine oder mehrere Ausprägungen) -> Wert-JSON. undefined = nichts gewählt, null = unbekannte Ausprägung.
@@ -295,10 +321,23 @@ function computeScore(criteria, facts, climate, opts = {}) {
   const policy = ['average', 'half'].includes(formula.unknown_policy) ? formula.unknown_policy : 'ignore';
   const shares = opts.unknownShares || {};
 
+  // Erst alle Kriterien mit eigenem Wert, dann Bonus-Kriterien aus deren Ergebnissen
+  const results = new Map();
+  const byCode = new Map();
+  for (const c of active) {
+    if ((c.scoring || {}).type === 'bonus') continue;
+    const r = pointsFor(c, facts ? facts[c.id] : undefined, climateRow);
+    results.set(c.id, r);
+    byCode.set(c.code, r);
+  }
+  for (const c of active) {
+    if ((c.scoring || {}).type === 'bonus') results.set(c.id, bonusPoints(c, byCode));
+  }
+
   for (const c of active) {
     const max = Number(c.max_points) || 0;
     const value = facts ? facts[c.id] : undefined;
-    const r = pointsFor(c, value, climateRow);
+    const r = results.get(c.id);
     maxAll += max;
     if (r.known) {
       maxKnown += max;
@@ -377,6 +416,7 @@ const VALUE_TYPE_SCORING = {
   bool: ['bool'],
   rating: ['rating'],
   number: ['bands', 'climate'],
+  bonus: ['bonus'],
 };
 
 // Prüft eine Kriteriendefinition aus dem Admin. Ergebnis: { errors: [], warnings: [] }
@@ -415,6 +455,12 @@ function validateCriterion({ value_type, scoring, max_points }) {
         errors.push(`Typ climate braucht "metric" (${CLIMATE_METRICS.join(', ')}).`);
       }
       break;
+    case 'bonus':
+      if (!Array.isArray(scoring.requires) || !scoring.requires.length || scoring.requires.some((c) => typeof c !== 'string' || !c)) {
+        errors.push('Typ bonus braucht "requires" mit mindestens einem Kriterien-Code.');
+      }
+      if (toNumber(scoring.points) === null) errors.push('Typ bonus braucht "points".');
+      break;
     default:
       errors.push(`Unbekannter Schema-Typ „${scoring.type}“.`);
   }
@@ -422,6 +468,28 @@ function validateCriterion({ value_type, scoring, max_points }) {
     warnings.push(`max_points (${max_points}) weicht von der höchsten Punktzahl im Schema (${maxFromScoring(scoring)}) ab.`);
   }
   return { errors, warnings };
+}
+
+// Geteilte Fakten (criteria.share_key): passen zwei Kriterien zusammen? Gleicher Werttyp; bei Auswahl dieselben
+// Ausprägungen und dieselbe Einstellung „multi“ (Punkte dürfen je Ranking verschieden sein). Ergebnis: Fehlerliste
+function validateShared(criterion, sibling) {
+  const errors = [];
+  const a = criterion.scoring || {};
+  const b = sibling.scoring || {};
+  const who = `„${sibling.code}“${sibling.ranking_name ? ` (${sibling.ranking_name})` : ''}`;
+  if (criterion.value_type !== sibling.value_type || a.type !== b.type) {
+    errors.push(`Geteilter Wert mit ${who}: Werttyp passt nicht (${a.type} / ${b.type}).`);
+  } else if (isDerived(criterion)) {
+    errors.push(`Typ ${a.type} hat keinen eigenen Wert und kann nicht geteilt werden.`);
+  } else if (a.type === 'option') {
+    const ka = Object.keys(a.points || {}).sort().join(',');
+    const kb = Object.keys(b.points || {}).sort().join(',');
+    if (ka !== kb) errors.push(`Geteilter Wert mit ${who}: Ausprägungen weichen ab (${ka} / ${kb}).`);
+    if (Boolean(a.multi) !== Boolean(b.multi)) errors.push(`Geteilter Wert mit ${who}: Mehrfachauswahl nur auf einer Seite.`);
+  } else if (a.type === 'rating' && (Number(a.min) !== Number(b.min) || Number(a.max) !== Number(b.max))) {
+    errors.push(`Geteilter Wert mit ${who}: Skala weicht ab (${a.min}–${a.max} / ${b.min}–${b.max}).`);
+  }
+  return errors;
 }
 
 // Athleten-Score A (0–100) aus Bewertungen: Sterne 1–5 -> 0–100 (Mittel der Dimensionen je Bewertung),
@@ -475,6 +543,9 @@ module.exports = {
   validateFormula,
   withDefaults,
   pointsFor,
+  bonusPoints,
+  isDerived,
+  validateShared,
   optionValue,
   selectedOptions,
   maxFromScoring,

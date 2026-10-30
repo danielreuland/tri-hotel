@@ -399,7 +399,7 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
   await db.tx(async (client) => {
     for (const c of criteria) {
       const f = input[c.id];
-      if (!f || c.scoring.type === 'climate') continue;
+      if (!f || scoring.isDerived(c)) continue;
       const value = parseAdminValue(c, f.value);
       const old = existing[c.id];
       if (value === null) {

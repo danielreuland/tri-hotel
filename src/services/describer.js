@@ -31,7 +31,7 @@ async function gather(entityId, rankingId) {
   const detailBy = new Map(result.details.map((d) => [d.criterionId, d]));
 
   const cats = categories.map((cat) => {
-    const list = criteria.filter((c) => c.category_id === cat.id && c.scoring.type !== 'climate');
+    const list = criteria.filter((c) => c.category_id === cat.id && !scoring.isDerived(c));
     const known = [];
     const unknown = [];
     for (const c of list) {

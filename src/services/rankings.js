@@ -67,7 +67,7 @@ async function unknownShares(rankingId) {
   const shares = {};
   for (const c of criteria) {
     const max = Number(c.max_points) || 0;
-    if (!max || c.scoring.type === 'climate') continue;
+    if (!max || scoring.isDerived(c)) continue;
     const vals = rows.filter((r) => r.criterion_id === c.id).map((r) => scoring.pointsFor(c, r.value, null)).filter((p) => p.known);
     if (vals.length) shares[c.id] = vals.reduce((s, p) => s + p.points / max, 0) / vals.length;
   }
@@ -85,7 +85,9 @@ async function scoreOptions(ranking, extra = {}) {
 }
 
 // Rechnet Score eines Objekts in einem Ranking neu und speichert ihn (inkl. Punkte je Fakt).
-async function recomputeEntity(entityId, rankingId, client = db) {
+// shared: auch die anderen Rankings des Objekts, die Werte mit diesem teilen (criteria.share_key) – der Trigger
+// hat dort die Werte schon übernommen, die Scores aber nicht.
+async function recomputeEntity(entityId, rankingId, client = db, { shared = true } = {}) {
   const ranking = await getRanking(rankingId);
   const criteria = await getCriteria(rankingId);
   const facts = await getFacts(entityId, rankingId);
@@ -112,13 +114,21 @@ async function recomputeEntity(entityId, rankingId, client = db) {
     [entityId, rankingId, result.factScore, result.score, result.completeness, result.provisional, result.koReason,
       athlete.score, reviews.rows.length, athlete.avgStars]
   );
+  if (shared) {
+    const others = await client.query(
+      `SELECT DISTINCT er.ranking_id FROM entity_rankings er
+         JOIN criteria s ON s.ranking_id = er.ranking_id AND s.share_key IS NOT NULL
+         JOIN criteria c ON c.share_key = s.share_key AND c.ranking_id = $2
+        WHERE er.entity_id = $1 AND er.ranking_id <> $2`, [entityId, rankingId]);
+    for (const o of others.rows) await recomputeEntity(entityId, o.ranking_id, client, { shared: false });
+  }
   return result;
 }
 
 async function recomputeRanking(rankingId) {
   clearShares();
   const rows = await db.many('SELECT entity_id FROM entity_rankings WHERE ranking_id = $1', [rankingId]);
-  for (const r of rows) await recomputeEntity(r.entity_id, rankingId);
+  for (const r of rows) await recomputeEntity(r.entity_id, rankingId, db, { shared: false });
   return rows.length;
 }
 

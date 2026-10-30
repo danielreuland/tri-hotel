@@ -23,6 +23,7 @@
 {"type":"rating","min":0,"max":6}
 {"type":"bands","unit":"m²","bands":[{"min":300,"points":8},{"min":150,"max":299.9,"points":4}]}
 {"type":"climate","metric":"avg_high_c|avg_low_c|rain_days","bands":[{"min":15,"max":30,"points":4}]}
+{"type":"bonus","requires":["code_a","code_b"],"points":5}   (Werttyp „Bonus“: Punkte nur, wenn alle genannten Kriterien vorhanden sind)
 Optional "auto" (OpenStreetMap): {"source":"osm","selectors":["[\"leisure\"=\"track\"]"],"radius_km":5,"bool_within_km":5}
 Optional "search_terms" (Synonyme für die Website-Auswertung): ["Kältebad","Kryotherapie","cold plunge"]</pre>
   </details>
@@ -32,6 +33,8 @@ Optional "search_terms" (Synonyme für die Website-Auswertung): ["Kältebad","Kr
     <div><label for="c-hl">Im Steckbrief der Profilseite <small class="muted">Position 1, 2, 3 … – leer = nicht zeigen</small></label><input id="c-hl" name="highlight_order" type="number" min="1" max="20" value="<%= c.highlight_order || '' %>"></div>
     <div><label for="c-hll">Kurzname im Steckbrief <small class="muted">optional, z. B. „Flughafen“ – sonst nur der Wert</small></label><input id="c-hll" name="highlight_label" type="text" maxlength="40" value="<%= c.highlight_label || '' %>"></div>
   </div>
+  <label for="c-share">Geteilter Wert <small class="muted">optional – gleicher Schlüssel in einem anderen Ranking (z. B. „rec_sauna“) = derselbe Wert je Objekt, nur einmal pflegen. Werttyp und Ausprägungen müssen gleich sein, Punkte dürfen abweichen.</small></label>
+  <input id="c-share" name="share_key" type="text" pattern="[a-z0-9_]+" value="<%= c.share_key || '' %>" placeholder="leer = nicht geteilt">
   <label class="inline"><input type="checkbox" name="is_ko" <%= c.is_ko ? 'checked' : '' %>> K.O.-Kriterium</label>
   <label class="inline"><input type="checkbox" name="active" <%= c.active !== false ? 'checked' : '' %>> aktiv</label>
   <p><button class="btn" type="submit">Speichern &amp; Scores neu berechnen</button> <% if (c.id) { %><small class="muted">Version <%= c.version %> → wird erhöht</small><% } %></p>

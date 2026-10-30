@@ -105,5 +105,8 @@ JOIN (VALUES
 JOIN ranking_categories c ON c.ranking_id = r.id AND c.code = v.category
 WHERE r.code = 'triathlon-hotel';
 
+-- Weitere Rankings (z. B. Fitness Racing, Migration 089) entstehen per Migration oder im Admin. Geteilte Werte über
+-- criteria.share_key (Migration 088) – im Triathlon-Ranking: rec_sauna, rec_ice_bath, rec_physio, run_track, log_airport.
+
 -- Kontrolle: Summe je Ranking (aktuell 106)
 -- SELECT r.code, sum(c.max_points) FROM criteria c JOIN rankings r ON r.id=c.ranking_id WHERE c.active GROUP BY r.code;

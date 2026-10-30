@@ -14,7 +14,7 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const STATUSES = { draft: 'Entwurf', active: 'aktiv', archived: 'archiviert' };
-const VALUE_TYPES = { option: 'Auswahl', bool: 'Ja/Nein', rating: 'Admin-Einstufung', number: 'Zahl / Klima' };
+const VALUE_TYPES = { option: 'Auswahl', bool: 'Ja/Nein', rating: 'Admin-Einstufung', number: 'Zahl / Klima', bonus: 'Bonus (aus anderen Kriterien)' };
 
 router.use(requireAdmin);
 for (const p of ['id', 'cid']) router.param(p, (req, res, next, v) => (UUID_RE.test(v) ? next() : next('route')));
@@ -283,6 +283,7 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
     link_source: LINK_SOURCES[b.link_source] ? b.link_source : null,
     highlight_order: String(b.highlight_order || '').trim() === '' ? null : Math.max(1, Math.min(20, Number.parseInt(b.highlight_order, 10) || 1)),
     highlight_label: String(b.highlight_label || '').trim().slice(0, 40) || null,
+    share_key: String(b.share_key || '').trim() || null,
   };
   const { errors, warnings } = scoring.validateCriterion(c);
   if (parsed.error) errors.unshift('Punkteschema ist kein gültiges JSON.');
@@ -291,6 +292,23 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
   if (!Number.isInteger(c.max_points) || c.max_points < 0) errors.push('Maximale Punkte als ganze Zahl ≥ 0.');
   const cat = UUID_RE.test(c.category_id || '') && (await db.one('SELECT id FROM ranking_categories WHERE id = $1 AND ranking_id = $2', [c.category_id, ranking.id]));
   if (!cat) errors.push('Kategorie wählen.');
+  // Bonus: vorausgesetzte Kriterien müssen in diesem Ranking existieren
+  if (!errors.length && c.scoring.type === 'bonus') {
+    const codes = new Set((await db.many('SELECT code FROM criteria WHERE ranking_id = $1', [ranking.id])).map((r) => r.code));
+    const missing = c.scoring.requires.filter((code) => !codes.has(code) || code === c.code);
+    if (missing.length) errors.push(`Bonus: unbekannte Kriterien ${missing.join(', ')}.`);
+  }
+  // Geteilte Werte: Schlüssel prüfen, alle Kriterien mit gleichem Schlüssel müssen zusammenpassen
+  if (c.share_key) {
+    if (!/^[a-z0-9_]+$/.test(c.share_key)) errors.push('Geteilter Wert: Schlüssel nur aus Kleinbuchstaben, Ziffern und Unterstrichen.');
+    else if (!errors.length) {
+      const siblings = await db.many(
+        `SELECT c.*, r.name AS ranking_name FROM criteria c JOIN rankings r ON r.id = c.ranking_id
+          WHERE c.share_key = $1 AND c.id IS DISTINCT FROM $2::uuid`, [c.share_key, c.id]);
+      if (siblings.some((s) => s.ranking_id === ranking.id)) errors.push('Geteilter Wert: Dieser Schlüssel ist in diesem Ranking schon vergeben.');
+      for (const s of siblings) errors.push(...scoring.validateShared(c, s));
+    }
+  }
   if (errors.length) return renderCriterion(req, res, ranking, c, errors, warnings);
 
   const old = c.id ? await db.one('SELECT * FROM criteria WHERE id = $1 AND ranking_id = $2', [c.id, ranking.id]) : null;
@@ -300,20 +318,20 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
       // Jede Katalogänderung erhöht die Version; danach werden die Scores neu berechnet.
       await db.query(
         `UPDATE criteria SET code=$3, label=$4, category_id=$5, value_type=$6, scoring=$7, max_points=$8, is_ko=$9,
-           sort_order=$10, active=$11, link_source=$12, highlight_order=$13, highlight_label=$14, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
+           sort_order=$10, active=$11, link_source=$12, highlight_order=$13, highlight_label=$14, share_key=$15, version = version + 1 WHERE id=$1 AND ranking_id=$2`,
         [c.id, ranking.id, c.code, c.label, c.category_id, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source,
-          c.highlight_order, c.highlight_label]
+          c.highlight_order, c.highlight_label, c.share_key]
       );
       await logAction(req.session.admin.id, 'criterion', c.id, 'edit_criterion', {
         old: { scoring: old.scoring, max_points: old.max_points, is_ko: old.is_ko, active: old.active, version: old.version },
-        new: { scoring: c.scoring, max_points: c.max_points, is_ko: c.is_ko, active: c.active },
+        new: { scoring: c.scoring, max_points: c.max_points, is_ko: c.is_ko, active: c.active, share_key: c.share_key },
       });
     } else {
       const row = await db.one(
-        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source, highlight_order, highlight_label)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+        `INSERT INTO criteria (ranking_id, category_id, code, label, value_type, scoring, max_points, is_ko, sort_order, active, link_source, highlight_order, highlight_label, share_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
         [ranking.id, c.category_id, c.code, c.label, c.value_type, JSON.stringify(c.scoring), c.max_points, c.is_ko, c.sort_order, c.active, c.link_source,
-          c.highlight_order, c.highlight_label]
+          c.highlight_order, c.highlight_label, c.share_key]
       );
       await logAction(req.session.admin.id, 'criterion', row.id, 'create_criterion', { code: c.code, scoring: c.scoring });
     }
@@ -321,8 +339,16 @@ router.post('/:id/kriterien/:cid?', wrap(async (req, res, next) => {
     if (err.code !== '23505') throw err;
     return renderCriterion(req, res, ranking, c, ['Dieser Code existiert in diesem Ranking schon.'], warnings);
   }
+  // Neu geteilt: fehlende Werte aus den anderen Rankings übernehmen (vorhandene bleiben), dort ebenfalls neu rechnen
+  let synced = 0;
+  if (c.share_key && (!old || old.share_key !== c.share_key)) {
+    synced = (await db.one('SELECT sync_shared_facts($1) AS n', [c.share_key])).n;
+    const others = await db.many(`SELECT DISTINCT ranking_id FROM criteria WHERE share_key = $1 AND ranking_id <> $2`, [c.share_key, ranking.id]);
+    for (const o of others) await rankings.recomputeRanking(o.ranking_id);
+  }
   const n = await rankings.recomputeRanking(ranking.id);
-  res.redirect(`/admin/rankings/${ranking.id}?ok=${encodeURIComponent(`Kriterium gespeichert, ${n} Scores neu berechnet`)}#kriterien`);
+  const msg = `Kriterium gespeichert, ${n} Scores neu berechnet${synced ? `, ${synced} geteilte Werte übernommen` : ''}`;
+  res.redirect(`/admin/rankings/${ranking.id}?ok=${encodeURIComponent(msg)}#kriterien`);
 }));
 
 module.exports = router;
