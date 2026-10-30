@@ -129,6 +129,16 @@ caption { caption-side: bottom; text-align: left; font-size: .8rem; color: var(-
 .card-head h3 a:hover { color: var(--signal); }
 .card-head .where { font-size: .82rem; color: var(--signal); font-weight: 700; margin: .25rem 0 0; }
 .card ul { padding: .9rem 1.1rem .9rem 2.2rem; margin: 0; font-size: .95rem; }
+.card { display: flex; flex-direction: column; }
+.card ul { flex: 1; }
+.card-head .badge { display: inline-block; font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: .15rem .5rem; border-radius: 4px; background: var(--signal); color: var(--signal-ink); margin-bottom: .45rem; }
+.card-head .where a { color: var(--signal); }
+.card-foot { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; padding: 0 1.1rem 1rem; }
+.btn-ad { display: inline-block; background: var(--signal); color: var(--signal-ink); font-weight: 800; font-size: .92rem; text-decoration: none; padding: .55rem .95rem; border-radius: 8px; }
+.btn-ad:hover { background: var(--ink); color: var(--signal); }
+.ad-label { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: .1rem .4rem; }
+.tophotels { margin-top: 2.4rem; }
+.tophotels h2 { margin-top: 0; }
 
 .faq details { border-bottom: 1px solid var(--line); padding: .8rem 0; }
 .faq summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
