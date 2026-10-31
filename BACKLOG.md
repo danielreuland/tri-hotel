@@ -142,6 +142,11 @@ in einigen Tagen prüfen.
    Gestaltung (29.10.): Palette „Halle“ (Schwarz + Signalgelb) gewählt, Schriften wie tri-hotel lokal, Fotos Unsplash
    (Victor Freitas, Kyle Kranz) selbst ausgeliefert mit Urhebervermerk; Fuß „Unabhängiges Portal, nicht mit HYROX verbunden“.
    Keine Fotos mit HYROX-/Sponsor-Logos (zwei Kandidaten deshalb verworfen). Für die App später als Palette in src/lib/palettes.js.
+   **Stand 30.10. (anderer Rechner):** Ranking `fitness-racing-hotel` (HybridScore) als **Entwurf** angelegt (Migrationen 088–093:
+   27 Kriterien, Summe 100, Bonus „alle Stationen trainierbar“, geteilte Werte mit Triathlon: Sauna, Kältebad, Physio, 400-m-Bahn,
+   Flughafen; Gym-Lage im Hotel/≤ 1 km/≤ 5 km). Objektseite „Rankings“ (für weitere Rankings prüfen), Kandidaten-Regel,
+   Hybrid-Camps, Partnerklicks nach Herkunftsseite (`?von=`). Server steht auf 23f6631 – **Migration 093 noch nicht deployt**.
+   Offen: Kandidaten prüfen, Ranking aktivieren, Site fitnessracing-hotel.de in der App.
 5. **Admin-Aufteilung** Hub ↔ Apps entschieden 29.10.: `docs/admin-aufteilung.md` (Grundregel + Tabelle tri-hotel,
    Serverbetrieb in `ops/` des Hub-Repos). Offen: triprep-Bestandsaufnahme – Prompt `docs/prompts/triprep-admin-inventory.md`,
    Ergebnis in die Aufteilung übernehmen.
