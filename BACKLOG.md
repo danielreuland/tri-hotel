@@ -44,7 +44,10 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
 Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /hotels (Suchen auf „/“ leiten weiter).
-- Später: Monats-Planer aus Variante C in den Hero („Ich plane im …“ → Einträge passen sich an).
+- Stand 01.11.2026: Hero mit Claim und Kennzahlen-Zeile, rechts **Slider aller Hotels ab TriScore 75** (Wechsel alle 5 s,
+  Reihenfolge nach Score, täglich anderer Start, Pause/Punkte, stoppt bei reduzierter Bewegung), darunter **Hotel-Finder** über die
+  volle Breite (Ort/Hotel, Reisemonat, Wunschwetter, Ausstattung, wenig Regen, Live-Trefferzahl; am Handy vor dem Slider).
+  Bestenliste ab Platz 1, Camp-Band mit „Camp-Angebote anfragen“. Der Finder ersetzt den geplanten Monats-Planer aus Variante C.
 - Später (mit Partner-CRM): gebuchte Plätze je Bereich, immer zusätzlich und als „Anzeige“ gekennzeichnet, nie anstelle der
   neutralen Auswahl; ändert weder Score noch Reihenfolge.
 
@@ -145,10 +148,11 @@ in einigen Tagen prüfen.
    Gestaltung (29.10.): Palette „Halle“ (Schwarz + Signalgelb) gewählt, Schriften wie tri-hotel lokal, Fotos Unsplash
    (Victor Freitas, Kyle Kranz) selbst ausgeliefert mit Urhebervermerk; Fuß „Unabhängiges Portal, nicht mit HYROX verbunden“.
    Keine Fotos mit HYROX-/Sponsor-Logos (zwei Kandidaten deshalb verworfen). Für die App später als Palette in src/lib/palettes.js.
-   **Stand 30.10. (anderer Rechner):** Ranking `fitness-racing-hotel` (HybridScore) als **Entwurf** angelegt (Migrationen 088–093:
-   27 Kriterien, Summe 100, Bonus „alle Stationen trainierbar“, geteilte Werte mit Triathlon: Sauna, Kältebad, Physio, 400-m-Bahn,
-   Flughafen; Gym-Lage im Hotel/≤ 1 km/≤ 5 km). Objektseite „Rankings“ (für weitere Rankings prüfen), Kandidaten-Regel,
-   Hybrid-Camps, Partnerklicks nach Herkunftsseite (`?von=`). Server steht auf 23f6631 – **Migration 093 noch nicht deployt**.
+   **Stand 01.11.:** Ranking `fitness-racing-hotel` (HybridScore) als **Entwurf** live (Migrationen 088–093, alle deployt:
+   28 Kriterien, Summe 100, Bonus „alle Stationen trainierbar“, geteilte Werte mit Triathlon: Sauna, Kältebad, Physio, 400-m-Bahn,
+   Flughafen; „Lage des Trainings-Gyms“ im Hotel 7 / ≤ 1 km 5 / ≤ 5 km 3, Geräte zählen im Hotel- oder Partner-Gym).
+   Objektseite „Rankings“ (für weitere Rankings prüfen), Kandidaten-Regel, Hybrid-Camps, Partnerklicks nach Herkunftsseite (`?von=`).
+   8 Hotels aus Reiseathleten-Camps als Meldungen im Ranking (ohne Auto-Prüfung, siehe „Zu erledigen“).
    Offen: Kandidaten prüfen, Ranking aktivieren, Site fitnessracing-hotel.de in der App.
 5. **Admin-Aufteilung** Hub ↔ Apps entschieden 29.10.: `docs/admin-aufteilung.md` (Grundregel + Tabelle tri-hotel,
    Serverbetrieb in `ops/` des Hub-Repos). Offen: triprep-Bestandsaufnahme – Prompt `docs/prompts/triprep-admin-inventory.md`,
@@ -183,14 +187,8 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - Eigene KI-Mail-Mustertexte (falls angepasst) haben den Abschnitt `{{#bestaetigen}}` nicht automatisch.
 
 ## Zu entscheiden (Daniel)
-- **KI-Budget Oktober aufgebraucht** (20,08 von 20 $ am 29.10.; Sperre greift automatisch über `LLM_MONTHLY_BUDGET_USD`):
-  Redaktionstexte, Prüfung der 99 Importe und Camp-Prüfungen erst ab 01.11.2026. Oktober-Verbrauch: Extraktion 14,09 $,
-  Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $.
-- **Import 01.11.2026, 08:00 (geplant, Daniel 29.10.):** 20 neue Hotels aus dem Abgleich sports-hotels.com
-  (`data/imports/2026-10-29-sports-hotels-lap-pool.*`) + Auto-Prüfung für 7 passende geparkte Importe (scripts/rerun-auto-check.js),
-  einmaliger systemd-Timer `hotel-import-2026-11-01` auf dem Server (überlebt keinen Neustart – sonst von Hand starten, Befehl
-  siehe `systemctl cat hotel-import-2026-11-01.service`). Ca. 4,30 $ KI/Places. Danach: Ergebnisse in der Warteschlange prüfen.
-  Ursache der Abbrüche vom 22.10. geklärt: manueller Abbruch per pg-boss-cancel um 19:23 (kein Code, kein Fehler).
+- **KI-Budget:** Oktober war am 29.10. aufgebraucht (20,08 von 20 $); seit 01.11. neues Monatsbudget (`LLM_MONTHLY_BUDGET_USD`, 20 $).
+  Oktober-Verbrauch: Extraktion 14,09 $, Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $. Budget bei Bedarf erhöhen.
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
@@ -198,6 +196,14 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - `geo-refresh` für live-Objekte: würde ungeprüfte Vorschläge sofort in den Score bringen.
 
 ## Zu erledigen (Daniel)
+- **Import vom 01.11. prüfen:** lief um 08:00 – 20 neue Meldungen aus dem Abgleich sports-hotels.com und 7 erneut gestartete
+  Auto-Prüfungen geparkter Importe; Ergebnisse in der Warteschlange prüfen.
+- **Hybrid-Camp-Anbieter freigeben** (Reiseathleten, Titan Fitness Camp Algarve, BlackBOX Tenerife, UF Bootcamp – am 01.11. neu
+  geprüft; UF Bootcamp rot: allgemeine Fitness-Retreats, eher ablehnen). Für diese vier legt die Prüfung keine Hotel-Meldungen an.
+- **8 Reiseathleten-Hotels** im Fitness-Racing-Ranking (Aurora Sol, Vilamar, H10 Casa del Mar, Reverence Life, Iberostar Jardín del
+  Sol, Regency Torviscas, Princess Inspire, Iberostar Sábila): Auto-Prüfung im Admin starten; Websites von H10/Iberostar bestätigen,
+  Vilamar ohne Website.
+- **Funnel-Ziele** für fitnessracing-hotel.de und „alle zusammen“ im Dashboard eintragen (bisher nur tri-hotel.de).
 - Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
 - **Expedia-IDs für die übrigen Hotels** eintragen (Expedia aktiv seit 26.10., 35 Hotels mit Link; Hotels.com übernimmt die
@@ -234,6 +240,17 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 `package-lock.json`: `/root/package-lock.server-backup.json`.
 
 ## Erledigt (Oktober 2026, Kurzfassung)
+- 01.11. **Startseite**: kompakter Hotel-Finder (Reisemonat, Wunschwetter warm/mild/kühl nach Ø-Tageshöchstwert, wenig Regen,
+  Ausstattung, Live-Trefferzahl über `/finder/treffer`; `src/lib/finder.js`), Lockerungsvorschläge in der Liste bei < 3 Treffern,
+  Slider der Top-Hotels ab TriScore 75, Bestenliste ab Platz 1, Camp-Anfrage im Camp-Band; Platz in der Liste = Gesamtranking.
+- 01.11. **Hotelsuche findet Regionen und Länder** („Mallorca“ → alle 12 Hotels im Umkreis der Region).
+- 01.11. **Dashboard-Funnel** mit Monatszielen (Seitenaufrufe → Hotelseiten → Partner-Klicks, → Camp-Seiten → Camp-Anfragen),
+  Zeiträume gestern/7/30 Tage/Monat, je Seite (tri-hotel.de, fitnessracing-hotel.de, alle zusammen; Migrationen 094/095).
+- 01.11. **Hybrid-Camps**: Site-Thema um Hybrid/Fitness Racing erweitert, Hotel-Meldungen je Anbieter abschaltbar (Migration 092),
+  4 Anbieter aus Reiseathleten angelegt, Neuprüfung am 01.11. per Timer; Skripte `create-camp-providers.js`, `import-hotels.js --ranking --ohne-pruefung`.
+- 30.10. **Partnerklicks nach Herkunftsseite** (`outbound_clicks.source`, `?von=` an den Links von fitnessracing-hotel.de, Migration 090).
+- 30.10. **Fitness-Racing-Ranking** als Entwurf (siehe oben), Bonus-Typ und geteilte Werte (Migrationen 088/089/093).
+- 01.11. Ratgeber-Konzept erstellt und zurückgestellt (siehe SEO).
 - 28./29.10.: Admin-Dashboard als Startseite (/admin) mit Seitenaufrufen aus Plausible (`PLAUSIBLE_API_KEY` in der Server-`.env`),
   Partnerlink-Abdeckung und Klicks; Hotelliste unter Inhalte (/admin/objekte); Partnerlinks in den Hoteldetails klappbar;
   Test-Klicks bis 28.10. zurückgesetzt (Migration 087: 41 Partner-, 78 Camp-Klicks).
