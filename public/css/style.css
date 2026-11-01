@@ -800,7 +800,13 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 }
 .home-mini-list .score { min-width: 44px; height: 44px; font-size: 1.6rem; border-radius: 10px; }
 /* Startseiten-Hero: Claim mit Kennzahlen-Zeile links, Top-Objekt des Tages rechts, Finder darunter über die volle Breite */
-.home-hero { align-items: center; padding-block: 48px 28px; }
+.home-hero { align-items: center; padding-block: 48px 40px; grid-template-areas: "claim pick" "finder finder"; row-gap: 28px; }
+.home-hero.single { grid-template-areas: "claim" "finder"; }
+.home-hero .hero-claim { grid-area: claim; }
+.home-hero .hero-pick { grid-area: pick; }
+.home-hero .hero-finder-cell { grid-area: finder; min-width: 0; }
+/* Handy und schmale Fenster: Finder direkt nach dem Claim, Top-Objekt danach */
+@media (max-width: 860px) { .home-hero { grid-template-areas: "claim" "finder" "pick"; row-gap: 20px; } }
 .hero-stats { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: .92rem; }
 .hero-stats a { color: var(--muted); text-decoration: none; }
 .hero-stats a:hover, .hero-stats a:focus-visible { color: var(--accent-strong); }
@@ -820,7 +826,7 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .hp-feats { font-size: .88rem; }
 .hp-link { font-weight: 800; color: var(--accent-strong); }
 .hp-note { font-size: .74rem; color: var(--muted); }
-.hero-finder-wrap { padding-bottom: 40px; }
+
 
 /* Admin: Seitenkopf mit Aktionen, Dashboard */
 .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }

@@ -14,7 +14,7 @@
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
   <div class="wrap hero-grid home-hero<%= heroPick ? '' : ' single' %>">
-    <div>
+    <div class="hero-claim">
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
         <% if (hl) { var i = title.indexOf(hl); %><%= title.slice(0, i) %><em><%= hl %></em><%= title.slice(i + hl.length) %><% } else { %><%= title %><% } %>
@@ -29,6 +29,32 @@
           <a href="<%= scorePath %>" class="hero-neutral">Partner ändern weder Score noch Reihenfolge</a>
         </p>
       <% } %>
+    </div>
+    <% var FD = finder; %>
+    <div class="hero-finder-cell">
+      <form class="hero-finder" method="get" action="<%= listHref %>#ranking" role="search" aria-label="<%= ranking.entity_label_sg %>-Finder"
+            data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
+        <div class="hf-line">
+          <div class="hf-field hf-q"><label for="hf-q"><%= ranking.entity_label_sg %> oder Ort</label>
+            <input id="hf-q" type="search" name="q" placeholder="z. B. Mallorca"></div>
+          <div class="hf-field"><label for="hf-monat">Reisemonat</label>
+            <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
+          <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
+            <select id="hf-wetter" name="wetter" title="Ø-Tageshöchstwert im gewählten Reisemonat (Open-Meteo)"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
+          <details class="hf-more">
+            <summary>Ausstattung<span class="hf-n" data-finder-n></span></summary>
+            <div class="hf-pop">
+              <% FD.groups.forEach(function (g) { %>
+                <div class="hf-group"><span><%= g.label %></span>
+                  <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
+              <% }) %>
+            </div>
+          </details>
+          <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
+          <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
+        </div>
+        <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
+      </form>
     </div>
     <% if (heroPick) { var hp = heroPick.entity; %>
       <a class="score-card hero-pick" href="<%= entityPath(hp) %>">
@@ -52,32 +78,6 @@
         </span>
       </a>
     <% } %>
-  </div>
-  <% var FD = finder; %>
-  <div class="wrap hero-finder-wrap">
-    <form class="hero-finder" method="get" action="<%= listHref %>#ranking" role="search" aria-label="<%= ranking.entity_label_sg %>-Finder"
-          data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
-      <div class="hf-line">
-        <div class="hf-field hf-q"><label for="hf-q"><%= ranking.entity_label_sg %> oder Ort</label>
-          <input id="hf-q" type="search" name="q" placeholder="z. B. Mallorca"></div>
-        <div class="hf-field"><label for="hf-monat">Reisemonat</label>
-          <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
-        <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
-          <select id="hf-wetter" name="wetter" title="Ø-Tageshöchstwert im gewählten Reisemonat (Open-Meteo)"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
-        <details class="hf-more">
-          <summary>Ausstattung<span class="hf-n" data-finder-n></span></summary>
-          <div class="hf-pop">
-            <% FD.groups.forEach(function (g) { %>
-              <div class="hf-group"><span><%= g.label %></span>
-                <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
-            <% }) %>
-          </div>
-        </details>
-        <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
-        <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
-      </div>
-      <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
-    </form>
   </div>
 </section>
 
