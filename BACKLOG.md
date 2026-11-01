@@ -93,6 +93,9 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - Kleinigkeiten: Länderseiten mit nur 1 Hotel (PT, IT, TR); lastmod der Hotels steht nach Neuberechnungen bei allen auf
   demselben Tag (entity_rankings.updated_at) – ggf. nur echte Inhaltsänderungen zählen.
 - Später: Landingpage „Trainingslager für Vereine“, Ratgeberinhalte, Backlinks (Vereine, Verbände, Triathlon-Blogs).
+- **Ratgeber (zurückgestellt am 01.11.2026):** Konzept mit Startseiten- und Artikel-Mockup, Themenplan (Rad im Flugzeug, Schwimmtraining,
+  Packliste, Radklassiker Mallorca, Freiwasser, Regeneration) und Technik (`/ratgeber`, Markdown im Repo, Live-Bausteine aus dem Ranking):
+  https://claude.ai/artifact/Jk3YwYiwTPJ8eVpYDqQAZX – erst umsetzen, wenn Daniel es freigibt.
 
 ### Hotelseite überarbeiten (Vorschläge 26.10.2026: https://claude.ai/artifact/7frxWXoET4Ftu7oJ3YJwjN)
 - **A Steckbrief – umgesetzt 27.10.** (siehe Erledigt).
