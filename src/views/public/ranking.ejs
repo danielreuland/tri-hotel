@@ -88,11 +88,19 @@
           </select>
         </div>
         <div class="search-field">
-          <label for="monat">Gute Reisezeit im</label>
+          <label for="monat">Reisemonat</label>
           <select id="monat" name="monat">
             <option value="">beliebigen Monat</option>
             <% MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>" <%= month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
           </select>
+        </div>
+        <div class="search-field">
+          <label for="wetter">Wetter im Monat</label>
+          <select id="wetter" name="wetter">
+            <option value="">gute Reisezeit</option>
+            <% Object.keys(WEATHER).forEach(function (k) { %><option value="<%= k %>" <%= trip.weather === k ? 'selected' : '' %>><%= WEATHER[k].label %> (<%= WEATHER[k].hint %>)</option><% }) %>
+          </select>
+          <label class="inline" style="margin-top:6px"><input type="checkbox" name="regen" value="1" <%= trip.lowRain ? 'checked' : '' %>> wenig Regen</label>
         </div>
         <div class="search-field">
           <label for="min"><%= ranking.score_name %> ab</label>
@@ -123,6 +131,11 @@
       </div>
     </form>
 
+    <% if (searchActive && month && !trip.weather && !trip.lowRain) { %><p class="hint" style="margin-top:-6px">Mit Reisemonat ohne Wetterwunsch zählt die gute Reisezeit (<%= formula.best_time ? formula.best_time.min + '–' + formula.best_time.max + ' °C Ø-Tageshöchstwert' : 'laut Klima' %>). Wetter und Regen gelten nur zusammen mit einem Reisemonat.</p><% } %>
+    <% if (relax.length) { %>
+      <div class="card relax-hints"><p style="margin:0 0 6px"><strong><%= ranked.length ? 'Nur wenige Treffer.' : 'Kein ' + ranking.entity_label_sg + ' passt zu allen Wünschen.' %></strong> So findest du mehr:</p>
+        <p class="chips" style="margin:0"><% relax.forEach(function (r) { %><a class="chip" href="<%= r.href %>"><%= r.label %> · <%= r.count %></a><% }) %></p></div>
+    <% } %>
     <% if (!ranked.length && searchActive) { %>
       <div class="card"><p style="margin:0">Kein <%= ranking.entity_label_sg %> passt zu allen Filtern. Entferne einzelne Leistungen oder <a href="<%= listHref %>#ranking">setze die Filter zurück</a>.</p></div>
     <% } else if (!ranked.length) { %>

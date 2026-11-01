@@ -850,3 +850,19 @@ a.kpi:hover { border-color: var(--accent); }
 .funnel-bar { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: var(--border); vertical-align: middle; overflow: hidden; }
 .funnel-bar > span { display: block; height: 100%; background: var(--accent, var(--ok)); }
 .funnel-bar > span.reached { background: var(--ok); }
+
+/* Hotel-Finder (Startseite) */
+.finder-intro { max-width: 60ch; }
+.finder { display: grid; gap: 18px; margin-top: 16px; }
+.finder fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.finder legend { font-weight: 700; padding: 0; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+.finder-step { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--primary); color: var(--surface); font-size: .85rem; }
+.finder .chip input[type="radio"] { accent-color: var(--primary); }
+.finder fieldset[disabled] .chips { opacity: .55; }
+.finder-group { display: grid; grid-template-columns: minmax(110px, 140px) 1fr; gap: 4px 12px; align-items: start; margin-top: 6px; }
+.finder-group .chips { margin-top: 0; }
+.finder-group-label { font-size: .9rem; color: var(--muted); padding-top: 6px; }
+.finder-foot { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 14px; }
+.finder-foot .search-field { min-width: 200px; }
+.finder-live { margin: 0; flex-basis: 100%; }
+@media (max-width: 560px) { .finder-group { grid-template-columns: 1fr; } .finder-foot .btn { width: 100%; } }

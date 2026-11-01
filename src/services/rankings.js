@@ -205,10 +205,12 @@ async function listLive(ranking, { month } = {}) {
   for (const row of rows) {
     const { score } = row;
     const completeness = Number(row.completeness);
-    const best = seo.bestMonths(ranking.formula, climateRows.filter((c) => c.entity_id === row.id));
+    const climate = climateRows.filter((c) => c.entity_id === row.id);
+    const best = seo.bestMonths(ranking.formula, climate);
     if (month && !best.includes(month)) continue;
     const eligible = !row.ko_reason && score !== null && completeness >= formula.min_completeness;
-    list.push({ ...row, score, completeness, eligible, bestMonths: best, label: scoring.labelFor(score, ranking.labels) });
+    // climate: Monatswerte für den Hotel-Finder (Wunschwetter), bestMonths: beste Reisezeit laut Formel
+    list.push({ ...row, score, completeness, eligible, bestMonths: best, climate, label: scoring.labelFor(score, ranking.labels) });
   }
   // Vorschaubild je Objekt (wie auf der Objektseite: nur freigegeben und mit gültigen Rechten)
   const thumbs = await listThumbs(ranking, list.map((e) => e.id));

@@ -19,6 +19,7 @@ const home = require('../services/home');
 const regionGuide = require('../services/region-guide');
 const regionText = require('../services/region-text');
 const { slugify } = require('../lib/util');
+const finder = require('../lib/finder');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -55,18 +56,15 @@ function categoryBars(categories, criteria, details) {
     .filter((b) => b.max > 0);
 }
 
-async function renderList(req, res, ranking) {
-  const month = parseMonth(req.query.monat);
-  const [{ ranked: allRanked, incomplete: allIncomplete }, categories, criteria, catalog] = await Promise.all([
-    rankings.listLive(ranking, { month }),
-    rankings.getCategories(ranking.id),
-    rankings.getCriteria(ranking.id),
+// Gemeinsame Filterkette für Liste, Trefferzähler des Hotel-Finders und Lockerungsvorschläge:
+// Text (inkl. Region/Land), Land, Mindest-Score, Leistungen, Reisemonat mit Wunschwetter (lib/finder.js)
+async function findList(req, ranking) {
+  const [{ ranked: allRanked, incomplete: allIncomplete }, catalog] = await Promise.all([
+    rankings.listLive(ranking),
     features.catalog(ranking.entity_type),
   ]);
   // Platz im Gesamtranking merken, bevor die Suche filtert
   allRanked.forEach((e, i) => { e.rank = i + 1; });
-
-  // Suche: Text, Land, Mindest-Score, Leistungen (nur filterbare Katalog-Einträge)
   const all = [...allRanked, ...allIncomplete];
   // Textsuche findet auch Regionen (Umkreis wie auf den Regionsseiten) und Ländernamen – der Ort ist oft nur die Gemeinde
   const regionList = req.site ? await areas.regions(req.site.id) : [];
@@ -80,8 +78,30 @@ async function renderList(req, res, ranking) {
   const featureSets = new Map([...featureMap].map(([id, list]) => [id, new Set(list.map((f) => f.code))]));
   for (const e of all) e.features = (featureMap.get(e.id) || []).filter((f) => f.filterable).slice(0, 4);
   const featureGroups = featureLib.alternativeGroups(filterFeatures);
-  const ranked = featureLib.applySearch(allRanked, search, featureSets, featureGroups);
-  const incomplete = featureLib.applySearch(allIncomplete, search, featureSets, featureGroups);
+  const trip = finder.parseTrip(req.query);
+  const run = (s, t) => ({
+    ranked: featureLib.applySearch(finder.filterTrip(allRanked, t), s, featureSets, featureGroups),
+    incomplete: featureLib.applySearch(finder.filterTrip(allIncomplete, t), s, featureSets, featureGroups),
+  });
+  const { ranked, incomplete } = run(search, trip);
+  return { allRanked, allIncomplete, countries, filterFeatures, search, trip, featureMap, run, ranked, incomplete };
+}
+
+// Lockerungen mit Trefferzahl, wenn kaum etwas passt: [{ label, count, href }]
+function relaxHints(found, listHref) {
+  const { search, trip, ranked, filterFeatures, run } = found;
+  const label = (code) => (filterFeatures.find((f) => f.code === code) || {}).label || code;
+  return finder.relaxations(search, trip, { featureLabel: label, monthName: (m) => MONTHS_DE[m - 1] })
+    .map((v) => ({ label: v.label, count: run(v.search, v.trip).ranked.length, href: `${listHref}?${finder.toQuery(v.search, v.trip)}#ranking` }))
+    .filter((v) => v.count > ranked.length)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+}
+
+async function renderList(req, res, ranking) {
+  const [found, categories, criteria] = await Promise.all([findList(req, ranking), rankings.getCategories(ranking.id), rankings.getCriteria(ranking.id)]);
+  const { allRanked, countries, filterFeatures, search, trip, ranked, incomplete } = found;
+  const month = trip.month;
 
   // Score-Karte im Hero: bestplatziertes Objekt mit Punkten je Kategorie (unabhängig von der Suche)
   let topCard = null;
@@ -96,6 +116,7 @@ async function renderList(req, res, ranking) {
   const siteUrl = res.locals.siteUrl;
   const base = rankingBase(ranking);
   const searchActive = featureLib.isActive(search) || Boolean(month);
+  const relax = searchActive && ranked.length < 3 ? relaxHints(found, seo.listPath(ranking)) : [];
   const overview = await areas.overview(ranking, req.site.id);
   const listHref = seo.listPath(ranking);
   const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
@@ -126,6 +147,9 @@ async function renderList(req, res, ranking) {
     ranked,
     incomplete,
     month,
+    trip,
+    relax,
+    WEATHER: finder.WEATHER,
     topCard,
     search,
     searchActive,
@@ -144,10 +168,19 @@ async function renderList(req, res, ranking) {
 
 // Startseite: Bereiche (Über die Seite, Objekte, Camps, Regionen) in der Reihenfolge aus dem Admin
 async function renderHome(req, res, ranking) {
-  const [blocks, stats] = await Promise.all([
+  const [blocks, stats, found] = await Promise.all([
     home.load(req.site, ranking, { campGuide: res.locals.campGuide, regionGuide: res.locals.regionGuide }),
     home.stats(req.site, ranking),
+    findList({ site: req.site, query: {} }, ranking),
   ]);
+  // Hotel-Finder: Leistungen nach Gruppe (filterbare Katalog-Einträge), Länder der Objekte im Ranking
+  const groups = [];
+  for (const f of found.filterFeatures) {
+    let g = groups.find((x) => x.label === f.group_label);
+    if (!g) groups.push((g = { label: f.group_label, items: [] }));
+    g.items.push(f);
+  }
+  const finderData = { groups, countries: found.countries, total: found.allRanked.length, WEATHER: finder.WEATHER, MONTHS: MONTHS_DE };
   const content = ranking.content || {};
   const siteUrl = res.locals.siteUrl;
   const listHref = seo.listPath(ranking);
@@ -163,14 +196,14 @@ async function renderHome(req, res, ranking) {
       ...(top.length ? [seo.itemListLd(ranking.name, top.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
     ],
     fullWidth: true,
-    ranking, content, blocks, stats, listHref,
+    ranking, content, blocks, stats, listHref, finder: finderData, scripts: ['/static/js/finder.js'],
     formula: Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {}),
     entityPath: (e) => entityPath(ranking, e),
   });
 }
 
 // Suchparameter der alten Startseite (Ranking auf „/“) gehören zur Liste
-const LIST_PARAMS = ['q', 'land', 'monat', 'min', 'l'];
+const LIST_PARAMS = ['q', 'land', 'monat', 'min', 'l', 'wetter', 'regen'];
 
 // Anzeige der Vertrauensstufe (Konzept: Datenqualität)
 function trustText(fact, ranking) {
@@ -450,6 +483,15 @@ router.get('/', wrap(async (req, res, next) => {
     return res.redirect(301, `${seo.listPath(req.hostRanking)}${qs}`);
   }
   await renderHome(req, res, req.hostRanking);
+}));
+
+// Hotel-Finder: Trefferzahl für die aktuelle Auswahl (gleiche Filterkette wie die Liste), nicht indexiert
+router.get('/finder/treffer', wrap(async (req, res, next) => {
+  if (!req.hostRanking) return next();
+  const found = await findList(req, req.hostRanking);
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Robots-Tag', 'noindex');
+  res.json({ count: found.ranked.length, incomplete: found.incomplete.length, total: found.allRanked.length });
 }));
 
 // Liste des Host-Rankings unter /<Objekte>, z. B. /hotels
