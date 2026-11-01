@@ -37,3 +37,29 @@ test('rows: Hochrechnung im laufenden Monat zählt für die Zielerreichung; ohne
   assert.equal(clicks.ofParent, null, 'Objektseiten unbekannt');
   assert.equal(clicks.ofTop, 0.7);
 });
+
+const DOMAINS = [{ domain: 'tri-hotel.de' }, { domain: 'fitnessracing-hotel.de' }];
+
+test('clickDomain: Herkunft der Partner-Klicks einer Seite zuordnen, Unbekanntes zur ersten Seite', () => {
+  assert.equal(funnel.clickDomain('fitnessracing-hotel.de', DOMAINS), 'fitnessracing-hotel.de');
+  assert.equal(funnel.clickDomain('www.fitnessracing-hotel.de', DOMAINS), 'fitnessracing-hotel.de');
+  assert.equal(funnel.clickDomain('tri-hotel.de', DOMAINS), 'tri-hotel.de');
+  assert.equal(funnel.clickDomain('', DOMAINS), 'tri-hotel.de', 'vor der Herkunftserfassung');
+  assert.equal(funnel.clickDomain('direkt', DOMAINS), 'tri-hotel.de');
+  assert.equal(funnel.clickDomain('google.com', DOMAINS), 'tri-hotel.de');
+});
+
+test('scopeOf: Domain aus der Liste, „alle“ nur bei mehreren Seiten, sonst erste Seite', () => {
+  assert.equal(funnel.scopeOf('fitnessracing-hotel.de', DOMAINS), 'fitnessracing-hotel.de');
+  assert.equal(funnel.scopeOf('alle', DOMAINS), 'alle');
+  assert.equal(funnel.scopeOf(undefined, DOMAINS), 'tri-hotel.de');
+  assert.equal(funnel.scopeOf('boese.de', DOMAINS), 'tri-hotel.de');
+  assert.equal(funnel.scopeOf('alle', [{ domain: 'tri-hotel.de' }]), 'tri-hotel.de');
+});
+
+test('sum: mehrere Seiten addieren, unbekannt nur wenn keine Seite einen Wert hat', () => {
+  assert.equal(funnel.sum([363, 40]), 403);
+  assert.equal(funnel.sum([363, null]), 363);
+  assert.equal(funnel.sum([null, undefined]), null);
+  assert.equal(funnel.sum([0]), 0);
+});

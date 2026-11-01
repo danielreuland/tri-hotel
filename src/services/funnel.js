@@ -1,6 +1,7 @@
 // Dashboard-Funnel: Seitenaufrufe → Objektseiten → Partner-Klicks, Seitenaufrufe → Camp-Seiten → Camp-Anfragen.
 // Absolute Zahlen je Zeitraum, Anteile an der Vorstufe und an allen Seitenaufrufen, Ziel je Monat (funnel_goals, im Admin editierbar).
-// Seitenaufrufe kommen aus Plausible, Klicks und Anfragen aus der eigenen Datenbank.
+// Je Seite (funnel_domains, z. B. tri-hotel.de, fitnessracing-hotel.de) oder alle zusammen („alle“).
+// Seitenaufrufe kommen aus Plausible (je Domain), Klicks und Anfragen aus der eigenen Datenbank.
 const db = require('../db');
 const analytics = require('./analytics');
 
@@ -59,53 +60,96 @@ function rows(values, goals, range, labels = {}) {
   });
 }
 
-async function goals(siteId) {
-  const list = await db.many('SELECT stage, monthly_goal FROM funnel_goals WHERE site_id = $1', [siteId]);
+const ALL = 'alle';
+
+// Domain, der ein Partner-Klick zugeordnet wird: Herkunft (outbound_clicks.source) = eine der Funnel-Domains, sonst die erste
+// Domain (eigene Seiten, „direkt“, unbekannt, vor der Herkunftserfassung). domains: [{ domain }] in Anzeige-Reihenfolge
+function clickDomain(source, domains) {
+  const src = String(source || '').toLowerCase().replace(/^www\./, '');
+  const hit = domains.find((d) => d.domain === src);
+  return hit ? hit.domain : domains.length ? domains[0].domain : null;
+}
+
+// Gewählte Seite: eine Domain aus der Liste oder „alle“; Standard ist die erste Domain
+function scopeOf(key, domains) {
+  if (key === ALL && domains.length > 1) return ALL;
+  return domains.some((d) => d.domain === key) ? key : domains.length ? domains[0].domain : ALL;
+}
+
+async function domains() {
+  return db.many('SELECT domain, label, site_id FROM funnel_domains ORDER BY sort_order, domain');
+}
+
+async function goals(siteId, scope) {
+  const list = await db.many('SELECT stage, monthly_goal FROM funnel_goals WHERE site_id = $1 AND scope = $2', [siteId, scope]);
   return Object.fromEntries(list.map((g) => [g.stage, g.monthly_goal]));
 }
 
-// Ziele speichern: leer = kein Ziel. Ergebnis: gespeicherte Ziele
-async function saveGoals(siteId, input) {
+// Ziele einer Seite speichern: leer = kein Ziel. Ergebnis: gespeicherte Ziele
+async function saveGoals(siteId, scopeKey, input) {
+  const scope = scopeOf(scopeKey, await domains());
   const out = {};
   for (const s of STAGES) {
     const n = Math.round(Number(String(input[s.key] ?? '').replace(/\./g, '').replace(',', '.')));
     if (Number.isFinite(n) && n > 0) {
       await db.query(
-        `INSERT INTO funnel_goals (site_id, stage, monthly_goal) VALUES ($1, $2, $3)
-         ON CONFLICT (site_id, stage) DO UPDATE SET monthly_goal = EXCLUDED.monthly_goal, updated_at = now()`, [siteId, s.key, n]);
+        `INSERT INTO funnel_goals (site_id, scope, stage, monthly_goal) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (site_id, scope, stage) DO UPDATE SET monthly_goal = EXCLUDED.monthly_goal, updated_at = now()`, [siteId, scope, s.key, n]);
       out[s.key] = n;
     } else {
-      await db.query('DELETE FROM funnel_goals WHERE site_id = $1 AND stage = $2', [siteId, s.key]);
+      await db.query('DELETE FROM funnel_goals WHERE site_id = $1 AND scope = $2 AND stage = $3', [siteId, scope, s.key]);
     }
   }
-  return out;
+  return { scope, goals: out };
 }
 
-async function load(site, ranking, periodKey) {
+// Zahlen mehrerer Seiten addieren; null (unbekannt) nur, wenn keine Seite einen Wert hat
+function sum(list) {
+  const known = list.filter((v) => v !== null && v !== undefined);
+  return known.length ? known.reduce((a, b) => a + b, 0) : null;
+}
+
+async function load(site, ranking, periodKey, scopeKey) {
   const range = periodRange(PERIODS[periodKey] ? periodKey : '30');
-  // Objektseiten: Standard-Ranking unter /<objekttyp>/<slug>, weitere Rankings unter /rankings/<ranking>/<slug>
-  const views = await analytics.pageviews(site.primary_domain, range.from, range.to, {
-    entity: `event:page==/${ranking.entity_type}/**|/rankings/*/*`,
-    camp: 'event:page==/trainingscamp|/trainingscamp/**',
-  });
-  const ok = views && !views.error;
-  const counts = await db.one(
-    `SELECT (SELECT COALESCE(sum(clicks), 0) FROM outbound_clicks
-              WHERE kind IN ('entity_link', 'partner_search') AND day BETWEEN $2::date AND $3::date)::int AS partner_clicks,
-            ((SELECT count(*) FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
-               WHERE p.site_id = $1 AND l.request_id IS NULL AND l.status <> 'rejected' AND l.created_at::date BETWEEN $2::date AND $3::date)
+  const all = await domains();
+  const scope = scopeOf(scopeKey, all);
+  const chosen = scope === ALL ? all : all.filter((d) => d.domain === scope);
+
+  // Seitenaufrufe je Domain. Objektseiten: Standard-Ranking unter /<objekttyp>/<slug>, weitere Rankings unter /rankings/<ranking>/<slug>
+  const groups = { entity: `event:page==/${ranking.entity_type}/**|/rankings/*/*`, camp: 'event:page==/trainingscamp|/trainingscamp/**' };
+  const views = await Promise.all(chosen.map((d) => analytics.pageviews(d.domain, range.from, range.to, groups)));
+  const okViews = views.filter((v) => v && !v.error);
+  const status = views.some((v) => v && v.error) ? 'error' : okViews.length ? 'ok' : 'off';
+
+  // Partner-Klicks nach Herkunft, der Domain zugeordnet
+  const clickRows = await db.many(
+    `SELECT source, sum(clicks)::int AS n FROM outbound_clicks
+      WHERE kind IN ('entity_link', 'partner_search') AND day BETWEEN $1::date AND $2::date GROUP BY source`, [range.from, range.to]);
+  const chosenSet = new Set(chosen.map((d) => d.domain));
+  const partnerClicks = clickRows.filter((r) => chosenSet.has(clickDomain(r.source, all))).reduce((a, r) => a + r.n, 0);
+
+  // Camp-Anfragen nur auf Domains, die die App ausliefert (dort gibt es die Formulare)
+  const siteIds = [...new Set(chosen.map((d) => d.site_id).filter(Boolean))];
+  const requests = siteIds.length ? (await db.one(
+    `SELECT ((SELECT count(*) FROM camp_leads l JOIN camp_providers p ON p.id = l.provider_id
+               WHERE p.site_id = ANY($1::uuid[]) AND l.request_id IS NULL AND l.status <> 'rejected' AND l.created_at::date BETWEEN $2::date AND $3::date)
              + (SELECT count(*) FROM camp_requests
-               WHERE site_id = $1 AND status <> 'rejected' AND created_at::date BETWEEN $2::date AND $3::date))::int AS camp_requests`,
-    [site.id, range.from, range.to]);
+               WHERE site_id = ANY($1::uuid[]) AND status <> 'rejected' AND created_at::date BETWEEN $2::date AND $3::date))::int AS n`,
+    [siteIds, range.from, range.to])).n : null;
+
   const values = {
-    pageviews: ok ? views.total : null,
-    entity_views: ok ? views.groups.entity : null,
-    partner_clicks: counts.partner_clicks,
-    camp_views: ok ? views.groups.camp : null,
-    camp_requests: counts.camp_requests,
+    pageviews: sum(okViews.map((v) => v.total)),
+    entity_views: sum(okViews.map((v) => v.groups.entity)),
+    partner_clicks: partnerClicks,
+    camp_views: sum(okViews.map((v) => v.groups.camp)),
+    camp_requests: requests,
   };
   const labels = { entity_views: `Aufrufe ${ranking.entity_label_sg}seiten` };
-  return { range, periods: PERIODS, rows: rows(values, await goals(site.id), range, labels), analytics: views ? (views.error ? 'error' : 'ok') : 'off' };
+  const scopes = [...all.map((d) => ({ key: d.domain, label: d.label })), ...(all.length > 1 ? [{ key: ALL, label: 'alle zusammen' }] : [])];
+  return {
+    range, periods: PERIODS, scope, scopes,
+    rows: rows(values, await goals(site.id, scope), range, labels), analytics: status,
+  };
 }
 
-module.exports = { STAGES, PERIODS, periodRange, rows, goals, saveGoals, load };
+module.exports = { STAGES, PERIODS, ALL, periodRange, rows, clickDomain, scopeOf, sum, domains, goals, saveGoals, load };

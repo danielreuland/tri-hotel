@@ -22,10 +22,14 @@
 <% if (funnel) { var F = funnel; var pc = function (x) { return x === null ? '–' : String(x).replace('.', ',') + ' %'; }; %>
 <section class="card funnel" id="funnel" aria-label="Funnel">
   <div class="page-head" style="margin:0 0 8px"><h2 style="margin:0">Funnel</h2>
-    <p class="pill-row" style="margin:0"><% Object.keys(F.periods).forEach(function (k) { %><a class="badge <%= F.range.key === k ? 'good' : '' %>" href="/admin?zeitraum=<%= k %>#funnel" <%= F.range.key === k ? 'aria-current="true"' : '' %>><%= F.periods[k] %></a><% }) %></p></div>
+    <div class="funnel-switch">
+      <% if (F.scopes.length > 1) { %><p class="pill-row" style="margin:0" aria-label="Seite"><% F.scopes.forEach(function (s) { %><a class="badge <%= F.scope === s.key ? 'good' : '' %>" href="/admin?seite=<%= encodeURIComponent(s.key) %>&zeitraum=<%= F.range.key %>#funnel" <%= F.scope === s.key ? 'aria-current="true"' : '' %>><%= s.label %></a><% }) %></p><% } %>
+      <p class="pill-row" style="margin:0" aria-label="Zeitraum"><% Object.keys(F.periods).forEach(function (k) { %><a class="badge <%= F.range.key === k ? 'good' : '' %>" href="/admin?seite=<%= encodeURIComponent(F.scope) %>&zeitraum=<%= k %>#funnel" <%= F.range.key === k ? 'aria-current="true"' : '' %>><%= F.periods[k] %></a><% }) %></p>
+    </div></div>
   <p class="muted" style="margin:0 0 10px"><small><%= new Date(F.range.from).toLocaleDateString('de-DE', { timeZone: 'UTC' }) %><%= F.range.from !== F.range.to ? ' – ' + new Date(F.range.to).toLocaleDateString('de-DE', { timeZone: 'UTC' }) : '' %> ·
     Ziele sind Monatsziele, <%= F.range.projectTo ? 'im laufenden Monat mit Hochrechnung aufs Monatsende' : 'anteilig für ' + F.range.days + ' ' + (F.range.days === 1 ? 'Tag' : 'Tage') + ' (Ziel × Tage / 30)' %>
-    <%= F.analytics === 'off' ? ' · Seitenaufrufe: Plausible nicht verbunden' : F.analytics === 'error' ? ' · Seitenaufrufe: Plausible nicht erreichbar' : ' · Seitenaufrufe aus Plausible' %></small></p>
+    <%= F.analytics === 'off' ? ' · Seitenaufrufe: Plausible nicht verbunden' : F.analytics === 'error' ? ' · Seitenaufrufe: Plausible nicht erreichbar' : ' · Seitenaufrufe aus Plausible' %>
+    · Partner-Klicks nach Herkunftsseite (ohne erkennbare Herkunft: <%= F.scopes[0].label %>)<%= F.rows.find(function (r) { return r.key === 'camp_requests'; }).value === null ? ' · Camp-Anfragen: auf dieser Seite kein Formular' : '' %></small></p>
   <div class="table-scroll"><table class="funnel-table">
     <tr><th>Stufe</th><th class="num">Ist</th><% if (F.range.projectTo) { %><th class="num">Hochrechnung</th><% } %><th class="num">Ziel</th><th>Zielerreichung</th><th class="num">von Vorstufe</th><th class="num">von allen Aufrufen</th></tr>
     <% F.rows.forEach(function (r) { var w = r.goalPct === null ? 0 : Math.min(100, r.goalPct); %>
@@ -42,7 +46,8 @@
   </table></div>
   <details style="margin-top:10px"><summary>Ziele bearbeiten <small class="muted">(pro Monat)</small></summary>
     <form method="post" action="/admin/funnel-ziele" class="filters" style="align-items:flex-end;margin-top:8px">
-      <input type="hidden" name="zeitraum" value="<%= F.range.key %>">
+      <input type="hidden" name="zeitraum" value="<%= F.range.key %>"><input type="hidden" name="seite" value="<%= F.scope %>">
+      <p class="muted" style="flex-basis:100%;margin:0"><small>Ziele für <strong><%= (F.scopes.find(function (s) { return s.key === F.scope; }) || {}).label %></strong></small></p>
       <% F.rows.forEach(function (r) { %><div style="min-width:150px"><label for="g-<%= r.key %>" style="margin-top:0"><%= r.label %></label>
         <input id="g-<%= r.key %>" name="goals[<%= r.key %>]" type="number" min="1" step="1" inputmode="numeric" value="<%= r.monthlyGoal || '' %>" placeholder="kein Ziel" style="width:120px"></div><% }) %>
       <button class="btn small" type="submit">Ziele speichern</button>

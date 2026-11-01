@@ -174,17 +174,18 @@ router.get('/', wrap(async (req, res) => {
   }
   const site = req.site || (await db.one('SELECT * FROM sites ORDER BY is_default DESC LIMIT 1'));
   const data = await require('../services/dashboard').load(site);
-  const funnel = data ? await require('../services/funnel').load(site, data.ranking, req.query.zeitraum) : null;
+  const funnel = data ? await require('../services/funnel').load(site, data.ranking, req.query.zeitraum, req.query.seite) : null;
   res.render('admin/dashboard', { title: 'Dashboard', d: data, funnel, plausibleKey: Boolean(config.plausibleApiKey), flash: req.query.ok || null });
 }));
 
 // Funnel-Ziele (je Monat) speichern
 router.post('/funnel-ziele', wrap(async (req, res) => {
   const site = req.site || (await db.one('SELECT * FROM sites ORDER BY is_default DESC LIMIT 1'));
-  const saved = await require('../services/funnel').saveGoals(site.id, req.body.goals || {});
-  await logAction(req.session.admin.id, 'site', site.id, 'set_funnel_goals', { goals: saved });
-  const period = require('../services/funnel').PERIODS[req.body.zeitraum] ? req.body.zeitraum : '30';
-  res.redirect(`/admin?zeitraum=${encodeURIComponent(period)}&ok=${encodeURIComponent('Ziele gespeichert')}#funnel`);
+  const funnel = require('../services/funnel');
+  const saved = await funnel.saveGoals(site.id, String(req.body.seite || ''), req.body.goals || {});
+  await logAction(req.session.admin.id, 'site', site.id, 'set_funnel_goals', saved);
+  const period = funnel.PERIODS[req.body.zeitraum] ? req.body.zeitraum : '30';
+  res.redirect(`/admin?zeitraum=${encodeURIComponent(period)}&seite=${encodeURIComponent(saved.scope)}&ok=${encodeURIComponent('Ziele gespeichert')}#funnel`);
 }));
 
 // Objekt-Liste: Status-Pillen, Ranking, Suche (Name, Ort, Website), Land, Region – alles kombinierbar.

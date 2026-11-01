@@ -845,6 +845,7 @@ a.kpi:hover { border-color: var(--accent); }
 .funnel { margin-bottom: 20px; }
 .funnel .page-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
 .funnel-table td, .funnel-table th { vertical-align: middle; }
+.funnel-switch { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
 .funnel-sub td:first-child { padding-left: 1.2em; }
 .funnel-bar { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: var(--border); vertical-align: middle; overflow: hidden; }
 .funnel-bar > span { display: block; height: 100%; background: var(--accent, var(--ok)); }
