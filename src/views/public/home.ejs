@@ -13,7 +13,7 @@
     <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
-  <div class="wrap hero-grid<%= about ? '' : ' single' %>">
+  <div class="wrap hero-grid home-hero<%= about ? '' : ' single' %>">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
@@ -29,7 +29,7 @@
           <div class="hf-field"><label for="hf-monat">Reisemonat</label>
             <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
           <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
-            <select id="hf-wetter" name="wetter"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
+            <select id="hf-wetter" name="wetter" title="Ø-Tageshöchstwert im gewählten Reisemonat (Open-Meteo)"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
         </div>
         <div class="hf-row hf-row-2">
           <details class="hf-more">
@@ -44,15 +44,12 @@
           <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
           <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
         </div>
-        <p class="hf-live" aria-live="polite" data-finder-live>Wetter gilt im gewählten Reisemonat (Ø-Tageshöchstwert, Open-Meteo). Sortiert wird nur nach <%= ranking.score_name %>.</p>
+        <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
       </form>
-      <div class="hero-actions">
-        <a class="btn cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
-      </div>
     </div>
     <% if (about) { %>
       <div class="score-card hero-about">
-        <p class="caption">Über <%= site.name %></p>
+        <h2 class="sr-only">Über <%= site.name %></h2>
         <div class="home-stats">
           <a href="<%= listHref %>"><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></a>
           <% if (regionGuide) { %><a href="/trainingsregionen"><strong><%= stats.regions %></strong><span>Trainingsregionen</span></a><% } %>

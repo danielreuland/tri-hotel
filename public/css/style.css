@@ -799,11 +799,17 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .home-band-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .home-mini-list .score { min-width: 44px; height: 44px; font-size: 1.6rem; border-radius: 10px; }
-.hero-about { display: grid; gap: 14px; align-self: center; }
-.hero-about .caption { color: var(--accent-strong); font-weight: 800; }
-.hero-about .home-stats div, .hero-about .home-stats a { background: var(--surface-2); border: 1px solid transparent; padding: 10px 12px; }
-.hero-about .home-stats strong { font-size: 2rem; }
-.hero-about .home-principles { font-size: .92rem; }
+/* Startseiten-Hero: Finder links und Kennzahlen rechts unten bündig, Kennzahlen als geteiltes Raster in einem Kasten */
+.home-hero { align-items: end; }
+.hero-about { display: grid; gap: 14px; padding: 16px 20px; }
+.hero-about .home-stats { gap: 0; }
+.hero-about .home-stats div, .hero-about .home-stats a { background: transparent; border: 0; border-radius: 0; padding: 12px 18px 12px 0; }
+.hero-about .home-stats a:hover, .hero-about .home-stats a:focus-visible { transform: none; color: var(--accent-strong); }
+.hero-about .home-stats > :nth-child(odd) { border-right: 1px solid var(--border); }
+.hero-about .home-stats > :nth-child(even) { padding-left: 18px; }
+.hero-about .home-stats > :nth-child(-n+2) { border-bottom: 1px solid var(--border); padding-top: 0; }
+.hero-about .home-stats strong { font-size: 2.2rem; }
+.hero-about .home-principles { font-size: .9rem; }
 
 /* Admin: Seitenkopf mit Aktionen, Dashboard */
 .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
@@ -852,7 +858,7 @@ a.kpi:hover { border-color: var(--accent); }
 .funnel-bar > span.reached { background: var(--ok); }
 
 /* Hotel-Finder im Hero (Startseite): kompakt, Ausstattung zum Aufklappen */
-.hero-finder { display: grid; gap: 10px; max-width: 640px; margin: 0 0 16px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.hero-finder { display: grid; gap: 10px; max-width: 640px; margin: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
 .hf-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; align-items: end; }
 .hf-row-2 { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
 .hf-field { display: grid; gap: 3px; min-width: 0; }
@@ -882,8 +888,10 @@ a.kpi:hover { border-color: var(--accent); }
   .hf-go { width: 100%; margin-left: 0; }
   /* Hero am Handy straffen: Kennzahlen in einer Reihe, Grundsätze stehen in der Methodik und im Fuß */
   .hero-about { gap: 8px; padding: 12px; }
-  .hero-about .home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .hero-about .home-stats a, .hero-about .home-stats div { padding: 8px 6px; }
+  .hero-about .home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hero-about .home-stats a, .hero-about .home-stats div { padding: 2px 6px; border-bottom: 0; }
+  .hero-about .home-stats > :not(:last-child) { border-right: 1px solid var(--border); }
+  .hero-about .home-stats > :nth-child(even) { padding-left: 6px; }
   .hero-about .home-stats strong { font-size: 1.45rem; }
   .hero-about .home-stats span { font-size: .68rem; line-height: 1.2; display: block; }
   .hero-about .home-principles { display: none; }

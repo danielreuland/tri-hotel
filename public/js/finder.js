@@ -9,7 +9,6 @@
   var more = form.querySelector('.hf-more');
   var noun = form.getAttribute('data-noun') || '';
   var nounSg = form.getAttribute('data-noun-sg') || noun;
-  var intro = live ? live.textContent : '';
   var timer = null;
   var seq = 0;
 
@@ -40,8 +39,9 @@
         if (mine !== seq) return;
         btn.textContent = d.count ? d.count + ' ' + (d.count === 1 ? nounSg : noun) + ' anzeigen' : 'Keine Treffer – Liste ansehen';
         if (!live) return;
-        if (![...p.keys()].length) live.textContent = intro;
-        else live.textContent = d.count
+        // Hinweiszeile nur, wenn etwas gewählt ist
+        live.hidden = ![...p.keys()].length;
+        live.textContent = d.count
           ? d.count + ' von ' + d.total + ' ' + noun + ' passen' + (d.incomplete ? ' (dazu ' + d.incomplete + ' mit unvollständigem Profil)' : '') + '.'
           : 'Nichts passt zu allen Wünschen – die Liste zeigt dir, welcher Filter wie viele ' + noun + ' zurückbringt.';
       })
