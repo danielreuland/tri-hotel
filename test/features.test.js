@@ -85,3 +85,15 @@ test('valueMatches: Mehrfachauswahl – jede gewählte Ausprägung zählt (z. B.
   assert.ok(lib.valueMatches(v, ['pool_50_hotel']));
   assert.ok(!lib.valueMatches(v, ['counter_current_hotel']));
 });
+
+test('applySearch: Text findet auch Region und Land (searchTerms), nicht nur Name und Ort', () => {
+  const list = [
+    { id: 'a', name: 'Zafiro Palace', city: 'Alcúdia', country: 'ES', searchTerms: ['Mallorca', 'Spanien'] },
+    { id: 'b', name: 'Robinson Club Cala Serena', city: 'Mallorca', country: 'ES' },
+    { id: 'c', name: 'Club La Santa', city: 'Tinajo', country: 'ES', searchTerms: ['Lanzarote', 'Spanien'] },
+  ];
+  const run = (q) => lib.applySearch(list, { q, country: null, minScore: null, features: [] }, new Map()).map((e) => e.id);
+  assert.deepEqual(run('mallorca'), ['a', 'b']);
+  assert.deepEqual(run('Spanien'), ['a', 'c']);
+  assert.deepEqual(run('alcudia'), ['a'], 'Akzente egal');
+});

@@ -78,7 +78,8 @@ function applySearch(list, search, featureSets, groups = new Map()) {
     wanted.set(key, [...(wanted.get(key) || []), c]);
   }
   return list.filter((e) => {
-    if (q && !normalize(`${e.name} ${e.city || ''}`).includes(q)) return false;
+    // Text: Name, Ort und weitere Suchbegriffe des Objekts (z. B. Region „Mallorca“, Land „Spanien“)
+    if (q && !normalize([e.name, e.city, ...(e.searchTerms || [])].filter(Boolean).join(' ')).includes(q)) return false;
     if (search.country && e.country !== search.country) return false;
     if (search.minScore && !(e.score >= search.minScore)) return false;
     if (wanted.size) {

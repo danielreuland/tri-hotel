@@ -68,6 +68,11 @@ async function renderList(req, res, ranking) {
 
   // Suche: Text, Land, Mindest-Score, Leistungen (nur filterbare Katalog-Einträge)
   const all = [...allRanked, ...allIncomplete];
+  // Textsuche findet auch Regionen (Umkreis wie auf den Regionsseiten) und Ländernamen – der Ort ist oft nur die Gemeinde
+  const regionList = req.site ? await areas.regions(req.site.id) : [];
+  for (const e of all) {
+    e.searchTerms = [...regionList.filter((r) => seo.inRegion(e, r)).map((r) => r.name), e.country ? seo.countryName(e.country) : null].filter(Boolean);
+  }
   const countries = [...new Set(all.map((e) => e.country).filter(Boolean))].sort();
   const filterFeatures = catalog.filter((f) => f.filterable);
   const search = featureLib.parseSearch(req.query, { countries, featureCodes: filterFeatures.map((f) => f.code) });
