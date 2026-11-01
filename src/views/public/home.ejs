@@ -13,7 +13,7 @@
     <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
-  <div class="wrap hero-grid home-hero<%= heroPick ? '' : ' single' %>">
+  <div class="wrap hero-grid home-hero<%= heroTop ? '' : ' single' %>">
     <div class="hero-claim">
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
@@ -56,27 +56,41 @@
         <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
       </form>
     </div>
-    <% if (heroPick) { var hp = heroPick.entity; %>
-      <a class="score-card hero-pick" href="<%= entityPath(hp) %>">
-        <span class="hp-photo">
-          <% if (hp.thumb) { %>
-            <img src="<%= hp.thumb.src %>" srcset="<%= hp.thumb.srcset %>" sizes="(max-width: 900px) 100vw, 460px" width="<%= hp.thumb.width %>" height="<%= hp.thumb.height %>"
-              alt="<%= hp.thumb.example ? '' : hp.name + (hp.city ? ', ' + hp.city : '') %>" fetchpriority="high"<% if (hp.thumb.focal) { %> style="object-position:<%= String(hp.thumb.focal).replace(/[^0-9% .a-z-]/gi, '') %>"<% } %>>
-            <% if (hp.thumb.example) { %><span class="thumb-badge" title="Symbolbild der Region <%= hp.thumb.example %>, kein Foto dieses <%= ranking.entity_label_sg %>s">Symbolbild</span><% } %>
-            <small class="thumb-credit"><%= hp.thumb.credit %></small>
-          <% } else { %><span class="thumb-empty" aria-hidden="true"><%= String(hp.name || '').trim().charAt(0).toUpperCase() %></span><% } %>
-        </span>
-        <span class="hp-body">
-          <span class="eyebrow">Top-<%= ranking.entity_label_sg %> des Tages · wechselt täglich</span>
-          <span class="hp-head">
-            <span><span class="hp-name"><%= hp.name %></span><small><%= hp.city %><%= hp.country ? ', ' + hp.country : '' %> · Platz <%= hp.rank %> · <%= hp.label %></small></span>
-            <span class="score"><%= hp.score %></span>
-          </span>
-          <% if (hp.features && hp.features.length) { %><span class="hp-feats"><%= hp.features.map(function (f) { return f.label; }).join(' · ') %></span><% } %>
-          <span class="hp-link">Zum <%= ranking.entity_label_sg %> und allen Fakten →</span>
-          <small class="hp-note">Täglich wechselnd unter allen <%= heroPick.candidates %> <%= ranking.entity_label_pl %> ab <%= ranking.score_name %> <%= heroMinScore %>, unabhängig von Partnerschaften.</small>
-        </span>
-      </a>
+    <% if (heroTop) { var HS = heroTop.slides; %>
+      <div class="hero-pick-slider" data-hero-slider data-interval="5000" data-start="<%= heroTop.start %>"
+           role="region" aria-roledescription="Karussell" aria-label="Top-<%= ranking.entity_label_pl %> ab <%= ranking.score_name %> <%= heroMinScore %>">
+        <div class="hs-track">
+          <% HS.forEach(function (hp, i) { var on = i === heroTop.start; %>
+            <a class="score-card hero-pick<%= on ? ' is-active' : '' %>" href="<%= entityPath(hp) %>" data-slide
+               role="group" aria-roledescription="Folie" aria-label="<%= i + 1 %> von <%= HS.length %>: <%= hp.name %>"<%- on ? '' : ' aria-hidden="true" tabindex="-1"' %>>
+              <span class="hp-photo">
+                <% if (hp.thumb) { %>
+                  <img src="<%= hp.thumb.src %>" srcset="<%= hp.thumb.srcset %>" sizes="(max-width: 860px) 100vw, 460px" width="<%= hp.thumb.width %>" height="<%= hp.thumb.height %>"
+                    alt="<%= hp.thumb.example ? '' : hp.name + (hp.city ? ', ' + hp.city : '') %>"<%- on ? ' fetchpriority="high"' : ' loading="lazy"' %><% if (hp.thumb.focal) { %> style="object-position:<%= String(hp.thumb.focal).replace(/[^0-9% .a-z-]/gi, '') %>"<% } %>>
+                  <% if (hp.thumb.example) { %><span class="thumb-badge" title="Symbolbild der Region <%= hp.thumb.example %>, kein Foto dieses <%= ranking.entity_label_sg %>s">Symbolbild</span><% } %>
+                  <small class="thumb-credit"><%= hp.thumb.credit %></small>
+                <% } else { %><span class="thumb-empty" aria-hidden="true"><%= String(hp.name || '').trim().charAt(0).toUpperCase() %></span><% } %>
+              </span>
+              <span class="hp-body">
+                <span class="eyebrow">Top-<%= ranking.entity_label_pl %> · Platz <%= hp.rank %></span>
+                <span class="hp-head">
+                  <span><span class="hp-name"><%= hp.name %></span><small><%= hp.city %><%= hp.country ? ', ' + hp.country : '' %> · <%= hp.label %></small></span>
+                  <span class="score"><%= hp.score %></span>
+                </span>
+                <% if (hp.features && hp.features.length) { %><span class="hp-feats"><%= hp.features.map(function (f) { return f.label; }).join(' · ') %></span><% } %>
+                <span class="hp-link">Zum <%= ranking.entity_label_sg %> und allen Fakten →</span>
+              </span>
+            </a>
+          <% }) %>
+        </div>
+        <div class="hs-controls">
+          <% if (HS.length > 1) { %>
+            <button type="button" class="hs-pause" data-slider-pause aria-label="Wechsel anhalten" hidden>❚❚</button>
+            <span class="hs-dots"><% HS.forEach(function (hp, i) { %><button type="button" class="hs-dot<%= i === heroTop.start ? ' is-active' : '' %>" data-slider-dot="<%= i %>" aria-label="<%= hp.name %> zeigen"<%- i === heroTop.start ? ' aria-current="true"' : '' %>></button><% }) %></span>
+          <% } %>
+          <small class="hp-note">Alle <%= HS.length %> <%= ranking.entity_label_pl %> ab <%= ranking.score_name %> <%= heroMinScore %> im Wechsel, nach Score sortiert, unabhängig von Partnerschaften.</small>
+        </div>
+      </div>
     <% } %>
   </div>
 </section>

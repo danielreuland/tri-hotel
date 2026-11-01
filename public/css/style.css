@@ -803,7 +803,19 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .home-hero { align-items: center; padding-block: 48px 40px; grid-template-areas: "claim pick" "finder finder"; row-gap: 28px; }
 .home-hero.single { grid-template-areas: "claim" "finder"; }
 .home-hero .hero-claim { grid-area: claim; }
-.home-hero .hero-pick { grid-area: pick; }
+.home-hero .hero-pick-slider { grid-area: pick; min-width: 0; }
+/* Slider: alle Folien in derselben Zelle (Höhe = höchste Folie), Wechsel per Überblendung */
+.hs-track { display: grid; }
+.hs-track > .hero-pick { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s, border-color .15s, transform .15s; }
+.hs-track > .hero-pick.is-active { opacity: 1; visibility: visible; transition: opacity .6s ease, visibility 0s, border-color .15s, transform .15s; }
+.hs-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; }
+.hs-dots { display: flex; gap: 6px; }
+.hs-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+.hs-dot.is-active { background: var(--primary); border-color: var(--primary); }
+.hs-dot:focus-visible, .hs-pause:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.hs-pause { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--heading); font-size: .62rem; cursor: pointer; }
+.hs-controls .hp-note { flex-basis: 100%; }
+@media (prefers-reduced-motion: reduce) { .hs-track > .hero-pick, .hs-track > .hero-pick.is-active { transition: none; } }
 .home-hero .hero-finder-cell { grid-area: finder; min-width: 0; }
 /* Handy und schmale Fenster: Finder direkt nach dem Claim, Top-Objekt danach */
 @media (max-width: 860px) { .home-hero { grid-template-areas: "claim" "finder" "pick"; row-gap: 20px; } }
