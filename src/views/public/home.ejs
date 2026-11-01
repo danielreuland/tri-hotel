@@ -20,14 +20,34 @@
         <% if (hl) { var i = title.indexOf(hl); %><%= title.slice(0, i) %><em><%= hl %></em><%= title.slice(i + hl.length) %><% } else { %><%= title %><% } %>
       </h1>
       <p class="hero-text"><%= content.hero_text || ranking.description || '' %></p>
-      <form class="hero-search" method="get" action="<%= listHref %>" role="search">
-        <label for="hero-q" class="sr-only"><%= ranking.entity_label_sg %> oder Ort suchen</label>
-        <input id="hero-q" type="search" name="q" placeholder="<%= ranking.entity_label_sg %> oder Ort suchen, z. B. Mallorca">
-        <button class="btn" type="submit">Suchen</button>
+      <% var FD = finder; %>
+      <form class="hero-finder" method="get" action="<%= listHref %>#ranking" role="search" aria-label="<%= ranking.entity_label_sg %>-Finder"
+            data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
+        <div class="hf-row">
+          <div class="hf-field hf-q"><label for="hf-q"><%= ranking.entity_label_sg %> oder Ort</label>
+            <input id="hf-q" type="search" name="q" placeholder="z. B. Mallorca"></div>
+          <div class="hf-field"><label for="hf-monat">Reisemonat</label>
+            <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
+          <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
+            <select id="hf-wetter" name="wetter"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
+        </div>
+        <div class="hf-row hf-row-2">
+          <details class="hf-more">
+            <summary>Ausstattung<span class="hf-n" data-finder-n></span></summary>
+            <div class="hf-pop">
+              <% FD.groups.forEach(function (g) { %>
+                <div class="hf-group"><span><%= g.label %></span>
+                  <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
+              <% }) %>
+            </div>
+          </details>
+          <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
+          <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
+        </div>
+        <p class="hf-live" aria-live="polite" data-finder-live>Wetter gilt im gewählten Reisemonat (Ø-Tageshöchstwert, Open-Meteo). Sortiert wird nur nach <%= ranking.score_name %>.</p>
       </form>
       <div class="hero-actions">
-        <a class="btn large secondary" href="<%= listHref %>">Zur <%= ranking.entity_label_sg %>auswahl</a>
-        <a class="btn large cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
+        <a class="btn cta" href="/<%= ranking.entity_type %>-hinzufuegen"><%= ranking.entity_label_sg %> hinzufügen</a>
       </div>
     </div>
     <% if (about) { %>
@@ -49,52 +69,6 @@
   </div>
 </section>
 
-<% if (finder && finder.total) { var FD = finder; %>
-<section class="home-band alt finder-band" id="finder" aria-labelledby="finder-title">
-  <div class="wrap">
-    <p class="eyebrow"><%= ranking.entity_label_sg %>-Finder</p>
-    <h2 id="finder-title">Finde dein <%= ranking.entity_label_sg %> fürs Trainingslager</h2>
-    <p class="finder-intro">Wähle, was dir wichtig ist. Die Reihenfolge bleibt der <%= ranking.score_name %> – Partner und Werbung ändern daran nichts.</p>
-    <form class="card finder" method="get" action="<%= listHref %>#ranking" data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
-      <fieldset>
-        <legend><span class="finder-step">1</span> Wann willst du reisen?</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="monat" value="" checked> <span>flexibel</span></label>
-          <% FD.MONTHS.forEach(function (m, i) { %><label class="chip"><input type="radio" name="monat" value="<%= i + 1 %>"> <span><%= m %></span></label><% }) %>
-        </div>
-      </fieldset>
-      <fieldset data-needs-month>
-        <legend><span class="finder-step">2</span> Wunschwetter im Reisemonat</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="wetter" value="" checked> <span>egal</span></label>
-          <% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><label class="chip"><input type="radio" name="wetter" value="<%= k %>"> <span><%= w.label %> <small class="muted"><%= w.hint %></small></span></label><% }) %>
-          <label class="chip"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
-        </div>
-        <p class="hint" data-month-hint>Ohne Reisemonat zählt das Wetter nicht – wähle oben einen Monat. Grundlage: Ø-Tageshöchstwert und Regentage der letzten Jahre (Open-Meteo).</p>
-      </fieldset>
-      <fieldset>
-        <legend><span class="finder-step">3</span> Was ist dir wichtig?</legend>
-        <% FD.groups.forEach(function (g) { %>
-          <div class="finder-group"><span class="finder-group-label"><%= g.label %></span>
-            <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
-        <% }) %>
-      </fieldset>
-      <div class="finder-foot">
-        <div class="search-field">
-          <label for="finder-land">Land <small class="muted">optional</small></label>
-          <select id="finder-land" name="land">
-            <option value="">alle Länder</option>
-            <% FD.countries.forEach(function (c) { var n = COUNTRIES.find(function (x) { return x[0] === c }); %><option value="<%= c %>"><%= n ? n[1] : c %></option><% }) %>
-          </select>
-        </div>
-        <button class="btn large" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
-        <p class="finder-live muted" aria-live="polite" data-finder-live></p>
-      </div>
-    </form>
-  </div>
-</section>
-<% } %>
-
 <% bands.forEach(function (b, idx) { var alt = idx % 2 === 1; %>
 <section class="home-band<%= alt ? ' alt' : '' %>" id="<%= { entities: 'bestenliste', camps: 'camps', regions: 'regionen' }[b.key] %>">
   <div class="wrap home-band-grid">
@@ -105,9 +79,9 @@
       <h2>Die besten <%= ranking.entity_label_pl %></h2>
       <p>Sortiert nur nach <%= ranking.score_name %>. Im Ranking findest du alle <%= b.count %> geprüften <%= ranking.entity_label_pl %> mit Filtern nach Land, Reisemonat und Leistungen.</p>
       <p><a class="btn" href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a></p>
-      <% if (b.others.length) { %>
+      <% if (b.top.length) { %>
         <ol class="home-mini-list">
-          <% b.others.slice(0, 3).forEach(function (e) { %>
+          <% b.top.slice(0, 3).forEach(function (e) { %>
             <li><a href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="nm"><%= e.name %><small><%= e.city %></small></span><span class="score"><%= e.score %></span></a></li>
           <% }) %>
         </ol>
@@ -116,7 +90,7 @@
     <div class="home-band-side">
       <% if (b.featured) { var f = b.featured; %>
         <a class="score-card home-feature" href="<%= entityPath(f.entity) %>">
-          <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion · Platz ' + f.entity.rank : 'Platz 1 im Ranking' %></p>
+          <p class="caption"><%= b.reason === 'editorial' ? 'Tipp der Redaktion · Platz ' + f.entity.rank : 'Platz 1 im Detail' %> · so setzt sich der <%= ranking.score_name %> zusammen</p>
           <div class="head">
             <div>
               <div class="name"><%= f.entity.name %></div>
@@ -138,7 +112,8 @@
       <p class="eyebrow">Trainingscamps</p>
       <h2>Camp-Anbieter</h2>
       <p>Organisierte Trainingslager mit Coach, als Gruppenreise oder im Sportresort. Alle <%= b.count %> Anbieter stehen neutral und alphabetisch in der Übersicht, mit Leistungen, Zielen und Preisen.</p>
-      <p><a class="btn" href="/trainingscamp#anbieter">Alle Camp-Anbieter</a></p>
+      <p class="btn-row"><a class="btn" href="/trainingscamp#anbieter">Alle Camp-Anbieter</a> <a class="btn secondary" href="/trainingscamp/angebote">Camp-Angebote anfragen</a></p>
+      <p class="muted" style="margin-top:-6px"><small>Für Einzelne, Freunde und Vereine: einmal Wünsche angeben, passende Anbieter antworten direkt.</small></p>
       <div class="chips">
         <% b.others.slice(0, 8).forEach(function (o) { %><a class="chip" href="/trainingscamp/anbieter/<%= o.slug %>"><%= o.name %></a><% }) %>
       </div>

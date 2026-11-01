@@ -851,18 +851,41 @@ a.kpi:hover { border-color: var(--accent); }
 .funnel-bar > span { display: block; height: 100%; background: var(--accent, var(--ok)); }
 .funnel-bar > span.reached { background: var(--ok); }
 
-/* Hotel-Finder (Startseite) */
-.finder-intro { max-width: 60ch; }
-.finder { display: grid; gap: 18px; margin-top: 16px; }
-.finder fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
-.finder legend { font-weight: 700; padding: 0; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
-.finder-step { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--primary); color: var(--surface); font-size: .85rem; }
-.finder .chip input[type="radio"] { accent-color: var(--primary); }
-.finder fieldset[disabled] .chips { opacity: .55; }
-.finder-group { display: grid; grid-template-columns: minmax(110px, 140px) 1fr; gap: 4px 12px; align-items: start; margin-top: 6px; }
-.finder-group .chips { margin-top: 0; }
-.finder-group-label { font-size: .9rem; color: var(--muted); padding-top: 6px; }
-.finder-foot { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; border-top: 1px solid var(--border); padding-top: 14px; }
-.finder-foot .search-field { min-width: 200px; }
-.finder-live { margin: 0; flex-basis: 100%; }
-@media (max-width: 560px) { .finder-group { grid-template-columns: 1fr; } .finder-foot .btn { width: 100%; } }
+/* Hotel-Finder im Hero (Startseite): kompakt, Ausstattung zum Aufklappen */
+.hero-finder { display: grid; gap: 10px; max-width: 640px; margin: 0 0 16px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.hf-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; align-items: end; }
+.hf-row-2 { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.hf-field { display: grid; gap: 3px; min-width: 0; }
+.hf-field label { margin: 0; font-size: .8rem; font-weight: 700; color: var(--muted); }
+.hf-field input, .hf-field select { width: 100%; min-width: 0; padding: 9px 12px; }
+.hf-field select:disabled { opacity: .55; }
+.hf-more { position: relative; }
+.hf-more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; font-weight: 700; background: var(--surface); }
+.hf-more > summary::-webkit-details-marker { display: none; }
+.hf-more > summary::after { content: "▾"; font-size: .8em; color: var(--muted); }
+.hf-more[open] > summary { border-color: var(--primary); }
+.hf-n:not(:empty) { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; padding: 0 4px; border-radius: 999px; background: var(--primary); color: var(--primary-text); font-size: .75rem; }
+.hf-pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(560px, calc(100vw - 48px)); max-height: 60vh; overflow: auto; display: grid; gap: 8px;
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.hf-group { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; align-items: start; }
+.hf-group > span { font-size: .82rem; color: var(--muted); padding-top: 5px; }
+.hf-group .chips { margin-top: 0; }
+.hf-rain:has(input:disabled) { opacity: .5; }
+.hf-go { margin-left: auto; }
+.hf-live { margin: 0; font-size: .82rem; color: var(--muted); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 640px) {
+  .hf-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .hf-q { grid-column: 1 / -1; }
+  .hf-pop { position: static; width: auto; max-height: none; box-shadow: none; margin-top: 6px; }
+  .hf-group { grid-template-columns: 1fr; }
+  .hf-go { width: 100%; margin-left: 0; }
+  /* Hero am Handy straffen: Kennzahlen in einer Reihe, Grundsätze stehen in der Methodik und im Fuß */
+  .hero-about { gap: 8px; padding: 12px; }
+  .hero-about .home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .hero-about .home-stats a, .hero-about .home-stats div { padding: 8px 6px; }
+  .hero-about .home-stats strong { font-size: 1.45rem; }
+  .hero-about .home-stats span { font-size: .68rem; line-height: 1.2; display: block; }
+  .hero-about .home-principles { display: none; }
+  .hero-text { font-size: 1rem; }
+}

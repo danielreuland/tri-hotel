@@ -83,6 +83,7 @@ async function entitiesBlock(ranking, pick) {
   return {
     featured: card, reason,
     others: ranked.filter((e) => !featured || e.id !== featured.id).slice(0, 4),
+    top: ranked.slice(0, 4), // Bestenliste auf der Startseite: immer ab Platz 1
     count: ranked.length + incomplete.length,
     rankedCount: ranked.length,
   };
