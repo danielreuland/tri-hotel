@@ -18,6 +18,39 @@
   <div class="kpi"><strong><%= v ? n(v.week.pageviews) : '–' %></strong><span>Seitenaufrufe 7 Tage</span><small><%= v ? n(v.week.visitors) + ' Besucher' : (d.visits && d.visits.error ? 'Plausible nicht erreichbar' : 'Plausible nicht verbunden') %></small></div>
 </section>
 
+<% if (typeof flash !== 'undefined' && flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (funnel) { var F = funnel; var pc = function (x) { return x === null ? '–' : String(x).replace('.', ',') + ' %'; }; %>
+<section class="card funnel" id="funnel" aria-label="Funnel">
+  <div class="page-head" style="margin:0 0 8px"><h2 style="margin:0">Funnel</h2>
+    <p class="pill-row" style="margin:0"><% Object.keys(F.periods).forEach(function (k) { %><a class="badge <%= F.range.key === k ? 'good' : '' %>" href="/admin?zeitraum=<%= k %>#funnel" <%= F.range.key === k ? 'aria-current="true"' : '' %>><%= F.periods[k] %></a><% }) %></p></div>
+  <p class="muted" style="margin:0 0 10px"><small><%= new Date(F.range.from).toLocaleDateString('de-DE', { timeZone: 'UTC' }) %><%= F.range.from !== F.range.to ? ' – ' + new Date(F.range.to).toLocaleDateString('de-DE', { timeZone: 'UTC' }) : '' %> ·
+    Ziele sind Monatsziele, <%= F.range.projectTo ? 'im laufenden Monat mit Hochrechnung aufs Monatsende' : 'anteilig für ' + F.range.days + ' ' + (F.range.days === 1 ? 'Tag' : 'Tage') + ' (Ziel × Tage / 30)' %>
+    <%= F.analytics === 'off' ? ' · Seitenaufrufe: Plausible nicht verbunden' : F.analytics === 'error' ? ' · Seitenaufrufe: Plausible nicht erreichbar' : ' · Seitenaufrufe aus Plausible' %></small></p>
+  <div class="table-scroll"><table class="funnel-table">
+    <tr><th>Stufe</th><th class="num">Ist</th><% if (F.range.projectTo) { %><th class="num">Hochrechnung</th><% } %><th class="num">Ziel</th><th>Zielerreichung</th><th class="num">von Vorstufe</th><th class="num">von allen Aufrufen</th></tr>
+    <% F.rows.forEach(function (r) { var w = r.goalPct === null ? 0 : Math.min(100, r.goalPct); %>
+      <tr class="<%= r.parent && r.parent !== 'pageviews' ? 'funnel-sub' : '' %>">
+        <td><%= r.parent && r.parent !== 'pageviews' ? '↳ ' : '' %><%= r.label %></td>
+        <td class="num"><strong><%= r.value === null ? '–' : n(r.value) %></strong></td>
+        <% if (F.range.projectTo) { %><td class="num"><%= r.projection === null ? '–' : n(r.projection) %></td><% } %>
+        <td class="num"><%= r.goal === null ? '–' : n(r.goal) %></td>
+        <td style="min-width:140px"><% if (r.goalPct !== null) { %><span class="funnel-bar" title="<%= pc(r.goalPct) %>"><span style="width:<%= w %>%" class="<%= r.goalPct >= 100 ? 'reached' : '' %>"></span></span> <small><%= pc(r.goalPct) %></small><% } else { %><small class="muted">kein Ziel</small><% } %></td>
+        <td class="num"><%= r.parent ? pc(r.ofParent) : '' %><% if (r.parent) { %><br><small class="muted">von <%= r.parentLabel %></small><% } %></td>
+        <td class="num"><%= pc(r.ofTop) %></td>
+      </tr>
+    <% }) %>
+  </table></div>
+  <details style="margin-top:10px"><summary>Ziele bearbeiten <small class="muted">(pro Monat)</small></summary>
+    <form method="post" action="/admin/funnel-ziele" class="filters" style="align-items:flex-end;margin-top:8px">
+      <input type="hidden" name="zeitraum" value="<%= F.range.key %>">
+      <% F.rows.forEach(function (r) { %><div style="min-width:150px"><label for="g-<%= r.key %>" style="margin-top:0"><%= r.label %></label>
+        <input id="g-<%= r.key %>" name="goals[<%= r.key %>]" type="number" min="1" step="1" inputmode="numeric" value="<%= r.monthlyGoal || '' %>" placeholder="kein Ziel" style="width:120px"></div><% }) %>
+      <button class="btn small" type="submit">Ziele speichern</button>
+    </form>
+  </details>
+</section>
+<% } %>
+
 <div class="dash-grid">
   <section class="card">
     <h2><%= label %></h2>

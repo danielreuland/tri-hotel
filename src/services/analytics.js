@@ -41,4 +41,25 @@ async function overview(domain) {
   }
 }
 
-module.exports = { overview };
+// Seitenaufrufe im Zeitraum (YYYY-MM-DD bis YYYY-MM-DD, je einschließlich), gesamt und je Seitengruppe.
+// groups: { name: 'event:page==/hotel/**' } (Plausible-Filter). Ergebnis: { total, groups: { name: n } }, null oder { error: true }
+async function pageviews(domain, from, to, groups = {}) {
+  if (!config.plausibleApiKey || !apiBase() || !domain) return null;
+  const key = `pv:${domain}:${from}:${to}:${JSON.stringify(groups)}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
+  try {
+    const base = { site_id: domain, period: 'custom', date: `${from},${to}`, metrics: 'pageviews' };
+    const entries = Object.entries(groups);
+    const [total, ...parts] = await Promise.all([get('aggregate', base), ...entries.map(([, filters]) => get('aggregate', { ...base, filters }))]);
+    const val = (r) => Number(r.pageviews && typeof r.pageviews === 'object' ? r.pageviews.value : r.pageviews) || 0;
+    const data = { total: val(total), groups: Object.fromEntries(entries.map(([k], i) => [k, val(parts[i])])) };
+    cache.set(key, { at: Date.now(), data });
+    return data;
+  } catch (err) {
+    console.error('[analytics]', err.message);
+    return { error: true };
+  }
+}
+
+module.exports = { overview, pageviews };

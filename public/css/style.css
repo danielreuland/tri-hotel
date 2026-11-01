@@ -840,3 +840,12 @@ a.kpi:hover { border-color: var(--accent); }
 .day-bar i { display: block; width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; }
 .day-bar:hover i { background: var(--accent-strong); }
 .day-bars-axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+/* Dashboard-Funnel */
+.funnel { margin-bottom: 20px; }
+.funnel .page-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.funnel-table td, .funnel-table th { vertical-align: middle; }
+.funnel-sub td:first-child { padding-left: 1.2em; }
+.funnel-bar { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: var(--border); vertical-align: middle; overflow: hidden; }
+.funnel-bar > span { display: block; height: 100%; background: var(--accent, var(--ok)); }
+.funnel-bar > span.reached { background: var(--ok); }
