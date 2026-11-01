@@ -185,6 +185,8 @@ async function renderHome(req, res, ranking) {
   const siteUrl = res.locals.siteUrl;
   const listHref = seo.listPath(ranking);
   const ent = blocks.find((b) => b.key === 'entities');
+  // Kopfbereich: Top-Objekt des Tages (nicht das Objekt, das die Bestenliste schon im Detail zeigt)
+  const pick = home.heroPick(found.allRanked, ent && ent.featured ? ent.featured.entity.id : null);
   const top = ent ? [ent.featured && ent.featured.entity, ...ent.others].filter(Boolean) : [];
   res.render('public/home', {
     title: content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name),
@@ -196,7 +198,7 @@ async function renderHome(req, res, ranking) {
       ...(top.length ? [seo.itemListLd(ranking.name, top.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
     ],
     fullWidth: true,
-    ranking, content, blocks, stats, listHref, finder: finderData, scripts: ['/static/js/finder.js'],
+    ranking, content, blocks, stats, listHref, finder: finderData, heroPick: pick, heroMinScore: home.HERO_MIN_SCORE, scripts: ['/static/js/finder.js'],
     formula: Object.assign({ min_completeness: 70, recheck_months: 18 }, ranking.formula || {}),
     entityPath: (e) => entityPath(ranking, e),
   });

@@ -7,62 +7,77 @@
 %>
 
 <% var about = blocks.find(function (b) { return b.key === 'about'; }); var bands = blocks.filter(function (b) { return b.key !== 'about'; }); %>
-<%# Kopfbereich = Bereich „Über die Seite“: Claim, Suche, Aktionen und (falls sichtbar) Kennzahlen und Grundsätze %>
+<%# Kopfbereich: Claim, Kennzahlen (Bereich „Über die Seite“), Top-Objekt des Tages und darunter der Finder über die volle Breite %>
 <section class="hero-band<%= heroImg ? ' has-photo' : '' %>" id="ueber">
   <% if (heroImg) { %>
     <img class="band-photo" <%- imgAttrs(heroImg) %> sizes="100vw" alt="" fetchpriority="high">
     <small class="photo-credit"><%= heroImg.credit %></small>
   <% } %>
-  <div class="wrap hero-grid home-hero<%= about ? '' : ' single' %>">
+  <div class="wrap hero-grid home-hero<%= heroPick ? '' : ' single' %>">
     <div>
       <% if (content.hero_eyebrow) { %><p class="eyebrow"><%= content.hero_eyebrow %></p><% } %>
       <h1 class="hero-title">
         <% if (hl) { var i = title.indexOf(hl); %><%= title.slice(0, i) %><em><%= hl %></em><%= title.slice(i + hl.length) %><% } else { %><%= title %><% } %>
       </h1>
       <p class="hero-text"><%= content.hero_text || ranking.description || '' %></p>
-      <% var FD = finder; %>
-      <form class="hero-finder" method="get" action="<%= listHref %>#ranking" role="search" aria-label="<%= ranking.entity_label_sg %>-Finder"
-            data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
-        <div class="hf-row">
-          <div class="hf-field hf-q"><label for="hf-q"><%= ranking.entity_label_sg %> oder Ort</label>
-            <input id="hf-q" type="search" name="q" placeholder="z. B. Mallorca"></div>
-          <div class="hf-field"><label for="hf-monat">Reisemonat</label>
-            <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
-          <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
-            <select id="hf-wetter" name="wetter" title="Ø-Tageshöchstwert im gewählten Reisemonat (Open-Meteo)"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
-        </div>
-        <div class="hf-row hf-row-2">
-          <details class="hf-more">
-            <summary>Ausstattung<span class="hf-n" data-finder-n></span></summary>
-            <div class="hf-pop">
-              <% FD.groups.forEach(function (g) { %>
-                <div class="hf-group"><span><%= g.label %></span>
-                  <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
-              <% }) %>
-            </div>
-          </details>
-          <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
-          <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
-        </div>
-        <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
-      </form>
+      <% if (about) { %>
+        <p class="hero-stats">
+          <a href="<%= listHref %>"><strong><%= stats.entities %></strong> geprüfte <%= ranking.entity_label_pl %></a>
+          <% if (regionGuide) { %><a href="/trainingsregionen"><strong><%= stats.regions %></strong> Trainingsregionen</a><% } %>
+          <% if (campGuide) { %><a href="/trainingscamp#anbieter"><strong><%= stats.camps %></strong> Camp-Anbieter</a><% } %>
+          <a href="<%= scorePath %>"><strong><%= stats.criteria %></strong> Kriterien im <%= ranking.score_name %></a>
+          <a href="<%= scorePath %>" class="hero-neutral">Partner ändern weder Score noch Reihenfolge</a>
+        </p>
+      <% } %>
     </div>
-    <% if (about) { %>
-      <div class="score-card hero-about">
-        <h2 class="sr-only">Über <%= site.name %></h2>
-        <div class="home-stats">
-          <a href="<%= listHref %>"><strong><%= stats.entities %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></a>
-          <% if (regionGuide) { %><a href="/trainingsregionen"><strong><%= stats.regions %></strong><span>Trainingsregionen</span></a><% } %>
-          <% if (campGuide) { %><a href="/trainingscamp#anbieter"><strong><%= stats.camps %></strong><span>Camp-Anbieter</span></a><% } %>
-          <a href="<%= scorePath %>"><strong><%= stats.criteria %></strong><span>Kriterien im <%= ranking.score_name %></span></a>
-        </div>
-        <ul class="home-principles">
-          <li><strong>Neutral.</strong> Werbung und Partnerschaften ändern weder Score noch Reihenfolge.</li>
-          <li><strong>Transparent.</strong> Jeder Wert mit Quelle und Prüfdatum.</li>
-          <li><strong>Aktuell.</strong> Werte älter als <%= formula.recheck_months %> Monate werden neu geprüft.</li>
-        </ul>
-      </div>
+    <% if (heroPick) { var hp = heroPick.entity; %>
+      <a class="score-card hero-pick" href="<%= entityPath(hp) %>">
+        <span class="hp-photo">
+          <% if (hp.thumb) { %>
+            <img src="<%= hp.thumb.src %>" srcset="<%= hp.thumb.srcset %>" sizes="(max-width: 900px) 100vw, 460px" width="<%= hp.thumb.width %>" height="<%= hp.thumb.height %>"
+              alt="<%= hp.thumb.example ? '' : hp.name + (hp.city ? ', ' + hp.city : '') %>" fetchpriority="high"<% if (hp.thumb.focal) { %> style="object-position:<%= String(hp.thumb.focal).replace(/[^0-9% .a-z-]/gi, '') %>"<% } %>>
+            <% if (hp.thumb.example) { %><span class="thumb-badge" title="Symbolbild der Region <%= hp.thumb.example %>, kein Foto dieses <%= ranking.entity_label_sg %>s">Symbolbild</span><% } %>
+            <small class="thumb-credit"><%= hp.thumb.credit %></small>
+          <% } else { %><span class="thumb-empty" aria-hidden="true"><%= String(hp.name || '').trim().charAt(0).toUpperCase() %></span><% } %>
+        </span>
+        <span class="hp-body">
+          <span class="eyebrow">Top-<%= ranking.entity_label_sg %> des Tages · wechselt täglich</span>
+          <span class="hp-head">
+            <span><span class="hp-name"><%= hp.name %></span><small><%= hp.city %><%= hp.country ? ', ' + hp.country : '' %> · Platz <%= hp.rank %> · <%= hp.label %></small></span>
+            <span class="score"><%= hp.score %></span>
+          </span>
+          <% if (hp.features && hp.features.length) { %><span class="hp-feats"><%= hp.features.map(function (f) { return f.label; }).join(' · ') %></span><% } %>
+          <span class="hp-link">Zum <%= ranking.entity_label_sg %> und allen Fakten →</span>
+          <small class="hp-note">Täglich wechselnd unter allen <%= heroPick.candidates %> <%= ranking.entity_label_pl %> ab <%= ranking.score_name %> <%= heroMinScore %>, unabhängig von Partnerschaften.</small>
+        </span>
+      </a>
     <% } %>
+  </div>
+  <% var FD = finder; %>
+  <div class="wrap hero-finder-wrap">
+    <form class="hero-finder" method="get" action="<%= listHref %>#ranking" role="search" aria-label="<%= ranking.entity_label_sg %>-Finder"
+          data-finder data-count-url="/finder/treffer" data-noun="<%= ranking.entity_label_pl %>" data-noun-sg="<%= ranking.entity_label_sg %>">
+      <div class="hf-line">
+        <div class="hf-field hf-q"><label for="hf-q"><%= ranking.entity_label_sg %> oder Ort</label>
+          <input id="hf-q" type="search" name="q" placeholder="z. B. Mallorca"></div>
+        <div class="hf-field"><label for="hf-monat">Reisemonat</label>
+          <select id="hf-monat" name="monat"><option value="">flexibel</option><% FD.MONTHS.forEach(function (m, i) { %><option value="<%= i + 1 %>"><%= m %></option><% }) %></select></div>
+        <div class="hf-field"><label for="hf-wetter">Wetter im Monat</label>
+          <select id="hf-wetter" name="wetter" title="Ø-Tageshöchstwert im gewählten Reisemonat (Open-Meteo)"><option value="">egal</option><% Object.keys(FD.WEATHER).forEach(function (k) { var w = FD.WEATHER[k]; %><option value="<%= k %>"><%= w.label %> (<%= w.hint %>)</option><% }) %></select></div>
+        <details class="hf-more">
+          <summary>Ausstattung<span class="hf-n" data-finder-n></span></summary>
+          <div class="hf-pop">
+            <% FD.groups.forEach(function (g) { %>
+              <div class="hf-group"><span><%= g.label %></span>
+                <div class="chips"><% g.items.forEach(function (f) { %><label class="chip"><input type="checkbox" name="l" value="<%= f.code %>"> <span><%= f.label %></span></label><% }) %></div></div>
+            <% }) %>
+          </div>
+        </details>
+        <label class="chip hf-rain"><input type="checkbox" name="regen" value="1"> <span>wenig Regen</span></label>
+        <button class="btn hf-go" type="submit" data-finder-submit><%= FD.total %> <%= ranking.entity_label_pl %> anzeigen</button>
+      </div>
+      <p class="hf-live" aria-live="polite" data-finder-live hidden></p>
+    </form>
   </div>
 </section>
 

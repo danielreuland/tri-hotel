@@ -799,17 +799,28 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
   .home-band-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .home-mini-list .score { min-width: 44px; height: 44px; font-size: 1.6rem; border-radius: 10px; }
-/* Startseiten-Hero: Finder links und Kennzahlen rechts unten bündig, Kennzahlen als geteiltes Raster in einem Kasten */
-.home-hero { align-items: end; }
-.hero-about { display: grid; gap: 14px; padding: 16px 20px; }
-.hero-about .home-stats { gap: 0; }
-.hero-about .home-stats div, .hero-about .home-stats a { background: transparent; border: 0; border-radius: 0; padding: 12px 18px 12px 0; }
-.hero-about .home-stats a:hover, .hero-about .home-stats a:focus-visible { transform: none; color: var(--accent-strong); }
-.hero-about .home-stats > :nth-child(odd) { border-right: 1px solid var(--border); }
-.hero-about .home-stats > :nth-child(even) { padding-left: 18px; }
-.hero-about .home-stats > :nth-child(-n+2) { border-bottom: 1px solid var(--border); padding-top: 0; }
-.hero-about .home-stats strong { font-size: 2.2rem; }
-.hero-about .home-principles { font-size: .9rem; }
+/* Startseiten-Hero: Claim mit Kennzahlen-Zeile links, Top-Objekt des Tages rechts, Finder darunter über die volle Breite */
+.home-hero { align-items: center; padding-block: 48px 28px; }
+.hero-stats { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: .92rem; }
+.hero-stats a { color: var(--muted); text-decoration: none; }
+.hero-stats a:hover, .hero-stats a:focus-visible { color: var(--accent-strong); }
+.hero-stats strong { color: var(--heading); font-weight: 800; }
+.hero-stats .hero-neutral { flex-basis: 100%; }
+.hero-pick { display: grid; padding: 0; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.hero-pick:hover, .hero-pick:focus-visible { border-color: var(--accent-strong); transform: translateY(-2px); }
+.hp-photo { position: relative; display: block; aspect-ratio: 16 / 8; max-width: 100%; background: var(--surface-2); }
+.hp-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hp-photo .thumb-badge { position: absolute; left: 10px; top: 10px; padding: 2px 8px; border-radius: 4px; font-size: .7rem; font-weight: 800; color: #102a43; background: rgba(255, 255, 255, .92); }
+.hp-photo .thumb-credit { position: absolute; right: 8px; bottom: 6px; padding: 1px 6px; border-radius: 4px; font-size: .65rem; color: #fff; background: rgba(0, 0, 0, .55); }
+.hp-photo .thumb-empty { display: grid; place-items: center; height: 100%; font: 400 3rem var(--head); color: var(--muted); }
+.hp-body { display: grid; gap: 8px; padding: 14px 18px 16px; }
+.hp-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.hp-head small { display: block; color: var(--muted); }
+.hp-name { display: block; font-weight: 800; font-size: 1.25rem; color: var(--heading); }
+.hp-feats { font-size: .88rem; }
+.hp-link { font-weight: 800; color: var(--accent-strong); }
+.hp-note { font-size: .74rem; color: var(--muted); }
+.hero-finder-wrap { padding-bottom: 40px; }
 
 /* Admin: Seitenkopf mit Aktionen, Dashboard */
 .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
@@ -857,43 +868,43 @@ a.kpi:hover { border-color: var(--accent); }
 .funnel-bar > span { display: block; height: 100%; background: var(--accent, var(--ok)); }
 .funnel-bar > span.reached { background: var(--ok); }
 
-/* Hotel-Finder im Hero (Startseite): kompakt, Ausstattung zum Aufklappen */
-.hero-finder { display: grid; gap: 10px; max-width: 640px; margin: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
-.hf-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; align-items: end; }
-.hf-row-2 { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+/* Hotel-Finder unter dem Hero (Startseite): eine Zeile, Ausstattung zum Aufklappen */
+.hero-finder { display: grid; gap: 8px; margin: 0; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.hf-line { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr) auto auto auto; gap: 10px; align-items: end; }
 .hf-field { display: grid; gap: 3px; min-width: 0; }
 .hf-field label { margin: 0; font-size: .8rem; font-weight: 700; color: var(--muted); }
 .hf-field input, .hf-field select { width: 100%; min-width: 0; padding: 9px 12px; }
 .hf-field select:disabled { opacity: .55; }
 .hf-more { position: relative; }
-.hf-more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; font-weight: 700; background: var(--surface); }
+.hf-more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; font-weight: 700; background: var(--surface); white-space: nowrap; }
 .hf-more > summary::-webkit-details-marker { display: none; }
 .hf-more > summary::after { content: "▾"; font-size: .8em; color: var(--muted); }
 .hf-more[open] > summary { border-color: var(--primary); }
 .hf-n:not(:empty) { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; padding: 0 4px; border-radius: 999px; background: var(--primary); color: var(--primary-text); font-size: .75rem; }
-.hf-pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(560px, calc(100vw - 48px)); max-height: 60vh; overflow: auto; display: grid; gap: 8px;
+.hf-pop { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: min(560px, calc(100vw - 48px)); max-height: 60vh; overflow: auto; display: grid; gap: 8px;
   padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
 .hf-group { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; align-items: start; }
 .hf-group > span { font-size: .82rem; color: var(--muted); padding-top: 5px; }
 .hf-group .chips { margin-top: 0; }
+.hf-rain { height: 42px; white-space: nowrap; }
 .hf-rain:has(input:disabled) { opacity: .5; }
-.hf-go { margin-left: auto; }
+.hf-go { height: 42px; padding-block: 0; white-space: nowrap; }
 .hf-live { margin: 0; font-size: .82rem; color: var(--muted); }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 960px) {
+  .hf-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .hf-more { justify-self: start; }
+  .hf-go { grid-column: span 2; }
+}
 @media (max-width: 640px) {
-  .hf-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .hf-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .hf-q { grid-column: 1 / -1; }
+  .hf-more { justify-self: stretch; }
+  .hf-more > summary { width: 100%; justify-content: center; }
   .hf-pop { position: static; width: auto; max-height: none; box-shadow: none; margin-top: 6px; }
   .hf-group { grid-template-columns: 1fr; }
-  .hf-go { width: 100%; margin-left: 0; }
-  /* Hero am Handy straffen: Kennzahlen in einer Reihe, Grundsätze stehen in der Methodik und im Fuß */
-  .hero-about { gap: 8px; padding: 12px; }
-  .hero-about .home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .hero-about .home-stats a, .hero-about .home-stats div { padding: 2px 6px; border-bottom: 0; }
-  .hero-about .home-stats > :not(:last-child) { border-right: 1px solid var(--border); }
-  .hero-about .home-stats > :nth-child(even) { padding-left: 6px; }
-  .hero-about .home-stats strong { font-size: 1.45rem; }
-  .hero-about .home-stats span { font-size: .68rem; line-height: 1.2; display: block; }
-  .hero-about .home-principles { display: none; }
+  .hf-go { grid-column: 1 / -1; width: 100%; }
+  .home-hero { padding-block: 32px 20px; }
   .hero-text { font-size: 1rem; }
+  .hero-pick .hp-photo { aspect-ratio: 16 / 7; }
 }

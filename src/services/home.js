@@ -50,6 +50,14 @@ function rotationIndex(count, today = new Date()) {
   return day % count;
 }
 
+// Top-Objekt des Tages im Kopfbereich: täglich wechselnd unter allen Objekten im Ranking mit Score ab HERO_MIN_SCORE,
+// unabhängig von Partnerschaften (Neutralität). excludeId: das Objekt, das die Bestenliste schon im Detail zeigt.
+const HERO_MIN_SCORE = 75;
+function heroPick(ranked, excludeId = null, today = new Date()) {
+  const candidates = (ranked || []).filter((e) => e.score !== null && e.score >= HERO_MIN_SCORE && e.id !== excludeId);
+  return candidates.length ? { entity: candidates[rotationIndex(candidates.length, today)], candidates: candidates.length } : null;
+}
+
 // Kategorie-Balken für die Score-Karte (wie bisher im Hero)
 function bars(categories, criteria, details) {
   return categories.map((cat) => {
@@ -153,4 +161,4 @@ async function saveConfig(siteId, blocks) {
   return clean;
 }
 
-module.exports = { BLOCKS, DEFAULT_ORDER, normalizeConfig, normalizePick, editorialActive, rotationIndex, load, stats, saveConfig };
+module.exports = { BLOCKS, DEFAULT_ORDER, HERO_MIN_SCORE, normalizeConfig, normalizePick, editorialActive, rotationIndex, heroPick, load, stats, saveConfig };
