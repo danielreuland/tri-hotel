@@ -174,6 +174,14 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 - `pm2-logrotate` 3.0.0 eingerichtet 29.10. (gilt für alle PM2-Apps): je Log max. 50 MB, täglich um Mitternacht, 10 Dateien
   behalten, gzip, Prüfung alle 5 min; `pm2 save` ausgeführt. Testmail des Wächters angekommen (29.10.).
 
+### Hotel-Ansprache neu (Konzept 02.11.2026: https://claude.ai/artifact/EmRgGEgm2TMm9vSfkvvpqj)
+Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Link zum Prüfen, Fotos (Upload oder Website-Fotos mit
+Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
+später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
+- **D1 freigegeben (02.11.):** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung + Double-Opt-in.
+- **Mail-Text:** Daniel bearbeitet `docs/anfrage-mail-entwurf.md`; danach Paket P1 (Vorlage) bauen.
+- Offen: D2–D7 (Absenderadresse, Vorstellungstext, Website-Fotos, CRM-Konzept anpassen, Partnerbereich, Produkte/Rechtsprüfung).
+
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
 Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
