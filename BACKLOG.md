@@ -188,6 +188,7 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
+- **Dashboard: Besucher und Besuche** (Wunsch Daniel 02.11.): neben Seitenaufrufen auch Unique Visitors und Total Visits anzeigen – in den Kennzahlen und im Funnel (Plausible-Metriken `visitors`, `visits`), je Zeitraum und Seite.
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
