@@ -805,7 +805,8 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .home-hero .hero-claim { grid-area: claim; }
 .home-hero .hero-pick-slider { grid-area: pick; min-width: 0; }
 /* Slider: alle Folien in derselben Zelle (Höhe = höchste Folie), Wechsel per Überblendung */
-.hs-track { display: grid; }
+/* minmax(0, 1fr): Spalte nie breiter als der Slider – sonst schiebt die Eigenbreite der Fotos Text und Score aus der Karte */
+.hs-track { display: grid; grid-template-columns: minmax(0, 1fr); }
 .hs-track > .hero-pick { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s, border-color .15s, transform .15s; }
 .hs-track > .hero-pick.is-active { opacity: 1; visibility: visible; transition: opacity .6s ease, visibility 0s, border-color .15s, transform .15s; }
 .hs-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; }
@@ -824,7 +825,7 @@ table.compare.only-diff tr.same, table.compare.only-diff tbody.no-diff { display
 .hero-stats a:hover, .hero-stats a:focus-visible { color: var(--accent-strong); }
 .hero-stats strong { color: var(--heading); font-weight: 800; }
 .hero-stats .hero-neutral { flex-basis: 100%; }
-.hero-pick { display: grid; padding: 0; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.hero-pick { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
 .hero-pick:hover, .hero-pick:focus-visible { border-color: var(--accent-strong); transform: translateY(-2px); }
 .hp-photo { position: relative; display: block; aspect-ratio: 16 / 8; max-width: 100%; background: var(--surface-2); }
 .hp-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
