@@ -211,6 +211,18 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   Social-Media-Posts mit Expedia-Bezug als Werbung kennzeichnen, nicht auf die Marken bieten.
 - **CHECK24-Nummern je Hotel** eintragen (Suchlink im Admin beim Hotel; Hotelnamen prüfen – die erste Nummer stimmt nicht
   immer) und den Link einmal im privaten Fenster testen.
+- **Sovrn Commerce (Notiz 02.11.2026, Konto in Prüfung):** Sammelnetzwerk, Links **ohne Skript** möglich:
+  `https://sovrn.co?key=<API Key>&u={url_enc}&cuid={slug}` als Deeplink-Vorlage (kein Code nötig). Nach Freischaltung:
+  Daniel gibt den **API Key** (öffentlich, steht in jedem Link; commerce.sovrn.com → Sites). **Secret Key** nur selbst in die
+  Server-`.env` (Berichte), nie in Chat/Repo. Dann Link-Check-API (`GET https://api.viglink.com/api/link/?out=…&key=…&format=json&geo=de`,
+  liefert `affiliatable` und `eepc`, kein Klick) über die Websites aller Live-Hotels → Liste, wo Sovrn Provision bringt.
+  Nur dort Sovrn-Link als eigener Buchungslink („Anzeige“); offizielle Website im Faktenblock bleibt neutral.
+  Die von Sovrn angebotene **ads.txt** gehört zur Banner-Werbung – nicht einbauen (Tracking/Einwilligung, fremde Werbung neben
+  dem Score); nur falls Sovrn sie für die Freischaltung zwingend verlangt (reine Textdatei, kein Skript).
+- **Travelpayouts/Tripadvisor (Notiz 02.11.2026):** Travelpayouts verlangt „Drive“ (Skript auf jeder Seite, baut Links im Browser
+  um, Vorschau-Fenster) als Besitznachweis – nicht einbauen (Werbung ungekennzeichnet, Daten an Dritte, CSP). Daniel fragt
+  den Support nach Nachweis per Meta-Tag/DNS; bis dahin bleibt Tripadvisor Suchlink ohne Provision. Konditionen prüfen
+  (Provision je Klick oder Buchung? Unsere Links führen auf die Tripadvisor-Suche).
 - **TradeTracker prüfen (Notiz 27.10.2026)**: Affiliate-Netzwerk (Sitz Berlin, laut eigener Angabe über 5.000 Advertiser,
   Branche „Reisen und Urlaub“). Interessant sind weniger Portale als **Hotelketten mit eigenem Partnerprogramm**, z. B. Garden Hotels
   und Insotel (Balearen), BlueBay Resorts (Spanien), Akzent Hotels (DE/Salzburg, 4 % je Buchung); dazu Metasuchen wie KAYAK/trivago
