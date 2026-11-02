@@ -138,7 +138,9 @@ in einigen Tagen prüfen.
 1. ~~DNS danielreuland.com, hybrid-hotel.de, fitnessracing-hotel.de~~ – erledigt 29.10.
 2. **Hub-Repo** `danielreuland/danielreuland-com` in eigener Sitzung starten – Start-Prompt: `docs/prompts/hub-start.md`
    (Ziele, CRM-Regeln, Datenmodell-Vorschlag, Server/Port 3020, Arbeitsweise). Daniel legt Repo und Sitzung an.
-3. **Interne API in tri-hotel** (hier): `/internal/v1/entities`, `/camp-providers`, `/stats`, nur lesend, nur über
+3. **Interne API + CRM: Konzept 02.11.2026 in `docs/konzept-crm.md`** (wartet auf Freigabe, Entscheidungen E1–E7; danach
+   Aufgaben A1–A10 hier, H1–H13 im Hub-Repo, Vertrag und Hub-Start-Prompt anpassen). Bisheriger Stand:
+   **Interne API in tri-hotel** (hier): `/internal/v1/entities`, `/camp-providers`, `/stats`, nur lesend, nur über
    127.0.0.1, HMAC je App (`INTERNAL_API_KEYS`), Protokoll je Aufruf, Tests; Nginx `/internal/` → 404. Vertrag:
    `docs/internal-api.md` (gilt für beide Sitzungen; Änderungen dort festhalten).
 4. **Fitness-Racing-Ranking** (fitnessracing-hotel.de): Entwurf Kriterienkatalog mit Punkten und Gewichten (Geräte der
