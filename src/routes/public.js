@@ -327,7 +327,11 @@ async function renderEntity(req, res, ranking, slug) {
   const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
   const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
-    title: seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
+    // Titel nach Suchbegriffen aus rankings.content.entity_title (z. B. „{name} {ort}: … im Check“), Ort = Region, sonst Ort/Land
+    title: seo.entityTitleFromTemplates((ranking.content || {}).entity_title, {
+      name: entity.name, ort: region ? region.name : (entity.city || seo.countryName(entity.country)),
+      score: result.eligible ? result.score : null, scorename: ranking.score_name,
+    }) || seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
     description: text && text.summary ? text.summary : (result.eligible
       ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}. `
       : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich. `)

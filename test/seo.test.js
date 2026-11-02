@@ -109,6 +109,21 @@ test('Titel der Profilseite: lange Namen ohne Ort, notfalls gekürzt, Score blei
   assert.match(cut, /… – TriScore 70$/);
 });
 
+test('Titel aus Vorlagen des Rankings: Suchbegriffe, Ort nur einmal, Ersatzfassung und Kürzung bei langen Namen', () => {
+  const tpl = ['{name} {ort}: Triathlon-Trainingslager im Check', '{name} {ort}: Triathlon-Trainingslager', '{name}: Triathlon-Trainingslager'];
+  const t = (name, ort) => seo.entityTitleFromTemplates(tpl, { name, ort, score: 90, scorename: 'TriScore' });
+  assert.equal(t('Club La Santa', 'Lanzarote'), 'Club La Santa Lanzarote: Triathlon-Trainingslager im Check');
+  assert.equal(t('Barcelo Lanzarote Active Resort', 'Lanzarote'), 'Barcelo Lanzarote Active Resort: Triathlon-Trainingslager', 'Ort steckt im Namen');
+  assert.equal(t('Club La Santa', ''), 'Club La Santa: Triathlon-Trainingslager im Check', 'ohne Ort kein Leerzeichen vor dem Doppelpunkt');
+  assert.equal(t('Zafiro Palace Alcudia', 'Mallorca'), 'Zafiro Palace Alcudia Mallorca: Triathlon-Trainingslager', 'zweite Fassung');
+  const cut = t('Jugend- und Sporthotel Euroville mit Sportschule und Seminarzentrum', 'Sachsen-Anhalt');
+  assert.ok(cut.length <= seo.TITLE_MAX, cut);
+  assert.match(cut, /…: Triathlon-Trainingslager$/);
+  // anderes Ranking, eigener Wortlaut, Score als Platzhalter
+  assert.equal(seo.entityTitleFromTemplates('{name} – {scorename} {score}', { name: 'Box Hotel', ort: 'Köln', score: 77, scorename: 'HybridScore' }), 'Box Hotel – HybridScore 77');
+  assert.equal(seo.entityTitleFromTemplates(null, { name: 'X' }), null, 'ohne Vorlage: alter Titel');
+});
+
 test('Hotel-Daten: Sterne der Athleten nur mit veröffentlichten Bewertungen', () => {
   const base = { entity: { name: 'X', city: 'Y', country: 'ES' }, ranking: { entity_type: 'hotel', score_name: 'TriScore' }, site: { name: 'tri-hotel.de' }, url: 'https://tri-hotel.de/hotel/x' };
   assert.equal(seo.entityLd(base).aggregateRating, undefined);

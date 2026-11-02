@@ -252,6 +252,26 @@ function entityTitle(name, place, scorePart) {
   return `${name.slice(0, room).replace(/[\s,;:&–-]+\S*$/, '').trim()}…${tail}`;
 }
 
+// Titel der Objektseite aus den Vorlagen des Rankings (rankings.content.entity_title: Text oder Liste, die erste, die
+// in TITLE_MAX passt, gewinnt; sonst wird der Name in der letzten gekürzt). Platzhalter {name}, {ort}, {score}, {scorename};
+// {ort} entfällt, wenn der Name ihn schon enthält. Ohne Vorlage null (dann entityTitle).
+function entityTitleFromTemplates(templates, vars) {
+  const list = [].concat(templates || []).map((t) => String(t || '').trim()).filter(Boolean);
+  if (!list.length) return null;
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
+  const ort = vars.ort && !norm(vars.name).includes(norm(vars.ort)) ? vars.ort : '';
+  const fill = (t, name) => t
+    .replace(/\{(\w+)\}/g, (m, k) => (k === 'name' ? name : k === 'ort' ? ort : vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : ''))
+    .replace(/\s{2,}/g, ' ').replace(/\s+([:,])/g, '$1').trim();
+  for (const t of list) {
+    const title = fill(t, vars.name);
+    if (title.length <= TITLE_MAX) return title;
+  }
+  const last = list[list.length - 1];
+  const room = TITLE_MAX - fill(last, '').length - 1;
+  return fill(last, `${String(vars.name).slice(0, Math.max(room, 10)).replace(/[\s,;:&–-]+\S*$/, '').trim()}…`);
+}
+
 // Jüngstes Datum einer Liste (für lastmod in der Sitemap), null ohne gültige Werte
 function latest(dates) {
   const t = (dates || []).map((d) => (d ? new Date(d).getTime() : NaN)).filter((n) => !Number.isNaN(n));
@@ -283,6 +303,7 @@ function fitDescription(text) {
 module.exports = {
   fitTitle,
   entityTitle,
+  entityTitleFromTemplates,
   fitDescription,
   TITLE_MAX,
   DESC_MAX,
