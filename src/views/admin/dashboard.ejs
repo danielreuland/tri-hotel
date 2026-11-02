@@ -103,21 +103,25 @@
       <tbody>
         <% P.programs.forEach(function (p) { %>
           <tr>
-            <td><a href="/admin/partner?offen=<%= p.code %>#p-<%= p.code %>"><%= p.name %></a><% if (!p.monetized) { %> <small class="muted">ohne Provision</small><% } %></td>
-            <td class="num"><%= p.links %></td><td class="num"><%= p.derived || '–' %></td><td class="num"><%= p.absent || '–' %></td>
-            <td class="num"><%= p.missing ? p.missing : '–' %></td>
-            <td><span class="share" title="<%= p.share %> % mit Link"><i style="width:<%= p.share %>%"></i></span> <small><%= p.share %> %</small></td>
+            <td><a href="/admin/partner?offen=<%= p.code %>#p-<%= p.code %>"><%= p.name %></a><% if (!p.monetized) { %> <small class="muted">ohne Provision<%= p.searchOnly ? ' · Suchlink' : '' %></small><% } %></td>
+            <% if (p.searchOnly) { %>
+              <td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td><small class="muted">Suchlink auf allen Hotelseiten</small></td>
+            <% } else { %>
+              <td class="num"><%= p.links %></td><td class="num"><%= p.derived || '–' %></td><td class="num"><%= p.absent || '–' %></td>
+              <td class="num"><%= p.missing ? p.missing : '–' %></td>
+              <td><span class="share" title="<%= p.share %> % mit Link"><i style="width:<%= p.share %>%"></i></span> <small><%= p.share %> %</small></td>
+            <% } %>
             <td class="num"><%= p.clicks7 %></td><td class="num"><%= p.clicks30 %></td>
           </tr>
         <% }) %>
       </tbody>
     </table></div>
-    <p class="muted" style="margin:6px 0 0"><small>„übernommen“ = Nummer aus einem anderen Programm (z. B. Hotels.com aus Expedia). Programme ohne Provision und ohne eingetragene Links sind ausgeblendet.</small></p>
+    <p class="muted" style="margin:6px 0 0"><small>„übernommen“ = Nummer aus einem anderen Programm (z. B. Hotels.com aus Expedia). Klicks zählen eigene Links und Suchlinks. Programme ohne Provision, ohne eingetragene Links und ohne Klicks sind ausgeblendet.</small></p>
     <h3>Klicks zu Buchungspartnern je Tag (30 Tage)</h3>
     <%- include('_bars', { series: P.days.map(function (x) { return { day: x.day, value: x.partner }; }), name: 'Klicks' }) %>
     <% if (P.top.length) { %>
       <h3>Meistgeklickt (30 Tage)</h3>
-      <dl class="dash-list"><% P.top.forEach(function (x) { %><div><dt><%= x.name %> <small class="muted">· <%= x.program %></small></dt><dd><%= x.clicks %></dd></div><% }) %></dl>
+      <dl class="dash-list"><% P.top.forEach(function (x) { %><div><dt><%= x.name %> <small class="muted">· <%= x.program %><%= x.search ? ' (keinem Hotel zugeordnet)' : '' %></small></dt><dd><%= x.clicks %></dd></div><% }) %></dl>
     <% } %>
   </section>
 

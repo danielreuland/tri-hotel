@@ -79,7 +79,7 @@ async function load(site) {
               (SELECT count(*) FROM inquiries WHERE status = 'sent')::int AS inquiries_sent`),
     db.many(
       `WITH live AS (SELECT entity_id FROM entity_rankings WHERE ranking_id = $1 AND status = 'live')
-       SELECT p.id, p.code, p.name, p.status, p.link_template, p.link_params,
+       SELECT p.id, p.code, p.name, p.status, p.link_template, p.link_params, p.auto_search,
               (SELECT count(*) FROM entity_links l JOIN live USING (entity_id) WHERE l.program_id = p.id AND l.kind = 'booking')::int AS links,
               (SELECT count(*) FROM live WHERE p.id_from IS NOT NULL
                   AND NOT EXISTS (SELECT 1 FROM entity_links o WHERE o.entity_id = live.entity_id AND o.program_id = p.id AND o.kind = 'booking')
@@ -87,16 +87,21 @@ async function load(site) {
                                WHERE s.entity_id = live.entity_id AND sp.code = p.id_from AND s.kind = 'booking'))::int AS derived,
               (SELECT count(*) FROM entity_link_absences a JOIN live USING (entity_id) WHERE a.program_id = p.id
                   AND NOT EXISTS (SELECT 1 FROM entity_links o WHERE o.entity_id = a.entity_id AND o.program_id = p.id AND o.kind = 'booking'))::int AS absent,
-              (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c JOIN entity_links l ON l.id = c.target_id
-                WHERE c.kind = 'entity_link' AND l.program_id = p.id AND c.day > current_date - 7)::int AS clicks7,
-              (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c JOIN entity_links l ON l.id = c.target_id
-                WHERE c.kind = 'entity_link' AND l.program_id = p.id AND c.day > current_date - 30)::int AS clicks30
+              -- Klicks auf eigene Links und auf Suchlinks des Programms (wie die Summe oben im Dashboard)
+              (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c LEFT JOIN entity_links l ON c.kind = 'entity_link' AND l.id = c.target_id
+                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id))
+                  AND c.day > current_date - 7)::int AS clicks7,
+              (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c LEFT JOIN entity_links l ON c.kind = 'entity_link' AND l.id = c.target_id
+                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id))
+                  AND c.day > current_date - 30)::int AS clicks30
          FROM partner_programs p WHERE p.status = 'active' ORDER BY p.sort_order, lower(p.name)`, [R]),
     db.many(
       `SELECT day, sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search'))::int AS partner,
               sum(clicks) FILTER (WHERE kind = 'camp')::int AS camp
          FROM outbound_clicks WHERE day > current_date - 30 GROUP BY day`),
-    partners.stats(30).then((s) => s.top.slice(0, 5)),
+    // Suchlinks (z. B. Bewertungen auf Tripadvisor) sind keinem Hotel zugeordnet: je Programm eine Zeile
+    partners.stats(30).then((s) => [...s.top, ...s.byProgram.filter((p) => p.search_clicks).map((p) => ({ name: 'Suchlink', program: p.name, clicks: p.search_clicks, search: true }))]
+      .sort((a, b) => b.clicks - a.clicks).slice(0, 5)),
     db.one(
       `SELECT COALESCE(sum(cost_usd) FILTER (WHERE created_at > now() - interval '7 days'), 0)::float AS week,
               COALESCE(sum(cost_usd), 0)::float AS month
@@ -122,8 +127,12 @@ async function load(site) {
     regions: { total: ov.regions.length, indexable: ov.regions.filter((r) => r.indexable).length, countries: ov.countries.length },
     tasks: { ...taskRow, sources: taskSources.map((s) => ({ label: tasks.LABELS[s.source] || s.source, n: s.n })) },
     comm,
-    // Programme ohne Provision und ohne Links (z. B. reine Suchlinks) blenden wir aus
-    partners: { programs: programs.map((p) => ({ ...coverage(p, objects.live), monetized: partners.monetized(p) })).filter((p) => p.monetized || p.links > 0), clicks: partnerClicks, days, top: topClicks },
+    // Programme ohne Provision, ohne Links und ohne Klicks blenden wir aus; reine Suchlinks (keine eigenen Links) ohne Abdeckung
+    partners: {
+      programs: programs.map((p) => ({ ...coverage(p, objects.live), monetized: partners.monetized(p), searchOnly: !partners.monetized(p) && !p.links && Boolean(p.auto_search) }))
+        .filter((p) => p.monetized || p.links > 0 || p.clicks30 > 0),
+      clicks: partnerClicks, days, top: topClicks,
+    },
     costs: { ...costs, api: apiCalls, budget: await llm.monthSpend() },
     visits: await analytics.overview(site.primary_domain),
   };
