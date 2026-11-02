@@ -219,10 +219,11 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   Nur dort Sovrn-Link als eigener Buchungslink („Anzeige“); offizielle Website im Faktenblock bleibt neutral.
   Die von Sovrn angebotene **ads.txt** gehört zur Banner-Werbung – nicht einbauen (Tracking/Einwilligung, fremde Werbung neben
   dem Score); nur falls Sovrn sie für die Freischaltung zwingend verlangt (reine Textdatei, kein Skript).
-- **Travelpayouts/Tripadvisor (Notiz 02.11.2026):** Travelpayouts verlangt „Drive“ (Skript auf jeder Seite, baut Links im Browser
-  um, Vorschau-Fenster) als Besitznachweis – nicht einbauen (Werbung ungekennzeichnet, Daten an Dritte, CSP). Daniel fragt
-  den Support nach Nachweis per Meta-Tag/DNS; bis dahin bleibt Tripadvisor Suchlink ohne Provision. Konditionen prüfen
-  (Provision je Klick oder Buchung? Unsere Links führen auf die Tripadvisor-Suche).
+- **Travelpayouts/Tripadvisor – erledigt (02.11.2026):** Tripadvisor-Hotelprogramm ist seit 01.06.2026 eingestellt (nur noch
+  „Experiences“ = Touren/Aktivitäten) → Tripadvisor bleibt neutraler Bewertungs-Suchlink ohne Provision. Drive (Skript) nicht
+  einbauen; laut Support einziger Besitznachweis. Konto geht auch unbestätigt („Manual installation“, Prüfung zweimal ausführen,
+  dann „ohne Skript weiter“): Deeplinks manuell möglich, manche Programme verlangen aber Bestätigung. Nur bei Bedarf
+  (z. B. Aktivitäten/Mietwagen) wieder aufgreifen.
 - **TradeTracker prüfen (Notiz 27.10.2026)**: Affiliate-Netzwerk (Sitz Berlin, laut eigener Angabe über 5.000 Advertiser,
   Branche „Reisen und Urlaub“). Interessant sind weniger Portale als **Hotelketten mit eigenem Partnerprogramm**, z. B. Garden Hotels
   und Insotel (Balearen), BlueBay Resorts (Spanien), Akzent Hotels (DE/Salzburg, 4 % je Buchung); dazu Metasuchen wie KAYAK/trivago
