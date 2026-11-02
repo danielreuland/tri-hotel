@@ -1,6 +1,6 @@
 # Konzept: Interne API (tri-hotel) und CRM im Hub danielreuland.com
 
-Stand 02.11.2026 · **Entwurf zur Freigabe durch Daniel.** Baut auf `docs/admin-aufteilung.md` (Grundregel: Firmen, Kontakte,
+Stand 02.11.2026 · **Freigegeben (Entscheidungen siehe Schritt 0).** Baut auf `docs/admin-aufteilung.md` (Grundregel: Firmen, Kontakte,
 Geschäftsbeziehungen gehören in den Hub) und `docs/internal-api.md` (Vertrag v1, Entwurf 29.10.) auf. Nach Freigabe werden
 der API-Vertrag und der Start-Prompt des Hubs (`docs/prompts/hub-start.md`) daran angepasst.
 
@@ -268,6 +268,17 @@ Dublettenwarnung (gleiche E-Mail, gleiche Website-Domain, ähnlicher Name im sel
 Größen: S ≈ bis ½ Tag, M ≈ 1 Tag, L ≈ 2–3 Tage (Claude-Arbeitszeit, ohne Wartezeiten).
 
 ### Schritt 0 – Entscheidungen (Daniel)
+**Entschieden am 02.11.2026:** E1 ja (Kontakt immer genau einem Unternehmen) · E2 ja (Arten als Mehrfachauswahl, mit
+Konzernstruktur) · E3 ja (Pipeline wie in 3.5) · E4 ja (TOTP) · E5 ja (Sammelanlage aller Live-Hotels und aktiven Camp-Anbieter
+als „identifiziert“, nur Firmendaten) · E6 Datenschutz-Generator + eigene Prüfung durch Daniel · E7 offen (später).
+**Ergänzung aus „Hotel-Ansprache neu“ (D5, 02.11.):** Die erste Ausbaustufe enthält zusätzlich den Weg **tri-hotel → Hub** als
+signierte Ereignisse (`inquiry.sent`, `inquiry.answered`, `contact.profile`, `contact.consent` mit Einwilligungsnachweis und
+Double-Opt-in, `photos.permission`), über eine Warteschlange mit Wiederholung, im Hub idempotent per Ereignis-ID, mit Nonce gegen
+Wiederholung. Damit gelten zwei Festlegungen oben nicht mehr unverändert: (1) die interne API ist nicht mehr nur lesend
+(schreibender Endpunkt am Hub, z. B. `POST /internal/v1/events`), (2) Ansprechpartner aus Antworten kommen ins CRM, wenn das
+Antwortformular und die Datenschutzerklärung das ankündigen (Profil-Kontakt: berechtigtes Interesse; Vertriebskontakt: nur mit
+Einwilligung). Konzept: https://claude.ai/artifact/EmRgGEgm2TMm9vSfkvvpqj, Mail-Entwurf `docs/anfrage-mail-entwurf.md`.
+
 - **E1** Kontakt *immer genau einem* Unternehmen zugeordnet (Änderung zu 29.10.) – Einzelpersonen als Unternehmen „Einzelperson“.
 - **E2** Arten als Mehrfachauswahl, Startliste 3.4; Konzernstruktur (übergeordnetes Unternehmen) ja/nein.
 - **E3** Lead-Status je Projekt und Pipeline-Stufen wie in 3.5.
