@@ -62,4 +62,26 @@ async function pageviews(domain, from, to, groups = {}) {
   }
 }
 
-module.exports = { overview, pageviews };
+// Besucher und Seitenaufrufe einer einzelnen Seite (Pfad) im Zeitraum, für die interne API (Lead-Argumente im CRM).
+// Eigener, längerer Cache (Standard 6 h), damit der Hub Plausible nicht bei jedem Aufruf belastet.
+// Ergebnis: { pageviews, visitors }, null (nicht eingerichtet) oder { error: true }
+async function pageStats(domain, path, from, to, { cacheMs = 6 * 60 * 60 * 1000 } = {}) {
+  if (!config.plausibleApiKey || !apiBase() || !domain || !path) return null;
+  const key = `page:${domain}:${path}:${from}:${to}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < cacheMs) return hit.data;
+  try {
+    const r = await get('aggregate', { site_id: domain, period: 'custom', date: `${from},${to}`, metrics: 'visitors,pageviews', filters: `event:page==${path}` });
+    const val = (v) => Number(v && typeof v === 'object' ? v.value : v) || 0;
+    const data = { pageviews: val(r.pageviews), visitors: val(r.visitors) };
+    // Schlüssel wechseln täglich (Zeitraum) – alte Einträge gelegentlich entfernen
+    if (cache.size > 1000) for (const [k, v] of cache) if (Date.now() - v.at > cacheMs) cache.delete(k);
+    cache.set(key, { at: Date.now(), data });
+    return data;
+  } catch (err) {
+    console.error('[analytics]', err.message);
+    return { error: true };
+  }
+}
+
+module.exports = { overview, pageviews, pageStats };

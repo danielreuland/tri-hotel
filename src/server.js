@@ -35,6 +35,8 @@ app.use(
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   })
 );
+// Interne API für den Hub (docs/internal-api.md): vor Body-Parsern, Sitzung und CSRF; nur Loopback + HMAC
+app.use('/internal', require('./routes/internal').createRouter());
 app.use(express.urlencoded({ extended: true, limit: '200kb' }));
 app.use(express.json({ limit: '200kb' }));
 app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0 }));

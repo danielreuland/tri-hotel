@@ -12,6 +12,7 @@ const agent = require('./inquiry-agent');
 const aimail = require('./aimail');
 const featureService = require('./features');
 const sites = require('./sites');
+const hubEvents = require('./hub-events');
 const consentTexts = require('../lib/consents');
 const { logAction } = require('../lib/audit');
 const { newToken, sha256, isEmail, formatDate } = require('../lib/util');
@@ -289,14 +290,17 @@ async function send(inquiryId) {
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
-    await db.query(
+    const { rows: [sent] } = await db.query(
       `UPDATE inquiries SET status = 'sent', subject = $2, body = $3, questions = $4, token_hash = $5, sent_at = now(),
-         expires_at = now() + make_interval(days => $6), error = $7, confirmations = $8, updated_at = now() WHERE id = $1`,
+         expires_at = now() + make_interval(days => $6), error = $7, confirmations = $8, updated_at = now() WHERE id = $1
+       RETURNING sent_at, expires_at`,
       [inq.id, draft.subject, draft.body, JSON.stringify(draft.questions), tok.hash, VALID_DAYS,
         inq.body ? null : draft.usedFallback && config.llm.provider !== 'none' ? 'Agent nicht verfügbar, Vorlage verwendet' : null,
         JSON.stringify(draft.confirmations || {})]
     );
     await logAction(null, 'inquiry', inq.id, 'send_inquiry', { recipient: inq.recipient, persona: persona && persona.name }, db, persona && persona.id);
+    // CRM im Hub: Aktivität „Faktenanfrage gesendet“ (ohne Empfänger und Text)
+    await hubEvents.emitSafe(hubEvents.inquirySent, { inquiry: { ...inq, ...sent }, entity, site, ranking });
   } catch (err) {
     console.error('[inquiries] Versand', inq.id, err.message);
     await db.query(`UPDATE inquiries SET status = 'failed', error = $2, updated_at = now() WHERE id = $1`, [inq.id, err.message]);
@@ -438,6 +442,11 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       [inq.id, replyName, note]
     );
     await logAction(null, 'inquiry', inq.id, 'answered', { answers: answers.length, confirmed: confirmed.criteria.length, features: confirmed.features.length, photos: photos.length, consents: granted }, client);
+  });
+  // CRM im Hub: Aktivität „Faktenanfrage beantwortet“ (nur Zahlen und Einwilligungstypen, kein Name)
+  await hubEvents.emitSafe(hubEvents.inquiryAnswered, {
+    inquiry: { ...inq, answered_at: at }, entity, site, ranking: await rankings.getRanking(inq.ranking_id).catch(() => null),
+    answers: answers.length + confirmed.criteria.length + confirmed.features.length, photos: photos.length, consents: granted,
   });
   if (config.mail.adminNotify) {
     await mailer.send({

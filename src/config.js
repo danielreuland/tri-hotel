@@ -90,6 +90,13 @@ module.exports = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
   },
   adminPasswordLogin: process.env.ADMIN_PASSWORD_LOGIN ? process.env.ADMIN_PASSWORD_LOGIN === 'true' : !process.env.GOOGLE_CLIENT_ID,
+  // Interne API für den Hub danielreuland.com (docs/internal-api.md): "hub:<geheimnis>[,hub:<alt>]" – nur in der Server-.env
+  internalApiKeys: process.env.INTERNAL_API_KEYS || '',
+  // Ereignisse an den Hub (Richtung B); ohne Ziel werden sie nur protokolliert
+  hubEvents: {
+    url: process.env.HUB_EVENTS_URL || null,
+    secret: process.env.HUB_EVENTS_SECRET || null,
+  },
   verifyTokenHours: 72,
   userAgent: `RankingBot/0.1 (+${baseUrl})`,
 };

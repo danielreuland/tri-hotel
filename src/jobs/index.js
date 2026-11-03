@@ -23,6 +23,8 @@ async function start() {
   await boss.createQueue('mail-poll');
   await boss.createQueue('camp-check');
   await boss.createQueue('lead-followup');
+  await boss.createQueue('hub-event');
+  await boss.createQueue('internal-cleanup');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -85,6 +87,21 @@ async function start() {
   });
   await boss.schedule('retention', '30 3 * * *');
 
+  // Ereignisse an den Hub danielreuland.com (CRM): Zustellung mit Wiederholung, siehe services/hub-events.js
+  await boss.work('hub-event', async (jobs) => {
+    for (const job of jobs) await require('../services/hub-events').deliver(job.data.eventId);
+  });
+
+  // Interne API: Protokoll und zugestellte Hub-Ereignisse nach 90 Tagen löschen, hängengebliebene Ereignisse neu einstellen (täglich 3:45 Uhr)
+  await boss.work('internal-cleanup', async () => {
+    const calls = await require('../db').query(`DELETE FROM internal_api_calls WHERE at < now() - interval '90 days'`);
+    const ev = await require('../services/hub-events').maintenance();
+    if (calls.rowCount || ev.removed || ev.requeued) {
+      console.log(`[jobs] Interne API: ${calls.rowCount} Aufrufe, ${ev.removed} Ereignisse gelöscht, ${ev.requeued} erneut eingestellt`);
+    }
+  });
+  await boss.schedule('internal-cleanup', '45 3 * * *');
+
   // Postfach abrufen (alle 5 Minuten), nur wenn ein Empfang konfiguriert ist
   if (config.mail.inbound.provider !== 'none') {
     await boss.work('mail-poll', async () => {
@@ -99,6 +116,7 @@ async function start() {
   const enqueue = (name, data, opts = {}) => boss.send(name, data, { retryLimit: 2, retryDelay: 60, ...opts });
   submissions.setEnqueue(enqueue);
   inquiries.setEnqueue(enqueue);
+  require('../services/hub-events').setEnqueue(enqueue);
   require('../services/camp-check').setEnqueue(enqueue);
   console.log('[jobs] gestartet');
 }

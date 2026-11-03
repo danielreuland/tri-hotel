@@ -138,11 +138,15 @@ in einigen Tagen prüfen.
 1. ~~DNS danielreuland.com, hybrid-hotel.de, fitnessracing-hotel.de~~ – erledigt 29.10.
 2. **Hub-Repo** `danielreuland/danielreuland-com` in eigener Sitzung starten – Start-Prompt: `docs/prompts/hub-start.md`
    (Ziele, CRM-Regeln, Datenmodell-Vorschlag, Server/Port 3020, Arbeitsweise). Daniel legt Repo und Sitzung an.
-3. **Interne API + CRM: Konzept 02.11.2026 in `docs/konzept-crm.md`** (wartet auf Freigabe, Entscheidungen E1–E7; danach
-   Aufgaben A1–A10 hier, H1–H13 im Hub-Repo, Vertrag und Hub-Start-Prompt anpassen). Bisheriger Stand:
-   **Interne API in tri-hotel** (hier): `/internal/v1/entities`, `/camp-providers`, `/stats`, nur lesend, nur über
-   127.0.0.1, HMAC je App (`INTERNAL_API_KEYS`), Protokoll je Aufruf, Tests; Nginx `/internal/` → 404. Vertrag:
-   `docs/internal-api.md` (gilt für beide Sitzungen; Änderungen dort festhalten).
+3. **Interne API + CRM: Konzept 02.11.2026 in `docs/konzept-crm.md`** (freigegeben 02.11., E1–E6 + D5; H1–H13 im Hub-Repo).
+   **A1–A9 gebaut 03.11.** (Branch `claude/interne-api-d706c8`, noch nicht deployt): Vertrag v1 final `docs/internal-api.md` +
+   Fixtures `docs/internal-api/fixtures/` (auch Mocks des Hubs); `/internal/v1` entities (Suche, `ids`, Detail, metrics),
+   camp-providers (dito), partner-programs, stats – nur Loopback ohne Proxy-Header, HMAC je App (`INTERNAL_API_KEYS`),
+   120/min je App, Protokoll `internal_api_calls` (Migration 097, 90 Tage). Ereignisse tri-hotel → Hub (D5): Tabelle
+   `hub_events` + pg-boss-Job `hub-event` mit Wiederholung (`HUB_EVENTS_URL`, `HUB_EVENTS_SECRET`, ohne Ziel nur Log);
+   Auslöser heute `inquiry.sent`/`inquiry.answered`; `contact.profile`, `contact.consent`, `photos.permission` als Funktionen
+   bereit (Formularfelder kommen mit Paket P2). Testaufruf: `node scripts/internal-api-call.js /internal/v1/stats`.
+   **Offen A10 (Daniel, nach Freigabe):** Schlüssel in Server-`.env`, Nginx `location /internal/ { return 404; }`, Probeaufrufe.
 4. **Fitness-Racing-Ranking** (fitnessracing-hotel.de): Entwurf Kriterienkatalog mit Punkten und Gewichten (Geräte der
    8 Stationen – SkiErg, Rudergerät, Sled, Wall Balls, Kettlebells, Sandsäcke –, Rig/Langhantel, Laufstrecke/-bahn,
    Hyrox-Kurse/Training Club, Camps, Klima …) → Daniel legt ihn im Admin an; danach Site fitnessracing-hotel.de in der
