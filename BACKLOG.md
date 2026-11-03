@@ -146,7 +146,11 @@ in einigen Tagen prüfen.
    `hub_events` + pg-boss-Job `hub-event` mit Wiederholung (`HUB_EVENTS_URL`, `HUB_EVENTS_SECRET`, ohne Ziel nur Log);
    Auslöser heute `inquiry.sent`/`inquiry.answered`; `contact.profile`, `contact.consent`, `photos.permission` als Funktionen
    bereit (Formularfelder kommen mit Paket P2). Testaufruf: `node scripts/internal-api-call.js /internal/v1/stats`.
-   **Offen A10 (Daniel, nach Freigabe):** Schlüssel in Server-`.env`, Nginx `location /internal/ { return 404; }`, Probeaufrufe.
+   **A10 erledigt 03.11. – live:** deployt (Migration 097), Nginx `location ^~ /internal { return 404; }` im tri-hotel-Block
+   (Sicherung `/root/nginx-tri-hotel.bak-20261103`), Schlüssel `hub:` von Daniel auf dem Server erzeugt (nie angezeigt).
+   Probe: außen 404 (auch www → 301 → 404), Server ohne Signatur 401, mit Proxy-Header 404, signiert `stats`/`entities` 200,
+   Protokoll in `internal_api_calls` ok. Für den Hub: Geheimnis auf dem Server aus der tri-hotel-`.env` in die Hub-`.env`
+   (`TRIHOTEL_API_SECRET`) übernehmen, ohne es anzuzeigen; `HUB_EVENTS_URL`/`HUB_EVENTS_SECRET` erst, wenn der Hub läuft.
 4. **Fitness-Racing-Ranking** (fitnessracing-hotel.de): Entwurf Kriterienkatalog mit Punkten und Gewichten (Geräte der
    8 Stationen – SkiErg, Rudergerät, Sled, Wall Balls, Kettlebells, Sandsäcke –, Rig/Langhantel, Laufstrecke/-bahn,
    Hyrox-Kurse/Training Club, Camps, Klima …) → Daniel legt ihn im Admin an; danach Site fitnessracing-hotel.de in der
