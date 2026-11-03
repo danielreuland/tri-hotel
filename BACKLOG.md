@@ -5,7 +5,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### Klima: Wind und Regentage von Messstationen (03.11.2026, noch nicht deployt – Migration 099)
+### Klima: Wind und Regentage von Messstationen (03.11.2026, live – Migration 099)
 Vergleich Open-Meteo gegen 11 NOAA-Stationen 2023–2024 (Gando, Fuerteventura, Lanzarote, Teneriffa Süd, Palma, Alicante,
 Faro, Girona, Lübeck, Salzburg, Phuket): **Temperatur ok** (heutige Einstellung best_match im Mittel −0,8 °C, besser als
 ERA5-Seamless −2,1 °C) – die heißen Sommerwerte sind die Jahre 2023–2025. **Wind im Modell zu niedrig** (Teneriffa Süd 11
@@ -14,12 +14,14 @@ Wind (ISD stündlich) und Regentage (GHCN-Daily ≥ 1 mm) je Region (Station ≤
 Regentage je Hotel (≤ 25 km, ±300 m); Modellwerte bleiben in `*_model`. Hotelseite: Zeilen Wind und Starkwindtage
 (Region), Quellen je Zeile; Beschreibungstext bekommt Tiefstwert, Wind und Quellen. „Böentage“ heißen jetzt
 Starkwindtage (es war schon immer das Stundenmittel ≥ 40 km/h, keine Böen).
-- **Nach dem Deploy:** `node scripts/weather-stations.js` auf dem Server (Regionen + Hotels, ca. 5 Min.).
+- Nachgetragen 03.11.: 11 von 13 Regionen mit Station (ohne: Algarve, Costa Blanca), 30 von 79 Hotels mit Regenstation.
+  Gran Canaria: Windstation Gando (Ostküste, sehr windig: Aug 39 km/h) gilt für die ganze Region – für Hotels um
+  Maspalomas eher zu hoch; Kandidat für die Stationswahl im Admin.
 - Ohne Station (Stand Trockenlauf): Regen Algarve, Costa Blanca; Wind Algarve. Costa Blanca-Wind käme aus Alzira
   (56 km, im Inland) – ggf. später Stationswahl im Admin überschreibbar machen.
 - **Lizenz Open-Meteo** (Daniel klärt): kostenlose API nur nicht-kommerziell, Seiten mit Werbung gelten als kommerziell.
 
-### Beschreibungstexte: neuer Prompt und Ablauf (03.11.2026, noch nicht deployt – Migration 098)
+### Beschreibungstexte: neuer Prompt und Ablauf (03.11.2026, live – Migration 098)
 Umsetzung der externen Bewertung: fester Styleguide je Ranking + bis zu 3 ausgewählte Mustertexte (statt „zuletzt
 überarbeiteter Text“), Vergleich je Angabe im Ranking (selten/verbreitet/schwächer, Gesamtplatz), Quellenstufe in der
 Sprache („laut Hotel“, „Gäste berichten“), Messwerte aus Karten/offenen Daten (Luftlinie, Beckenlänge) und Wassertemperatur,
@@ -28,7 +30,7 @@ Kurzbeschreibung ≤ 150 Zeichen mit Ort – sonst gezielter Neuversuch, Sätze 
 Prüfhinweise im Reiter „Inhalte“, Veraltet-Hinweis nur bei Änderung verwendeter Angaben + nach 12 Monaten, öffentlich
 „KI-gestützt erstellt, redaktionell geprüft“. `temperature` gibt es seit 21.10.2026 in der API nicht mehr.
 Probelauf Monte Feliz (nicht gespeichert): ca. 7 Cent je Entwurf (Sonnet 5 + Haiku 2). Bestehende 20 Texte: Fingerabdruck
-unverändert (10 bleiben wie bisher „veraltet“, bis sie neu erzeugt oder freigegeben werden).
+unverändert; nach den Stationsregentagen gelten 15 von 20 als veraltet (Regentage geändert) – neu erzeugen oder prüfen.
 - **Daniel nach dem Deploy:** unter Admin → KI-Texte Styleguide prüfen/anpassen und 2–3 Mustertexte wählen.
 
 ### Offen aus „Buchen & Anfragen“
