@@ -69,6 +69,20 @@ unverändert; nach den Stationsregentagen gelten 15 von 20 als veraltet (Regenta
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
 
+### Partner: FeWo-direkt – Hinweis „Oder doch lieber in eine Ferienwohnung?“ (Wunsch 03.11.2026)
+- **Programm:** HomeAway FeWo-direkt über CJ, freigeschaltet 03.11.2026. Vertragspartner für alle Standorte ist Expedia, Inc.
+  (Sonderklausel 20.1 angepasst, Asien-Pazifik-Gesellschaft gestrichen). Vergütung pro Lead und pro Buchung, 7 Tage Cookie,
+  Werbemittel im CJ-Account, XML-Feed; API nur auf Anfrage beim Programm-Team (Kontakt in der CJ-Willkommensmail).
+  Willkommenspakete (Docsend/Box-Links aus der Mail) nicht automatisch abrufen.
+- **Listungseingriff:** in der Hotelliste ein Hinweiskasten „Oder doch lieber in eine Ferienwohnung?“ mit Link zu FeWo-direkt;
+  zusätzlich auf den Regionsseiten, dort mit Suche nach der Region.
+- **Regeln:** als „Anzeige“ kennzeichnen. Fester Platz in der Liste, der kein Hotel verdrängt und weder Score noch Reihenfolge
+  beeinflusst. Text, Programm und Position je Ranking bzw. Site im Admin pflegen, nicht hart codieren. Klicks über
+  `outbound_clicks` mit eigener Art/Quelle, damit das Dashboard sie dem Programm zuordnet. Keine Banner, keine Fremdskripte,
+  kein Hotlinking; ein Logo nur aus den CJ-Werbemitteln hochladen (mit Herkunft).
+- **Offen (Daniel):** CJ-Linkformat und Advertiser-ID aus dem CJ-Account; Suchadresse je Region bei FeWo-direkt (Links testet
+  Daniel selbst); Position in der Liste (z. B. nach Platz 5 oder am Listenende); als Partnerprogramm im Admin anlegen.
+
 ### Startseite aus Bereichen (Variante B „Kapitel“, umgesetzt 27.10.2026; Vorschläge: https://claude.ai/artifact/BqCYrcipEuyfcPRZ2w7BQ4)
 Startseite = Bänder „Über tri-hotel“, Hotels, Camp-Anbieter, Regionen; Reihenfolge, Sichtbarkeit und Hervorhebung im Admin unter
 Inhalte › Startseite (sites.home). Hotelliste mit Filtern liegt jetzt unter /hotels (Suchen auf „/“ leiten weiter).
