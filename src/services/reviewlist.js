@@ -79,7 +79,11 @@ function build(d, dismissals = []) {
   if (pendingImages.length) add('todo', `${pendingImages.length} ${pendingImages.length === 1 ? 'Bild wartet' : 'Bilder warten'} auf Freigabe.`, 'bilder', null, 'images');
   if (!text || !text.body) add('hint', 'Noch kein Beschreibungstext.', 'text', null, 'text-missing');
   else if (text.status !== 'published') add('todo', 'Beschreibungstext prüfen und freigeben.', 'text', null, 'text-draft');
-  else if (textStale) add('todo', 'Beschreibungstext ist veraltet – Fakten haben sich geändert.', 'text', null, 'text-stale');
+  else if (textStale) {
+    add('todo', textStale.reason === 'age'
+      ? `Beschreibungstext ist über 12 Monate alt – bitte gegen die aktuellen Fakten lesen.`
+      : `Beschreibungstext ist veraltet – verwendete Angaben haben sich geändert${textStale.changed && textStale.changed.length ? ` (${textStale.changed.join(', ')})` : ''}.`, 'text', null, 'text-stale');
+  }
 
   // Fehlgeschlagene Schritte der Auto-Prüfung (nur, wenn nicht oben schon abgedeckt)
   for (const l of failedSteps(sub.pipeline_log)) {
@@ -129,7 +133,7 @@ async function load(submissionId) {
        UNION ALL SELECT inquiry_id, status FROM inquiry_feature_answers WHERE inquiry_id = ANY($1::uuid[])`, [inquiryList.map((i) => i.id)])
     : [];
   for (const i of inquiryList) i.answers = answers.filter((a) => a.inquiry_id === i.id);
-  const textStale = Boolean(text && text.input_hash && describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash);
+  const textStale = text && text.body ? describer.staleness(text, await describer.gather(entity.id, ranking.id)) : null;
   const duplicateOf = sub.possible_duplicate_of ? await db.one('SELECT id, name FROM entities WHERE id = $1', [sub.possible_duplicate_of]) : null;
   const campLinks = criteria.some((c) => c.link_source === 'camp_providers') ? await require('./camps').forEntity(entity.id) : [];
   const d = { sub, ranking, criteria, facts, climate, entity, result, images, text, textStale, inquiryList, manualFeatures, duplicateOf, campLinks };

@@ -26,6 +26,7 @@ const DEFAULT_PRICES = {
   opus: { input: 5, output: 25 },
   sonnet: { input: 3, output: 15 },
   haiku: { input: 1, output: 5 },
+  'claude-haiku-5-5': { input: 0.1, output: 0.5 },
 };
 const CACHE_READ_FACTOR = 0.1;
 const CACHE_WRITE_FACTOR = 1.25;

@@ -480,7 +480,8 @@
         <% var hasText = text && text.body; if (!hasText) { %><span class="badge">noch kein Text</span>
         <% } else { %>
           <span class="badge <%= text.status === 'published' ? 'good' : 'warn' %>"><%= text.status === 'published' ? 'freigegeben' : 'Entwurf' %></span>
-          <% if (textStale) { %><span class="badge bad" title="Fakten, Klima oder Leistungen haben sich seit dem Erzeugen bzw. der Freigabe geändert">veraltet – Fakten geändert</span><% } %>
+          <% if (textStale && textStale.reason === 'age') { %><span class="badge warn" title="Freigegeben vor mehr als 12 Monaten">über 12 Monate alt – bitte gegenlesen</span>
+          <% } else if (textStale) { %><span class="badge bad" title="Seit dem Erzeugen bzw. der Freigabe geändert">veraltet – <%= textStale.changed && textStale.changed.length ? 'geändert: ' + textStale.changed.join(', ') : 'Fakten geändert' %></span><% } %>
           <small class="muted"><%= text.model ? 'erzeugt mit ' + text.model + (text.generated_at ? ' am ' + new Date(text.generated_at).toLocaleString('de-DE') : '') : 'von Hand geschrieben' %><%= text.published_at ? ' · freigegeben am ' + new Date(text.published_at).toLocaleString('de-DE') : '' %></small>
         <% } %>
       </p>
@@ -496,7 +497,17 @@
         <small class="muted">ca. 3 Cent</small>
       </form>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/text">
-        <label for="t-summary">Kurzbeschreibung <small class="muted">ein Satz, max. <%= SUMMARY_MAX %> Zeichen</small></label>
+        <% var textChecks = (text && text.checks) || []; if (hasText && textChecks.length) { %>
+          <div class="draft-box" style="margin-bottom:12px">
+            <p style="margin-top:0"><strong>Prüfhinweise</strong> <small class="muted">· maschinelle Prüfung und Gegenprüfung (<%= textChecks.filter(function (c) { return c.type !== 'info'; }).length %>) – gezielt diese Stellen lesen; nach dem Speichern wird neu geprüft</small></p>
+            <ul style="margin:0">
+              <% textChecks.forEach(function (c) { %><li><small><span class="badge <%= c.type === 'review' ? 'warn' : c.type === 'info' ? '' : 'bad' %>"><%= { number: 'Zahl', word: 'Wertung', summary: 'Kurzbeschreibung', basis: 'Grundlage', review: 'Gegenprüfung', info: 'Hinweis' }[c.type] || c.type %></span> <%= c.text %></small></li><% }) %>
+            </ul>
+          </div>
+        <% } else if (hasText && text.checks) { %>
+          <p class="muted" style="margin:0 0 10px"><small>✓ Keine Prüfhinweise (Zahlen, Wertungen, Kurzbeschreibung<%= text.fact_refs ? ', Datengrundlage je Satz' : '' %>).</small></p>
+        <% } %>
+        <label for="t-summary">Kurzbeschreibung <small class="muted">ein Satz mit Ort, Ziel 150, max. <%= SUMMARY_MAX %> Zeichen</small></label>
         <input id="t-summary" name="summary" type="text" maxlength="<%= SUMMARY_MAX %>" value="<%= text ? text.summary : '' %>">
         <label for="t-body">Text <small class="muted">Absätze durch Leerzeile trennen · „## “ = Zwischenüberschrift · „- “ = Aufzählung</small></label>
         <textarea id="t-body" name="body" rows="14"><%= text ? text.body : '' %></textarea>

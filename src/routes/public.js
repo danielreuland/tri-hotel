@@ -321,7 +321,7 @@ async function renderEntity(req, res, ranking, slug) {
   const guestPhotos = [];
   for (const r of reviewList) for (const i of r.images) guestPhotos.push({ ...i, author: r.author_name, stay_month: r.stay_month });
   const regionExamples = !images.length && !guestPhotos.length && region ? media.regionExamples(res.locals.siteMedia, region.id) : [];
-  const text = await db.one(`SELECT summary, body, published_at FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
+  const text = await db.one(`SELECT summary, body, published_at, model IS NOT NULL AS ai FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
   const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
@@ -370,6 +370,7 @@ async function renderEntity(req, res, ranking, slug) {
     reviewAvg: er.review_avg === null || er.review_avg === undefined ? null : Number(er.review_avg),
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,
     textDate: text && text.published_at,
+    textAi: Boolean(text && text.ai),
     base: rankingBase(ranking),
   });
   return true;

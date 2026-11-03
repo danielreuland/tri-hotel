@@ -195,10 +195,11 @@ router.post('/:id/duplizieren', wrap(async (req, res) => {
     const suffix = `-kopie-${Date.now().toString(36)}`;
     const copy = (
       await c.query(
-        `INSERT INTO rankings (code, slug, name, score_name, description, entity_type, entity_label_sg, entity_label_pl, formula, labels, content, site_id, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'draft') RETURNING id`,
+        `INSERT INTO rankings (code, slug, name, score_name, description, entity_type, entity_label_sg, entity_label_pl, formula, labels, content, site_id, text_style, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'draft') RETURNING id`,
         [src.code + suffix, src.slug + suffix, `${src.name} (Kopie)`, src.score_name, src.description, src.entity_type,
-          src.entity_label_sg, src.entity_label_pl, JSON.stringify(src.formula), JSON.stringify(src.labels), JSON.stringify(src.content || {}), src.site_id]
+          src.entity_label_sg, src.entity_label_pl, JSON.stringify(src.formula), JSON.stringify(src.labels), JSON.stringify(src.content || {}), src.site_id,
+          JSON.stringify(src.text_style || {})]
       )
     ).rows[0];
     const cats = (await c.query('SELECT * FROM ranking_categories WHERE ranking_id = $1', [src.id])).rows;

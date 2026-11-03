@@ -314,10 +314,10 @@ async function loadDetail(id) {
   const llmMonth = await require('../lib/llm').monthSpend();
   // Beschreibungstext: gespeicherter Stand + ob die Fakten seitdem geändert wurden
   let text = null;
-  let textStale = false;
+  let textStale = null;
   if (entity) {
     text = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]);
-    if (text && text.input_hash) textStale = describer.inputHash(await describer.gather(entity.id, ranking.id)) !== text.input_hash;
+    if (text && text.body) textStale = describer.staleness(text, await describer.gather(entity.id, ranking.id));
   }
   // Bewertung, die der Melder zusammen mit dem Vorschlag abgegeben hat (wartet bis zur Freigabe)
   const heldReview = await require('../services/reviews').heldFor(sub.id);
@@ -1237,28 +1237,33 @@ router.post('/meldungen/:id/text/erzeugen', wrap(async (req, res, next) => {
   const back = `/admin/meldungen/${sub.id}`;
   if (config.llm.provider !== 'anthropic') return res.redirect(`${back}?fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#text`);
   const input = await describer.gather(sub.entity_id, sub.ranking_id);
-  const example = await describer.styleExample(sub.ranking_id, sub.entity_id);
+  const style = describer.styleOf(await rankings.getRanking(sub.ranking_id));
+  const examples = await describer.styleExamples(sub.ranking_id, sub.entity_id);
   let out;
   try {
-    out = await describer.generate(input, example);
+    out = await describer.generate(input, { examples, style });
   } catch (err) {
     console.error('[describer]', err.message);
     return res.redirect(`${back}?fehler=${encodeURIComponent(`Text konnte nicht erzeugt werden: ${err.message.slice(0, 200)}`)}#text`);
   }
-  if (out.usage) {
-    await require('../lib/llm').record({ purpose: 'description', model: out.usage.model, usage: out.usage.raw, entityId: sub.entity_id, submissionId: sub.id });
+  for (const u of out.usages || []) {
+    await require('../lib/llm').record({ purpose: u.purpose, model: u.model, usage: u.raw, entityId: sub.entity_id, submissionId: sub.id });
   }
   if (!out.text) return res.redirect(`${back}?fehler=${encodeURIComponent('Das Modell hat keinen Text geliefert.')}#text`);
   await db.query(
-    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, generated_summary, generated_body, input_hash, model, generated_at, status, updated_by, updated_at)
-     VALUES ($1, $2, $3, $4, $3, $4, $5, $6, now(), 'draft', $7, now())
+    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, generated_summary, generated_body, input_hash, fact_refs, checks, model, generated_at, status, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $3, $4, $5, $6, $7, $8, now(), 'draft', $9, now())
      ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body,
        generated_summary = EXCLUDED.summary, generated_body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+       fact_refs = EXCLUDED.fact_refs, checks = EXCLUDED.checks,
        model = EXCLUDED.model, generated_at = now(), status = 'draft', updated_by = EXCLUDED.updated_by, updated_at = now()`,
-    [sub.entity_id, sub.ranking_id, out.text.summary, out.text.body, describer.inputHash(input), out.usage.model, req.session.admin.id]
+    [sub.entity_id, sub.ranking_id, out.text.summary, out.text.body, describer.inputHash(input), JSON.stringify(out.refs), JSON.stringify(out.checks), out.model, req.session.admin.id]
   );
-  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', { model: out.usage.model, style_example: example ? example.name : null });
-  res.redirect(`${back}?ok=${encodeURIComponent('Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', {
+    model: out.model, style_examples: examples.map((e) => e.name), custom_guide: style.custom, checks: out.checks.length,
+  });
+  const n = out.checks.filter((c) => c.type !== 'info').length;
+  res.redirect(`${back}?ok=${encodeURIComponent(n ? `Entwurf erzeugt – ${n} Prüfhinweis${n === 1 ? '' : 'e'}, bitte ansehen` : 'Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
 }));
 
 // Speichern, Freigeben, Zurückziehen
@@ -1271,19 +1276,25 @@ router.post('/meldungen/:id/text', wrap(async (req, res, next) => {
   const action = ['save', 'publish', 'unpublish'].includes(req.body.action) ? req.body.action : 'save';
   if (action === 'publish' && (!summary || !body)) return res.redirect(`${back}?fehler=${encodeURIComponent('Kurzbeschreibung und Text sind zum Freigeben nötig.')}#text`);
   const existing = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [sub.entity_id, sub.ranking_id]);
-  // Von Hand geschrieben oder bearbeitet: Fingerabdruck auf den aktuellen Stand setzen, wenn der Admin freigibt
-  const hash = action === 'publish' ? describer.inputHash(await describer.gather(sub.entity_id, sub.ranking_id)) : existing && existing.input_hash;
+  const input = await describer.gather(sub.entity_id, sub.ranking_id);
+  const style = describer.styleOf(await rankings.getRanking(sub.ranking_id));
+  // Von Hand geschrieben oder bearbeitet: Fingerabdrücke auf den aktuellen Stand setzen, wenn der Admin freigibt
+  const hash = action === 'publish' ? describer.inputHash(input) : existing && existing.input_hash;
+  const prevRefs = existing && existing.fact_refs;
+  const refs = action === 'publish' && prevRefs ? describer.refFingerprints(input, Object.keys(prevRefs)) : prevRefs || null;
+  const checks = describer.recheck({ summary, body }, input, style, existing && existing.checks);
   const status = action === 'publish' ? 'published' : action === 'unpublish' ? 'draft' : (existing ? existing.status : 'draft');
   await db.query(
-    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, input_hash, status, published_at, published_by, updated_by, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $6 = 'published' THEN now() END, CASE WHEN $6 = 'published' THEN $7::uuid END, $7, now())
+    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, input_hash, fact_refs, checks, status, published_at, published_by, updated_by, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $9, $10, $6, CASE WHEN $6 = 'published' THEN now() END, CASE WHEN $6 = 'published' THEN $7::uuid END, $7, now())
      ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
+       fact_refs = EXCLUDED.fact_refs, checks = EXCLUDED.checks,
        status = EXCLUDED.status, updated_by = EXCLUDED.updated_by, updated_at = now(),
        published_at = CASE WHEN EXCLUDED.status = 'published' AND $8 THEN now() ELSE entity_texts.published_at END,
        published_by = CASE WHEN EXCLUDED.status = 'published' AND $8 THEN EXCLUDED.updated_by ELSE entity_texts.published_by END`,
-    [sub.entity_id, sub.ranking_id, summary, body, hash, status, req.session.admin.id, action === 'publish']
+    [sub.entity_id, sub.ranking_id, summary, body, hash, status, req.session.admin.id, action === 'publish', refs ? JSON.stringify(refs) : null, JSON.stringify(checks)]
   );
-  await logAction(req.session.admin.id, 'entity', sub.entity_id, `text_${action}`, { status });
+  await logAction(req.session.admin.id, 'entity', sub.entity_id, `text_${action}`, { status, checks: checks.length });
   const msg = { save: 'Text gespeichert', publish: 'Text freigegeben – jetzt auf der Profilseite sichtbar', unpublish: 'Text zurückgezogen' }[action];
   res.redirect(`${back}?ok=${encodeURIComponent(msg)}#text`);
 }));
@@ -1301,21 +1312,59 @@ router.post('/meldungen/:id/text/notizen', wrap(async (req, res, next) => {
   res.redirect(`/admin/meldungen/${sub.id}?ok=${encodeURIComponent('Notizen gespeichert')}#text`);
 }));
 
-// Dokumentation der KI-Texte: Prompt, Modell, Stilvorlage, Überarbeitungsquote
+// Dokumentation der KI-Texte: Ablauf, Styleguide, Mustertexte, Prompt, Überarbeitungen
 router.get('/ki-texte', wrap(async (req, res) => {
   const list = await db.many(`SELECT * FROM rankings WHERE status <> 'archived' ORDER BY is_default DESC, name`);
   const ranking = list.find((r) => r.id === req.query.ranking) || list[0];
   const texts = ranking ? await db.many(
-    `SELECT t.status, t.model, t.generated_at, t.published_at, t.notes <> '' AS has_notes,
+    `SELECT t.entity_id, t.status, t.model, t.generated_at, t.published_at, t.notes <> '' AS has_notes, t.style_example,
             t.generated_body IS NOT NULL AS has_original, t.generated_body IS DISTINCT FROM t.body AS edited,
+            jsonb_array_length(t.checks) AS check_count,
             length(t.body) AS len, e.name, (SELECT s.id FROM submissions s WHERE s.entity_id = e.id ORDER BY s.created_at DESC LIMIT 1) AS sub_id
        FROM entity_texts t JOIN entities e ON e.id = t.entity_id
       WHERE t.ranking_id = $1 AND (t.body <> '' OR t.notes <> '') ORDER BY t.updated_at DESC`, [ranking.id]) : [];
-  const example = ranking ? await describer.styleExample(ranking.id, '00000000-0000-0000-0000-000000000000') : null;
+  const examples = ranking ? await describer.styleExamples(ranking.id, '00000000-0000-0000-0000-000000000000') : [];
+  // Überarbeitungen: KI-Entwurf und freigegebene Fassung nebeneinander – Grundlage, um den Styleguide von Hand nachzuschärfen
+  const edits = ranking ? await db.many(
+    `SELECT e.name, t.generated_summary, t.generated_body, t.summary, t.body, t.published_at
+       FROM entity_texts t JOIN entities e ON e.id = t.entity_id
+      WHERE t.ranking_id = $1 AND t.status = 'published' AND t.generated_body IS NOT NULL
+        AND (t.generated_body <> t.body OR t.generated_summary IS DISTINCT FROM t.summary)
+      ORDER BY t.published_at DESC NULLS LAST LIMIT 5`, [ranking.id]) : [];
   res.render('admin/ai-texts', {
-    title: 'KI-Texte', rankings: list, ranking, texts, example,
-    template: ranking ? describer.promptTemplate(ranking) : '', model: config.llm.models.describe,
+    title: 'KI-Texte', rankings: list, ranking, texts, examples, edits,
+    style: describer.styleOf(ranking), defaultGuide: describer.DEFAULT_GUIDE, defaultBanned: describer.BANNED,
+    template: ranking ? describer.promptTemplate(ranking, examples) : '', model: config.llm.models.describe, checkModel: config.llm.models.describe_check,
+    flash: req.query.ok || null, error: req.query.fehler || null,
   });
+}));
+
+// Styleguide und zusätzliche verbotene Wörter je Ranking
+router.post('/ki-texte/stil', wrap(async (req, res, next) => {
+  const ranking = await db.one('SELECT id, text_style FROM rankings WHERE id = $1', [req.body.ranking]);
+  if (!ranking) return next();
+  const guide = String(req.body.guide || '').replace(/\r/g, '').trim().slice(0, 4000);
+  const banned = [...new Set(String(req.body.banned || '').split(/[,;\n]/).map((w) => w.trim()).filter(Boolean))].slice(0, 50);
+  const style = { guide, banned };
+  await db.query('UPDATE rankings SET text_style = $2 WHERE id = $1', [ranking.id, JSON.stringify(style)]);
+  await logAction(req.session.admin.id, 'ranking', ranking.id, 'text_style', { guide_length: guide.length, banned });
+  res.redirect(`/admin/ki-texte?ranking=${ranking.id}&ok=${encodeURIComponent('Styleguide gespeichert')}#stil`);
+}));
+
+// Mustertext an/aus (höchstens 3 je Ranking, nur freigegebene Texte)
+router.post('/ki-texte/muster', wrap(async (req, res, next) => {
+  const t = await db.one('SELECT entity_id, ranking_id, status, style_example FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [req.body.entity, req.body.ranking]);
+  if (!t) return next();
+  const back = `/admin/ki-texte?ranking=${t.ranking_id}`;
+  const on = !t.style_example;
+  if (on) {
+    if (t.status !== 'published') return res.redirect(`${back}&fehler=${encodeURIComponent('Nur freigegebene Texte können Mustertext sein.')}#texte`);
+    const n = await db.one('SELECT count(*)::int AS n FROM entity_texts WHERE ranking_id = $1 AND style_example', [t.ranking_id]);
+    if (n.n >= 3) return res.redirect(`${back}&fehler=${encodeURIComponent('Höchstens 3 Mustertexte – bitte erst einen abwählen.')}#texte`);
+  }
+  await db.query('UPDATE entity_texts SET style_example = $3 WHERE entity_id = $1 AND ranking_id = $2', [t.entity_id, t.ranking_id, on]);
+  await logAction(req.session.admin.id, 'entity', t.entity_id, on ? 'text_style_example_on' : 'text_style_example_off', { ranking_id: t.ranking_id });
+  res.redirect(`${back}&ok=${encodeURIComponent(on ? 'Als Mustertext ausgewählt' : 'Mustertext abgewählt')}#texte`);
 }));
 
 // ---------- Aufgaben ----------

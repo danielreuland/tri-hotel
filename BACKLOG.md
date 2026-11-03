@@ -5,6 +5,18 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### Beschreibungstexte: neuer Prompt und Ablauf (03.11.2026, noch nicht deployt – Migration 098)
+Umsetzung der externen Bewertung: fester Styleguide je Ranking + bis zu 3 ausgewählte Mustertexte (statt „zuletzt
+überarbeiteter Text“), Vergleich je Angabe im Ranking (selten/verbreitet/schwächer, Gesamtplatz), Quellenstufe in der
+Sprache („laut Hotel“, „Gäste berichten“), Messwerte aus Karten/offenen Daten (Luftlinie, Beckenlänge) und Wassertemperatur,
+Ort aus der Anschrift, „Passt gut für / weniger für“, Fakten-IDs je Satz, maschinelle Prüfung (Zahlen, verbotene Wörter,
+Kurzbeschreibung ≤ 150 Zeichen mit Ort – sonst gezielter Neuversuch, Sätze ohne Grundlage) + Gegenprüfung mit Haiku,
+Prüfhinweise im Reiter „Inhalte“, Veraltet-Hinweis nur bei Änderung verwendeter Angaben + nach 12 Monaten, öffentlich
+„KI-gestützt erstellt, redaktionell geprüft“. `temperature` gibt es seit 21.10.2026 in der API nicht mehr.
+Probelauf Monte Feliz (nicht gespeichert): ca. 7 Cent je Entwurf (Sonnet 5 + Haiku 2). Bestehende 20 Texte: Fingerabdruck
+unverändert (10 bleiben wie bisher „veraltet“, bis sie neu erzeugt oder freigegeben werden).
+- **Daniel nach dem Deploy:** unter Admin → KI-Texte Styleguide prüfen/anpassen und 2–3 Mustertexte wählen.
+
 ### Offen aus „Buchen & Anfragen“
 - **Tripadvisor-Note** (Bubbles, Anzahl) über die Content API – vorher Freischaltung und Bedingungen prüfen.
   Heute: nur Link „Tripadvisor ↗“ (Suchseite bzw. eigener Link je Hotel) neben Google.

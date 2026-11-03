@@ -132,7 +132,7 @@
       <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
       <% } else { %><p><%= b.text %></p><% } %>
     <% }) %>
-    <p class="muted"><small>Redaktionstext auf Basis der geprüften Fakten unten<%= textDate ? ', Stand ' + new Date(textDate).toLocaleDateString('de-DE') : '' %>.</small></p>
+    <p class="muted"><small><%= typeof textAi !== 'undefined' && textAi ? 'KI-gestützt erstellt, redaktionell geprüft' : 'Redaktionstext' %> – auf Basis der Fakten unten<%= textDate ? ', Stand ' + new Date(textDate).toLocaleDateString('de-DE') : '' %>.</small></p>
   </section>
 <% } %>
 
