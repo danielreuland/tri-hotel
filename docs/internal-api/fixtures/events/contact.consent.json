@@ -1,0 +1,32 @@
+{
+  "id": "0d6c2a1e-4444-4a5b-9c8d-7e6f5a4b3c2d",
+  "type": "contact.consent",
+  "version": 1,
+  "occurredAt": "2026-10-22T18:02:00.000Z",
+  "source": {
+    "app": "tri-hotel",
+    "site": "tri-hotel.de"
+  },
+  "entity": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Club La Santa",
+    "type": "hotel"
+  },
+  "data": {
+    "inquiryId": "b1a2c3d4-e5f6-4789-8abc-def012345678",
+    "contact": {
+      "email": "ana.beispiel@example.com",
+      "firstName": "Ana",
+      "lastName": "Beispiel"
+    },
+    "purpose": "partner_contact",
+    "channel": "email",
+    "granted": true,
+    "textVersion": "2026-10b",
+    "text": "Ich möchte von tri-hotel.de per E-Mail über Kooperationsmöglichkeiten informiert werden (z. B. Direktbuchung, Angebote für Sportler). Die Einwilligung ist freiwillig, hat keinen Einfluss auf Bewertung oder Platzierung und kann jederzeit widerrufen werden.",
+    "language": "de",
+    "grantedAt": "2026-10-22T17:40:00.000Z",
+    "doubleOptInAt": "2026-10-22T18:02:00.000Z",
+    "withdrawnAt": null
+  }
+}

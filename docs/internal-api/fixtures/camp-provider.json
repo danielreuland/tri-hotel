@@ -1,0 +1,21 @@
+{
+  "id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "name": "Club La Santa Sports",
+  "site": "tri-hotel.de",
+  "status": "active",
+  "seat": "Tinajo",
+  "website": "https://www.clublasanta.com",
+  "url": "https://tri-hotel.de/trainingscamp/anbieter/club-la-santa",
+  "updatedAt": "2026-10-28T10:00:00.000Z",
+  "model": "resort",
+  "regions": [
+    "Kanaren"
+  ],
+  "contact": {
+    "email": "sports@clublasanta.com",
+    "phone": "+34 928 599 999",
+    "source": "website",
+    "evidence": "https://www.clublasanta.com/contact"
+  },
+  "leadActive": false
+}

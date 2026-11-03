@@ -1,0 +1,39 @@
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "days": 30,
+  "from": "2026-10-04",
+  "to": "2026-11-02",
+  "pageviews": 41,
+  "visitors": 33,
+  "pages": [
+    {
+      "site": "tri-hotel.de",
+      "path": "/hotel/club-la-santa-tinajo",
+      "pageviews": 41,
+      "visitors": 33
+    }
+  ],
+  "partnerClicks": [
+    {
+      "program": "check24",
+      "name": "CHECK24",
+      "clicks": 2
+    }
+  ],
+  "inquiry": {
+    "status": "answered",
+    "sentAt": "2026-10-20T09:15:00.000Z",
+    "answeredAt": "2026-10-22T17:40:00.000Z"
+  },
+  "completeness": 0.86,
+  "rankings": [
+    {
+      "code": "triathlon-hotel",
+      "site": "tri-hotel.de",
+      "status": "live",
+      "score": 90,
+      "completeness": 0.86
+    }
+  ],
+  "generatedAt": "2026-11-02T12:00:00.000Z"
+}

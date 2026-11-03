@@ -1,0 +1,4 @@
+{
+  "error": "bad_request",
+  "message": "Suchbegriff q braucht mindestens 2 Zeichen."
+}

@@ -1,0 +1,29 @@
+{
+  "id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "days": 30,
+  "from": "2026-10-04",
+  "to": "2026-11-02",
+  "pageviews": 18,
+  "visitors": 15,
+  "clicks": 4,
+  "campRequests": {
+    "total": 2,
+    "confirmed": 2,
+    "forwarded": 1,
+    "byMonth": [
+      {
+        "month": "2026-10",
+        "total": 2,
+        "confirmed": 2,
+        "forwarded": 1
+      },
+      {
+        "month": "2026-11",
+        "total": 0,
+        "confirmed": 0,
+        "forwarded": 0
+      }
+    ]
+  },
+  "generatedAt": "2026-11-02T12:00:00.000Z"
+}

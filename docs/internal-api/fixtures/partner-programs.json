@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "code": "check24",
+      "name": "CHECK24",
+      "status": "active",
+      "monetized": true,
+      "directLink": false,
+      "coverage": {
+        "live": 53,
+        "links": 30,
+        "derived": 0,
+        "absent": 5,
+        "missing": 18,
+        "share": 57
+      },
+      "clicks": {
+        "d7": 1,
+        "d30": 6
+      }
+    },
+    {
+      "code": "tripadvisor",
+      "name": "Tripadvisor",
+      "status": "active",
+      "monetized": false,
+      "directLink": false,
+      "coverage": {
+        "live": 53,
+        "links": 0,
+        "derived": 0,
+        "absent": 0,
+        "missing": 53,
+        "share": 0
+      },
+      "clicks": {
+        "d7": 3,
+        "d30": 11
+      }
+    }
+  ],
+  "generatedAt": "2026-11-02T12:00:00.000Z"
+}

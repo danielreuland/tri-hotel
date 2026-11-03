@@ -1,0 +1,57 @@
+{
+  "sites": [
+    {
+      "code": "tri-hotel",
+      "name": "tri-hotel.de",
+      "domain": "tri-hotel.de",
+      "status": "active",
+      "objects": {
+        "live": 53,
+        "review": 3
+      },
+      "camps": {
+        "active": 22
+      },
+      "campRequests": {
+        "d7": 1,
+        "d30": 4
+      },
+      "visits": {
+        "d7": 208,
+        "d30": 328
+      }
+    },
+    {
+      "code": "fitnessracing-hotel",
+      "name": "fitnessracing-hotel.de",
+      "domain": "fitnessracing-hotel.de",
+      "status": "draft",
+      "objects": {
+        "live": 0,
+        "review": 0
+      },
+      "camps": {
+        "active": 0
+      },
+      "campRequests": {
+        "d7": 0,
+        "d30": 0
+      },
+      "visits": null
+    }
+  ],
+  "totals": {
+    "tasks": {
+      "open": 155
+    },
+    "partnerClicks": {
+      "d7": 4,
+      "d30": 17
+    },
+    "campClicks": {
+      "d7": 2,
+      "d30": 9
+    }
+  },
+  "generatedAt": "2026-11-02T12:00:00.000Z"
+}

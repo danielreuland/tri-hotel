@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Club La Santa",
+      "city": "Tinajo",
+      "country": "ES",
+      "type": "hotel",
+      "website": "https://www.clublasanta.com",
+      "rankings": [
+        {
+          "code": "triathlon-hotel",
+          "name": "TriScore Triathlon-Hotels",
+          "site": "tri-hotel.de",
+          "status": "live",
+          "score": 90,
+          "provisional": true,
+          "completeness": 0.86,
+          "url": "https://tri-hotel.de/hotel/club-la-santa-tinajo"
+        }
+      ],
+      "updatedAt": "2026-11-02T08:00:00.000Z"
+    },
+    {
+      "id": "9b2f1c3e-5a4d-4e8f-a1b2-3c4d5e6f7a8b",
+      "name": "Club Cala Barca",
+      "city": "Cala d'Or",
+      "country": "ES",
+      "type": "hotel",
+      "website": "https://www.example-hotel.es",
+      "rankings": [
+        {
+          "code": "triathlon-hotel",
+          "name": "TriScore Triathlon-Hotels",
+          "site": "tri-hotel.de",
+          "status": "in_review",
+          "score": null,
+          "provisional": true,
+          "completeness": null,
+          "url": null
+        }
+      ],
+      "updatedAt": "2026-10-30T14:12:00.000Z"
+    }
+  ]
+}
