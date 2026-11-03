@@ -14,37 +14,66 @@ const inquiry = {
   sent_at: new Date('2026-10-20T09:15:00Z'), expires_at: new Date('2026-11-19T09:15:00Z'), answered_at: new Date('2026-10-22T17:40:00Z'),
   recipient: 'info@clublasanta.com', reply_name: 'Ana Beispiel', body: 'Mailtext',
 };
-const consentText = 'Ich möchte von tri-hotel.de per E-Mail über Kooperationsmöglichkeiten informiert werden.';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-test('Ereignisse: alle Typen entsprechen den Fixtures im Vertrag', () => {
-  const built = {
-    'inquiry.sent': hub.inquirySent({ inquiry, entity, site, ranking }),
-    'inquiry.answered': hub.inquiryAnswered({ inquiry, entity, site, ranking, answers: 6, photos: 3, consents: ['photos_profile', 'partner_contact'] }),
-    'contact.profile': hub.contactProfile({
-      inquiry, entity, site, noticeVersion: '2026-11a', collectedAt: new Date('2026-10-22T17:40:00Z'),
-      contact: { salutation: 'neutral', firstName: 'Ana', lastName: 'Beispiel', position: 'Sales Manager', email: 'Ana.Beispiel@Example.com', phone: '+34 600 000 000', language: 'es' },
-    }),
-    'contact.consent': hub.contactConsent({
-      inquiry, entity, site, contact: { email: 'ana.beispiel@example.com', firstName: 'Ana', lastName: 'Beispiel' }, textVersion: '2026-10b', text: consentText,
-      language: 'de', grantedAt: new Date('2026-10-22T17:40:00Z'), doubleOptInAt: new Date('2026-10-22T18:02:00Z'),
-    }),
-    'photos.permission': hub.photosPermission({
-      inquiry, entity, site, scopes: ['photos_profile', 'photos_social'], photos: 3, credit: '© Club La Santa', textVersion: '2026-10b', grantedAt: new Date('2026-10-22T17:40:00Z'),
-    }),
-  };
+const person = { salutation: 'Frau', firstName: 'Ana', lastName: 'Beispiel', position: 'Sales Manager', email: 'Ana.Beispiel@Example.com', phone: '+34 600 000 000', language: 'es' };
+const purpose = 'Informationen zu Kooperationsmöglichkeiten von tri-hotel.de per E-Mail';
+const build = () => ({
+  'inquiry.sent': hub.inquirySent({ inquiry, entity, site, ranking }),
+  'inquiry.answered': hub.inquiryAnswered({ inquiry, entity, site, ranking, answers: 6, confirmed: 2, photos: 3, consents: ['photos_profile', 'partner_contact'] }),
+  'contact.profile': hub.contactProfile({
+    inquiry, entity, site, person, collectedAt: new Date('2026-10-22T17:40:00Z'),
+    notice: { text: 'Ihre Angaben speichern wir als Ansprechpartner des Hotels (Art. 6 Abs. 1 f DSGVO).', version: '2026-11a', url: 'https://tri-hotel.de/datenschutz#anfragen' },
+  }),
+  'contact.consent': hub.contactConsent({
+    inquiry, entity, site, person: { ...person, phone: null }, purpose, text: fx('contact.consent').data.consent.text, textVersion: '2026-10b', language: 'de',
+    givenAt: new Date('2026-10-22T17:40:00Z'), doubleOptInSentAt: new Date('2026-10-22T17:40:05Z'), doubleOptInConfirmedAt: new Date('2026-10-22T18:02:00Z'),
+  }),
+  'photos.permission': hub.photosPermission({
+    inquiry, entity, site, scopes: ['photos_profile', 'photos_social'], photos: 3, credit: '© Club La Santa', textVersion: '2026-10b', grantedAt: new Date('2026-10-22T17:40:00Z'),
+  }),
+});
+
+test('Ereignisse: alle Typen entsprechen den Fixtures im Vertrag (Form des Hub-Empfängers)', () => {
+  const built = build();
   for (const [type, ev] of Object.entries(built)) {
     assert.deepEqual(shapeErrors(ev, fx(type)), [], type);
     assert.equal(ev.type, type);
     assert.match(ev.id, UUID);
     assert.equal(ev.version, 1);
-    assert.deepEqual(ev.source, { app: 'tri-hotel', site: 'tri-hotel.de' });
-    assert.deepEqual(ev.entity, { id: entity.id, name: 'Club La Santa', type: 'hotel' });
+    assert.equal(ev.site, 'tri-hotel.de');
+    assert.deepEqual(ev.subject, { kind: 'entity', id: entity.id, name: 'Club La Santa' });
+    // gleiche Inhalte wie die Fixtures (bis auf die zufällige ID)
+    assert.deepEqual({ ...ev, id: null }, { ...fx(type), id: null }, type);
   }
-  // gleiche Inhalte wie die Fixtures (bis auf die zufällige ID)
-  for (const type of Object.keys(built)) assert.deepEqual({ ...built[type], id: null }, { ...fx(type), id: null, data: { ...fx(type).data, ...(type === 'contact.consent' ? { text: consentText } : {}) } }, type);
-  assert.equal(built['contact.profile'].data.contact.email, 'ana.beispiel@example.com', 'E-Mail klein geschrieben');
+  assert.equal(built['contact.profile'].data.person.email, 'ana.beispiel@example.com', 'E-Mail klein geschrieben');
+  assert.equal(built['contact.profile'].data.person.salutation, 'frau');
   assert.notEqual(hub.inquirySent({ inquiry, entity, site, ranking }).id, built['inquiry.sent'].id, 'jede Meldung eine neue ID');
+  // Camp-Anbieter als subject
+  const camp = hub.inquirySent({ inquiry, entity: { kind: 'camp_provider', id: 'c1', name: 'Camp' }, site, ranking: null });
+  assert.deepEqual(camp.subject, { kind: 'camp_provider', id: 'c1', name: 'Camp' });
+});
+
+// Pflichtprüfung wie im Hub (danielreuland-com src/services/events.js check()), damit der Hub kein Ereignis mit 400 ablehnt
+function hubCheck(ev) {
+  const errors = [];
+  if (typeof ev.id !== 'string' || ev.id.length < 8 || ev.id.length > 100) errors.push('id');
+  if (!hub.TYPES.includes(ev.type)) errors.push('type');
+  if (!ev.occurredAt || Number.isNaN(Date.parse(ev.occurredAt))) errors.push('occurredAt');
+  const s = ev.subject;
+  if (!s || !['entity', 'camp_provider'].includes(s.kind) || !s.id || !s.name) errors.push('subject');
+  const d = ev.data || {};
+  if (ev.type.startsWith('contact.') && (!d.person || !d.person.lastName || !d.person.email)) errors.push('person');
+  if (ev.type === 'contact.consent') {
+    const c = d.consent || {};
+    if (c.channel !== 'email' || !c.text || !c.givenAt || !c.doubleOptIn || !c.doubleOptIn.confirmedAt) errors.push('consent');
+  }
+  if (JSON.stringify(ev).length > 64 * 1024) errors.push('größer als 64 KB');
+  return errors;
+}
+
+test('Ereignisse: erfüllen die Pflichtprüfung des Hubs', () => {
+  for (const [type, ev] of Object.entries(build())) assert.deepEqual(hubCheck(ev), [], type);
 });
 
 test('Ereignisse: Anfrage-Ereignisse ohne Personendaten (Empfänger, Name, Mailtext)', () => {
@@ -57,20 +86,24 @@ test('Ereignisse: Anfrage-Ereignisse ohne Personendaten (Empfänger, Name, Mailt
 });
 
 test('Ereignisse: Pflichtangaben und Double-Opt-in werden erzwungen', () => {
-  const base = { inquiry, entity, site, contact: { email: 'a@b.de' }, textVersion: 'v1', text: 'Wortlaut', grantedAt: new Date() };
+  const base = { inquiry, entity, site, person: { lastName: 'B', email: 'a@b.de' }, textVersion: 'v1', text: 'Wortlaut', givenAt: new Date() };
   assert.throws(() => hub.contactConsent(base), /Double-Opt-in/);
-  assert.throws(() => hub.contactConsent({ ...base, doubleOptInAt: new Date(), text: '' }), /Wortlaut/);
-  assert.throws(() => hub.contactConsent({ ...base, doubleOptInAt: new Date(), contact: { firstName: 'A' } }), /E-Mail/);
-  assert.throws(() => hub.contactConsent({ ...base, granted: false }), /withdrawnAt/);
-  const withdrawn = hub.contactConsent({ ...base, granted: false, withdrawnAt: new Date('2026-12-01T10:00:00Z') });
-  assert.equal(withdrawn.data.granted, false);
-  assert.equal(withdrawn.occurredAt, '2026-12-01T10:00:00.000Z');
-  assert.throws(() => hub.contactProfile({ inquiry, entity, site, contact: { firstName: 'A' }, noticeVersion: 'v' }), /E-Mail oder Telefon/);
-  assert.throws(() => hub.contactProfile({ inquiry, entity, site, contact: { email: 'a@b.de' } }), /Datenschutzhinweis/);
+  assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), text: '' }), /Wortlaut/);
+  assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), givenAt: null }), /Zeitpunkt/);
+  assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), person: { lastName: 'B' } }), /E-Mail/);
+  assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), person: { email: 'a@b.de' } }), /Nachnamen/);
+  assert.throws(() => hub.contactProfile({ inquiry, entity, site, person: { lastName: 'B', email: 'kein-mail' }, notice: { version: 'v' } }), /E-Mail/);
+  assert.throws(() => hub.contactProfile({ inquiry, entity, site, person: { lastName: 'B', email: 'a@b.de' } }), /Datenschutzhinweis/);
+  assert.equal(hub.contactProfile({ inquiry, entity, site, person: { salutation: 'Dr.', lastName: 'B', email: 'a@b.de' }, notice: { version: 'v' } }).data.person.salutation, null);
   assert.throws(() => hub.photosPermission({ inquiry, entity, site, scopes: ['print'], textVersion: 'v' }), /scopes/);
   assert.throws(() => hub.photosPermission({ inquiry, entity, site, scopes: [], textVersion: 'v' }), /scopes/);
   assert.throws(() => hub.photosPermission({ inquiry, entity, site, scopes: ['profile'] }), /Version/);
+  const denied = hub.photosPermission({ inquiry, entity, site, granted: false, textVersion: 'v', withdrawnAt: new Date('2026-12-01T10:00:00Z') });
+  assert.equal(denied.data.granted, false);
+  assert.equal(denied.occurredAt, '2026-12-01T10:00:00.000Z');
   assert.throws(() => hub.envelope({ type: 'hotel.live', site, entity, data: {} }), /Unbekannter Ereignistyp/);
+  assert.throws(() => hub.envelope({ type: 'inquiry.sent', site, entity: null, data: {} }), /subject/);
+  assert.throws(() => hub.envelope({ type: 'inquiry.sent', site, entity: { kind: 'region', id: 'x', name: 'y' }, data: {} }), /subject-Art/);
 });
 
 // --- Speichern und Zustellen mit Test-Datenbank im Speicher ----------------------------------------------------------
@@ -104,7 +137,7 @@ test('emit: speichert und stellt in die Warteschlange (mit Wiederholung), Fehler
     assert.equal(f.rows.get(ev.id).status, 'pending');
     assert.deepEqual(jobs, [{ name: 'hub-event', data: { eventId: ev.id }, opts: { retryLimit: 9, retryDelay: 120, retryBackoff: true } }]);
     // Bau-Fehler (z. B. fehlende Pflichtangabe) oder DB-Fehler: nur protokolliert, Rückgabe null
-    assert.equal(await hub.emitSafe(hub.contactConsent, { inquiry, entity, site, contact: {} }), null);
+    assert.equal(await hub.emitSafe(hub.contactConsent, { inquiry, entity, site, person: {} }), null);
     hub.setEnqueue(async () => { throw new Error('boss weg'); });
     assert.equal(await hub.emit(hub.inquirySent({ inquiry, entity, site, ranking })), null);
   } finally {
@@ -183,6 +216,6 @@ test('deliver: 5xx/429/Netzfehler → Wiederholung (wirft), 4xx → endgültig, 
 });
 
 test('retriable: nur vorübergehende Fehler', () => {
-  for (const s of [null, 408, 429, 500, 502, 503]) assert.equal(hub.retriable(s), true, String(s));
-  for (const s of [400, 401, 403, 404, 409, 422]) assert.equal(hub.retriable(s), false, String(s));
+  for (const s of [null, 408, 409, 429, 500, 502, 503]) assert.equal(hub.retriable(s), true, String(s));
+  for (const s of [400, 401, 403, 404, 422]) assert.equal(hub.retriable(s), false, String(s));
 });

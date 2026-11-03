@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Club La Santa",
+      "city": "Tinajo",
+      "country": "ES",
+      "type": "hotel",
+      "website": "https://www.clublasanta.com",
+      "rankings": [
+        {
+          "code": "triathlon-hotel",
+          "name": "TriScore Triathlon-Hotels",
+          "site": "tri-hotel.de",
+          "status": "live",
+          "score": 90,
+          "provisional": true,
+          "completeness": 0.86,
+          "url": "https://tri-hotel.de/hotel/club-la-santa-tinajo"
+        }
+      ],
+      "updatedAt": "2026-11-02T08:00:00.000Z",
+      "address": {
+        "street": "Av. Krönner 25",
+        "postalCode": "35560",
+        "city": "Tinajo",
+        "country": "ES",
+        "text": "Av. Krönner 25, 35560 Tinajo, Spanien"
+      },
+      "region": {
+        "slug": "lanzarote",
+        "name": "Lanzarote",
+        "site": "tri-hotel.de"
+      },
+      "contact": {
+        "email": "info@clublasanta.com",
+        "phone": null,
+        "source": "website",
+        "evidence": "https://www.clublasanta.com/contact"
+      }
+    }
+  ],
+  "total": 53,
+  "limit": 50,
+  "offset": 0
+}

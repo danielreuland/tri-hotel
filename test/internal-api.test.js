@@ -103,6 +103,8 @@ const stub = {
   UUID_RE: api.UUID_RE,
   searchEntities: async (q, limit) => (q === 'leer' ? [] : [api.entitySummary(entityRow)].slice(0, limit)),
   entitiesByIds: async (ids) => (ids.includes(E) ? [api.entitySummary(entityRow)] : []),
+  listEntities: async (o) => ({ items: [api.entityDetail(entityRow, null)], total: 53, limit: o.limit, offset: o.offset, seen: o }),
+  listCampProviders: async (o) => ({ items: [api.campDetail(campRow)], total: 22, limit: o.limit, offset: o.offset }),
   entity: async (id) => (id === E ? api.entityDetail(entityRow, { slug: 'lanzarote', name: 'Lanzarote', domain: 'tri-hotel.de' }) : null),
   entityMetrics: async (id, days) => (id === E ? { ...fx('entity-metrics.json'), days } : null),
   searchCampProviders: async () => [api.campSummary(campRow)],
@@ -151,6 +153,13 @@ test('Router: signierte Aufrufe liefern die Vertragsform, Header no-store/noinde
     assert.deepEqual(shapeErrors((await call(`/internal/v1/camp-providers/${C}`)).body, fx('camp-provider.json')), []);
     assert.deepEqual(shapeErrors((await call(`/internal/v1/camp-providers/${C}/metrics`)).body, fx('camp-provider-metrics.json')), []);
     assert.deepEqual(shapeErrors((await call('/internal/v1/partner-programs')).body, fx('partner-programs.json')), []);
+    // Sammelabruf nach Status, seitenweise, in Detailform
+    const list = await call('/internal/v1/entities?status=live&ranking=triathlon-hotel&limit=100&offset=100');
+    assert.deepEqual(list.body.seen, { status: 'live', ranking: 'triathlon-hotel', limit: 100, offset: 100 });
+    delete list.body.seen;
+    assert.deepEqual(shapeErrors(list.body, fx('entities-list.json')), []);
+    assert.deepEqual((await call('/internal/v1/entities?status=live')).body.seen, { status: 'live', ranking: null, limit: 50, offset: 0 });
+    assert.deepEqual(shapeErrors((await call('/internal/v1/camp-providers?status=active&offset=50')).body, fx('camp-providers-list.json')), []);
     // Protokoll: App, Pfad ohne Query-Werte, Status
     assert.deepEqual({ ...calls[0], durationMs: 0 }, { app: 'hub', method: 'GET', path: '/internal/v1/entities?q=&limit=', status: 200, durationMs: 0, reason: null });
   });
@@ -172,6 +181,13 @@ test('Router: Fehler als JSON (400, 404, 405, 500) in Vertragsform', async () =>
     await bad('/internal/v1/entities?ids=keine-uuid', 400, 'bad_request');
     await bad(`/internal/v1/entities?ids=${Array.from({ length: 101 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`).join(',')}`, 400, 'bad_request');
     await bad(`/internal/v1/entities/${E}/metrics?days=366`, 400, 'bad_request');
+    await bad('/internal/v1/entities?status=online', 400, 'bad_request');
+    await bad('/internal/v1/entities?status=live&q=club', 400, 'bad_request');
+    await bad('/internal/v1/entities?status=live&limit=101', 400, 'bad_request');
+    await bad('/internal/v1/entities?status=live&offset=-1', 400, 'bad_request');
+    await bad('/internal/v1/entities?status=live&ranking=Tri%20Hotel', 400, 'bad_request');
+    await bad('/internal/v1/camp-providers?status=live', 400, 'bad_request');
+    await bad('/internal/v1/camp-providers?status=active&ranking=x', 400, 'bad_request');
     await bad('/internal/v1/entities/keine-uuid', 404, 'not_found');
     await bad('/internal/v1/entities/00000000-0000-4000-8000-000000000000', 404, 'not_found');
     await bad('/internal/v1/camp-providers/00000000-0000-4000-8000-000000000000/metrics', 404, 'not_found');

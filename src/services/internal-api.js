@@ -121,19 +121,41 @@ async function entitiesByIds(ids) {
   return rows.map(entitySummary);
 }
 
-// Erste aktive Trainingsregion (Site der Rankings in deren Reihenfolge), in der das Objekt liegt
-async function regionOf(row) {
-  const siteIds = [...new Set((row.rankings || []).map((r) => r.siteId))];
-  if (!siteIds.length || row.lat === null || row.lat === undefined) return null;
-  const regions = await db.many(
+// Aktive Trainingsregionen der Sites (für die Zuordnung Objekt → Region)
+async function regionsFor(siteIds) {
+  if (!siteIds.length) return [];
+  return db.many(
     `SELECT g.slug, g.name, g.lat, g.lng, g.radius_km, g.site_id, s.primary_domain AS domain
        FROM regions g JOIN sites s ON s.id = g.site_id
       WHERE g.site_id = ANY($1::uuid[]) AND g.status = 'active' ORDER BY g.sort_order, g.name`, [siteIds]);
-  for (const siteId of siteIds) {
+}
+
+const siteIdsOf = (row) => [...new Set((row.rankings || []).map((r) => r.siteId))];
+
+// Erste aktive Trainingsregion (Site der Rankings in deren Reihenfolge), in der das Objekt liegt
+function pickRegion(row, regions) {
+  if (row.lat === null || row.lat === undefined) return null;
+  for (const siteId of siteIdsOf(row)) {
     const hit = regions.find((g) => g.site_id === siteId && seo.inRegion(row, g));
     if (hit) return hit;
   }
   return null;
+}
+
+async function regionOf(row) {
+  return pickRegion(row, await regionsFor(siteIdsOf(row)));
+}
+
+// Sammelabruf (z. B. Sammelanlage im CRM): Objekte mit Status in einem Ranking, seitenweise, in der Detailform
+async function listEntities({ status, ranking = null, limit, offset }) {
+  const where = `EXISTS (SELECT 1 FROM entity_rankings xr JOIN rankings xk ON xk.id = xr.ranking_id
+                          WHERE xr.entity_id = e.id AND xr.status::text = $1 AND ($2::text IS NULL OR xk.code = $2))`;
+  const [rows, count] = await Promise.all([
+    db.many(`${ENTITY_SELECT} WHERE ${where} ORDER BY lower(e.name), e.id LIMIT $3 OFFSET $4`, [status, ranking, limit, offset]),
+    db.one(`SELECT count(*)::int AS n FROM entities e WHERE ${where}`, [status, ranking]),
+  ]);
+  const regions = await regionsFor([...new Set(rows.flatMap(siteIdsOf))]);
+  return { items: rows.map((r) => entityDetail(r, pickRegion(r, regions))), total: count.n, limit, offset };
 }
 
 async function entity(id) {
@@ -196,6 +218,14 @@ async function searchCampProviders(q, limit) {
 
 async function campProvidersByIds(ids) {
   return (await db.many(`${CAMP_SELECT} WHERE p.id = ANY($1::uuid[]) ORDER BY lower(p.name), p.id`, [ids])).map(campSummary);
+}
+
+async function listCampProviders({ status, limit, offset }) {
+  const [rows, count] = await Promise.all([
+    db.many(`${CAMP_SELECT} WHERE p.status = $1 ORDER BY lower(p.name), p.id LIMIT $2 OFFSET $3`, [status, limit, offset]),
+    db.one(`SELECT count(*)::int AS n FROM camp_providers WHERE status = $1`, [status]),
+  ]);
+  return { items: rows.map(campDetail), total: count.n, limit, offset };
 }
 
 async function campProvider(id) {
@@ -302,6 +332,7 @@ function statsOut(rows, totals, visits, now) {
 module.exports = {
   UUID_RE, period, entityPath, rankingOut, entitySummary, entityDetail, addressOut, contactOut, campSummary, campDetail,
   coverage, programOut, visitsOut, sumPages, statsOut,
-  searchEntities, entitiesByIds, entity, entityMetrics, searchCampProviders, campProvidersByIds, campProvider, campProviderMetrics,
+  searchEntities, entitiesByIds, listEntities, entity, entityMetrics,
+  searchCampProviders, campProvidersByIds, listCampProviders, campProvider, campProviderMetrics,
   partnerPrograms, stats,
 };

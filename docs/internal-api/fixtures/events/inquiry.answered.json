@@ -3,20 +3,18 @@
   "type": "inquiry.answered",
   "version": 1,
   "occurredAt": "2026-10-22T17:40:00.000Z",
-  "source": {
-    "app": "tri-hotel",
-    "site": "tri-hotel.de"
-  },
-  "entity": {
+  "site": "tri-hotel.de",
+  "subject": {
+    "kind": "entity",
     "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-    "name": "Club La Santa",
-    "type": "hotel"
+    "name": "Club La Santa"
   },
   "data": {
     "inquiryId": "b1a2c3d4-e5f6-4789-8abc-def012345678",
     "ranking": "triathlon-hotel",
     "answeredAt": "2026-10-22T17:40:00.000Z",
-    "answers": 6,
+    "answeredFields": 6,
+    "confirmed": true,
     "photos": 3,
     "consents": [
       "photos_profile",

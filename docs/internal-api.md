@@ -1,6 +1,7 @@
 # Interne API v1 (tri-hotel ↔ Hub danielreuland.com)
 
-Stand 03.11.2026 · **v1 final** (Konzept `docs/konzept-crm.md`, freigegeben 02.11.2026, inkl. Ergänzung D5).
+Stand 03.11.2026 · **v1 final, mit dem Hub abgeglichen** (Konzept `docs/konzept-crm.md`, freigegeben 02.11.2026, inkl. D5;
+Ereignisform und Antwortcodes wie im Hub-Empfänger `danielreuland-com/docs/internal-events.md`).
 Änderungen innerhalb von v1 nur abwärtskompatibel (neue Felder, neue Endpunkte, neue Ereignistypen); Brüche → `/internal/v2`.
 Beispiel-Dateien: `docs/internal-api/fixtures/` – tri-hotel prüft seine echten Antworten in Tests gegen diese Form,
 der Hub nutzt dieselben Dateien als Mocks. **Clients müssen unbekannte Felder ignorieren.**
@@ -45,7 +46,7 @@ Header jeder Anfrage:
 |---|---|
 | `X-Internal-App` | Name der aufrufenden App: `hub` (Richtung A), `tri-hotel` (Richtung B); `[a-z0-9-]{1,32}` |
 | `X-Internal-Timestamp` | Unix-Zeit in Sekunden (ganzzahlig) |
-| `X-Internal-Nonce` | nur Richtung B (Pflicht): zufälliger Wert je Zustellversuch, `[A-Za-z0-9-]{16,64}` (tri-hotel: UUID) |
+| `X-Internal-Nonce` | nur Richtung B (Pflicht): zufälliger Wert je Zustellversuch, `[A-Za-z0-9_-]{16,128}` (tri-hotel: UUID) |
 | `X-Internal-Signature` | `hex(HMAC-SHA256(geheimnis, kanon))`, 64 Zeichen, Kleinbuchstaben |
 
 ```
@@ -99,7 +100,14 @@ Kurzform: `{ id, name, city, country, type, website, rankings[], updatedAt }`.
 
 ### `GET /internal/v1/entities?ids=<uuid>,<uuid>,…`
 Stapelabruf (1–100 IDs) zum Auffrischen der Anzeige-Caches. Antwort wie die Suche; unbekannte IDs fehlen einfach.
-`q` und `ids` zusammen → 400.
+
+### `GET /internal/v1/entities?status=<draft|in_review|live|rejected>&ranking=<code>&limit=<1–100, Standard 50>&offset=<≥ 0>`
+Sammelabruf (z. B. Sammelanlage E5 im CRM): alle Objekte, die in mindestens einem Ranking (bzw. im Ranking `ranking`)
+diesen Status haben, sortiert nach Name, seitenweise. Einträge in der **Detailform** (wie `entities/:id`).
+Antwort `{ "items": [Detail …], "total": 53, "limit": 50, "offset": 0 }` → Fixture `entities-list.json`.
+Weiterblättern, solange `offset + items.length < total`.
+
+Genau einer der Parameter `q`, `ids`, `status` ist Pflicht; mehrere zusammen → 400.
 
 ### `GET /internal/v1/entities/:id`
 Kurzform plus `address`, `region`, `contact` → Fixture `entity.json`. 404, wenn unbekannt.
@@ -118,7 +126,8 @@ Lead-Argumente → Fixture `entity-metrics.json`.
 - `completeness`: Vollständigkeit (0–1) im Standard-Ranking bzw. im ersten Ranking des Objekts; je Ranking in `rankings[]`.
 
 ### `GET /internal/v1/camp-providers?q=<text>&limit=…` · `?ids=…` · `/:id`
-Wie `entities` (Suche nach Name oder Sitz) → Fixtures `camp-providers-search.json`, `camp-provider.json`.
+Wie `entities` (Suche nach Name oder Sitz; `ids`; Sammelabruf `?status=<draft|active|archived>&limit=&offset=` ohne `ranking`,
+Einträge in Detailform) → Fixtures `camp-providers-search.json`, `camp-providers-list.json`, `camp-provider.json`.
 
 Kurzform: `{ id, name, site, status, seat, website, url, updatedAt }` – `status` ∈ `draft | active | archived`,
 `url` nur bei `active`. Detail zusätzlich: `model`, `regions[]`, `contact` (mit `phone`), `leadActive`
@@ -144,35 +153,50 @@ Werte ohne Site-Bezug unter `totals`: offene Aufgaben, Partner-Klicks, Camp-Klic
 `POST <HUB_EVENTS_URL>` (am Hub `/internal/v1/events`), `Content-Type: application/json`, ein Ereignis je Aufruf,
 signiert wie oben mit `X-Internal-App: tri-hotel` **und** `X-Internal-Nonce`.
 
-Hülle (Fixtures `events/*.json`):
+Hülle (Fixtures `events/*.json`, Body ≤ 64 KB):
 ```json
-{ "id": "uuid", "type": "inquiry.sent", "version": 1, "occurredAt": "2026-11-02T08:00:00.000Z",
-  "source": { "app": "tri-hotel", "site": "tri-hotel.de" },
-  "entity": { "id": "uuid", "name": "Club La Santa", "type": "hotel" },
+{ "id": "uuid", "type": "inquiry.sent", "version": 1, "occurredAt": "2026-11-02T08:00:00.000Z", "site": "tri-hotel.de",
+  "subject": { "kind": "entity", "id": "uuid", "name": "Club La Santa" },
   "data": { … } }
 ```
 
-- `id` ist je Ereignis fest (auch bei Wiederholungen) → **Hub verarbeitet idempotent**: bekannte `id` = 2xx ohne erneute
-  Verarbeitung. `version` erhöht sich nur bei inkompatiblen Änderungen von `data` eines Typs.
-- Antwort des Hubs: **2xx** = angenommen (auch Duplikat). **4xx** (außer 408/429) = dauerhaft abgelehnt, tri-hotel versucht es
-  nicht erneut und protokolliert. **5xx, 408, 429, Zeitüberschreitung (5 s)** = tri-hotel wiederholt mit wachsendem Abstand
-  (bis zu 10 Versuche über ca. 1 Tag) und neuer Nonce. Reihenfolge ist nicht garantiert – `occurredAt` zählt.
+- `subject.kind` ∈ `entity` (Objekt, ID wie in Richtung A) | `camp_provider`. Kennt der Hub das Objekt noch nicht, legt er
+  ein Unternehmen mit Name und Verknüpfung an.
+- `id` ist je Ereignis fest (auch bei Wiederholungen) → **Hub verarbeitet idempotent**. `version` erhöht sich nur bei
+  inkompatiblen Änderungen von `data` eines Typs. Reihenfolge ist nicht garantiert – `occurredAt` zählt.
 - Ohne `HUB_EVENTS_URL`/`HUB_EVENTS_SECRET` protokolliert tri-hotel das Ereignis nur (kein Fehler, kein Versand).
 - tri-hotel speichert Ereignisse bis zur Zustellung (Tabelle `hub_events`), danach ohne Inhalt; nach 90 Tagen gelöscht.
+- Nur `contact.*` enthält Personendaten.
+
+Antworten des Hubs und Verhalten von tri-hotel (Zeitüberschreitung 5 s, bis zu 10 Versuche über ca. 17 h, je Versuch neue Nonce):
+
+| Antwort | Bedeutung | tri-hotel |
+|---|---|---|
+| 200 `{ "ok": true, "id", "duplicate": false }` | verarbeitet | zugestellt |
+| 200 `{ "ok": true, "id", "duplicate": true }` | Ereignis-ID schon verarbeitet | zugestellt |
+| 400 `{ "error", "details": [] }` | Form falsch | nicht wiederholen, protokollieren |
+| 401 / 404 | Signatur bzw. Zugang falsch | nicht wiederholen, Fehler im Log („Schlüssel/Ziel prüfen“) |
+| 409 | Nonce schon gesehen | wiederholen (neue Nonce) |
+| 408 / 429 / 5xx / Netzfehler | vorübergehend | mit wachsendem Abstand wiederholen |
+
+Typen und `data` (Pflichtfelder des Hubs **fett**; weitere Felder sind Zusatzinformation, der Hub ignoriert Unbekanntes):
 
 | Typ | Auslöser | `data` |
 |---|---|---|
-| `inquiry.sent` | Faktenanfrage an das Hotel versendet | `inquiryId`, `ranking`, `language`, `sentAt`, `expiresAt`, `askPhotos`, `questions` (Anzahl) |
-| `inquiry.answered` | Hotel hat das Antwortformular abgeschickt | `inquiryId`, `ranking`, `answeredAt`, `answers` (Anzahl), `photos` (Anzahl), `consents[]` (Typen) – keine Namen |
-| `contact.profile` | Ansprechpartner fürs Profil angegeben (ab Paket P2) | `inquiryId`, `contact` {`salutation`, `firstName`, `lastName`, `position`, `email`, `phone`, `language`}, `legalBasis` (`legitimate_interest`), `noticeVersion`, `collectedAt` |
-| `contact.consent` | Einwilligung in Kontakt zu Kooperationen erteilt oder widerrufen (ab P2) | `inquiryId`, `contact` {`email`, `firstName`, `lastName`}, `purpose` (`partner_contact`), `channel` (`email`), `granted` (bool), `textVersion`, `text`, `language`, `grantedAt`, `doubleOptInAt`, `withdrawnAt` |
-| `photos.permission` | Nutzungserlaubnis für Fotos erteilt oder widerrufen | `inquiryId`, `scopes[]` (`profile`, `social`), `granted` (bool), `photos` (Anzahl), `credit`, `textVersion`, `grantedAt`, `withdrawnAt` |
+| `inquiry.sent` | Faktenanfrage an das Hotel versendet | **`inquiryId`**, `purpose` (`facts`), `ranking`, `language`, `sentAt`, `expiresAt`, `askPhotos`, `questions` (Anzahl) – ohne Empfänger und Mailtext |
+| `inquiry.answered` | Antwortformular abgeschickt | **`inquiryId`**, `ranking`, `answeredAt`, `answeredFields` (Anzahl Angaben), `confirmed` (bekannte Werte bestätigt), `photos` (Anzahl), `consents[]` (Typen) – ohne Namen |
+| `contact.profile` | Ansprechpartner fürs Profil angegeben (ab Paket P2) | `inquiryId`, **`person`** {`salutation` (`herr`/`frau`/`neutral`/null), `firstName`, **`lastName`**, `position`, **`email`**, `phone`, `language`}, `legalBasis` (`legitimate_interest`), `notice` {`text`, **`version`**, `url`} (Datenschutzhinweis bei Erhebung) |
+| `contact.consent` | E-Mail-Einwilligung nach **Double-Opt-in** bestätigt (ab P2) | `inquiryId`, `project` (`tri-hotel`), **`person`** wie oben, **`consent`** {**`channel`** (`email`), `purpose`, **`text`**, `textVersion`, `language`, **`givenAt`**, **`doubleOptIn`** {`sentAt`, **`confirmedAt`**}} |
+| `photos.permission` | Nutzungserlaubnis für Fotos erteilt bzw. abgelehnt/widerrufen | `inquiryId`, **`granted`** (bool), `count`, `scope` (Text), `scopes[]` (`profile`, `social`), `credit`, `textVersion`, `grantedAt`, `withdrawnAt` |
 
 Hinweise:
-- `contact.consent` mit `granted: true` wird erst nach dem **Double-Opt-in** gesendet (`doubleOptInAt` gesetzt). Der Hub
-  übernimmt `text` + `textVersion` + Zeitpunkte als Einwilligungsnachweis (E-Mail-Werbung nur damit).
+- `contact.consent` geht erst nach bestätigtem Double-Opt-in raus. Der Hub speichert `text` + `textVersion` + Zeitpunkte +
+  Ereignis-ID als Einwilligungsnachweis und hebt den Lead auf „Interesse bekundet“. **Widerrufe** sind in v1 kein Ereignis
+  (Daniel trägt sie im Hub ein); ein eigener Typ folgt bei Bedarf.
 - `contact.profile` ist **keine** Werbe-Einwilligung (Rechtsgrundlage berechtigtes Interesse, Profilpflege).
-- Neue Typen kommen abwärtskompatibel dazu; der Hub beantwortet unbekannte Typen mit 2xx und ignoriert sie.
+- Heute ausgelöst: `inquiry.sent`, `inquiry.answered`. Die übrigen Typen sind in tri-hotel gebaut und getestet
+  (`src/services/hub-events.js`), die Formularfelder kommen mit Paket P2 der Hotel-Ansprache.
+- Der Hub lehnt unbekannte Typen mit 400 ab: neue Typen erst im Vertrag und im Hub ergänzen, dann in tri-hotel senden.
 
 ## Später (nicht v1)
 - Hub → tri-hotel: Link „Firma im CRM“ im tri-hotel-Admin (`GET` am Hub: `/internal/v1/links?app=tri-hotel&kind=entity&id=…`,

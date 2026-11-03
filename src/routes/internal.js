@@ -52,12 +52,26 @@ function queryParam(raw) {
   return q;
 }
 
-// Suche (q) oder Stapelabruf (ids) – genau eins von beiden
-async function listOrSearch(req, search, byIds, uuidRe) {
-  const { q, ids } = req.query;
-  if (typeof q !== 'undefined' && typeof ids !== 'undefined') throw new BadRequest('q und ids nicht zusammen verwenden.');
-  if (Array.isArray(q) || Array.isArray(ids)) throw new BadRequest('Parameter nur einmal angeben.');
+const ENTITY_STATUS = ['draft', 'in_review', 'live', 'rejected'];
+const CAMP_STATUS = ['draft', 'active', 'archived'];
+
+// Suche (q), Stapelabruf (ids) oder Sammelabruf nach Status (status, seitenweise) – genau eins davon
+async function listOrSearch(req, { search, byIds, byStatus, statuses, uuidRe }) {
+  const { q, ids, status } = req.query;
+  const modes = [q, ids, status].filter((x) => typeof x !== 'undefined');
+  if (modes.length !== 1) throw new BadRequest('Genau einen von q, ids oder status angeben.');
+  if (modes.some(Array.isArray)) throw new BadRequest('Parameter nur einmal angeben.');
   if (typeof ids !== 'undefined') return { items: await byIds(idsParam(ids, uuidRe)) };
+  if (typeof status !== 'undefined') {
+    if (!statuses.includes(status)) throw new BadRequest(`status muss einer von ${statuses.join(', ')} sein.`);
+    const ranking = req.query.ranking === undefined ? null : String(req.query.ranking);
+    if (ranking !== null && !/^[a-z0-9-]{1,64}$/.test(ranking)) throw new BadRequest('ranking ist kein gültiger Code.');
+    return byStatus({
+      status, ranking,
+      limit: intParam(req.query.limit, { def: 50, min: 1, max: 100, name: 'limit' }),
+      offset: intParam(req.query.offset, { def: 0, min: 0, max: 100000, name: 'offset' }),
+    });
+  }
   const limit = intParam(req.query.limit, { def: 20, min: 1, max: 50, name: 'limit' });
   return { items: await search(queryParam(q), limit) };
 }
@@ -116,7 +130,9 @@ function createRouter({
   const days = (req) => intParam(req.query.days, { def: 30, min: 1, max: 365, name: 'days' });
 
   router.get('/v1/entities', wrap(async (req, res) => {
-    res.json(await listOrSearch(req, service.searchEntities, service.entitiesByIds, service.UUID_RE));
+    res.json(await listOrSearch(req, {
+      search: service.searchEntities, byIds: service.entitiesByIds, byStatus: service.listEntities, statuses: ENTITY_STATUS, uuidRe: service.UUID_RE,
+    }));
   }));
   router.get('/v1/entities/:id', wrap(async (req, res) => {
     const e = idOk(req.params.id) ? await service.entity(req.params.id.toLowerCase()) : null;
@@ -128,7 +144,10 @@ function createRouter({
     return m ? res.json(m) : notFound(res);
   }));
   router.get('/v1/camp-providers', wrap(async (req, res) => {
-    res.json(await listOrSearch(req, service.searchCampProviders, service.campProvidersByIds, service.UUID_RE));
+    if (req.query.ranking !== undefined) throw new BadRequest('ranking gilt nur für entities.');
+    res.json(await listOrSearch(req, {
+      search: service.searchCampProviders, byIds: service.campProvidersByIds, byStatus: service.listCampProviders, statuses: CAMP_STATUS, uuidRe: service.UUID_RE,
+    }));
   }));
   router.get('/v1/camp-providers/:id', wrap(async (req, res) => {
     const p = idOk(req.params.id) ? await service.campProvider(req.params.id.toLowerCase()) : null;

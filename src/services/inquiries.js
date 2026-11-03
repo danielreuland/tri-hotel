@@ -446,7 +446,8 @@ async function submitAnswers(inq, entity, site, body, files = []) {
   // CRM im Hub: Aktivität „Faktenanfrage beantwortet“ (nur Zahlen und Einwilligungstypen, kein Name)
   await hubEvents.emitSafe(hubEvents.inquiryAnswered, {
     inquiry: { ...inq, answered_at: at }, entity, site, ranking: await rankings.getRanking(inq.ranking_id).catch(() => null),
-    answers: answers.length + confirmed.criteria.length + confirmed.features.length, photos: photos.length, consents: granted,
+    answers: answers.length + confirmed.criteria.length + confirmed.features.length, confirmed: confirmed.criteria.length + confirmed.features.length,
+    photos: photos.length, consents: granted,
   });
   if (config.mail.adminNotify) {
     await mailer.send({

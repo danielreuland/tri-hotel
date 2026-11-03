@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const WINDOW_S = 300;
 const APP_RE = /^[a-z0-9-]{1,32}$/;
-const NONCE_RE = /^[A-Za-z0-9-]{16,64}$/;
+const NONCE_RE = /^[A-Za-z0-9_-]{16,128}$/;
 const MIN_SECRET_BYTES = 32;
 
 const sha256Hex = (body) => crypto.createHash('sha256').update(body === undefined || body === null ? '' : body).digest('hex');

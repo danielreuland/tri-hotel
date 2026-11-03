@@ -28,15 +28,23 @@ const str = (v, max = 200) => {
 };
 
 // --- Ereignisse bauen (reine Funktionen) --------------------------------------------------------------------------
+// Hülle wie im Vertrag: { id, type, version, occurredAt, site, subject: { kind, id, name }, data }
+
+const SUBJECT_KINDS = ['entity', 'camp_provider'];
+
+// subject: Objekt (entities-Zeile) oder { kind: 'camp_provider', id, name }
+function subjectOf(entity) {
+  if (!entity) return null;
+  const kind = entity.kind || 'entity';
+  if (!SUBJECT_KINDS.includes(kind)) throw new Error(`Unbekannte subject-Art „${kind}“`);
+  return { kind, id: entity.id, name: entity.name };
+}
 
 function envelope({ type, site, entity, data, id = crypto.randomUUID(), occurredAt = new Date() }) {
   if (!TYPES.includes(type)) throw new Error(`Unbekannter Ereignistyp „${type}“`);
-  return {
-    id, type, version: VERSION, occurredAt: iso(occurredAt),
-    source: { app: APP, site: site ? site.primary_domain : null },
-    entity: entity ? { id: entity.id, name: entity.name, type: entity.entity_type } : null,
-    data,
-  };
+  const subject = subjectOf(entity);
+  if (!subject || !subject.id || !subject.name) throw new Error('Ereignis braucht ein subject (id, name)');
+  return { id, type, version: VERSION, occurredAt: iso(occurredAt), site: site ? site.primary_domain : null, subject, data };
 }
 
 // Faktenanfrage versendet – ohne Empfängeradresse und Mailtext
@@ -44,7 +52,7 @@ function inquirySent({ inquiry, entity, site, ranking }) {
   return envelope({
     type: 'inquiry.sent', site, entity, occurredAt: inquiry.sent_at || new Date(),
     data: {
-      inquiryId: inquiry.id, ranking: ranking ? ranking.code : null, language: inquiry.language,
+      inquiryId: inquiry.id, purpose: 'facts', ranking: ranking ? ranking.code : null, language: inquiry.language,
       sentAt: iso(inquiry.sent_at), expiresAt: iso(inquiry.expires_at), askPhotos: Boolean(inquiry.ask_photos),
       questions: Array.isArray(inquiry.criteria_ids) ? inquiry.criteria_ids.length : 0,
     },
@@ -52,68 +60,80 @@ function inquirySent({ inquiry, entity, site, ranking }) {
 }
 
 // Antwortformular abgeschickt – nur Zahlen und Einwilligungstypen, kein Name (der kommt nur über contact.profile)
-function inquiryAnswered({ inquiry, entity, site, ranking, answers = 0, photos = 0, consents = [] }) {
+// answeredFields = alle Angaben, confirmed = bekannte Werte bestätigt/korrigiert (Anzahl > 0)
+function inquiryAnswered({ inquiry, entity, site, ranking, answers = 0, confirmed = 0, photos = 0, consents = [] }) {
   return envelope({
     type: 'inquiry.answered', site, entity, occurredAt: inquiry.answered_at || new Date(),
     data: {
       inquiryId: inquiry.id, ranking: ranking ? ranking.code : null, answeredAt: iso(inquiry.answered_at || new Date()),
-      answers: Number(answers) || 0, photos: Number(photos) || 0, consents: [...consents],
+      answeredFields: Number(answers) || 0, confirmed: Number(confirmed) > 0, photos: Number(photos) || 0, consents: [...consents],
     },
   });
 }
 
-function contactOut(c = {}, fields) {
+const SALUTATIONS = ['herr', 'frau', 'neutral'];
+
+function personOut(p = {}) {
   const out = {};
-  for (const f of fields) out[f] = str(c[f], f === 'email' ? 254 : 200);
+  for (const f of ['salutation', 'firstName', 'lastName', 'position', 'email', 'phone', 'language']) out[f] = str(p[f], f === 'email' ? 254 : 200);
   if (out.email) out.email = out.email.toLowerCase();
+  if (out.salutation && !SALUTATIONS.includes(out.salutation.toLowerCase())) out.salutation = null;
+  else if (out.salutation) out.salutation = out.salutation.toLowerCase();
+  if (!out.lastName) throw new Error('person braucht einen Nachnamen');
+  if (!out.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.email)) throw new Error('person braucht eine gültige E-Mail-Adresse');
   return out;
 }
 
 // Ansprechpartner fürs Profil (ab Paket P2). Rechtsgrundlage berechtigtes Interesse – keine Werbe-Einwilligung.
-function contactProfile({ inquiry = null, entity, site, contact, noticeVersion, collectedAt = new Date() }) {
-  const c = contactOut(contact, ['salutation', 'firstName', 'lastName', 'position', 'email', 'phone', 'language']);
-  if (!c.email && !c.phone) throw new Error('contact.profile braucht E-Mail oder Telefon');
-  if (!noticeVersion) throw new Error('contact.profile braucht die Version des Datenschutzhinweises');
+// notice = Datenschutzhinweis bei der Erhebung (Art. 14): { text, version, url }
+function contactProfile({ inquiry = null, entity, site, person, notice, collectedAt = new Date() }) {
+  if (!notice || !notice.version) throw new Error('contact.profile braucht die Version des Datenschutzhinweises');
   return envelope({
     type: 'contact.profile', site, entity, occurredAt: collectedAt,
-    data: { inquiryId: inquiry ? inquiry.id : null, contact: c, legalBasis: 'legitimate_interest', noticeVersion, collectedAt: iso(collectedAt) },
+    data: {
+      inquiryId: inquiry ? inquiry.id : null, person: personOut(person), legalBasis: 'legitimate_interest',
+      notice: { text: str(notice.text, 2000), version: notice.version, url: str(notice.url, 500) },
+    },
   });
 }
 
-// Einwilligung in Kontakt zu Kooperationen (ab P2). Erteilt erst nach Double-Opt-in senden; Widerruf mit withdrawnAt.
+// E-Mail-Einwilligung (Kontakt zu Kooperationen, ab P2). Erst nach Double-Opt-in senden (confirmedAt Pflicht).
+// Widerrufe sind in v1 kein Ereignis (Hub verarbeitet nur erteilte Einwilligungen) – Daniel trägt sie im Hub ein.
 function contactConsent({
-  inquiry = null, entity, site, contact, granted = true, purpose = 'partner_contact', channel = 'email',
-  textVersion, text, language, grantedAt, doubleOptInAt = null, withdrawnAt = null,
+  inquiry = null, entity, site, person, project = 'tri-hotel', purpose, text, textVersion, language = null,
+  givenAt, doubleOptInSentAt = null, doubleOptInConfirmedAt = null,
 }) {
-  const c = contactOut(contact, ['email', 'firstName', 'lastName']);
-  if (!c.email) throw new Error('contact.consent braucht eine E-Mail-Adresse');
-  if (!textVersion || !text) throw new Error('contact.consent braucht Wortlaut und Version (Nachweis)');
-  if (granted && !doubleOptInAt) throw new Error('contact.consent erst nach Double-Opt-in senden');
-  if (!granted && !withdrawnAt) throw new Error('Widerruf braucht withdrawnAt');
+  if (!text || !textVersion) throw new Error('contact.consent braucht Wortlaut und Version (Nachweis)');
+  if (!givenAt) throw new Error('contact.consent braucht den Zeitpunkt der Einwilligung');
+  if (!doubleOptInConfirmedAt) throw new Error('contact.consent erst nach Double-Opt-in senden');
   return envelope({
-    type: 'contact.consent', site, entity, occurredAt: granted ? doubleOptInAt : withdrawnAt,
+    type: 'contact.consent', site, entity, occurredAt: doubleOptInConfirmedAt,
     data: {
-      inquiryId: inquiry ? inquiry.id : null, contact: c, purpose, channel, granted: Boolean(granted), textVersion, text,
-      language: language || null, grantedAt: iso(grantedAt), doubleOptInAt: iso(doubleOptInAt), withdrawnAt: iso(withdrawnAt),
+      inquiryId: inquiry ? inquiry.id : null, project, person: personOut(person),
+      consent: {
+        channel: 'email', purpose: str(purpose, 500), text, textVersion, language,
+        givenAt: iso(givenAt), doubleOptIn: { sentAt: iso(doubleOptInSentAt), confirmedAt: iso(doubleOptInConfirmedAt) },
+      },
     },
   });
 }
 
 const PHOTO_SCOPES = { photos_profile: 'profile', photos_social: 'social' };
+const SCOPE_TEXT = { profile: 'Profil', social: 'Social Media' };
 
-// Nutzungserlaubnis für Fotos erteilt oder widerrufen. scopes: ['profile', 'social'] oder Einwilligungstypen (photos_profile …)
+// Nutzungserlaubnis für Fotos erteilt (granted) oder abgelehnt/widerrufen. scopes: ['profile', 'social'] oder Einwilligungstypen
 function photosPermission({
-  inquiry = null, entity, site, scopes = [], granted = true, photos = 0, credit = null, textVersion, grantedAt, withdrawnAt = null,
+  inquiry = null, entity, site, scopes = [], granted = true, photos = 0, credit = null, textVersion, grantedAt = null, withdrawnAt = null,
 }) {
-  const s = [...new Set(scopes.map((x) => PHOTO_SCOPES[x] || x))];
-  if (!s.length || s.some((x) => !['profile', 'social'].includes(x))) throw new Error('photos.permission: scopes nur profile/social');
+  const sc = [...new Set(scopes.map((x) => PHOTO_SCOPES[x] || x))];
+  if (sc.some((x) => !SCOPE_TEXT[x]) || (granted && !sc.length)) throw new Error('photos.permission: scopes nur profile/social');
   if (!textVersion) throw new Error('photos.permission braucht die Version des Wortlauts');
-  if (!granted && !withdrawnAt) throw new Error('Widerruf braucht withdrawnAt');
   return envelope({
-    type: 'photos.permission', site, entity, occurredAt: granted ? grantedAt || new Date() : withdrawnAt,
+    type: 'photos.permission', site, entity, occurredAt: granted ? grantedAt || new Date() : withdrawnAt || new Date(),
     data: {
-      inquiryId: inquiry ? inquiry.id : null, scopes: s, granted: Boolean(granted), photos: Number(photos) || 0,
-      credit: str(credit), textVersion, grantedAt: iso(grantedAt), withdrawnAt: iso(withdrawnAt),
+      inquiryId: inquiry ? inquiry.id : null, granted: Boolean(granted), count: Number(photos) || 0,
+      scope: sc.length ? `Fotos mit Urhebervermerk: ${sc.map((x) => SCOPE_TEXT[x]).join(' und ')}${site ? ` (${site.primary_domain})` : ''}` : null,
+      scopes: sc, credit: str(credit), textVersion, grantedAt: iso(grantedAt), withdrawnAt: iso(withdrawnAt),
     },
   });
 }
@@ -125,7 +145,7 @@ async function emit(event, { client = db } = {}) {
   try {
     await client.query(
       `INSERT INTO hub_events (id, type, entity_id, payload) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
-      [event.id, event.type, event.entity ? event.entity.id : null, JSON.stringify(event)]);
+      [event.id, event.type, event.subject.kind === 'entity' ? event.subject.id : null, JSON.stringify(event)]);
     await enqueue('hub-event', { eventId: event.id }, JOB_OPTIONS);
     return event.id;
   } catch (err) {
@@ -144,8 +164,9 @@ async function emitSafe(build, args) {
   }
 }
 
-// 2xx = angenommen (auch Duplikat); 408/429/5xx/Netzfehler = später erneut; sonst endgültig abgelehnt
-const retriable = (status) => status === null || status === 408 || status === 429 || status >= 500;
+// 2xx = angenommen (auch Duplikat); 408/409 (Nonce schon gesehen)/429/5xx/Netzfehler = später erneut mit neuer Nonce;
+// sonst (400 Form, 401/404 Zugang) endgültig abgelehnt
+const retriable = (status) => status === null || [408, 409, 429].includes(status) || status >= 500;
 
 async function post(url, secret, body, { fetchFn = fetch, now = Date.now() } = {}) {
   const u = new URL(url);
@@ -185,7 +206,9 @@ async function deliver(eventId, { target = config.hubEvents, fetchFn = fetch } =
   }
   const error = r.status === null ? `Netzwerk: ${r.error}` : `HTTP ${r.status}`;
   if (!retriable(r.status) || attempts >= MAX_ATTEMPTS) {
-    console.error(`[hub-events] ${row.type} ${row.id} endgültig nicht zugestellt (${error}, Versuch ${attempts})`);
+    // 401/404: Schlüssel oder Ziel falsch eingerichtet – im Log deutlich machen
+    const hint = r.status === 401 || r.status === 404 ? ' – HUB_EVENTS_URL/HUB_EVENTS_SECRET prüfen' : '';
+    console.error(`[hub-events] ${row.type} ${row.id} endgültig nicht zugestellt (${error}, Versuch ${attempts})${hint}`);
     await db.query(`UPDATE hub_events SET attempts = $2 WHERE id = $1`, [row.id, attempts]);
     await finish(row.id, 'failed', error);
     return { status: 'failed' };

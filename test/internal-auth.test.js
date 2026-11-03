@@ -76,6 +76,11 @@ test('verify: Nonce ist Teil der Signatur und kann Pflicht sein', () => {
   assert.deepEqual(auth.verify({ keys, headers: h, ...req, now: NOW, requireNonce: true }), { ok: true, app: 'tri-hotel', nonce });
   assert.equal(auth.verify({ keys, headers: { ...h, 'x-internal-nonce': `${nonce.slice(0, -1)}0` }, ...req, now: NOW }).reason, 'bad_signature');
   assert.equal(auth.verify({ keys, headers: { ...h, 'x-internal-nonce': 'kurz' }, ...req, now: NOW }).reason, 'bad_nonce');
+  assert.equal(auth.verify({ keys, headers: { ...h, 'x-internal-nonce': 'a b'.repeat(8) }, ...req, now: NOW }).reason, 'bad_nonce');
+  // Nonce-Zeichen wie im Hub: [A-Za-z0-9_-]{16,128}
+  const long = 'N_'.repeat(64);
+  const hl = lower(auth.headers({ app: 'tri-hotel', secret: SECRET, ...req, nonce: long, now: NOW }));
+  assert.equal(auth.verify({ keys, headers: hl, ...req, now: NOW, requireNonce: true }).ok, true);
   const without = lower(auth.headers({ app: 'tri-hotel', secret: SECRET, ...req, now: NOW }));
   assert.equal(auth.verify({ keys, headers: without, ...req, now: NOW, requireNonce: true }).reason, 'missing_nonce');
   assert.equal(auth.verify({ keys, headers: without, ...req, now: NOW }).ok, true);
