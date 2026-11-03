@@ -1,0 +1,24 @@
+{
+  "note": "Testvektoren für die HMAC-Signatur (Geheimnis nur für Tests). canonical mit \\n als Zeilenumbruch.",
+  "examples": [
+    {
+      "secret": "beispiel-geheimnis-nur-fuer-tests-0123456789abcdef",
+      "timestamp": 1793620800,
+      "method": "GET",
+      "path": "/internal/v1/entities?q=club&limit=5",
+      "body": "",
+      "canonical": "1793620800\nGET\n/internal/v1/entities?q=club&limit=5\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "ce96fecfca83fef82e23f8134658df5f1c642664dc9e17225f9acc832c1e815e"
+    },
+    {
+      "secret": "beispiel-geheimnis-nur-fuer-tests-0123456789abcdef",
+      "timestamp": 1793620800,
+      "method": "POST",
+      "path": "/internal/v1/events",
+      "body": "{\"id\":\"0d6c2a1e-1111-4a5b-9c8d-7e6f5a4b3c2d\",\"type\":\"inquiry.sent\"}",
+      "nonce": "5f0c7c1e-8d2b-4f6a-9e3d-1a2b3c4d5e6f",
+      "canonical": "1793620800\nPOST\n/internal/v1/events\n9395bfd08443b6dac5e970febe53e5e823775aadffd080deec20c935aa24e789\n5f0c7c1e-8d2b-4f6a-9e3d-1a2b3c4d5e6f",
+      "signature": "abd44bf111efc16302a1a3160cdda35482c3e343656d4e3f6b4d23488b197e28"
+    }
+  ]
+}

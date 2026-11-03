@@ -57,10 +57,12 @@ kanon = `${timestamp}\n${METHOD}\n${pfad_mit_query}\n${hex(sha256(body))}\n${non
 - Body bei GET leer → sha256 des leeren Strings (`e3b0c442…b855`). Bei POST die exakt gesendeten Bytes.
 - Zeitabweichung > 300 s → 401. Vergleich der Signatur zeitkonstant (`crypto.timingSafeEqual`).
 - **Nonce (Richtung B):** Der Empfänger merkt sich Nonces mindestens 10 min und lehnt eine bekannte Nonce mit 401 ab.
-  Richtung A ist nur lesend; eine Wiederholung innerhalb des Zeitfensters ist dort hinnehmbar (Nonce wird ignoriert).
+  Richtung A ist nur lesend; eine Wiederholung innerhalb des Zeitfensters ist dort hinnehmbar. Eine dort trotzdem
+  mitgeschickte Nonce gehört zur Signatur, wird aber nicht gemerkt.
 - **Schlüsselwechsel ohne Ausfall:** Mehrere Einträge je App sind erlaubt (`hub:<neu>,hub:<alt>`); geprüft wird gegen alle.
   Ablauf: neuen Schlüssel beim Empfänger zusätzlich eintragen → Sender umstellen → alten Eintrag entfernen.
-- Referenz-Implementierung: `src/lib/internal-auth.js` (tri-hotel) – Hub darf sie kopieren.
+- Referenz-Implementierung: `src/lib/internal-auth.js` (tri-hotel) – Hub darf sie kopieren. Testvektoren (mit und ohne
+  Nonce): `fixtures/signature-examples.json`.
 
 ## Fehler und Grenzen (Richtung A)
 
