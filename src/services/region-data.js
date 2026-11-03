@@ -2,12 +2,14 @@
 // - Klima je Monat am Klimapunkt der Region (Open-Meteo, mit Wind und Sonne): vom Admin gesetzt, sonst Lage der Hotels,
 //   (ab MIN_HOTELS Hotels), sonst ein tiefer gelegener Ort nahe der Mitte – der Mittelpunkt liegt auf Inseln oft im Gebirge (Teneriffa: Teide)
 // - Wassertemperatur vor der Küste: Mittel der küstennächsten Meereszellen in bis zu 8 Richtungen (Binnenregionen ohne)
+// - Wind und Regentage von Messstationen nahe dem Klimapunkt (services/stations.js), sonst Modellwerte
 // - Radrevier aus OpenStreetMap (bike_areas, gleiche Regel und Berechnung wie für die Hotels)
 // Aktualisierung: per Knopf im Admin oder automatisch, wenn älter als MAX_AGE_DAYS.
 const db = require('../db');
 const climate = require('./climate');
 const geo = require('./geo');
 const bikeArea = require('./bike-area');
+const stations = require('./stations');
 const { logAction } = require('../lib/audit');
 
 const MAX_AGE_DAYS = 365;
@@ -75,10 +77,12 @@ async function saveClimate(regionId, months, sea) {
   await db.tx(async (c) => {
     for (const m of months) {
       await c.query(
-        `INSERT INTO region_climate_monthly (region_id, month, avg_high_c, avg_low_c, rain_days, wind_kmh, windy_days, sunshine_h, sea_c)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        `INSERT INTO region_climate_monthly (region_id, month, avg_high_c, avg_low_c, rain_days, wind_kmh, windy_days, sunshine_h, sea_c,
+           rain_days_model, wind_kmh_model, windy_days_model)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$5,$6,$7)
          ON CONFLICT (region_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c,
            rain_days = EXCLUDED.rain_days, wind_kmh = EXCLUDED.wind_kmh, windy_days = EXCLUDED.windy_days,
+           rain_days_model = EXCLUDED.rain_days_model, wind_kmh_model = EXCLUDED.wind_kmh_model, windy_days_model = EXCLUDED.windy_days_model,
            sunshine_h = EXCLUDED.sunshine_h, sea_c = CASE WHEN $10 THEN region_climate_monthly.sea_c ELSE EXCLUDED.sea_c END`,
         [regionId, m.month, m.avg_high_c, m.avg_low_c, m.rain_days, m.wind_kmh, m.windy_days, m.sunshine_h,
           sea ? sea.months[m.month - 1] : null, sea === undefined]);
@@ -105,6 +109,13 @@ async function refresh(region, { force = false, adminId = null } = {}) {
     await db.query(`UPDATE regions SET sea_point = CASE WHEN $4 THEN sea_point ELSE $2::jsonb END, climate_point = $3 WHERE id = $1`,
       [region.id, sea ? JSON.stringify({ points: sea.points }) : null, JSON.stringify(point), sea === undefined]);
     parts.push(`Klima 12 Monate (${climatePointText(point)})${sea ? `, Wasser aus ${sea.points.length} Küstenpunkten` : sea === null ? ', Binnenregion (kein Meer im Radius)' : ''}`);
+    // Wind und Regentage von Messstationen (NOAA) nahe dem Klimapunkt; ohne Station bleiben die Modellwerte
+    try {
+      parts.push(await stations.updateRegion({ ...region, climate_point: point }));
+    } catch (err) {
+      await stations.applyRegion(region.id);
+      errors.push(`Messstationen: ${err.message} (bisherige Zuordnung bleibt)`);
+    }
   } catch (err) {
     errors.push(`Klima: ${err.message}`);
   }

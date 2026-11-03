@@ -219,13 +219,18 @@
           <tr><th></th><% climate.forEach(function (c) { %><th class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
           <tr><th>Ø max °C</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
           <tr><th>Ø min °C</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
-          <tr><th>Regentage</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+          <% var rainSt = (entity.attributes || {}).rain_station; %>
+          <tr><th>Regentage <%- include('../partials/info-tip', { text: rainSt ? 'Tage mit mindestens 1 mm Niederschlag, gemessen: ' + stationText(rainSt) + '.' : 'Tage mit mindestens 1 mm Niederschlag, Modellwert von Open-Meteo (keine Messstation in der Nähe) – Modelle zählen oft 1–2 Tage je Monat zu viel.' }) %></th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+          <% if (regionWind) { var windTip = 'Wind in der Region ' + regionWind.region + ': ' + stationText(regionWind.station) + ', Mittel der Stundenwerte in 10 m Höhe. Wind ist örtlich sehr unterschiedlich – an Kaps und Pässen oft stärker, in geschützten Buchten schwächer.'; %>
+            <tr><th>Wind km/h <%- include('../partials/info-tip', { text: windTip }) %></th><% climate.forEach(function (c) { var w = regionWind.months.find(function (x) { return x.month === c.month; }); %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= w && w.wind_kmh !== null ? Math.round(w.wind_kmh) : '–' %></td><% }) %></tr>
+            <tr><th>Starkwindtage <%- include('../partials/info-tip', { text: 'Tage, an denen der Wind mindestens eine Stunde lang im Mittel 40 km/h erreicht (Messstation der Region, siehe Wind).' }) %></th><% climate.forEach(function (c) { var w = regionWind.months.find(function (x) { return x.month === c.month; }); %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= w && w.windy_days !== null ? Math.round(w.windy_days) : '–' %></td><% }) %></tr>
+          <% } %>
           <% if (climate.some(function (c) { return c.sea_c !== null && c.sea_c !== undefined; })) { var seaKm = (entity.attributes || {}).sea_point ? String(entity.attributes.sea_point.distance_km).replace('.', ',') : null; %>
             <tr><th>Wasser °C <%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Modellwert von Open-Meteo im Raster von etwa 8–9 km' + (seaKm ? ', nächster Punkt ' + seaKm + ' km vom Hotel' : '') + '. Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %></th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.sea_c === null || c.sea_c === undefined ? '–' : Math.round(c.sea_c) %></td><% }) %></tr>
           <% } %>
         </table>
       </div>
-      <p class="muted"><small>Quelle: Open-Meteo, Mittel der letzten drei Jahre. Markiert: beste Reisezeit. Das Klima fließt nicht in den <%= ranking.score_name %> ein.</small></p>
+      <p class="muted"><small>Quellen: Temperatur und Wasser Open-Meteo (Modell, CC BY 4.0), <%= [rainSt ? 'Regentage' : null, regionWind ? 'Wind' : null].filter(Boolean).join(' und ') || 'Regentage ebenfalls Modell' %><%= rainSt || regionWind ? ' gemessen an Wetterstationen (NOAA, gemeinfrei)' : '' %>; Mittel der letzten drei Jahre. Markiert: beste Reisezeit. Das Klima fließt nicht in den <%= ranking.score_name %> ein.</small></p>
     <% } %>
 
     <% if (entity.lat && entity.lng) { %>

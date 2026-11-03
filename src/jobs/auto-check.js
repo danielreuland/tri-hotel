@@ -296,8 +296,9 @@ async function climateStep(subId, entity, label) {
     const months = await climate.monthlyClimate(point);
     for (const m of months) {
       await db.query(
-        `INSERT INTO climate_monthly (entity_id, month, avg_high_c, avg_low_c, rain_days) VALUES ($1,$2,$3,$4,$5)
-         ON CONFLICT (entity_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c, rain_days = EXCLUDED.rain_days`,
+        `INSERT INTO climate_monthly (entity_id, month, avg_high_c, avg_low_c, rain_days, rain_days_model) VALUES ($1,$2,$3,$4,$5,$5)
+         ON CONFLICT (entity_id, month) DO UPDATE SET avg_high_c = EXCLUDED.avg_high_c, avg_low_c = EXCLUDED.avg_low_c,
+           rain_days = EXCLUDED.rain_days, rain_days_model = EXCLUDED.rain_days_model`,
         [entity.id, m.month, m.avg_high_c, m.avg_low_c, m.rain_days]
       );
     }
@@ -314,7 +315,14 @@ async function climateStep(subId, entity, label) {
     } catch (err) {
       seaText = ` Wassertemperatur nicht abrufbar (${err.message}).`;
     }
-    return `12 Monate von Open-Meteo übernommen.${seaText}`;
+    // Regentage von der nächsten Messstation (NOAA) statt aus dem Modell, falls vorhanden. Fehler bremsen die Prüfung nicht.
+    let rainText = '';
+    try {
+      rainText = ` ${await require('../services/stations').updateEntity(entity)}.`;
+    } catch (err) {
+      rainText = ` Messstation nicht abrufbar (${err.message}), Regentage aus dem Modell.`;
+    }
+    return `12 Monate von Open-Meteo übernommen.${seaText}${rainText}`;
   });
 }
 

@@ -15,6 +15,7 @@
       <td><small>
         <% if (r.data_computed_at) { %><%= formatDate(r.data_computed_at) %> · <% } %>
         Klima <%= r.climate_months === 12 ? '✓' : '–' %><% if (r.climate_point) { %> (<%= climatePointText(r.climate_point) %>)<% } %> · Wasser <%= r.sea_point ? (r.sea_point.points ? '✓ (' + r.sea_point.points.length + ' Küstenpunkte)' : '✓') : (r.climate_months ? 'Binnenland' : '–') %> ·
+        Wind <%= r.wind_station ? r.wind_station.name + ' (' + r.wind_station.distance_km + ' km)' : 'Modell' %> · Regen <%= r.rain_station ? r.rain_station.name + ' (' + r.rain_station.distance_km + ' km)' : 'Modell' %> ·
         Radrevier <%= r.bike_score !== null && r.bike_score !== undefined ? String(Number(r.bike_score)).replace('.', ',') + '/6' : '–' %>
         <% if (r.data_error || r.bike_error) { %><br><span style="color:var(--bad)"><%= r.data_error || r.bike_error %></span><% } %>
       </small>

@@ -357,7 +357,12 @@
           <tr><td>Max. °C</td><% climate.forEach(function (c) { %><td><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
           <tr><td>Min. °C</td><% climate.forEach(function (c) { %><td><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
           <tr><td>Regentage</td><% climate.forEach(function (c) { %><td><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
+          <% if (climate.some(function (c) { return c.rain_days_model !== null && c.rain_days_model !== undefined && Number(c.rain_days_model) !== Number(c.rain_days); })) { %>
+            <tr><td><small class="muted">Regentage Modell</small></td><% climate.forEach(function (c) { %><td><small class="muted"><%= c.rain_days_model === null || c.rain_days_model === undefined ? '–' : Math.round(c.rain_days_model) %></small></td><% }) %></tr>
+          <% } %>
         </table></div>
+        <% var rs = (entity && entity.attributes || {}).rain_station; %>
+        <p class="muted" style="margin:4px 0 0"><small>Regentage: <%= rs ? 'gemessen an der Wetterstation ' + rs.name + ' (' + rs.distance_km + ' km, ' + rs.period + ', NOAA)' : 'Modellwert (keine Messstation ≤ 25 km mit ähnlicher Höhe' + ((entity && entity.attributes || {}).stations_checked_at ? '' : ' – noch nicht geprüft') + ')' %>.</small></p>
       <% } %>
     </section>
 

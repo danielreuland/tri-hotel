@@ -5,6 +5,20 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### Klima: Wind und Regentage von Messstationen (03.11.2026, noch nicht deployt – Migration 099)
+Vergleich Open-Meteo gegen 11 NOAA-Stationen 2023–2024 (Gando, Fuerteventura, Lanzarote, Teneriffa Süd, Palma, Alicante,
+Faro, Girona, Lübeck, Salzburg, Phuket): **Temperatur ok** (heutige Einstellung best_match im Mittel −0,8 °C, besser als
+ERA5-Seamless −2,1 °C) – die heißen Sommerwerte sind die Jahre 2023–2025. **Wind im Modell zu niedrig** (Teneriffa Süd 11
+statt 20 km/h, Gando 20 statt 27), **Regentage zu hoch** (+18 im Jahr). Umsetzung `src/services/stations.js`:
+Wind (ISD stündlich) und Regentage (GHCN-Daily ≥ 1 mm) je Region (Station ≤ 60 km bzw. Regionsradius, ±300 m Höhe),
+Regentage je Hotel (≤ 25 km, ±300 m); Modellwerte bleiben in `*_model`. Hotelseite: Zeilen Wind und Starkwindtage
+(Region), Quellen je Zeile; Beschreibungstext bekommt Tiefstwert, Wind und Quellen. „Böentage“ heißen jetzt
+Starkwindtage (es war schon immer das Stundenmittel ≥ 40 km/h, keine Böen).
+- **Nach dem Deploy:** `node scripts/weather-stations.js` auf dem Server (Regionen + Hotels, ca. 5 Min.).
+- Ohne Station (Stand Trockenlauf): Regen Algarve, Costa Blanca; Wind Algarve. Costa Blanca-Wind käme aus Alzira
+  (56 km, im Inland) – ggf. später Stationswahl im Admin überschreibbar machen.
+- **Lizenz Open-Meteo** (Daniel klärt): kostenlose API nur nicht-kommerziell, Seiten mit Werbung gelten als kommerziell.
+
 ### Beschreibungstexte: neuer Prompt und Ablauf (03.11.2026, noch nicht deployt – Migration 098)
 Umsetzung der externen Bewertung: fester Styleguide je Ranking + bis zu 3 ausgewählte Mustertexte (statt „zuletzt
 überarbeiteter Text“), Vergleich je Angabe im Ranking (selten/verbreitet/schwächer, Gesamtplatz), Quellenstufe in der

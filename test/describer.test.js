@@ -182,3 +182,16 @@ test('describer.modelInput: IDs, Quellenstufe, Vergleich und Messwert; keine alt
   assert.equal(m.klima.monate[0].wasser_c, 18);
   assert.ok(!JSON.stringify(m).includes('redaktionell geprüft'));
 });
+
+test('describer.modelInput: Klima mit Tiefstwert, Wind der Region und Quellen; Fingerabdruck in alter Form unverändert', () => {
+  const base = sample();
+  const withWind = sample({
+    climate: [{ month: 'Juli', max_c: 22, rain_days: 9, sea_c: 18, min_c: 14, wind_kmh: 21, windy_days: 2 }],
+    climate_sources: { temperatur: 'Modell (Open-Meteo)', regentage: 'Messstation Kiel (8 km, 2023–2025)', wind: 'Messstation Kiel (8 km, 2023–2025), Wert für die Region Ostsee' },
+  });
+  const k = describer.modelInput(withWind).klima;
+  assert.deepEqual(k.monate[0], { monat: 'Juli', max_c: 22, min_c: 14, regentage: 9, wasser_c: 18, wind_kmh: 21, starkwindtage: 2 });
+  assert.match(k.quellen.wind, /Region Ostsee/);
+  assert.equal(describer.inputHash(base), describer.inputHash(withWind));
+  assert.match(describer.prompt(withWind), /Wind ist ein Wert der Region/);
+});

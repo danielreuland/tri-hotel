@@ -121,7 +121,7 @@ test('Regionsseite: beste Reisezeit mit Begründung aus formula.best_time', () =
   assert.equal(r.best, 'Februar–Mai, September–Dezember');
   assert.deepEqual(r.outside, ['Juni–August darüber (bis 32 °C)', 'Januar darunter (ab 15 °C)']);
   assert.ok(r.notes.includes('Am meisten Regen im Februar (12 Regentage), am wenigsten im Juli (0).'));
-  assert.ok(r.notes.includes('Am windigsten im August (Ø 25 km/h, 4 Tage mit Sturmböen).'));
+  assert.ok(r.notes.includes('Am windigsten im August (Ø 25 km/h, 4 Tage mit Starkwind).'));
   assert.ok(r.notes.includes('Wasser am wärmsten im August (26 °C), am kühlsten im Februar (16 °C).'));
   const none = guide.bestTimeReasons(climate, {}, M);
   assert.equal(none.rule, null, 'ohne Regel im Ranking keine Reisezeit-Begründung, nur Auffälligkeiten');
@@ -164,7 +164,7 @@ test('Regionsseite: beste Reisezeit „ganzjährig außer …“ und Frage zum W
   const climate = [{ month: 1, wind_kmh: 14, windy_days: 1 }, { month: 7, wind_kmh: 23, windy_days: 4 }];
   const faq = guide.regionFaq({ region: { nameIn: 'auf Fuerteventura' }, ranking: { formula: {} }, climate }, M);
   assert.equal(faq[0].q, 'Wie windig ist es auf Fuerteventura?');
-  assert.match(faq[0].a, /14 km\/h im Januar bis 23 km\/h im Juli\. Über das Jahr gibt es rund 5 Tage mit Sturmböen/);
+  assert.match(faq[0].a, /14 km\/h im Januar bis 23 km\/h im Juli\. Über das Jahr gibt es rund 5 Tage mit Starkwind/);
   assert.equal(guide.bikeText({ routes: 1, reliefM: null, quietKm: null })[0], '1 ausgeschilderte Radroute.');
 });
 

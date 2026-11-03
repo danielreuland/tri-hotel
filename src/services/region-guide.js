@@ -26,7 +26,7 @@ const METRICS = {
   rain_days: { label: 'Regentage', short: 'Regentage', unit: 'Tage' },
   sunshine_h: { label: 'Sonnenstunden je Tag', short: 'Sonne', unit: 'h' },
   wind_kmh: { label: 'Ø Wind', short: 'Wind', unit: 'km/h' },
-  windy_days: { label: 'Tage mit Sturmböen ab 40 km/h', short: 'Böentage', unit: 'Tage' },
+  windy_days: { label: 'Tage mit Starkwind ab 40 km/h (Stundenmittel)', short: 'Starkwindtage', unit: 'Tage' },
   sea_c: { label: 'Wassertemperatur', short: 'Wasser', unit: '°C' },
 };
 
@@ -222,7 +222,7 @@ function bestTimeReasons(climate, formula, monthNames) {
   const wind = ext('wind_kmh', 1);
   if (wind) {
     const gusts = val(wind, 'windy_days');
-    out.notes.push(`Am windigsten im ${name(wind)} (Ø ${de(val(wind, 'wind_kmh'))} km/h${gusts ? `, ${de(gusts)} Tage mit Sturmböen` : ''}).`);
+    out.notes.push(`Am windigsten im ${name(wind)} (Ø ${de(val(wind, 'wind_kmh'))} km/h${gusts ? `, ${de(gusts)} Tage mit Starkwind` : ''}).`);
   }
   const warm = ext('sea_c', 1);
   const cold = ext('sea_c', -1);
@@ -276,7 +276,7 @@ function regionFaq({ region, ranking, climate = [], bike = null, hotels = { coun
     out.push({
       q: `Wie windig ist es ${region.nameIn}?`,
       a: `Im Mittel weht der Wind mit ${de(min.wind_kmh)} km/h im ${mName(min)} bis ${de(max.wind_kmh)} km/h im ${mName(max)}.`
-        + (gusts ? ` Über das Jahr gibt es rund ${de(gusts)} Tage mit Sturmböen ab 40 km/h.` : '')
+        + (gusts ? ` Über das Jahr gibt es rund ${de(gusts)} Tage mit Starkwind ab 40 km/h.` : '')
         + ' Gemessen in 10 m Höhe, Mittel der letzten drei Jahre.',
     });
   }
@@ -314,12 +314,23 @@ function regionFaq({ region, ranking, climate = [], bike = null, hotels = { coun
 
 // Herkunft der Klimawerte einer Region in einem Satz (Tooltip und Quellenhinweis)
 const POINT_WHERE = { hotels: 'an der Lage der Hotels', auto: 'an einem tiefer gelegenen Ort nahe der Regionsmitte', admin: 'an einem typischen Trainingsort', center: 'in der Regionsmitte' };
+// Wind und Regentage gemessen (NOAA-Stationen), sofern zugeordnet – Wind ist örtlich sehr unterschiedlich
+function stationNote(region) {
+  const w = region && region.wind_station;
+  const r = region && region.rain_station;
+  const t = (x) => `${x.name} (${String(x.distance_km).replace('.', ',')} km, ${x.period})`;
+  if (!w && !r) return '';
+  if (w && r && w.name === r.name) return ` Wind und Regentage gemessen an der Wetterstation ${t(w)}; Wind ist örtlich sehr unterschiedlich.`;
+  return [w ? ` Wind gemessen an der Wetterstation ${t(w)}; er ist örtlich sehr unterschiedlich.` : '', r ? ` Regentage gemessen an der Wetterstation ${t(r)}.` : ''].join('');
+}
+
 function climatePointNote(region) {
   const p = region && region.climate_point;
-  if (!p) return 'Klima von Open-Meteo, Mittel der letzten drei vollen Jahre.';
+  const st = stationNote(region);
+  if (!p) return `Klima von Open-Meteo, Mittel der letzten drei vollen Jahre.${st}`;
   const bits = [p.place, p.elevation_m !== null && p.elevation_m !== undefined ? `${p.elevation_m} m` : null].filter(Boolean);
   return `Klima ${POINT_WHERE[p.source] || ''}${bits.length ? ` (${bits.join(', ')})` : ''} – Modellwerte von Open-Meteo, Mittel der letzten drei vollen Jahre. `
-    + 'In höheren Lagen ist es kühler, je 100 m etwa 0,6 °C.';
+    + `In höheren Lagen ist es kühler, je 100 m etwa 0,6 °C.${st}`;
 }
 
 // Alle Daten je Region für Übersicht und Vergleich

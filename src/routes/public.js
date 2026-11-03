@@ -321,6 +321,8 @@ async function renderEntity(req, res, ranking, slug) {
   const guestPhotos = [];
   for (const r of reviewList) for (const i of r.images) guestPhotos.push({ ...i, author: r.author_name, stay_month: r.stay_month });
   const regionExamples = !images.length && !guestPhotos.length && region ? media.regionExamples(res.locals.siteMedia, region.id) : [];
+  // Wind: Messstation der Region (Hotels selbst haben keine eigene Windstation)
+  const regionWind = await require('../services/stations').regionWind(region);
   const text = await db.one(`SELECT summary, body, published_at, model IS NOT NULL AS ai FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2 AND status = 'published'`, [entity.id, ranking.id]);
 
   const canonical = `${siteUrl}${entityPath(ranking, entity)}`;
@@ -371,6 +373,7 @@ async function renderEntity(req, res, ranking, slug) {
     athleteUsed: result.athleteUsed, minReviews: formula.min_reviews, athleteEnabled: Boolean(formula.athlete_enabled), athleteWeight: formula.athlete_weight,
     textDate: text && text.published_at,
     textAi: Boolean(text && text.ai),
+    regionWind, stationText: require('../services/stations').stationText,
     base: rankingBase(ranking),
   });
   return true;
