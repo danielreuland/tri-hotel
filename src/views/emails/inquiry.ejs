@@ -3,7 +3,8 @@
 <%
   function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   // Links im Fließtext klickbar (eine Zeile nur mit URL wird unten zum Button)
-  function linkify(t) { return esc(t).replace(/https?:\/\/[^\s<]+/g, function (u) { return '<a href="' + u.replace(/"/g, '&quot;') + '">' + u + '</a>'; }); }
+  function linkify(t, style) { return esc(t).replace(/https?:\/\/[^\s<]+/g, function (u) { return '<a href="' + u.replace(/"/g, '&quot;') + '"' + (style ? ' style="' + style + '"' : '') + '>' + u + '</a>'; }); }
+  var muted = 'color:#6a737d';
   var button = 'display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold';
   // Knopftext passend zum Inhalt der Anfrage: Fragen, nur Bestätigungen oder nur Fotos
   var BUTTONS = {
@@ -15,12 +16,15 @@
   var buttonText = (BUTTONS[locals.cta] || BUTTONS.answer)[language === 'de' ? 'de' : 'en'];
 %>
 <% text.split(/\n{2,}/).forEach(function (para) {
+     // Rechtliche Fußzeile („--“ am Absatzanfang) klein und grau; nur bei Mails eines Menschen, KI-Hinweise bleiben normal lesbar
+     if (locals.smallFooter && /^--\n/.test(para.trim())) { %>
+  <p style="<%= muted %>;font-size:12px"><%- para.trim().split('\n').map(function (l) { return linkify(l, muted); }).join('<br>') %></p>
+<%   return; }
      var lines = para.split('\n'); var buf = []; %>
   <% lines.forEach(function (line) { var url = line.trim(); if (/^https?:\/\/\S+$/.test(url)) { %>
-    <% if (buf.length) { %><p><%- buf.map(linkify).join('<br>') %></p><% buf = []; } %>
-    <p><a href="<%= url %>" style="<%= button %>"><%= buttonText %></a><br>
-      <small style="color:#6a737d"><%= url %></small></p>
+    <% if (buf.length) { %><p><%- buf.map(function (l) { return linkify(l); }).join('<br>') %></p><% buf = []; } %>
+    <p><a href="<%= url %>" style="<%= button %>"><%= buttonText %></a></p>
   <% } else { buf.push(line); } }) %>
-  <% if (buf.length) { %><p><%- buf.map(linkify).join('<br>') %></p><% } %>
+  <% if (buf.length) { %><p><%- buf.map(function (l) { return linkify(l); }).join('<br>') %></p><% } %>
 <% }) %>
 <%- include('_layout_bottom') %>

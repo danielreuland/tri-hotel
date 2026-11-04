@@ -35,6 +35,7 @@ Wer ist bei Ihnen die richtige Person für Ihr Profil bei uns? Im Formular könn
 Viele Grüße
 Daniel Reuland
 Gründer tri-hotel.de
+
 Bei Rückfragen hilft Ihnen Mia, unsere KI-Assistentin; ich lese jede Antwort selbst.
 
 --
@@ -68,6 +69,7 @@ Who is the right person at your hotel for your profile with us? You can enter a 
 Best regards
 Daniel Reuland
 Founder of tri-hotel.de
+
 If you have questions, Mia, our AI assistant, will help you; I read every reply myself.
 
 --
@@ -84,6 +86,6 @@ No further requests? {{abmelden}}
 | `{{score}}`, `{{platz}}`, `{{gesamt}}` | Score, Platz, Anzahl Hotels im Ranking |
 | `{{kernfakten}}` | bis zu 5 erfasste filterbare Leistungen (Englisch: per KI übersetzt) |
 | `{{hotelseite}}` | Link zur öffentlichen Hotelseite |
-| `{{LINK}}` | persönlicher Link; allein auf der Zeile wird er zum Knopf „Jetzt Angaben ergänzen und Fotos hochladen“ |
+| `{{LINK}}` | persönlicher Link; allein auf der Zeile wird er zum Knopf „Jetzt Angaben ergänzen und Fotos hochladen“ (ohne sichtbare Adresse darunter) |
 | `{{datenschutz}}`, `{{abmelden}}` | Datenschutzerklärung, Abmeldelink |
 | `{{#platz}}`, `{{#ohne_platz}}`, `{{#kernfakten}}`, `{{#hotelseite}}` | Sätze nur, wenn die Angabe vorhanden ist |

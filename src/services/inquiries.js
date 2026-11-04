@@ -340,7 +340,10 @@ async function send(inquiryId) {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
-      data: { subject: draft.subject, text: personalize(draft.body, site, tok.token), language: inq.language, cta: buttonKind(inq, persona) },
+      data: {
+        subject: draft.subject, text: personalize(draft.body, site, tok.token), language: inq.language, cta: buttonKind(inq, persona),
+        smallFooter: Boolean(persona && persona.is_ai === false),
+      },
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
