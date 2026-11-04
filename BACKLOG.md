@@ -309,6 +309,8 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
 
 ## Zur Info: Server-Konfiguration (nur `.env`, nicht im Repo)
+Google-Anmeldung (Stand 04.11.2026): tri-hotel und Hub danielreuland.com teilen einen OAuth-Client und dasselbe Secret; beide
+Weiterleitungs-URIs stehen in der Console. Wer das Secret wechselt, muss es in beiden `.env` ändern und beide Apps neu starten.
 `MAIL_PROVIDER=smtp` über info@tri-hotel.de (IONOS), `MAIL_INBOUND=imap`, `NOINDEX=false`; Site-Absender `info@tri-hotel.de`.
 Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohne Ausfall). Server-Sicherung der früheren
 `package-lock.json`: `/root/package-lock.server-backup.json`.
