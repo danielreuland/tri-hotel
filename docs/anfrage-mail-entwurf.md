@@ -43,7 +43,7 @@ Hinweise zum Datenschutz: {{datenschutz}}
 Keine weiteren Anfragen gewünscht? {{abmelden}}
 ```
 
-## Englisch (für alle Länder außer DE/AT/CH)
+## Englisch (für alle Länder außer DE, AT, CH, LI, LU)
 
 Betreff: {{objekt}} on tri-hotel.de – a quick check?
 
