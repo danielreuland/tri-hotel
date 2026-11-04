@@ -543,7 +543,7 @@
         <form method="post" action="/admin/anfragen/<%= draftInq.id %>/formulieren" class="draft-box" data-busy="Der Agent formuliert …">
           <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
           <p style="margin-top:0"><span class="badge warn">Entwurf</span> <strong>Anfrage an <%= draftInq.recipient %></strong>
-            <small class="muted">· <%= draftInq.auto_created ? 'automatisch angelegt' : 'angelegt' %> <%= formatDate(draftInq.created_at) %><%= draftInq.persona_id && personas[draftInq.persona_id] ? ' · schreibt: ' + personas[draftInq.persona_id] + ' (KI)' : '' %></small></p>
+            <small class="muted">· <%= draftInq.auto_created ? 'automatisch angelegt' : 'angelegt' %> <%= formatDate(draftInq.created_at) %><%= draftInq.persona_id && personas[draftInq.persona_id] ? ' · schreibt: ' + personas[draftInq.persona_id] : '' %></small></p>
           <p class="muted" style="margin:0 0 6px"><small><strong>Schritt 1:</strong> Auswahl anpassen und formulieren lassen – der Agent schreibt die Mail in der Sprache des Betreibers (<%= draftInq.language.toUpperCase() %>). Gesendet wird erst in Schritt 2.</small></p>
           <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
             <% askable.filter(function (c) { return draftIds.indexOf(c.id) >= 0 || unclearIds.indexOf(c.id) >= 0 }).forEach(function (c) { var f = factByCrit[c.id]; %>
@@ -620,7 +620,7 @@
         <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:12px">
           <p style="margin:0 0 6px">
             <span class="badge <%= inq.status === 'answered' ? 'good' : inq.status === 'failed' ? 'bad' : inq.status === 'sent' ? 'accent' : '' %>"><%= statusText %></span>
-            <small class="muted">gestartet <%= formatDate(inq.created_at) %><%= inq.sent_at ? ' · versendet ' + formatDate(inq.sent_at) : '' %><%= inq.reminder_sent_at ? ' · erinnert ' + formatDate(inq.reminder_sent_at) : '' %><%= inq.answered_at ? ' · Antwort ' + formatDate(inq.answered_at) : '' %> · <%= inq.criteria_ids.length %> Fragen<% var nConf = (inq.confirm_criteria_ids || []).length + (inq.confirm_feature_ids || []).length; %><%= nConf ? ' + ' + nConf + ' Bestätigungen' : '' %><%= inq.ask_photos ? ' + Fotos' : '' %> · <%= inq.language.toUpperCase() %><%= personaName ? ' · von ' + personaName + ' (KI)' : '' %></small>
+            <small class="muted">gestartet <%= formatDate(inq.created_at) %><%= inq.sent_at ? ' · versendet ' + formatDate(inq.sent_at) : '' %><%= inq.reminder_sent_at ? ' · erinnert ' + formatDate(inq.reminder_sent_at) : '' %><%= inq.answered_at ? ' · Antwort ' + formatDate(inq.answered_at) : '' %> · <%= inq.criteria_ids.length %> Fragen<% var nConf = (inq.confirm_criteria_ids || []).length + (inq.confirm_feature_ids || []).length; %><%= nConf ? ' + ' + nConf + ' Bestätigungen' : '' %><%= inq.ask_photos ? ' + Fotos' : '' %> · <%= inq.language.toUpperCase() %><%= personaName ? ' · von ' + personaName : '' %></small>
           </p>
           <% if (inq.error) { %><p style="color:var(--bad);margin:0 0 6px"><small><%= inq.error %></small></p><% } %>
           <% if (inq.body) { %>

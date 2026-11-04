@@ -298,7 +298,7 @@ async function loadDetail(id) {
   const consents = entity
     ? await db.many(`SELECT * FROM consents WHERE entity_id = $1 AND site_id = $2 ORDER BY withdrawn_at NULLS FIRST, granted_at DESC`, [entity.id, ranking.site_id])
     : [];
-  const personas = Object.fromEntries((await db.many('SELECT id, name FROM personas')).map((p) => [p.id, p.name]));
+  const personas = Object.fromEntries((await db.many('SELECT id, name, is_ai FROM personas')).map((p) => [p.id, p.is_ai ? `${p.name} (KI)` : p.name]));
   // Leistungen: Katalog, abgeleitete (aus Fakten) und manuell gepflegte
   const featureCatalog = await featureService.catalog(ranking.entity_type);
   const present = entity ? await featureService.forEntity(ranking.entity_type, entity.id) : [];
@@ -1023,7 +1023,7 @@ router.get('/anfragen', wrap(async (req, res) => {
   const status = INQUIRY_FILTERS[req.query.status] ? req.query.status : 'offen';
   const q = String(req.query.q || '').trim().slice(0, 100);
   const rows = await db.many(
-    `SELECT i.*, e.name AS entity_name, e.city, p.name AS persona_name, u.email AS created_by_email, a.email AS approved_by_email,
+    `SELECT i.*, e.name AS entity_name, e.city, p.name AS persona_name, p.is_ai AS persona_is_ai, u.email AS created_by_email, a.email AS approved_by_email,
             (SELECT array_agg(c.label ORDER BY c.sort_order) FROM criteria c WHERE c.id = ANY(i.criteria_ids)) AS criteria_labels,
             (SELECT count(*)::int FROM inquiry_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending')
               + (SELECT count(*)::int FROM inquiry_feature_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending') AS pending_answers,
@@ -1465,7 +1465,7 @@ router.post('/team/:id/entfernen', wrap(async (req, res) => {
 
 router.get('/log', wrap(async (req, res) => {
   const rows = await db.many(
-    `SELECT a.*, u.email, p.name AS persona_name FROM admin_actions a
+    `SELECT a.*, u.email, p.name AS persona_name, p.is_ai AS persona_is_ai FROM admin_actions a
        LEFT JOIN admin_users u ON u.id = a.admin_id LEFT JOIN personas p ON p.id = a.persona_id
       ORDER BY a.created_at DESC LIMIT 300`
   );

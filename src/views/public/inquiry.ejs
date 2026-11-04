@@ -12,6 +12,7 @@
 <% } %>
 
 <form method="post" enctype="multipart/form-data" class="grid" style="gap:20px">
+  <input type="hidden" name="form_sent" value="1">
   <section class="card">
     <h2 style="margin-top:0"><%= de ? 'Stammdaten' : 'Basic details' %></h2>
     <p style="margin:0"><strong><%= entity.name %></strong><br>
@@ -45,6 +46,9 @@
       <p class="muted"><%= de
         ? 'Bitte kurz prüfen. Was stimmt, bestätigen Sie mit einem Klick; was nicht stimmt, korrigieren Sie direkt.'
         : 'Please check briefly. Confirm what is correct with one click; correct anything that is not.' %></p>
+      <% if (confCrit.length) { %>
+      <details <%= errors.length ? 'open' : '' %>>
+        <summary style="cursor:pointer;font-weight:800;padding:8px 0"><%= de ? confCrit.length + ' bekannte Angaben anzeigen und prüfen' : 'Show and check ' + confCrit.length + ' known details' %></summary>
       <% if (confCrit.length > 1) { %>
         <p><button type="button" class="btn" data-confirm-all hidden><%= de ? 'Alle als „stimmt“ markieren' : 'Mark all as “correct”' %></button></p>
       <% } %>
@@ -62,18 +66,20 @@
           <label class="inline"><input type="radio" name="<%= name %>" value="unknown" <%= cur === 'unknown' ? 'checked' : '' %>> <span class="muted"><%= de ? 'weiß ich nicht' : "I don't know" %></span></label>
         </fieldset>
       <% }) %>
+      </details>
+      <% } %>
       <% if (knownFeat.length) { %>
-        <h3 style="margin:16px 0 4px"><%= de ? 'Leistungen' : 'Facilities and services' %></h3>
+      <details <%= errors.length ? 'open' : '' %>>
+        <summary style="cursor:pointer;font-weight:800;padding:8px 0"><%= de ? knownFeat.length + ' erfasste Leistungen anzeigen und prüfen' : 'Show and check ' + knownFeat.length + ' recorded facilities' %></summary>
         <p class="muted" style="margin-top:0"><small><%= de
           ? 'Diese Leistungen haben wir bei Ihnen erfasst. Bitte entfernen Sie den Haken bei allem, was es nicht (mehr) gibt.'
           : 'We have recorded these for your property. Please untick anything you do not (or no longer) offer.' %></small></p>
         <div class="grid grid-2" style="gap:2px 16px">
           <% knownFeat.forEach(function (ft) { var n = 'f_' + ft.feature_id; %>
-            <label class="inline" style="margin:0"><input type="checkbox" name="<%= n %>" <%= form.features_checked ? (form[n] === 'on' ? 'checked' : '') : 'checked' %>> <span><%= ft.text %></span></label>
+            <label class="inline" style="margin:0"><input type="checkbox" name="<%= n %>" <%= form.form_sent ? (form[n] === 'on' ? 'checked' : '') : 'checked' %>> <span><%= ft.text %></span></label>
           <% }) %>
         </div>
-        <label class="inline" style="margin-top:10px"><input type="checkbox" name="features_checked" <%= form.features_checked === 'on' ? 'checked' : '' %>>
-          <span><strong><%= de ? 'Ich habe die Liste der Leistungen geprüft.' : 'I have checked the list of facilities.' %></strong></span></label>
+      </details>
       <% } %>
       <% if (offerFeat.length) { %>
         <h3 style="margin:16px 0 4px"><%= de ? 'Bieten Sie außerdem …?' : 'Do you also offer …?' %></h3>

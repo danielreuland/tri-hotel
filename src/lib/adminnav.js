@@ -53,22 +53,32 @@ function locate(path) {
   return { section: null, tab: null };
 }
 
+// Offene Vorgänge je Reiter der Kommunikation; eine Anfrage zählt einmal, egal wie viele Angaben sie enthält. Die Summe steht im Hauptmenü.
+function commTabCounts(r) {
+  return {
+    '/admin/postfach': r.mail, '/admin/anfragen': r.inquiries, '/admin/bewertungen': r.reviews, '/admin/kontakt': r.contact, '/admin/camp-anfragen': r.leads,
+  };
+}
+
 // Middleware für /admin: aktiver Bereich und Zähler (nur für angemeldete Admins)
 async function middleware(req, res, next) {
   try {
     const path = req.originalUrl.split('?')[0].replace(/\/+$/, '') || '/admin';
-    res.locals.adminNav = { sections: SECTIONS, ...locate(path), counts: {}, objectsLabel: 'Objekte' };
+    res.locals.adminNav = { sections: SECTIONS, ...locate(path), counts: {}, tabCounts: {}, objectsLabel: 'Objekte' };
     if (req.session && req.session.admin) {
       const r = await db.one(
         `SELECT (SELECT entity_label_pl FROM rankings WHERE is_default LIMIT 1) AS label,
                 (SELECT count(*)::int FROM admin_tasks WHERE status = 'open') AS aufgaben,
-                (SELECT count(*)::int FROM reviews WHERE status = 'pending')
-                  + (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL)
-                  + (SELECT count(*)::int FROM inquiry_answers WHERE status = 'pending')
-                  + (SELECT count(*)::int FROM inquiry_feature_answers WHERE status = 'pending')
-                  + (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed')
-                  + (SELECT count(*)::int FROM mail_messages WHERE status = 'new') AS kommunikation`);
-      res.locals.adminNav.counts = { aufgaben: r.aufgaben, kommunikation: r.kommunikation };
+                (SELECT count(*)::int FROM reviews WHERE status = 'pending') AS reviews,
+                (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL) AS contact,
+                (SELECT count(DISTINCT inquiry_id)::int FROM (
+                   SELECT inquiry_id FROM inquiry_answers WHERE status = 'pending'
+                   UNION ALL SELECT inquiry_id FROM inquiry_feature_answers WHERE status = 'pending') a) AS inquiries,
+                (SELECT count(*)::int FROM camp_leads WHERE status = 'confirmed') AS leads,
+                (SELECT count(*)::int FROM mail_messages WHERE status = 'new') AS mail`);
+      const tabs = commTabCounts(r);
+      res.locals.adminNav.counts = { aufgaben: r.aufgaben, kommunikation: Object.values(tabs).reduce((a, b) => a + b, 0) };
+      res.locals.adminNav.tabCounts = tabs;
       if (r.label) res.locals.adminNav.objectsLabel = r.label;
     }
   } catch (err) {
@@ -77,4 +87,4 @@ async function middleware(req, res, next) {
   next();
 }
 
-module.exports = { SECTIONS, locate, middleware };
+module.exports = { SECTIONS, locate, commTabCounts, middleware };

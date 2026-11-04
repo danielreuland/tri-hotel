@@ -54,17 +54,14 @@ test('parseConfirmAnswers: stimmt / stimmt nicht / weiß nicht', () => {
   assert.equal(agent.parseConfirmAnswers(conf, { k_g: 'wrong', kv_g: 'luxus' }, [gym, sauna]).criteria.length, 0);
 });
 
-test('parseConfirmAnswers: erfasste Leistungen nur mit „Liste geprüft“, zusätzliche nur angehakt', () => {
+test('parseConfirmAnswers: entfernter Haken ist immer eine Korrektur, stehender Haken keine Bestätigung, zusätzliche nur angehakt', () => {
   const conf = agent.fallbackConfirmations(confirm, facts, 'de');
-  // Haken stehen (vorausgefüllt), aber Liste nicht geprüft → keine Aussage
+  // Haken steht (vorausgewählt, auch bei nie aufgeklappter Liste) → keine Aussage
   assert.deepEqual(agent.parseConfirmAnswers(conf, { f_fg: 'on' }, [gym, sauna]).features, []);
-  // geprüft, Radgarage abgehakt → wird nicht angeboten; Waschraum neu angehakt
-  assert.deepEqual(agent.parseConfirmAnswers(conf, { features_checked: 'on', f_fl: 'on' }, [gym, sauna]).features, [
+  // Radgarage abgehakt → wird nicht angeboten; Waschraum neu angehakt
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { f_fl: 'on' }, [gym, sauna]).features, [
     { featureId: 'fg', offered: false, known: true },
     { featureId: 'fl', offered: true, known: false },
-  ]);
-  assert.deepEqual(agent.parseConfirmAnswers(conf, { features_checked: 'on', f_fg: 'on' }, [gym, sauna]).features, [
-    { featureId: 'fg', offered: true, known: true },
   ]);
 });
 

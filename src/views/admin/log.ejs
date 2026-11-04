@@ -6,7 +6,7 @@
   <% rows.forEach(function (a) { %>
     <tr>
       <td><small><%= new Date(a.created_at).toLocaleString('de-DE') %></small></td>
-      <td><small><%= a.email || (a.persona_name ? a.persona_name + ' (KI)' : 'System') %></small></td>
+      <td><small><%= a.email || (a.persona_name ? a.persona_name + (a.persona_is_ai ? ' (KI)' : '') : 'System') %></small></td>
       <td><%= a.action %></td>
       <td><small><%= a.entity_type %><br><%= a.entity_id %></small></td>
       <td><% if (a.diff) { %><details><summary><small>anzeigen</small></summary><pre class="json"><%= JSON.stringify(a.diff, null, 2) %></pre></details><% } %></td>

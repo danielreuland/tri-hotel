@@ -130,7 +130,7 @@ function fallbackConfirmations(confirm, facts = {}, language = 'de') {
 }
 
 // Formular auswerten: k_<id> = ok | wrong | unknown (bei wrong: kv_<id> = richtiger Wert),
-// Leistungen nur, wenn „Liste geprüft“ (features_checked) angehakt ist; f_<id> = bietet an
+// Leistungen: f_<id> = bietet an; gemeldet werden entfernte Haken erfasster und gesetzte Haken zusätzlicher Leistungen
 function parseConfirmAnswers(confirmations, body, criteria) {
   const out = { criteria: [], features: [], incomplete: [] };
   const byId = new Map(criteria.map((c) => [c.id, c]));
@@ -147,11 +147,10 @@ function parseConfirmAnswers(confirmations, body, criteria) {
     out.criteria.push({ criterionId: c.id, value, previous, comment: String(body[`kc_${item.criterion_id}`] || '').trim().slice(0, 500) || null });
   }
   const features = (confirmations && confirmations.features) || [];
-  const checked = body.features_checked === 'on';
   for (const ft of features) {
     const ticked = body[`f_${ft.feature_id}`] === 'on';
-    // erfasste Leistungen zählen nur nach „Liste geprüft“; zusätzliche nur, wenn angehakt
-    if (ft.known && checked) out.features.push({ featureId: ft.feature_id, offered: ticked, known: true });
+    // Erfasste Leistung: Haken entfernt = Korrektur. Der stehende Haken ist vorausgewählt und gilt nicht als Bestätigung. Zusätzliche nur, wenn angehakt
+    if (ft.known && !ticked) out.features.push({ featureId: ft.feature_id, offered: false, known: true });
     if (!ft.known && ticked) out.features.push({ featureId: ft.feature_id, offered: true, known: false });
   }
   return out;

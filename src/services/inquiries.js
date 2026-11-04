@@ -434,7 +434,7 @@ async function submitAnswers(inq, entity, site, body, files = []) {
   const errors = [];
   const allCriteria = await rankings.getCriteria(inq.ranking_id);
   const criteria = allCriteria.filter((c) => inq.criteria_ids.includes(c.id));
-  // Bekannte Angaben: bestätigt oder korrigiert (Liste aus der Anfrage), Leistungen nur nach „Liste geprüft“
+  // Bekannte Angaben: bestätigt oder korrigiert (Liste aus der Anfrage); bei Leistungen zählen nur Änderungen an den Haken
   const confirmed = agent.parseConfirmAnswers(inq.confirmations, body, allCriteria);
   const answers = [];
   for (const c of criteria) {

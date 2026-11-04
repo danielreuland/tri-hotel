@@ -23,7 +23,7 @@
       <% rows.forEach(function (i) { var labels = i.criteria_labels || []; %>
         <tr>
           <td><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><strong><%= i.entity_name %></strong></a><br><small class="muted"><%= i.city || '' %></small></td>
-          <td><small><%= i.recipient %><br><%= i.persona_name ? 'von ' + i.persona_name + ' (KI)' : '' %> · <%= i.language.toUpperCase() %></small></td>
+          <td><small><%= i.recipient %><br><%= i.persona_name ? 'von ' + i.persona_name + (i.persona_is_ai ? ' (KI)' : '') : '' %> · <%= i.language.toUpperCase() %></small></td>
           <td><small title="<%= labels.join(', ') %>"><%= labels.length %> Fragen<%= i.ask_photos ? ' + Fotos' : '' %><br><span class="muted"><%= labels.slice(0, 3).join(', ') %><%= labels.length > 3 ? ' …' : '' %></span></small></td>
           <td>
             <span class="badge <%= i.status === 'draft' ? 'warn' : i.status === 'answered' ? 'good' : i.status === 'failed' ? 'bad' : '' %>"><%= INQUIRY_STATUS[i.status] %></span>
