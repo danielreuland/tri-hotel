@@ -230,7 +230,12 @@ Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI geken
 später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
 - **D1 freigegeben (02.11.):** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung + Double-Opt-in.
 - **Mail-Text:** Daniel bearbeitet `docs/anfrage-mail-entwurf.md`; danach Paket P1 (Vorlage) bauen.
-- Offen: D2–D7 (Absenderadresse, Vorstellungstext, Website-Fotos, CRM-Konzept anpassen, Partnerbereich, Produkte/Rechtsprüfung).
+- **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
+  IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an (Probe ohne Versand); DKIM-Einträge `s1-ionos`/`s2-ionos` vorhanden.
+  Offen: Header-Prüfung und DKIM-Signatur an einer echten Mail. **Antworten:** Der Abruf liest nur ein IMAP-Postfach (`info@`), Antworten an
+  `daniel@` kämen dort nicht an und stoppten die Erinnerung nicht – vor P1 Weiterleitung an `info@` (Kopie behalten) einrichten und testen,
+  oder den Abruf auf mehrere Postfächer erweitern. Für P1 muss der Absender je Mail wählbar werden (bisher nur global `MAIL_PERSONA_SENDER`).
+- Offen: D3–D7 (Vorstellungstext, Website-Fotos, CRM-Konzept anpassen, Partnerbereich, Produkte/Rechtsprüfung).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
 Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Voice-Agent. Vorab klären: Telefonkontakt zu
