@@ -38,7 +38,7 @@ Gründer tri-hotel.de
 Bei Rückfragen hilft Ihnen Mia, unsere KI-Assistentin; ich lese jede Antwort selbst.
 
 --
-Warum Sie diese Mail erhalten: Ihr Hotel ist auf tri-hotel.de erfasst, Ihre Adresse stammt von Ihrer Website.
+Warum Sie diese Mail erhalten: Ihr Hotel ist auf tri-hotel.de erfasst.
 Hinweise zum Datenschutz: {{datenschutz}}
 Keine weiteren Anfragen gewünscht? {{abmelden}}
 ```
@@ -71,7 +71,7 @@ Founder of tri-hotel.de
 If you have questions, Mia, our AI assistant, will help you; I read every reply myself.
 
 --
-Why you are receiving this email: your hotel is listed on tri-hotel.de and your address comes from your website.
+Why you are receiving this email: your hotel is listed on tri-hotel.de.
 Privacy information: {{datenschutz}}
 No further requests? {{abmelden}}
 ```
