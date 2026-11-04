@@ -291,7 +291,7 @@ async function send(inquiryId) {
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
     const { rows: [sent] } = await db.query(
-      `UPDATE inquiries SET status = 'sent', subject = $2, body = $3, questions = $4, token_hash = $5, sent_at = now(),
+      `UPDATE inquiries SET status = 'sent', subject = $2, body = $3, questions = $4, token_hash = $5, reminder_token_hash = NULL, sent_at = now(),
          expires_at = now() + make_interval(days => $6), error = $7, confirmations = $8, updated_at = now() WHERE id = $1
        RETURNING sent_at, expires_at`,
       [inq.id, draft.subject, draft.body, JSON.stringify(draft.questions), tok.hash, VALID_DAYS,
@@ -308,7 +308,8 @@ async function send(inquiryId) {
 }
 
 async function findByToken(token) {
-  const inq = await db.one('SELECT * FROM inquiries WHERE token_hash = $1', [sha256(token)]);
+  // Link der ersten Mail oder der Erinnerung – beide gelten bis zum Ablauf der Anfrage
+  const inq = await db.one('SELECT * FROM inquiries WHERE token_hash = $1 OR reminder_token_hash = $1', [sha256(token)]);
   if (!inq) return { status: 'invalid' };
   if (inq.status === 'answered') return { status: 'answered', inquiry: inq };
   if (inq.status !== 'sent' || new Date(inq.expires_at) < new Date()) return { status: 'expired', inquiry: inq };
@@ -584,7 +585,7 @@ async function dailyMaintenance() {
         cta: buttonKind(inq),
       },
     });
-    if (ok) await db.query(`UPDATE inquiries SET token_hash = $2, reminder_sent_at = now(), updated_at = now() WHERE id = $1`, [inq.id, tok.hash]);
+    if (ok) await db.query(`UPDATE inquiries SET reminder_token_hash = $2, reminder_sent_at = now(), updated_at = now() WHERE id = $1`, [inq.id, tok.hash]);
   }
   return { expired: expired.rowCount, reminded: due.length };
 }
