@@ -78,7 +78,7 @@ async function send({
   const s = site || (await sites.getDefault());
   const locals = { ...data, site: s, baseUrl: sites.urlFor(s) };
   const from = sites.mailFrom(s, persona);
-  const ownPersona = config.mail.personaSender === 'own' && persona && persona.email;
+  const ownPersona = (config.mail.personaSender === 'own' || (persona && persona.own_sender)) && persona && persona.email;
   const replyTo = replyToOverride || (ownPersona ? persona.email : null) || (s && s.mail_reply_to) || config.mail.replyTo;
   // Im Admin gepflegte Vorlage der Site, sonst Standardtext; Agenten-Mails (inquiry) bleiben EJS mit Agententext
   let html;

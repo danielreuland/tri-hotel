@@ -158,21 +158,30 @@ function parseConfirmAnswers(confirmations, body, criteria) {
 }
 
 // Werte für die Platzhalter im Mustertext (services/aimail.js)
-function templateVars({ entity, ranking, brand, persona, language, confirm }) {
+function templateVars({ entity, ranking, brand, persona, language, confirm, profile, keyFacts }) {
+  const pr = profile || {};
+  const facts = String(keyFacts || '').trim() || (pr.keyFacts || []).join(', ');
   return {
+    score: pr.scoreText ?? null, platz: pr.rank ?? null, gesamt: pr.total ?? null, kernfakten: facts || null,
+    hotelseite: pr.url ?? null, datenschutz: pr.privacyUrl ?? null,
     anzahl: confirmCount(confirm),
     marke: brand, objekt: entity.name, objekt_art: ranking.entity_label_sg, name: personaOr(persona, brand).name,
     objekte: language === 'en' ? String(ranking.entity_label_pl || '').toLowerCase() : ranking.entity_label_pl,
   };
 }
 
+// Abschnitte der festen Vorlage: Platz im Ranking, Leistungen und Objektseite nur, wenn vorhanden
+function profileFlags(vars) {
+  return { platz: vars.platz != null, ohne_platz: vars.platz == null, kernfakten: Boolean(vars.kernfakten), hotelseite: Boolean(vars.hotelseite) };
+}
+
 // Ohne KI: Mustertext des Anlasses (template) wörtlich ausgefüllt, sonst die eingebaute Vorlage
-function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts }) {
+function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts, profile, keyFacts }) {
   const t = T[language] || T.de;
-  const vars = template ? templateVars({ entity, ranking, brand, persona, language, confirm }) : null;
+  const vars = template ? templateVars({ entity, ranking, brand, persona, language, confirm, profile, keyFacts }) : null;
   return {
     subject: template ? aimail.fill(template.subject, vars).slice(0, 150) : t.subject(entity),
-    body: template ? aimail.fill(template.body, vars, { fotos: askPhotos, bestaetigen: confirmCount(confirm) > 0 }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
+    body: template ? aimail.fill(template.body, vars, { ...profileFlags(vars), fotos: askPhotos, bestaetigen: confirmCount(confirm) > 0 }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),
     confirmations: fallbackConfirmations(confirm, facts, language),
     questions: criteria.map((c) => ({
       criterion_id: c.id,
@@ -187,6 +196,8 @@ function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, 
 
 // Prüft und repariert den Entwurf des Modells. Fehlt etwas, kommt es aus der Vorlage.
 function withDisclosure(body, language, persona, brand) {
+  // Mail eines Menschen (z. B. Gründer): kein KI-Hinweis
+  if (persona && persona.is_ai === false) return body.trim();
   return `${body.trim()}\n\n--\n${consents.aiDisclosure(language, personaOr(persona, brand), brand)}`;
 }
 
@@ -195,17 +206,20 @@ function sanitizeDraft(draft, ctx) {
   return { ...out, body: withDisclosure(out.body, ctx.language, ctx.persona, ctx.brand) };
 }
 
-function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts }) {
-  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts });
-  if (!draft || typeof draft !== 'object') return { ...fb, usedFallback: true };
+function sanitizeBody(draft, { entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts, profile }) {
+  const hasDraft = draft && typeof draft === 'object';
+  const fb = fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts, profile, keyFacts: hasDraft ? draft.key_facts : null });
+  if (!hasDraft) return { ...fb, usedFallback: true };
 
+  // Feste Vorlage: Betreff und Text wörtlich, vom Modell kommen nur Fragen, Bezeichnungen und die übersetzten Leistungen
+  const fixed = Boolean(template && template.fixed);
   let body = String(draft.body || '').trim();
   const urls = body.replace(LINK, '').match(/https?:\/\/|www\./gi);
   const tooShort = body.length < 80 || body.length > 3000;
-  if (urls || tooShort) body = fb.body;
+  if (fixed || urls || tooShort) body = fb.body;
   if (!body.includes(LINK)) body = `${body}\n\n${LINK}`;
 
-  const subject = String(draft.subject || '').trim().slice(0, 150) || fb.subject;
+  const subject = fixed ? fb.subject : String(draft.subject || '').trim().slice(0, 150) || fb.subject;
 
   const byCode = new Map(criteria.map((c) => [c.code, c]));
   const questions = criteria.map((c) => {
@@ -250,9 +264,10 @@ function translateConfirmations(base, draft, criteria, confirm) {
 // Prompt = feste Regeln + Rolle & Stil der Persona + Mustertext/Pflichtpunkte des Anlasses + Angaben + Stilbeispiel.
 // ctx.template: { subject, body, must } aus aimail.get(); ctx.example: { subject, body } oder null
 function buildPrompt(ctx) {
-  const { entity, ranking, criteria, facts = {}, language, brand, adminNote, askPhotos, persona, template, example, confirm } = ctx;
+  const { entity, ranking, criteria, facts = {}, language, brand, adminNote, askPhotos, persona, template, example, confirm, profile } = ctx;
   const p = personaOr(persona, brand);
-  const vars = templateVars({ entity, ranking, brand, persona, language, confirm });
+  const fixed = Boolean(template && template.fixed);
+  const vars = templateVars({ entity, ranking, brand, persona, language, confirm, profile });
   const nConfirm = confirmCount(confirm);
   const fbConfirm = fallbackConfirmations(confirm, facts, language);
   const confirmLines = [
@@ -274,21 +289,21 @@ Sprache von Mail und Fragen: ${language === 'de' ? 'Deutsch (Sie-Form)' : 'Engli
     `Unklare Punkte:\n${lines.length ? lines.join('\n') : nConfirm ? '(keine – es geht um die Bestätigung bekannter Angaben)' : '(keine – es geht nur um Fotos)'}`,
     nConfirm ? `Außerdem bitten wir, ${nConfirm} bereits erfasste Angaben kurz zu prüfen. In der Mail nur die Anzahl in einem Satz nennen, nichts aufzählen – die Liste steht im Antwortformular.` : null,
     adminNote ? `Hinweis der Redaktion: ${adminNote}` : null,
-    template ? `Mustertext – Aufbau und Inhalte übernehmen, Formulierung im Stil der Rolle (${LINK} unverändert lassen):
+    fixed ? `Der Mailtext ist fest vorgegeben: Gib subject und body leer zurück und formuliere nur die Felder unten.${language !== 'de' && profile && (profile.keyFacts || []).length ? `\nkey_facts: Übersetze diese Leistungen ins Englische, kommagetrennt, ohne Zusätze: ${profile.keyFacts.join(', ')}` : '\nkey_facts: leer lassen.'}` : null,
+    template && !fixed ? `Mustertext – Aufbau und Inhalte übernehmen, Formulierung im Stil der Rolle (${LINK} unverändert lassen):
 """
 Betreff: ${aimail.fill(template.subject, vars)}
 
-${aimail.fill(template.body, vars, { fotos: askPhotos, bestaetigen: nConfirm > 0 })}
+${aimail.fill(template.body, vars, { ...profileFlags(vars), fotos: askPhotos, bestaetigen: nConfirm > 0 })}
 """` : null,
-    must.length ? `Pflichtpunkte (müssen inhaltlich vorkommen):\n${must.map((m) => `- ${m}`).join('\n')}` : null,
-    example ? `Stilbeispiel – eine frühere Mail, die die Redaktion überarbeitet hat. Übernimm Ton, Länge und Aufbau, keine Inhalte:
+    must.length && !fixed ? `Pflichtpunkte (müssen inhaltlich vorkommen):\n${must.map((m) => `- ${m}`).join('\n')}` : null,
+    example && !fixed ? `Stilbeispiel – eine frühere Mail, die die Redaktion überarbeitet hat. Übernimm Ton, Länge und Aufbau, keine Inhalte:
 """
 Betreff: ${example.subject}
 
 ${example.body}
 """` : null,
-    `Feste Regeln:\n${aimail.rules({ askPhotos }).map((r) => `- ${r}`).join('\n')}
-- Unterschrift: „${p.name}“.
+    `Feste Regeln:${fixed ? '' : `\n${aimail.rules({ askPhotos }).map((r) => `- ${r}`).join('\n')}\n- Unterschrift: „${p.name}“.`}
 - questions: je Punkt eine verständliche Frage in Alltagssprache des Betreibers; options mit genau den angegebenen Antwortwerten (value unverändert), text als kurze Übersetzung/Umschreibung.${confirmLines.length || featureLines.length ? `\n- confirm_items und feature_items: nur kurze Bezeichnungen in der Sprache der Mail (für die Liste im Formular), Werte unverändert.` : ''}`,
     confirmLines.length ? `Bekannte Angaben zum Bestätigen (confirm_items: label = kurze Bezeichnung, options mit genau diesen Antwortwerten):\n${confirmLines.join('\n')}` : null,
     featureLines.length ? `Leistungen für die Liste im Formular (feature_items: code unverändert, text = kurze Bezeichnung):\n${featureLines.join('\n')}` : null,
@@ -306,6 +321,7 @@ async function draftAnthropic(ctx) {
   const Schema = z.object({
     subject: z.string(),
     body: z.string(),
+    key_facts: z.string(),
     questions: z.array(
       z.object({
         criterion_code: criteria.length ? z.enum(criteria.map((c) => c.code)) : z.string(),

@@ -28,6 +28,50 @@ function setEnqueue(fn) {
 
 const { unclearCriteria } = agent;
 
+const OPT_OUT_ERROR = 'Dieser Betreiber möchte keine weiteren Anfragen (Abmeldelink).';
+// Datenschutzhinweis beim Ansprechpartner im Antwortformular (Version für den Nachweis im CRM)
+const CONTACT_NOTICE_VERSION = '2026-11-04';
+const contactNotice = (lang) => (lang === 'de'
+  ? 'Name und Adresse speichern wir als Ansprechpartner für Ihr Profil, auch in unserer Kontaktverwaltung. Sie erhalten darüber keine Werbung.'
+  : 'We store your name and address as the contact for your profile, including in our contact management. You will not receive advertising through this.');
+
+// Erste Anfrage: Absender ist der Gründer, wenn es ihn als Persona gibt; sonst die Assistenz der Datenprüfung
+async function firstPersona(siteId) {
+  return (await sites.persona(siteId, 'founder')) || sites.persona(siteId, 'data_inquiry');
+}
+
+// „Anna Müller, Sales Manager“ -> Vor- und Nachname, Funktion (für den Kontakt im CRM)
+function parseReplyName(text) {
+  const [name, ...role] = String(text || '').split(',');
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
+  return { firstName: parts.slice(0, -1).join(' ') || null, lastName: parts[parts.length - 1], position: role.join(',').trim() || null };
+}
+
+// Kurzprofil für die Anfrage-Mail: Score, Platz, wichtigste Leistungen, Links (Platz nur für Objekte im Ranking, Link nur für öffentliche Seiten)
+async function profileOf(entity, ranking, site, language) {
+  const { ranked, incomplete } = await rankings.listLive(ranking);
+  const index = ranked.findIndex((e) => e.id === entity.id);
+  const row = ranked[index] || null;
+  const isPublic = Boolean(row) || incomplete.some((e) => e.id === entity.id);
+  const base = sites.urlFor(site);
+  const path = ranking.is_default ? `/${ranking.entity_type}/${entity.slug}` : `/rankings/${ranking.slug}/${entity.slug}`;
+  const features = (await featureService.forEntities(ranking.entity_type, [entity.id])).get(entity.id) || [];
+  const provisional = row && row.is_provisional ? (language === 'de' ? ' (vorläufig)' : ' (provisional)') : '';
+  return {
+    rank: row ? index + 1 : null, total: row ? ranked.length : null, scoreText: row ? `${row.score}${provisional}` : null,
+    keyFacts: features.filter((f) => f.filterable).slice(0, 5).map((f) => f.label),
+    url: isPublic ? `${base}${path}` : null,
+    privacyUrl: `${base}${language === 'de' ? '/datenschutz' : '/privacy'}`,
+  };
+}
+
+// Persönliche Links beim Versand einsetzen (gespeichert bleibt der Text mit Platzhaltern)
+function personalize(text, site, token) {
+  const url = answerUrl(site, token);
+  return String(text).split(agent.LINK).join(url).split('{{abmelden}}').join(`${url}/abmelden`);
+}
+
 // Wortlaute für das Antwortformular
 function formConsents(language, site, entityName) {
   const t = (type) => consentTexts.text(type, language, site.name, entityName);
@@ -38,10 +82,11 @@ async function start({ entityId, rankingId, submissionId, criteriaIds, askPhotos
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
   if (!entity) throw new Error('Objekt nicht gefunden.');
   if (!isEmail(entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers in den Stammdaten eintragen.');
+  if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
   const criteria = (await rankings.getCriteria(rankingId)).filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
   if (!criteria.length && !askPhotos) throw new Error('Bitte mindestens einen Wert oder die Fotos auswählen.');
   const ranking = await rankings.getRanking(rankingId);
-  const persona = await sites.persona(ranking.site_id, 'data_inquiry');
+  const persona = await firstPersona(ranking.site_id);
 
   let row;
   try {
@@ -82,6 +127,7 @@ async function createDraft({ entityId, rankingId, submissionId }) {
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
   if (!entity) return { created: false, reason: 'Objekt nicht gefunden.' };
   if (!isEmail(entity.contact_email)) return { created: false, reason: 'Keine Kontakt-E-Mail – kein Entwurf.' };
+  if (entity.inquiry_opt_out_at) return { created: false, reason: OPT_OUT_ERROR };
   const open = await db.one(`SELECT status FROM inquiries WHERE entity_id = $1 AND ranking_id = $2 AND status IN ('draft','queued','sent')`, [entityId, rankingId]);
   if (open) return { created: false, reason: `Es gibt schon eine offene Anfrage (${open.status === 'draft' ? 'Entwurf' : 'läuft'}).` };
   const criteria = await rankings.getCriteria(rankingId);
@@ -90,7 +136,7 @@ async function createDraft({ entityId, rankingId, submissionId }) {
   const hasImage = await db.one('SELECT 1 FROM entity_images WHERE entity_id = $1 AND approved_at IS NOT NULL LIMIT 1', [entityId]);
   if (!ask.length) return { created: false, reason: 'Keine offenen Punkte, die man beim Betreiber erfragen kann.' };
   const ranking = await rankings.getRanking(rankingId);
-  const persona = await sites.persona(ranking.site_id, 'data_inquiry');
+  const persona = await firstPersona(ranking.site_id);
   try {
     const row = await db.one(
       `INSERT INTO inquiries (entity_id, ranking_id, submission_id, recipient, language, criteria_ids, ask_photos, persona_id, status, auto_created)
@@ -110,10 +156,11 @@ async function startDraft({ entityId, rankingId, submissionId, criteriaIds, askP
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [entityId]);
   if (!entity) throw new Error('Objekt nicht gefunden.');
   if (!isEmail(entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers in den Stammdaten eintragen.');
+  if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
   const open = await db.one(`SELECT status FROM inquiries WHERE entity_id = $1 AND ranking_id = $2 AND status IN ('draft','queued','sent')`, [entityId, rankingId]);
   if (open) throw new Error(open.status === 'draft' ? 'Es gibt schon einen Entwurf.' : 'Es läuft bereits eine offene Anfrage an diesen Betreiber.');
   const ranking = await rankings.getRanking(rankingId);
-  const persona = await sites.persona(ranking.site_id, 'data_inquiry');
+  const persona = await firstPersona(ranking.site_id);
   const row = await db.one(
     `INSERT INTO inquiries (entity_id, ranking_id, submission_id, recipient, language, criteria_ids, ask_photos, created_by, persona_id, status)
      VALUES ($1,$2,$3,$4,$5,'{}',false,$6,$7,'draft') RETURNING *`,
@@ -164,7 +211,8 @@ async function confirmSelection({ entity, ranking, criteria, facts, askedIds, cr
 }
 
 // Knopf in der Mail passend zum Inhalt
-function buttonKind(inq) {
+function buttonKind(inq, persona = null) {
+  if (persona && persona.is_ai === false) return 'profile';
   if ((inq.criteria_ids || []).length) return 'answer';
   if ((inq.confirm_criteria_ids || []).length || (inq.confirm_feature_ids || []).length) return 'confirm';
   return inq.ask_photos ? 'photos' : 'answer';
@@ -176,6 +224,7 @@ async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote, confirm
   if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [inq.entity_id]);
   if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
   const ranking = await rankings.getRanking(inq.ranking_id);
   const allCriteria = await rankings.getCriteria(inq.ranking_id);
   const criteria = allCriteria.filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
@@ -187,13 +236,15 @@ async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote, confirm
     entity, ranking, criteria: allCriteria, facts: factRows, askedIds: criteria.map((c) => c.id),
     criteriaIds: confirmCriteriaIds, featureIds: confirmFeatureIds, offer: Boolean(offerFeatures),
   });
-  if (!criteria.length && !askPhotos && !agent.confirmCount(confirm)) throw new Error('Bitte mindestens einen Wert, eine Bestätigung oder die Fotos auswählen.');
   const language = agent.languageFor(entity.country);
   const template = await aimail.get(site.id, 'inquiry', language);
+  if (!template.fixed && !criteria.length && !askPhotos && !agent.confirmCount(confirm)) throw new Error('Bitte mindestens einen Wert, eine Bestätigung oder die Fotos auswählen.');
   const example = await aimail.inquiryExample(language, inq.id);
+  // Die feste Vorlage bittet immer um Fotos, das Formular muss den Upload also zeigen
+  if (template.fixed) askPhotos = true;
   const draft = await agent.draftInquiry({
     entity, ranking, criteria, facts, language, adminNote: adminNote || null, askPhotos: Boolean(askPhotos), persona, brand: site.name,
-    template, example, confirm,
+    template, example, confirm, profile: await profileOf(entity, ranking, site, language),
   });
   if (draft.usage) {
     await require('../lib/llm').record({ purpose: 'inquiry', model: draft.usage.model, usage: draft.usage.raw, entityId: entity.id, inquiryId: inq.id });
@@ -221,8 +272,9 @@ async function approveDraft(inquiryId, { subject, body }, adminId) {
   const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
   if (!inq || inq.status !== 'draft') throw new Error('Kein offener Entwurf.');
   if (!inq.body) throw new Error('Bitte zuerst den Entwurf formulieren.');
-  const entity = await db.one('SELECT contact_email FROM entities WHERE id = $1', [inq.entity_id]);
+  const entity = await db.one('SELECT contact_email, inquiry_opt_out_at FROM entities WHERE id = $1', [inq.entity_id]);
   if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
   const subj = String(subject || '').trim().slice(0, 150);
   let text = String(body || '').replace(/\r\n/g, '\n').trim();
   if (!subj || text.length < 20) throw new Error('Betreff und Text dürfen nicht leer sein.');
@@ -255,6 +307,7 @@ async function send(inquiryId) {
   if (!inq || inq.status !== 'queued') return;
   try {
     const entity = await db.one('SELECT * FROM entities WHERE id = $1', [inq.entity_id]);
+    if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
     const ranking = await rankings.getRanking(inq.ranking_id);
     const site = await sites.forRanking(ranking);
     const persona = await personaOf(inq);
@@ -270,6 +323,7 @@ async function send(inquiryId) {
         persona, brand: site.name,
         template: await aimail.get(site.id, 'inquiry', inq.language),
         example: await aimail.inquiryExample(inq.language, inq.id),
+        profile: await profileOf(entity, ranking, site, inq.language),
         confirm: await confirmSelection({
           entity, ranking, criteria: allCriteria, facts: factRows, askedIds: inq.criteria_ids,
           criteriaIds: inq.confirm_criteria_ids || [], featureIds: inq.confirm_feature_ids || [], offerIds: inq.offer_feature_ids || [],
@@ -286,7 +340,7 @@ async function send(inquiryId) {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
-      data: { subject: draft.subject, text: draft.body.split(agent.LINK).join(answerUrl(site, tok.token)), language: inq.language, cta: buttonKind(inq) },
+      data: { subject: draft.subject, text: personalize(draft.body, site, tok.token), language: inq.language, cta: buttonKind(inq, persona) },
     });
     if (!ok) throw new Error('Mailversand fehlgeschlagen.');
     // Gespeichert wird der Text mit Platzhalter – der Antwortlink selbst liegt nur als Hash vor.
@@ -305,6 +359,20 @@ async function send(inquiryId) {
     console.error('[inquiries] Versand', inq.id, err.message);
     await db.query(`UPDATE inquiries SET status = 'failed', error = $2, updated_at = now() WHERE id = $1`, [inq.id, err.message]);
   }
+}
+
+// Abmeldelink aus der Anfrage-Mail: keine weiteren Anfragen an diesen Betrieb, offene Anfragen werden geschlossen.
+// Gilt auch nach Ablauf der Anfrage. Ergebnis: { inquiry, entity } oder null
+async function findForOptOut(token) {
+  const inquiry = await db.one('SELECT * FROM inquiries WHERE token_hash = $1 OR reminder_token_hash = $1', [sha256(token)]);
+  if (!inquiry) return null;
+  return { inquiry, entity: await db.one('SELECT id, name, inquiry_opt_out_at FROM entities WHERE id = $1', [inquiry.entity_id]) };
+}
+
+async function optOut(found) {
+  await db.query('UPDATE entities SET inquiry_opt_out_at = COALESCE(inquiry_opt_out_at, now()) WHERE id = $1', [found.entity.id]);
+  await db.query(`UPDATE inquiries SET status = 'closed', error = 'Abmeldelink: keine weiteren Anfragen', updated_at = now() WHERE entity_id = $1 AND status IN ('draft', 'queued', 'sent')`, [found.entity.id]);
+  await logAction(null, 'inquiry', found.inquiry.id, 'inquiry_opt_out', { entity: found.entity.id });
 }
 
 async function findByToken(token) {
@@ -391,6 +459,10 @@ async function submitAnswers(inq, entity, site, body, files = []) {
   for (const f of files) fs.unlink(f.path, () => {});
 
   const replyName = String(body.reply_name || '').trim().slice(0, 200) || null;
+  const replyEmail = String(body.reply_email || '').trim().toLowerCase().slice(0, 254) || null;
+  if (replyEmail && !isEmail(replyEmail)) {
+    return { errors: [inq.language === 'de' ? 'Bitte eine gültige E-Mail-Adresse angeben.' : 'Please enter a valid email address.'] };
+  }
   const note = String(body.note || '').trim().slice(0, 2000) || null;
   const at = new Date();
   const texts = formConsents(inq.language, site, entity.name);
@@ -439,8 +511,8 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       );
     }
     await client.query(
-      `UPDATE inquiries SET status = 'answered', answered_at = now(), reply_name = $2, reply_note = $3, updated_at = now() WHERE id = $1`,
-      [inq.id, replyName, note]
+      `UPDATE inquiries SET status = 'answered', answered_at = now(), reply_name = $2, reply_note = $3, reply_email = $4, updated_at = now() WHERE id = $1`,
+      [inq.id, replyName, note, replyEmail]
     );
     await logAction(null, 'inquiry', inq.id, 'answered', { answers: answers.length, confirmed: confirmed.criteria.length, features: confirmed.features.length, photos: photos.length, consents: granted }, client);
   });
@@ -450,6 +522,15 @@ async function submitAnswers(inq, entity, site, body, files = []) {
     answers: answers.length + confirmed.criteria.length + confirmed.features.length, confirmed: confirmed.criteria.length + confirmed.features.length,
     photos: photos.length, consents: granted,
   });
+  // CRM im Hub: Ansprechpartner fürs Profil (ohne Werbe-Erlaubnis), nur mit Name und Adresse
+  const contactName = parseReplyName(replyName);
+  if (contactName && replyEmail) {
+    await hubEvents.emitSafe(hubEvents.contactProfile, {
+      inquiry: inq, entity, site, collectedAt: at,
+      person: { ...contactName, email: replyEmail, language: inq.language },
+      notice: { text: contactNotice(inq.language), version: CONTACT_NOTICE_VERSION, url: `${sites.urlFor(site)}${inq.language === 'de' ? '/datenschutz' : '/privacy'}` },
+    });
+  }
   if (config.mail.adminNotify) {
     await mailer.send({
       to: config.mail.adminNotify,
@@ -560,17 +641,21 @@ async function dailyMaintenance() {
     `SELECT * FROM inquiries i WHERE status = 'sent' AND reminder_sent_at IS NULL
        AND sent_at < now() - make_interval(days => $1) AND expires_at > now()
        -- keine Erinnerung, wenn der Betreiber per Mail geantwortet hat
-       AND NOT EXISTS (SELECT 1 FROM mail_messages m WHERE m.inquiry_id = i.id AND m.kind = 'mail')`,
+       AND NOT EXISTS (SELECT 1 FROM mail_messages m WHERE m.inquiry_id = i.id AND m.kind = 'mail')
+       -- keine Erinnerung nach dem Abmeldelink
+       AND NOT EXISTS (SELECT 1 FROM entities e WHERE e.id = i.entity_id AND e.inquiry_opt_out_at IS NOT NULL)`,
     [REMINDER_AFTER_DAYS]
   );
   for (const inq of due) {
     const tok = newToken();
     const site = await sites.forRanking(await rankings.getRanking(inq.ranking_id));
-    const persona = await personaOf(inq);
+    const first = await personaOf(inq);
+    // Erinnerungen schreibt immer die KI-Assistenz, auch wenn die erste Mail von einem Menschen kam – dann mit KI-Hinweis
+    const persona = first && first.is_ai === false ? (await sites.persona(site.id, 'data_inquiry')) || first : first;
     const entity = await db.one('SELECT name FROM entities WHERE id = $1', [inq.entity_id]);
     const tpl = await aimail.get(site.id, 'inquiry_reminder', inq.language);
     const vars = { marke: site.name, objekt: entity ? entity.name : '', name: persona ? persona.name : site.name, betreff: inq.subject, text: inq.body };
-    const url = answerUrl(site, tok.token);
+    const hint = first && first.is_ai === false && persona && persona.is_ai !== false ? `\n\n--\n${consentTexts.aiDisclosure(inq.language, persona, site.name)}` : '';
     const ok = await mailer.send({
       to: inq.recipient,
       template: 'inquiry',
@@ -580,9 +665,9 @@ async function dailyMaintenance() {
       entityId: inq.entity_id,
       data: {
         subject: aimail.fill(tpl.subject, vars).slice(0, 200),
-        text: aimail.fill(tpl.body, vars).split(agent.LINK).join(url),
+        text: personalize(aimail.fill(tpl.body, vars) + hint, site, tok.token),
         language: inq.language,
-        cta: buttonKind(inq),
+        cta: buttonKind(inq, first),
       },
     });
     if (ok) await db.query(`UPDATE inquiries SET reminder_token_hash = $2, reminder_sent_at = now(), updated_at = now() WHERE id = $1`, [inq.id, tok.hash]);
@@ -629,7 +714,7 @@ module.exports = {
   approveDraft,
   discardDraft,
   draftCriteria,
-  defaultConfirmSelection, manualFeatures, buttonKind, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
+  defaultConfirmSelection, manualFeatures, buttonKind, parseReplyName, personalize, findForOptOut, optOut, CONTACT_NOTICE_VERSION, contactNotice, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
   setEnqueue, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
   dailyMaintenance, isImageFile, MAX_PHOTOS,
 };

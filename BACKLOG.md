@@ -236,7 +236,11 @@ Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Lin
 Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
 später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
 - **D1 freigegeben (02.11.):** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung + Double-Opt-in.
-- **Mail-Text:** Daniel bearbeitet `docs/anfrage-mail-entwurf.md`; danach Paket P1 (Vorlage) bauen.
+- **P1 gebaut (04.11., Migration 101):** Daniels Text als feste Vorlage DE/EN (`docs/anfrage-mail-entwurf.md`), Absender-Persona `founder` (`daniel@tri-hotel.de`,
+  `personas.own_sender`, `is_ai`), Kurzprofil aus Score/Platz/Leistungen, Knopf „Jetzt Angaben ergänzen und Fotos hochladen“, Abmeldelink (`entities.inquiry_opt_out_at`,
+  `/anfrage/:token/abmelden`), Feld „E-Mail für Rückfragen“ im Formular → Ereignis `contact.profile` ans CRM. Erinnerung kommt weiter von Mia mit KI-Hinweis.
+  **Vor dem ersten Versand:** Weiterleitung `daniel@` → `info@` einrichten und testen (Variante A), Header und DKIM an einer echten Mail prüfen.
+  Robinson und BCL Podium haben noch Entwürfe mit altem Text und Mia als Absender: neu formulieren oder so freigeben.
 - **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
   IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an (Probe ohne Versand); DKIM-Einträge `s1-ionos`/`s2-ionos` vorhanden.
   Offen: Header-Prüfung und DKIM-Signatur an einer echten Mail.

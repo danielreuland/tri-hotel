@@ -2,22 +2,25 @@
 <%- include('_layout_top') %>
 <%
   function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  // Links im Fließtext klickbar (eine Zeile nur mit URL wird unten zum Button)
+  function linkify(t) { return esc(t).replace(/https?:\/\/[^\s<]+/g, function (u) { return '<a href="' + u.replace(/"/g, '&quot;') + '">' + u + '</a>'; }); }
   var button = 'display:inline-block;background:#0DCFBD;color:#04211e;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:bold';
   // Knopftext passend zum Inhalt der Anfrage: Fragen, nur Bestätigungen oder nur Fotos
   var BUTTONS = {
     answer: { de: 'Fragen beantworten', en: 'Answer the questions' },
     confirm: { de: 'Angaben prüfen', en: 'Check the details' },
     photos: { de: 'Fotos hochladen', en: 'Upload photos' },
+    profile: { de: 'Jetzt Angaben ergänzen und Fotos hochladen', en: 'Complete your details and upload photos' },
   };
   var buttonText = (BUTTONS[locals.cta] || BUTTONS.answer)[language === 'de' ? 'de' : 'en'];
 %>
 <% text.split(/\n{2,}/).forEach(function (para) {
      var lines = para.split('\n'); var buf = []; %>
   <% lines.forEach(function (line) { var url = line.trim(); if (/^https?:\/\/\S+$/.test(url)) { %>
-    <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% buf = []; } %>
+    <% if (buf.length) { %><p><%- buf.map(linkify).join('<br>') %></p><% buf = []; } %>
     <p><a href="<%= url %>" style="<%= button %>"><%= buttonText %></a><br>
       <small style="color:#6a737d"><%= url %></small></p>
   <% } else { buf.push(line); } }) %>
-  <% if (buf.length) { %><p><%- buf.map(esc).join('<br>') %></p><% } %>
+  <% if (buf.length) { %><p><%- buf.map(linkify).join('<br>') %></p><% } %>
 <% }) %>
 <%- include('_layout_bottom') %>

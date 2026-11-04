@@ -130,3 +130,15 @@ test('formValue: Mehrfachauswahl mit mehreren Becken wird nicht als Einzelwert z
   assert.equal(agent.formValue(c, { option: 'a', options: ['a', 'b'] }), null);
   assert.equal(agent.formValue(c, { option: 'a', options: ['a'] }), 'a');
 });
+
+test('Anfrage: persönliche Links, Knopf der festen Vorlage, Ansprechpartner aus dem Namensfeld', () => {
+  const inquiries = require('../src/services/inquiries');
+  const site = { primary_domain: 'x.test', domains: [] };
+  const text = inquiries.personalize('A {{LINK}}\nB {{abmelden}}', site, 'tok');
+  assert.match(text, /A https?:\/\/.*\/anfrage\/tok\nB https?:\/\/.*\/anfrage\/tok\/abmelden/);
+  assert.equal(inquiries.buttonKind({ criteria_ids: ['x'] }, { is_ai: false }), 'profile');
+  assert.equal(inquiries.buttonKind({ criteria_ids: ['x'] }, { is_ai: true }), 'answer');
+  assert.deepEqual(inquiries.parseReplyName('Anna Maria Müller, Sales Manager'), { firstName: 'Anna Maria', lastName: 'Müller', position: 'Sales Manager' });
+  assert.deepEqual(inquiries.parseReplyName('Müller'), { firstName: null, lastName: 'Müller', position: null });
+  assert.equal(inquiries.parseReplyName('  '), null);
+});

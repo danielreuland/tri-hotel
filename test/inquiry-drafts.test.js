@@ -61,3 +61,51 @@ test('inquiries.findByToken: findet die Anfrage über den Link der ersten Mail u
   assert.equal((await inquiries.findByToken('erinnerung')).status, 'answered');
   assert.equal((await inquiries.findByToken('falsch')).status, 'invalid');
 });
+
+// --- Feste Vorlage der ersten Anfrage (Hotel-Ansprache, Paket P1) ---
+const fixedTemplate = {
+  fixed: true, subject: '{{objekt}} auf Beispiel – kurz prüfen?',
+  body: 'Guten Tag,\n\n{{#platz}}{{objekt}} hat Score {{score}}, Platz {{platz}} von {{gesamt}}.{{/platz}}{{#ohne_platz}}{{objekt}} ist erfasst.{{/ohne_platz}}{{#kernfakten}} Erfasst: {{kernfakten}}.{{/kernfakten}}\n{{#hotelseite}}\nSeite: {{hotelseite}}\n{{/hotelseite}}\n\n{{LINK}}\n\n--\nDatenschutz: {{datenschutz}}\nAbmelden: {{abmelden}}',
+};
+const fixedCtx = (over = {}) => ({
+  entity: { name: 'Hotel Muster', city: 'Ort', country: 'ES' }, ranking: { name: 'R', entity_label_sg: 'Hotel', entity_label_pl: 'Hotels' },
+  criteria: [], facts: {}, language: 'en', brand: 'Beispiel', askPhotos: true, template: fixedTemplate,
+  persona: { name: 'Daniel Reuland', title: 'Gründer', is_ai: false },
+  profile: { scoreText: '78', rank: 5, total: 51, keyFacts: ['50-m-Becken', 'Sauna'], url: 'https://x.test/hotel/m', privacyUrl: 'https://x.test/privacy' },
+  ...over,
+});
+
+test('feste Vorlage: Text wörtlich, Modelltext wird ignoriert, übersetzte Leistungen werden übernommen, kein KI-Hinweis bei Menschen', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const out = agent.sanitizeDraft({ subject: 'Anderer Betreff', body: 'Ganz anderer Text vom Modell, der lang genug ist, um sonst übernommen zu werden, also achtzig Zeichen.\n{{LINK}}', questions: [], confirm_items: [], feature_items: [], key_facts: '50 m pool, sauna' }, fixedCtx());
+  assert.equal(out.subject, 'Hotel Muster auf Beispiel – kurz prüfen?');
+  assert.match(out.body, /Hotel Muster hat Score 78, Platz 5 von 51\. Erfasst: 50 m pool, sauna\./);
+  assert.match(out.body, /Seite: https:\/\/x\.test\/hotel\/m/);
+  assert.match(out.body, /Abmelden: \{\{abmelden\}\}/, 'Abmeldelink wird erst beim Versand ersetzt');
+  assert.ok(!/Ganz anderer/.test(out.body));
+  assert.ok(!/KI|AI assistant/.test(out.body));
+});
+
+test('feste Vorlage: ohne Platz, Leistungen und öffentliche Seite fallen die Sätze weg; ohne Modell gleicher Text mit Originalbezeichnungen', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const none = agent.sanitizeDraft(null, fixedCtx({ profile: { keyFacts: [], privacyUrl: 'https://x.test/privacy' } }));
+  assert.match(none.body, /Hotel Muster ist erfasst\./);
+  assert.ok(!/Platz|Erfasst:|Seite:|\{\{(platz|score|gesamt|hotelseite|kernfakten)\}\}/.test(none.body), none.body);
+  const noModel = agent.sanitizeDraft(null, fixedCtx());
+  assert.match(noModel.body, /Erfasst: 50-m-Becken, Sauna\./);
+});
+
+test('Prompt der festen Vorlage: kein Mustertext, Übersetzung der Leistungen nur außerhalb von Deutsch', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const en = agent.buildPrompt(fixedCtx());
+  assert.match(en, /fest vorgegeben/);
+  assert.match(en, /key_facts: Übersetze.*50-m-Becken, Sauna/);
+  assert.ok(!/Mustertext/.test(en));
+  assert.match(agent.buildPrompt(fixedCtx({ language: 'de' })), /key_facts: leer lassen/);
+});
+
+test('KI-Persona behält den KI-Hinweis', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const out = agent.sanitizeDraft(null, fixedCtx({ persona: { name: 'Mia', title: 'Assistenz' } }));
+  assert.match(out.body, /AI assistant/);
+});

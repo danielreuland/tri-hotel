@@ -10,10 +10,10 @@ const LINK = '{{LINK}}';
 // Anlässe. ai: KI formuliert (sonst wird der Mustertext nur ausgefüllt). vars: erlaubte Platzhalter, sections: {{#x}}…{{/x}}
 const KEYS = {
   inquiry: {
-    label: 'Datenanfrage', persona: 'data_inquiry', ai: true,
+    label: 'Datenanfrage', persona: 'founder', ai: false,
     trigger: 'Anfrage an den Betreiber (Reiter Kommunikation → Entwurf formulieren)',
-    vars: { marke: 'Name der Site', objekt: 'Name des Objekts', objekte: 'Objekte (Mehrzahl, z. B. „Hotels“)', objekt_art: 'Objektart (Einzahl, z. B. „Hotel“)', name: 'Vorname der Persona', anzahl: 'Anzahl bekannter Angaben zum Bestätigen', LINK: 'persönlicher Antwortlink (Pflicht)' },
-    sections: { fotos: 'nur, wenn Fotos angefragt werden', bestaetigen: 'nur, wenn bekannte Angaben bestätigt werden sollen' },
+    vars: { score: 'Score (bei „vorläufig“ mit Zusatz)', platz: 'Platz im Ranking', gesamt: 'Anzahl Objekte im Ranking', kernfakten: '3–5 erfasste Leistungen', hotelseite: 'Link zur Objektseite', datenschutz: 'Link zur Datenschutzerklärung', abmelden: 'Abmeldelink (beim Versand ersetzt)', marke: 'Name der Site', objekt: 'Name des Objekts', objekte: 'Objekte (Mehrzahl, z. B. „Hotels“)', objekt_art: 'Objektart (Einzahl, z. B. „Hotel“)', name: 'Vorname der Persona', anzahl: 'Anzahl bekannter Angaben zum Bestätigen', LINK: 'persönlicher Antwortlink (Pflicht)' },
+    sections: { fotos: 'nur, wenn Fotos angefragt werden', bestaetigen: 'nur, wenn bekannte Angaben bestätigt werden sollen', platz: 'nur, wenn das Objekt einen Platz im Ranking hat', ohne_platz: 'nur ohne Platz im Ranking', kernfakten: 'nur, wenn Leistungen erfasst sind', hotelseite: 'nur, wenn die Objektseite öffentlich ist' },
   },
   inquiry_reminder: {
     label: 'Erinnerung zur Datenanfrage', persona: 'data_inquiry', ai: false,
@@ -143,7 +143,9 @@ function mustList(must) {
 async function get(siteId, key, language = 'de') {
   const lang = DEFAULTS[key][language] ? language : 'de';
   const row = siteId ? await db.one(`SELECT * FROM ai_mail_templates WHERE site_id = $1 AND key = $2 AND language = $3`, [siteId, key, lang]) : null;
-  return row ? { ...row, custom: true } : { ...DEFAULTS[key][lang], key, language: lang, custom: false };
+  // fixed: Text wird wörtlich verwendet (KI nur noch für Fragen, Bezeichnungen und Übersetzungen)
+  const fixed = KEYS[key].ai === false;
+  return row ? { ...row, custom: true, fixed } : { ...DEFAULTS[key][lang], key, language: lang, custom: false, fixed };
 }
 
 // Stilbeispiel: zuletzt gesendete Anfrage, deren KI-Text von Hand überarbeitet wurde (gleiche Sprache, ohne KI-Hinweis)

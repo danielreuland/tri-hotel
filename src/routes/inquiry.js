@@ -35,6 +35,7 @@ function render(res, found, extra = {}) {
     lang: inquiry.language,
     consents: inquiries.formConsents(inquiry.language, site, entity.name),
     maxPhotos: inquiries.MAX_PHOTOS,
+    contactNotice: inquiries.contactNotice(inquiry.language),
     errors: [],
     form: {},
     ...extra,
@@ -50,6 +51,20 @@ function closedPage(res, found) {
   }[found.status];
   res.status(found.status === 'invalid' ? 404 : 200).render('public/error', { title: de ? 'Anfrage' : 'Request', message: msg, noindex: true });
 }
+
+// Abmeldelink: erst eine Seite mit Knopf (Mail-Scanner rufen Links automatisch auf), abgemeldet wird per POST
+router.get('/anfrage/:token/abmelden', wrap(async (req, res) => {
+  const found = await inquiries.findForOptOut(req.params.token);
+  if (!found) return closedPage(res, { status: 'invalid' });
+  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren Anfragen' : 'No further requests', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: Boolean(found.entity.inquiry_opt_out_at) });
+}));
+
+router.post('/anfrage/:token/abmelden', limiter, wrap(async (req, res) => {
+  const found = await inquiries.findForOptOut(req.params.token);
+  if (!found) return closedPage(res, { status: 'invalid' });
+  await inquiries.optOut(found);
+  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren Anfragen' : 'No further requests', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: true });
+}));
 
 router.get('/anfrage/:token', wrap(async (req, res) => {
   const found = await inquiries.findByToken(req.params.token);

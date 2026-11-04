@@ -51,11 +51,11 @@ async function persona(siteId, role) {
 }
 
 // Absender: "Mia · tri-hotel.de" <mia@tri-hotel.de> bzw. "tri-hotel.de" <hallo@tri-hotel.de>
-// Absender: Agentenname + Site; Adresse der Persona nur mit personaSender 'own' (sonst Sammeladresse der Site)
+// Absender: Name + Site; Adresse der Persona mit personaSender 'own' oder persona.own_sender (sonst Sammeladresse der Site)
 function mailFrom(site, p, personaSender = config.mail.personaSender) {
   if (!site) return config.mail.from;
   const name = p ? `${p.name} · ${site.name}` : site.name;
-  const address = personaSender === 'own' && p && p.email ? p.email : site.mail_from;
+  const address = (personaSender === 'own' || (p && p.own_sender)) && p && p.email ? p.email : site.mail_from;
   return `"${name.replace(/"/g, '')}" <${address}>`;
 }
 

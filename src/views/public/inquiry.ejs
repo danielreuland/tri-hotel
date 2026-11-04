@@ -98,8 +98,11 @@
   <section class="card">
     <label for="note" style="margin-top:0"><%= de ? 'Nachricht an uns (optional)' : 'Message to us (optional)' %></label>
     <textarea id="note" name="note" maxlength="2000"><%= form.note || '' %></textarea>
-    <label for="reply_name"><%= de ? 'Ihr Name und Ihre Funktion (optional)' : 'Your name and role (optional)' %></label>
+    <label for="reply_name"><%= de ? 'Ansprechpartner: Name und Funktion (optional)' : 'Contact person: name and role (optional)' %></label>
     <input id="reply_name" type="text" name="reply_name" maxlength="200" value="<%= form.reply_name || '' %>">
+    <label for="reply_email"><%= de ? 'E-Mail für Rückfragen zu Ihrem Profil (optional)' : 'Email for questions about your profile (optional)' %></label>
+    <input id="reply_email" type="email" name="reply_email" maxlength="254" value="<%= form.reply_email || '' %>">
+    <p class="muted" style="margin:4px 0 0"><small><%= contactNotice %></small></p>
     <p><button class="btn large cta" type="submit"><%= de ? 'Angaben senden' : 'Send answers' %></button></p>
     <p class="muted" style="margin:0"><small><%= de
       ? 'Ihre Angaben verwenden wir nur für Ihr Profil. Der Eintrag ist kostenlos, die Platzierung lässt sich nicht kaufen.'

@@ -75,6 +75,8 @@ async function renderAiEdit(req, res, site, key, language, draft, extra = {}) {
   const ctx = {
     entity: sampleEntity, ranking: ranking || { name: site.name, entity_label_sg: 'Objekt', entity_label_pl: 'Objekte' }, criteria, facts: {},
     language, brand: site.name, askPhotos: true, persona, template: tpl, confirm: { criteria: [], features: sampleFeatures, offer: [] },
+    // Beispielwerte für das Kurzprofil in der Vorschau
+    profile: { scoreText: '78', rank: 5, total: 51, keyFacts: sampleFeatures.map((f) => f.label), url: `${sitesService.urlFor(site)}/beispiel`, privacyUrl: `${sitesService.urlFor(site)}/datenschutz` },
   };
   let fallback = agent.fallbackDraft(ctx);
   if (key === 'inquiry_reminder') {
