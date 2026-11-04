@@ -4,6 +4,11 @@ Stand 04.11.2026 · Text von Daniel (04.11.), eingebaut mit Migration 101 als `a
 Hotel-Ansprache, Konzept: https://claude.ai/artifact/EmRgGEgm2TMm9vSfkvvpqj). Änderungen danach im Admin unter E-Mails → KI-Mails → Datenanfrage;
 der Text wird dort wörtlich verwendet (feste Vorlage, keine KI-Formulierung). Absender: Daniel Reuland (`daniel@tri-hotel.de`, Persona `founder`).
 
+## Formular hinter dem Link
+
+Mit der festen Vorlage zeigt das Formular alle Angaben zum Prüfen (`fullCheckSelection`): Stammdaten, jeden bekannten erfragbaren Wert zum Bestätigen oder Korrigieren,
+offene und strittige Werte als Fragen, alle erfassten Leistungen und die übrigen Leistungen des Katalogs. Die Auswahl im Admin entfällt dabei. Automatische Werte wie Klima sind nicht erfragbar und fehlen.
+
 ## Spielregeln
 
 - **Redaktionell bleiben (D1, freigegeben 02.11.):** keine Frage nach Vertrieb, Kooperation, Partnerschaft, Werbung oder Preisen in der Mail.

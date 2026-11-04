@@ -12,6 +12,15 @@
 <% } %>
 
 <form method="post" enctype="multipart/form-data" class="grid" style="gap:20px">
+  <section class="card">
+    <h2 style="margin-top:0"><%= de ? 'Stammdaten' : 'Basic details' %></h2>
+    <p style="margin:0"><strong><%= entity.name %></strong><br>
+      <%= [entity.city, entity.country].filter(Boolean).join(', ') %><% if (entity.website) { %><br><%= entity.website %><% } %></p>
+    <p class="muted" style="margin:8px 0 0"><small><%= de
+      ? 'Stimmt hier etwas nicht? Schreiben Sie es uns unten in die Nachricht.'
+      : 'Is anything incorrect here? Please tell us in the message below.' %></small></p>
+  </section>
+
   <% if (inquiry.questions.length) { %>
     <section class="card">
       <h2 style="margin-top:0"><%= de ? 'Ihre Angaben' : 'Your details' %></h2>
@@ -36,6 +45,9 @@
       <p class="muted"><%= de
         ? 'Bitte kurz prüfen. Was stimmt, bestätigen Sie mit einem Klick; was nicht stimmt, korrigieren Sie direkt.'
         : 'Please check briefly. Confirm what is correct with one click; correct anything that is not.' %></p>
+      <% if (confCrit.length > 1) { %>
+        <p><button type="button" class="btn" data-confirm-all hidden><%= de ? 'Alle als „stimmt“ markieren' : 'Mark all as “correct”' %></button></p>
+      <% } %>
       <% confCrit.forEach(function (it) { var name = 'k_' + it.criterion_id; var cur = form[name]; %>
         <fieldset style="border:0;border-top:1px solid var(--border);padding:12px 0 6px;margin:0">
           <legend style="font-weight:800;padding:0;margin-bottom:6px"><%= it.label %>: <span style="font-weight:400"><%= it.current_text %></span></legend>

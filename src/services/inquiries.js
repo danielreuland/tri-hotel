@@ -197,6 +197,21 @@ function defaultConfirmSelection(criteria, facts, askedIds, presentFeatureIds) {
   };
 }
 
+// Vollständige Prüfung (feste Vorlage): Unbekanntes und Strittiges wird gefragt, jeder andere erfragbare Wert zum Bestätigen gezeigt, dazu alle Leistungen
+function fullCheckSelection(criteria, facts, presentFeatureIds) {
+  const byCrit = new Map(facts.map((f) => [f.criterion_id, f]));
+  const askable = criteria.filter((c) => agent.isAskable(c));
+  const known = (c) => {
+    const f = byCrit.get(c.id);
+    return Boolean(f && !f.disputed && agent.formValue(c, f.value));
+  };
+  return {
+    criteriaIds: askable.filter((c) => !known(c)).map((c) => c.id),
+    confirmCriteriaIds: askable.filter(known).map((c) => c.id),
+    confirmFeatureIds: [...presentFeatureIds],
+  };
+}
+
 // Auswahl prüfen: nur bekannte, erfragbare Werte (nicht zugleich gefragt) und erfasste Leistungen.
 // offerIds: feste Liste „Bieten Sie außerdem …?“; ohne sie mit offer = true alle übrigen Leistungen des Katalogs
 async function confirmSelection({ entity, ranking, criteria, facts, askedIds, criteriaIds = [], featureIds = [], offer = false, offerIds = null }) {
@@ -227,17 +242,26 @@ async function formulate(inquiryId, { criteriaIds, askPhotos, adminNote, confirm
   if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
   const ranking = await rankings.getRanking(inq.ranking_id);
   const allCriteria = await rankings.getCriteria(inq.ranking_id);
-  const criteria = allCriteria.filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
   const site = await sites.forRanking(ranking);
   const persona = await personaOf(inq);
   const factRows = await rankings.getFacts(entity.id, ranking.id);
   const facts = Object.fromEntries(factRows.map((f) => [f.criterion_id, f]));
+  const language = agent.languageFor(entity.country);
+  const template = await aimail.get(site.id, 'inquiry', language);
+  // Feste Vorlage: Das Formular zeigt alle Angaben zum Prüfen, die Auswahl im Admin entfällt
+  if (template.fixed) {
+    const { present } = await manualFeatures(ranking.entity_type, entity.id);
+    const full = fullCheckSelection(allCriteria, factRows, [...present]);
+    criteriaIds = full.criteriaIds;
+    confirmCriteriaIds = full.confirmCriteriaIds;
+    confirmFeatureIds = full.confirmFeatureIds;
+    offerFeatures = true;
+  }
+  const criteria = allCriteria.filter((c) => criteriaIds.includes(c.id) && agent.isAskable(c));
   const confirm = await confirmSelection({
     entity, ranking, criteria: allCriteria, facts: factRows, askedIds: criteria.map((c) => c.id),
     criteriaIds: confirmCriteriaIds, featureIds: confirmFeatureIds, offer: Boolean(offerFeatures),
   });
-  const language = agent.languageFor(entity.country);
-  const template = await aimail.get(site.id, 'inquiry', language);
   if (!template.fixed && !criteria.length && !askPhotos && !agent.confirmCount(confirm)) throw new Error('Bitte mindestens einen Wert, eine Bestätigung oder die Fotos auswählen.');
   const example = await aimail.inquiryExample(language, inq.id);
   // Die feste Vorlage bittet immer um Fotos, das Formular muss den Upload also zeigen
@@ -718,6 +742,6 @@ module.exports = {
   discardDraft,
   draftCriteria,
   defaultConfirmSelection, manualFeatures, buttonKind, parseReplyName, personalize, findForOptOut, optOut, CONTACT_NOTICE_VERSION, contactNotice, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
-  setEnqueue, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
+  setEnqueue, fullCheckSelection, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
   dailyMaintenance, isImageFile, MAX_PHOTOS,
 };

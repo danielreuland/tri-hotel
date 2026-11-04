@@ -113,6 +113,18 @@ test('buttonKind: Knopftext passend zum Inhalt', () => {
   assert.equal(inquiries.buttonKind({ criteria_ids: [], confirm_criteria_ids: [], confirm_feature_ids: [], ask_photos: true }), 'photos');
 });
 
+test('fullCheckSelection: jede erfragbare Angabe kommt vor, unabhängig von der Vertrauensstufe', () => {
+  const rows = [{ criterion_id: 'g', value: { option: 'standard' }, trust_level: 1, disputed: false }];
+  // bekannt (auch Stufe 1) zum Bestätigen, unbekannt als Frage, Admin-Einstufung gar nicht, Leistungen vollständig
+  assert.deepEqual(inquiries.fullCheckSelection([gym, sauna, terrain], rows, ['fg', 'fh']), {
+    criteriaIds: ['s'], confirmCriteriaIds: ['g'], confirmFeatureIds: ['fg', 'fh'],
+  });
+  // strittig: wird gefragt statt bestätigt
+  assert.deepEqual(inquiries.fullCheckSelection([gym], [{ ...rows[0], disputed: true }], []), {
+    criteriaIds: ['g'], confirmCriteriaIds: [], confirmFeatureIds: [],
+  });
+});
+
 test('defaultConfirmSelection: Stufe 2 und 4, nicht strittig, nicht gefragt, keine Admin-Einstufungen', () => {
   const factRows = [
     { criterion_id: 'g', value: { option: 'standard' }, trust_level: 2, disputed: false },

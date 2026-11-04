@@ -30,6 +30,7 @@ function render(res, found, extra = {}) {
   res.render('public/inquiry', {
     title: inquiry.language === 'de' ? 'Ihre Angaben' : 'Your details',
     noindex: true,
+    scripts: ['/static/js/inquiry-form.js'],
     inquiry,
     entity,
     lang: inquiry.language,
