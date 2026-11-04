@@ -226,26 +226,37 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 
 ### Prozesstest Anfrage → CRM → Nachfassen (Stand 04.11.2026)
 Live: Erinnerung mit eigenem Link (Migration 100), Ereignisse tri-hotel → Hub verbunden (`HUB_EVENTS_URL`/`HUB_EVENTS_SECRET`; Probe: ungültiges
-Ereignis 400, falsches Geheimnis 401, von außen 404). **Test noch nicht gestartet:** Daniel schickt eine Testadresse außerhalb von `tri-hotel.de`, dann
-nicht öffentliches Testhotel anlegen, Entwurf freigeben, Mail, CRM-Unternehmen, Formular, Mail-Antwort und Erinnerung prüfen, danach Testdaten löschen.
-Bekannte Lücken: Abmeldelink fehlt; `contact.profile`/`contact.consent` werden nicht ausgelöst (P2); Mail-Antwort, Erinnerung und Unzustellbares
-erzeugen keinen CRM-Vermerk; Sammelanlage im Hub vor echten Anfragen ausführen; `PRIVACY_CRM_SECTION` im Hub noch `off`.
+Ereignis 400, falsches Geheimnis 401, von außen 404).
+**Test gelaufen (04.11.) mit nicht öffentlichem Testhotel, Testdaten danach gelöscht:** Mail mit DKIM, SPF und DMARC bestanden, Formular mit echtem Link, Abmeldung, Foto,
+Einwilligungen, `inquiry.answered`, `contact.profile`, `contact.consent` und Unternehmen im Hub. Antwort an `daniel@` laut Daniel angekommen.
+**Nicht getestet:** entfernter Haken bei einer erfassten Leistung (nur Unit-Test), Antworten im Admin übernehmen, Erinnerung, Darstellung im Admin (Zähler, Karte „Betreiber-Nachricht“),
+`inquiry.sent` über den Job der App (im Test per Skript versendet, das Ereignis blieb `pending`), Becken-Anzeige bei mehreren Angaben (`scoring.multi`) in der Prüfliste.
+Bekannte Lücken: Mail-Antwort, Erinnerung und Unzustellbares erzeugen keinen CRM-Vermerk; `PRIVACY_CRM_SECTION` im Hub noch `off`.
+**Keine Sammelanlage (Entscheidung Daniel 04.11.):** Unternehmen entstehen im Hub immer durch den Versand der Anfrage-Mail (`inquiry.sent`). Sie haben dann nur den Namen und die Verknüpfung
+zum tri-hotel-Objekt, keine Website und kein Land. Die 9 bereits versendeten Anfragen haben noch kein Unternehmen, bis ein weiteres Ereignis kommt.
 
 ### Hotel-Ansprache neu (Konzept 02.11.2026: https://claude.ai/artifact/EmRgGEgm2TMm9vSfkvvpqj)
 Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Link zum Prüfen, Fotos (Upload oder Website-Fotos mit
 Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
 später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
-- **D1 freigegeben (02.11.), geändert 04.11.:** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung. Daniel hat am 04.11. entschieden: **kein Double-Opt-in**, die Einwilligung geht direkt an den Hub (`verification: personal_link`, Name Pflicht, Adresse = angeschriebene Adresse). Der Nachweis nennt das offen; schwächer als Double-Opt-in, rechtliche Prüfung offen.
-- **P1 gebaut (04.11., Migration 101):** Daniels Text als feste Vorlage DE/EN (`docs/anfrage-mail-entwurf.md`), Absender-Persona `founder` (`daniel@tri-hotel.de`,
+- **D1 freigegeben (02.11.), geändert 04.11.:** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung. Daniel hat am 04.11. entschieden: **kein Double-Opt-in**, die Einwilligung geht direkt an den Hub (`verification: personal_link`, Name Pflicht, Adresse = angeschriebene Adresse). Der Nachweis nennt das offen; schwächer als Double-Opt-in.
+- **Rechtlich prüfen lassen: Kooperations-Einwilligung ohne Double-Opt-in** (vor der ersten Werbemail an solche Kontakte; der Versand der Anfragen hängt nicht daran).
+  - *Ablauf heute:* Das Hotel bekommt eine persönliche Anfrage-Mail an die öffentliche Kontaktadresse. Im Formular hinter dem persönlichen Link setzt es freiwillig das nicht vorausgewählte Häkchen
+    „Ich möchte von tri-hotel.de per E-Mail über Kooperationsmöglichkeiten informiert werden …“ (Wortlaut in `src/lib/consents.js`, Version `2026-10b`) und nennt einen Namen. Beim Absenden geht sofort `contact.consent` an den Hub, ohne Bestätigungsmail.
+  - *Was gespeichert wird:* Der Kontakt im Hub bekommt `email_consent = granted`, Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO, der Lead steigt auf „Interesse bekundet“, und er gilt als werblich anschreibbar. Der Nachweis enthält „kein Double-Opt-in“, Wortlaut, Version, Zeitpunkte und Ereignis-ID.
+  - *Fragen:* (1) Reicht das Häkchen über den persönlichen Link als Nachweis nach § 7 Abs. 2 UWG und Art. 7 Abs. 1 DSGVO, auch gegenüber Unternehmen? (2) Risiko bei weitergeleitetem Link oder Sammelpostfach: Wer willigt ein, wenn Name und Postfach nicht zur selben Person gehören? (3) Trägt die Einwilligung für eine Sammeladresse wie `info@`? (4) Reicht der Wortlaut für den Zweck, und passen die Absätze „Kooperationen“ in der Datenschutzerklärung sowie der CRM-Abschnitt im Hub?
+  - *Falls nicht ausreichend:* Bestätigungsmail nachrüsten. Vertrag und Hub können `doubleOptIn` bereits verarbeiten, in tri-hotel fehlen nur Mail und Bestätigungslink.
+- **Vorlage entschieden (04.11.):** „Dauert keine 5 Minuten“ bleibt im Text. Bekannte Angaben und erfasste Leistungen sind im Formular eingeklappt, ein entfernter Haken zählt als Korrektur, ein stehender nicht als Bestätigung.
+- **P1 gebaut (04.11., Migration 101–104):** Daniels Text als feste Vorlage DE/EN (`docs/anfrage-mail-entwurf.md`), Absender-Persona `founder` (`daniel@tri-hotel.de`,
   `personas.own_sender`, `is_ai`), Kurzprofil aus Score/Platz/Leistungen, Knopf „Jetzt Angaben ergänzen und Fotos hochladen“, Abmeldelink (`entities.inquiry_opt_out_at`,
   `/anfrage/:token/abmelden`), Feld „E-Mail für Rückfragen“ im Formular → Ereignis `contact.profile` ans CRM. Erinnerung kommt weiter von Mia mit KI-Hinweis.
-  **Vor dem ersten Versand:** Weiterleitung `daniel@` → `info@` einrichten und testen (Variante A), Header und DKIM an einer echten Mail prüfen.
-  Robinson und BCL Podium haben noch Entwürfe mit altem Text und Mia als Absender: neu formulieren oder so freigeben.
+  Das Formular zeigt alle erfragbaren Angaben zum Prüfen (`fullCheckSelection`). Header und DKIM an echter Mail geprüft (bestanden), Weiterleitung `daniel@` → `info@` eingerichtet.
+  **Vor dem ersten Versand:** englische Fassung von Daniel freigeben lassen, Becken-Anzeige bei mehreren Angaben prüfen.
+  Robinson Club Fleesensee und Tauern Spa Zell am See-Kaprun sind auf die neue Vorlage umgestellt (Entwürfe, alter Text im Audit-Log). Alle 48 Entwürfe laufen unter Daniel. BCL Podium wurde schon am 26.10. versendet.
 - **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
-  IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an (Probe ohne Versand); DKIM-Einträge `s1-ionos`/`s2-ionos` vorhanden.
-  Offen: Header-Prüfung und DKIM-Signatur an einer echten Mail.
-- **Antworten: Variante A entschieden (04.11.):** Weiterleitung `daniel@` → `info@` mit Kopie im Postfach (von Daniel bei IONOS einzurichten, vor P1
-  testen). Der Abruf liest nur `info@`; keine Gegenrichtung `info@` → `daniel@`, sonst läuft die Mail im Kreis.
+  IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an; DKIM-Signatur `s1-ionos` an echter Mail bestätigt (04.11.).
+- **Antworten: Variante A entschieden (04.11.):** Weiterleitung `daniel@` → `info@` mit Kopie im Postfach (von Daniel bei IONOS eingerichtet). Der Abruf liest nur `info@`; keine Gegenrichtung `info@` → `daniel@`, sonst läuft die Mail im Kreis.
+- **Keine Hinweis-Mail bei Antworten (04.11.):** `ADMIN_NOTIFY_EMAIL` bleibt leer. `info@` wird abgerufen, ein Hinweis dorthin wäre eine doppelte Aufgabe. Antworten erscheinen als Karten „Betreiber-Antwort“ und „Betreiber-Nachricht“.
 - **Absender wählbar in Admin und Hub (Wunsch Daniel 04.11., Logik später festlegen):** Bisher gibt es nur die globale Einstellung
   `MAIL_PERSONA_SENDER`, und der Hub verschickt noch gar keine Mails. Zu klären: gepflegte Liste erlaubter Absender (wer pflegt sie, wie teilen sie
   sich Admin und Hub), Standard je Anlass (z. B. erste Anfrage Daniel, Erinnerung Mia), Änderung beim Versand, KI-Kennzeichnung je Absender,
@@ -285,7 +296,6 @@ Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
   Sol, Regency Torviscas, Princess Inspire, Iberostar Sábila): Auto-Prüfung im Admin starten; Websites von H10/Iberostar bestätigen,
   Vilamar ohne Website.
 - **Funnel-Ziele** für fitnessracing-hotel.de und „alle zusammen“ im Dashboard eintragen (bisher nur tri-hotel.de).
-- Robinson Club Fleesensee und Hotel BCL Podium: zurückgesetzte Anfrage-Entwürfe prüfen und neu freigeben.
 - **Tauern Spa Kaprun: Anfang November erneut senden** (Empfänger-Spamfilter hatte die junge Domain abgewiesen; Adresse korrekt).
 - **Expedia-IDs für die übrigen Hotels** eintragen (Expedia aktiv seit 26.10., 35 Hotels mit Link; Hotels.com übernimmt die
   Nummer automatisch). Regeln: keine Gutscheine, keine Expedia-Links in E-Mails/Offline, „Expedia“ nicht in Titeln/Meta-Tags,
