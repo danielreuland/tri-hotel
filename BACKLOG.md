@@ -224,6 +224,13 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 - `pm2-logrotate` 3.0.0 eingerichtet 29.10. (gilt für alle PM2-Apps): je Log max. 50 MB, täglich um Mitternacht, 10 Dateien
   behalten, gzip, Prüfung alle 5 min; `pm2 save` ausgeführt. Testmail des Wächters angekommen (29.10.).
 
+### Prozesstest Anfrage → CRM → Nachfassen (Stand 04.11.2026)
+Live: Erinnerung mit eigenem Link (Migration 100), Ereignisse tri-hotel → Hub verbunden (`HUB_EVENTS_URL`/`HUB_EVENTS_SECRET`; Probe: ungültiges
+Ereignis 400, falsches Geheimnis 401, von außen 404). **Test noch nicht gestartet:** Daniel schickt eine Testadresse außerhalb von `tri-hotel.de`, dann
+nicht öffentliches Testhotel anlegen, Entwurf freigeben, Mail, CRM-Unternehmen, Formular, Mail-Antwort und Erinnerung prüfen, danach Testdaten löschen.
+Bekannte Lücken: Abmeldelink fehlt; `contact.profile`/`contact.consent` werden nicht ausgelöst (P2); Mail-Antwort, Erinnerung und Unzustellbares
+erzeugen keinen CRM-Vermerk; Sammelanlage im Hub vor echten Anfragen ausführen; `PRIVACY_CRM_SECTION` im Hub noch `off`.
+
 ### Hotel-Ansprache neu (Konzept 02.11.2026: https://claude.ai/artifact/EmRgGEgm2TMm9vSfkvvpqj)
 Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Link zum Prüfen, Fotos (Upload oder Website-Fotos mit
 Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
@@ -232,9 +239,13 @@ später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Ei
 - **Mail-Text:** Daniel bearbeitet `docs/anfrage-mail-entwurf.md`; danach Paket P1 (Vorlage) bauen.
 - **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
   IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an (Probe ohne Versand); DKIM-Einträge `s1-ionos`/`s2-ionos` vorhanden.
-  Offen: Header-Prüfung und DKIM-Signatur an einer echten Mail. **Antworten:** Der Abruf liest nur ein IMAP-Postfach (`info@`), Antworten an
-  `daniel@` kämen dort nicht an und stoppten die Erinnerung nicht – vor P1 Weiterleitung an `info@` (Kopie behalten) einrichten und testen,
-  oder den Abruf auf mehrere Postfächer erweitern. Für P1 muss der Absender je Mail wählbar werden (bisher nur global `MAIL_PERSONA_SENDER`).
+  Offen: Header-Prüfung und DKIM-Signatur an einer echten Mail.
+- **Antworten: Variante A entschieden (04.11.):** Weiterleitung `daniel@` → `info@` mit Kopie im Postfach (von Daniel bei IONOS einzurichten, vor P1
+  testen). Der Abruf liest nur `info@`; keine Gegenrichtung `info@` → `daniel@`, sonst läuft die Mail im Kreis.
+- **Absender wählbar in Admin und Hub (Wunsch Daniel 04.11., Logik später festlegen):** Bisher gibt es nur die globale Einstellung
+  `MAIL_PERSONA_SENDER`, und der Hub verschickt noch gar keine Mails. Zu klären: gepflegte Liste erlaubter Absender (wer pflegt sie, wie teilen sie
+  sich Admin und Hub), Standard je Anlass (z. B. erste Anfrage Daniel, Erinnerung Mia), Änderung beim Versand, KI-Kennzeichnung je Absender,
+  Verbindung nur über den Vertrag `docs/internal-api.md`. Wählbar nur Adressen, die IONOS annimmt und deren Antworten im abgefragten Postfach landen.
 - Offen: D3–D7 (Vorstellungstext, Website-Fotos, CRM-Konzept anpassen, Partnerbereich, Produkte/Rechtsprüfung).
 
 ### 2. Konzept: Anfrage-Workflows bis zur Klärung, mit Voice-Agents (Agenda 21.10.)
