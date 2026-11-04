@@ -85,9 +85,20 @@ test('Ereignisse: Anfrage-Ereignisse ohne Personendaten (Empfänger, Name, Mailt
   }
 });
 
-test('Ereignisse: Pflichtangaben und Double-Opt-in werden erzwungen', () => {
+test('contact.consent über persönlichen Link entspricht dem Fixture und behauptet keinen Double-Opt-in', () => {
+  const want = fx('contact.consent.personal-link');
+  const ev = hub.contactConsent({
+    inquiry, entity, site, person: { firstName: 'Ana', lastName: 'Beispiel', email: 'info@clublasanta.com', language: 'de' }, purpose,
+    text: want.data.consent.text, textVersion: '2026-10b', language: 'de',
+    givenAt: new Date('2026-10-22T17:40:00Z'), personalLinkSentAt: new Date('2026-10-22T08:00:00Z'),
+  });
+  assert.deepEqual({ ...ev, id: null }, { ...want, id: null });
+  assert.equal(ev.data.consent.doubleOptIn, undefined);
+});
+
+test('Ereignisse: Pflichtangaben und Nachweis der Einwilligung werden erzwungen', () => {
   const base = { inquiry, entity, site, person: { lastName: 'B', email: 'a@b.de' }, textVersion: 'v1', text: 'Wortlaut', givenAt: new Date() };
-  assert.throws(() => hub.contactConsent(base), /Double-Opt-in/);
+  assert.throws(() => hub.contactConsent(base), /Double-Opt-in oder den persönlichen Link/);
   assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), text: '' }), /Wortlaut/);
   assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), givenAt: null }), /Zeitpunkt/);
   assert.throws(() => hub.contactConsent({ ...base, doubleOptInConfirmedAt: new Date(), person: { lastName: 'B' } }), /E-Mail/);

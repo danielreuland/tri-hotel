@@ -9,6 +9,7 @@ const STATUSES = { open: 'Offen', in_progress: 'In Arbeit', done: 'Erledigt' };
 const LABELS = {
   review: 'Prüfbericht',
   answers: 'Betreiber-Antwort',
+  reply: 'Betreiber-Nachricht',
   draft: 'Anfrage-Entwurf',
   inquiry_failed: 'Anfrage fehlgeschlagen',
   recheck: 'Nachprüfung',
@@ -60,6 +61,16 @@ async function collect() {
              UNION ALL SELECT inquiry_id, id FROM inquiry_feature_answers WHERE status = 'pending') a ON a.inquiry_id = i.id
       GROUP BY i.id, e.id`)) {
     push({ source: 'answers', source_key: `answers:${r.id}`, title: r.name, detail: [{ level: 'todo', text: `${r.n} ${r.n === 1 ? 'Antwort' : 'Antworten'} übernehmen oder verwerfen` }], link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
+  }
+  // Beantwortete Anfragen mit Nachricht oder ungeprüften Fotos (ohne das fiele eine Antwort ohne Werte nicht auf); erledigt, wenn die Anfrage abgeschlossen ist
+  for (const r of await db.many(
+    `SELECT i.id, i.entity_id, e.name, i.reply_note IS NOT NULL AS has_note, COALESCE(i.submission_id, ${latestSub}) AS sub_id,
+            (SELECT count(*)::int FROM entity_images m WHERE m.inquiry_id = i.id AND m.approved_at IS NULL) AS photos
+       FROM inquiries i JOIN entities e ON e.id = i.entity_id WHERE i.status = 'answered'`)) {
+    const lines = [];
+    if (r.has_note) lines.push({ level: 'todo', text: 'Nachricht lesen, danach die Anfrage abschließen' });
+    if (r.photos) lines.push({ level: 'todo', text: `${r.photos} ${r.photos === 1 ? 'Foto' : 'Fotos'} prüfen und freigeben` });
+    if (lines.length) push({ source: 'reply', source_key: `reply:${r.id}`, title: r.name, detail: lines, link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
   }
   // Anfrage-Entwürfe und fehlgeschlagene Anfragen
   for (const r of await db.many(

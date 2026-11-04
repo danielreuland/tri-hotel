@@ -235,7 +235,7 @@ erzeugen keinen CRM-Vermerk; Sammelanlage im Hub vor echten Anfragen ausführen;
 Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Link zum Prüfen, Fotos (Upload oder Website-Fotos mit
 Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
 später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
-- **D1 freigegeben (02.11.):** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung + Double-Opt-in.
+- **D1 freigegeben (02.11.), geändert 04.11.:** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung. Daniel hat am 04.11. entschieden: **kein Double-Opt-in**, die Einwilligung geht direkt an den Hub (`verification: personal_link`, Name Pflicht, Adresse = angeschriebene Adresse). Der Nachweis nennt das offen; schwächer als Double-Opt-in, rechtliche Prüfung offen.
 - **P1 gebaut (04.11., Migration 101):** Daniels Text als feste Vorlage DE/EN (`docs/anfrage-mail-entwurf.md`), Absender-Persona `founder` (`daniel@tri-hotel.de`,
   `personas.own_sender`, `is_ai`), Kurzprofil aus Score/Platz/Leistungen, Knopf „Jetzt Angaben ergänzen und Fotos hochladen“, Abmeldelink (`entities.inquiry_opt_out_at`,
   `/anfrage/:token/abmelden`), Feld „E-Mail für Rückfragen“ im Formular → Ereignis `contact.profile` ans CRM. Erinnerung kommt weiter von Mia mit KI-Hinweis.

@@ -467,6 +467,10 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       errors.push(inq.language === 'de' ? `Es sind noch ${free} Fotos möglich.` : `You can add ${free} more photos.`);
     }
   }
+  // Kooperations-Einwilligung geht direkt ins CRM, dort braucht der Kontakt einen Namen
+  if (body.consent_partner_contact === 'on' && !parseReplyName(body.reply_name)) {
+    errors.push(inq.language === 'de' ? 'Für Kooperationen bitte unten Ihren Namen als Ansprechpartner angeben.' : 'For cooperation, please enter your name as the contact person below.');
+  }
   if (errors.length) {
     for (const f of files) fs.unlink(f.path, () => {});
     return { errors };
@@ -556,6 +560,15 @@ async function submitAnswers(inq, entity, site, body, files = []) {
       inquiry: inq, entity, site, collectedAt: at,
       person: { ...contactName, email: replyEmail, language: inq.language },
       notice: { text: contactNotice(inq.language), version: CONTACT_NOTICE_VERSION, url: `${sites.urlFor(site)}${inq.language === 'de' ? '/datenschutz' : '/privacy'}` },
+    });
+  }
+  // CRM im Hub: Kooperations-Einwilligung direkt, ohne Bestätigungsmail. Gilt für die angeschriebene Adresse, denn nur dorthin ging der persönliche Link
+  if (granted.includes('partner_contact')) {
+    await hubEvents.emitSafe(hubEvents.contactConsent, {
+      inquiry: inq, entity, site, givenAt: at, personalLinkSentAt: inq.sent_at, language: inq.language,
+      person: { ...contactName, email: inq.recipient, language: inq.language },
+      purpose: `Informationen zu Kooperationsmöglichkeiten von ${site.name} per E-Mail`,
+      text: texts.partner_contact, textVersion: consentTexts.VERSION,
     });
   }
   if (config.mail.adminNotify) {

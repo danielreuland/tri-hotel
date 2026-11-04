@@ -186,16 +186,17 @@ Typen und `data` (Pflichtfelder des Hubs **fett**; weitere Felder sind Zusatzinf
 | `inquiry.sent` | Faktenanfrage an das Hotel versendet | **`inquiryId`**, `purpose` (`facts`), `ranking`, `language`, `sentAt`, `expiresAt`, `askPhotos`, `questions` (Anzahl) – ohne Empfänger und Mailtext |
 | `inquiry.answered` | Antwortformular abgeschickt | **`inquiryId`**, `ranking`, `answeredAt`, `answeredFields` (Anzahl Angaben), `confirmed` (bekannte Werte bestätigt), `photos` (Anzahl), `consents[]` (Typen) – ohne Namen |
 | `contact.profile` | Ansprechpartner fürs Profil angegeben (ab Paket P2) | `inquiryId`, **`person`** {`salutation` (`herr`/`frau`/`neutral`/null), `firstName`, **`lastName`**, `position`, **`email`**, `phone`, `language`}, `legalBasis` (`legitimate_interest`), `notice` {`text`, **`version`**, `url`} (Datenschutzhinweis bei Erhebung) |
-| `contact.consent` | E-Mail-Einwilligung nach **Double-Opt-in** bestätigt (ab P2) | `inquiryId`, `project` (`tri-hotel`), **`person`** wie oben, **`consent`** {**`channel`** (`email`), `purpose`, **`text`**, `textVersion`, `language`, **`givenAt`**, **`doubleOptIn`** {`sentAt`, **`confirmedAt`**}} |
+| `contact.consent` | E-Mail-Einwilligung im Antwortformular erteilt | `inquiryId`, `project` (`tri-hotel`), **`person`** wie oben, **`consent`** {**`channel`** (`email`), `purpose`, **`text`**, `textVersion`, `language`, **`givenAt`**, und entweder **`verification`** {**`method`** (`personal_link`), `linkSentAt`} oder **`doubleOptIn`** {`sentAt`, **`confirmedAt`**}} |
 | `photos.permission` | Nutzungserlaubnis für Fotos erteilt bzw. abgelehnt/widerrufen | `inquiryId`, **`granted`** (bool), `count`, `scope` (Text), `scopes[]` (`profile`, `social`), `credit`, `textVersion`, `grantedAt`, `withdrawnAt` |
 
 Hinweise:
-- `contact.consent` geht erst nach bestätigtem Double-Opt-in raus. Der Hub speichert `text` + `textVersion` + Zeitpunkte +
-  Ereignis-ID als Einwilligungsnachweis und hebt den Lead auf „Interesse bekundet“. **Widerrufe** sind in v1 kein Ereignis
+- `contact.consent` geht direkt nach dem Absenden des Formulars raus, ohne Bestätigungsmail (Entscheidung Daniel 04.11.2026, ändert D1, rechtliche Prüfung offen):
+  `verification.method = personal_link`, `person.email` ist die angeschriebene Adresse, ein Name ist Pflicht. Der Hub speichert Art der Einwilligung + `text` +
+  `textVersion` + Zeitpunkte + Ereignis-ID als Nachweis („kein Double-Opt-in“ steht darin) und hebt den Lead auf „Interesse bekundet“. **Widerrufe** sind in v1 kein Ereignis
   (Daniel trägt sie im Hub ein); ein eigener Typ folgt bei Bedarf.
 - `contact.profile` ist **keine** Werbe-Einwilligung (Rechtsgrundlage berechtigtes Interesse, Profilpflege).
-- Heute ausgelöst: `inquiry.sent`, `inquiry.answered`. Die übrigen Typen sind in tri-hotel gebaut und getestet
-  (`src/services/hub-events.js`), die Formularfelder kommen mit Paket P2 der Hotel-Ansprache.
+- Heute ausgelöst: `inquiry.sent`, `inquiry.answered`, `contact.profile`, `contact.consent`. `photos.permission` ist in tri-hotel gebaut und getestet
+  (`src/services/hub-events.js`), wird aber noch nicht ausgelöst.
 - Der Hub lehnt unbekannte Typen mit 400 ab: neue Typen erst im Vertrag und im Hub ergänzen, dann in tri-hotel senden.
 
 ## Später (nicht v1)

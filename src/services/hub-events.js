@@ -97,23 +97,24 @@ function contactProfile({ inquiry = null, entity, site, person, notice, collecte
   });
 }
 
-// E-Mail-Einwilligung (Kontakt zu Kooperationen, ab P2). Erst nach Double-Opt-in senden (confirmedAt Pflicht).
+// E-Mail-Einwilligung (Kontakt zu Kooperationen). Nachweis entweder Double-Opt-in (confirmedAt) oder der persönliche Link,
+// über den das Häkchen gesetzt wurde (linkSentAt, Entscheidung Daniel 04.11.2026). Nie einen Double-Opt-in behaupten, den es nicht gab.
 // Widerrufe sind in v1 kein Ereignis (Hub verarbeitet nur erteilte Einwilligungen) – Daniel trägt sie im Hub ein.
 function contactConsent({
   inquiry = null, entity, site, person, project = 'tri-hotel', purpose, text, textVersion, language = null,
-  givenAt, doubleOptInSentAt = null, doubleOptInConfirmedAt = null,
+  givenAt, doubleOptInSentAt = null, doubleOptInConfirmedAt = null, personalLinkSentAt = null,
 }) {
   if (!text || !textVersion) throw new Error('contact.consent braucht Wortlaut und Version (Nachweis)');
   if (!givenAt) throw new Error('contact.consent braucht den Zeitpunkt der Einwilligung');
-  if (!doubleOptInConfirmedAt) throw new Error('contact.consent erst nach Double-Opt-in senden');
+  if (!doubleOptInConfirmedAt && !personalLinkSentAt) throw new Error('contact.consent braucht Double-Opt-in oder den persönlichen Link');
+  const proof = doubleOptInConfirmedAt
+    ? { doubleOptIn: { sentAt: iso(doubleOptInSentAt), confirmedAt: iso(doubleOptInConfirmedAt) } }
+    : { verification: { method: 'personal_link', linkSentAt: iso(personalLinkSentAt) } };
   return envelope({
-    type: 'contact.consent', site, entity, occurredAt: doubleOptInConfirmedAt,
+    type: 'contact.consent', site, entity, occurredAt: doubleOptInConfirmedAt || givenAt,
     data: {
       inquiryId: inquiry ? inquiry.id : null, project, person: personOut(person),
-      consent: {
-        channel: 'email', purpose: str(purpose, 500), text, textVersion, language,
-        givenAt: iso(givenAt), doubleOptIn: { sentAt: iso(doubleOptInSentAt), confirmedAt: iso(doubleOptInConfirmedAt) },
-      },
+      consent: { channel: 'email', purpose: str(purpose, 500), text, textVersion, language, givenAt: iso(givenAt), ...proof },
     },
   });
 }

@@ -105,12 +105,15 @@
   <section class="card">
     <h2 style="margin-top:0"><%= de ? 'Kooperationen (optional)' : 'Cooperation (optional)' %></h2>
     <label class="inline" style="margin-top:0"><input type="checkbox" name="consent_partner_contact" <%= form.consent_partner_contact === 'on' ? 'checked' : '' %>> <span><%= consents.partner_contact %></span></label>
+    <p class="muted" style="margin:6px 0 0"><small><%= de
+      ? 'Dafür bitte unten Ihren Namen angeben. Name, die angeschriebene E-Mail-Adresse und diese Einwilligung speichern wir in unserer Kontaktverwaltung.'
+      : 'Please enter your name below for this. We store your name, the email address we wrote to and this consent in our contact management.' %></small></p>
   </section>
 
   <section class="card">
     <label for="note" style="margin-top:0"><%= de ? 'Nachricht an uns (optional)' : 'Message to us (optional)' %></label>
     <textarea id="note" name="note" maxlength="2000"><%= form.note || '' %></textarea>
-    <label for="reply_name"><%= de ? 'Ansprechpartner: Name und Funktion (optional)' : 'Contact person: name and role (optional)' %></label>
+    <label for="reply_name"><%= de ? 'Ansprechpartner: Name und Funktion (optional, für Kooperationen nötig)' : 'Contact person: name and role (optional, required for cooperation)' %></label>
     <input id="reply_name" type="text" name="reply_name" maxlength="200" value="<%= form.reply_name || '' %>">
     <label for="reply_email"><%= de ? 'E-Mail für Rückfragen zu Ihrem Profil (optional)' : 'Email for questions about your profile (optional)' %></label>
     <input id="reply_email" type="email" name="reply_email" maxlength="254" value="<%= form.reply_email || '' %>">
