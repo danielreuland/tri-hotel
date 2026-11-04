@@ -40,6 +40,20 @@ test('Anfrage-Mail: Absatz mit „--“ (KI-Hinweis) bleibt ohne Kennzeichen nor
   assert.match(html, /<p>--<br>Warum Sie diese Mail erhalten/);
 });
 
+test('Anfrage-Mail: [Wörter](URL) legt den Link hinter die Wörter, die Adresse ist nicht sichtbar', async () => {
+  const text = 'Text\n\n--\n[Hinweise zum Datenschutz](https://example.test/datenschutz)\n[Abmelden?](https://example.test/anfrage/abc/abmelden?a=1&b=2)';
+  const html = await ejs.renderFile(path.join(views, 'inquiry.ejs'), { ...base, language: 'de', text, smallFooter: true });
+  assert.match(html, /<a href="https:\/\/example\.test\/datenschutz" style="color:#6a737d">Hinweise zum Datenschutz<\/a><br>/);
+  assert.match(html, /<a href="https:\/\/example\.test\/anfrage\/abc\/abmelden\?a=1&amp;b=2" style="color:#6a737d">Abmelden\?<\/a>/);
+  assert.doesNotMatch(html, /\]\(|>https:\/\/example\.test\/anfrage/);
+});
+
+test('Anfrage-Mail: [Wörter](URL) mit HTML in den Wörtern bleibt maskiert, nackte URL bleibt ein Link', async () => {
+  const text = '[<b>x</b>](https://example.test/a) und https://example.test/b';
+  const html = await ejs.renderFile(path.join(views, 'inquiry.ejs'), { ...base, language: 'de', text });
+  assert.match(html, /<a href="https:\/\/example\.test\/a">&lt;b&gt;x&lt;\/b&gt;<\/a> und <a href="https:\/\/example\.test\/b">https:\/\/example\.test\/b<\/a>/);
+});
+
 test('Mail-Fußzeile: ohne Sprachangabe bleibt es Deutsch', async () => {
   const html = await ejs.renderFile(path.join(views, '_layout_bottom.ejs'), { site: base.site, baseUrl: base.baseUrl });
   assert.match(html, /neutrale Rankings mit geprüften Fakten/);

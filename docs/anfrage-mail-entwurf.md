@@ -40,8 +40,8 @@ Bei Rückfragen hilft Ihnen Mia, unsere KI-Assistentin; ich lese jede Antwort se
 
 --
 Warum Sie diese Mail erhalten: Ihr Hotel ist auf tri-hotel.de erfasst.
-Hinweise zum Datenschutz: {{datenschutz}}
-Keine weiteren Anfragen gewünscht? {{abmelden}}
+[Hinweise zum Datenschutz]({{datenschutz}})
+[Keine weiteren Anfragen gewünscht?]({{abmelden}})
 ```
 
 ## Englisch (für alle Länder außer DE, AT, CH, LI, LU)
@@ -74,8 +74,8 @@ If you have questions, Mia, our AI assistant, will help you; I read every reply 
 
 --
 Why you are receiving this email: your hotel is listed on tri-hotel.de.
-Privacy information: {{datenschutz}}
-No further requests? {{abmelden}}
+[Privacy information]({{datenschutz}})
+[No further requests?]({{abmelden}})
 ```
 
 ## Platzhalter und Abschnitte
@@ -89,3 +89,4 @@ No further requests? {{abmelden}}
 | `{{LINK}}` | persönlicher Link; allein auf der Zeile wird er zum Knopf „Jetzt Angaben ergänzen und Fotos hochladen“ (ohne sichtbare Adresse darunter) |
 | `{{datenschutz}}`, `{{abmelden}}` | Datenschutzerklärung, Abmeldelink |
 | `{{#platz}}`, `{{#ohne_platz}}`, `{{#kernfakten}}`, `{{#hotelseite}}` | Sätze nur, wenn die Angabe vorhanden ist |
+| `[Wörter](Link)` | legt den Link hinter die Wörter, z. B. `[Hinweise zum Datenschutz]({{datenschutz}})` |
