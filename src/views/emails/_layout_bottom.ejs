@@ -1,3 +1,4 @@
-  <p style="color:#6a737d;font-size:12px;margin-top:32px"><%= site.name %> – neutrale Rankings mit geprüften Fakten.<br>
-  <a href="<%= baseUrl %>/impressum" style="color:#6a737d">Impressum</a> · <a href="<%= baseUrl %>/datenschutz" style="color:#6a737d">Datenschutz</a></p>
+  <% var isEn = locals.language && locals.language !== 'de'; %>
+  <p style="color:#6a737d;font-size:12px;margin-top:32px"><%= site.name %> – <%= isEn ? 'neutral rankings with verified facts' : 'neutrale Rankings mit geprüften Fakten' %>.<br>
+  <a href="<%= baseUrl %>/impressum" style="color:#6a737d"><%= isEn ? 'Legal notice' : 'Impressum' %></a> · <a href="<%= baseUrl %><%= isEn ? '/privacy' : '/datenschutz' %>" style="color:#6a737d"><%= isEn ? 'Privacy' : 'Datenschutz' %></a></p>
 </div>
