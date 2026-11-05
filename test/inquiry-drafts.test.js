@@ -109,3 +109,12 @@ test('KI-Persona behält den KI-Hinweis', () => {
   const out = agent.sanitizeDraft(null, fixedCtx({ persona: { name: 'Mia', title: 'Assistenz' } }));
   assert.match(out.body, /AI assistant/);
 });
+
+test('Feste Vorlage: Herkunft der Adresse steht nur bei Adressen von der Website des Hotels', () => {
+  const agent = require('../src/services/inquiry-agent');
+  const template = { fixed: true, subject: 'S', body: 'Text {{LINK}} lang genug für die Prüfung der Mindestlänge dieses Mailtextes, damit nichts ersetzt wird.\n\n--\nGrund.{{#adresse_website}} Von Ihrer Website.{{/adresse_website}}' };
+  const body = (addressFromWebsite) => agent.sanitizeDraft(null, fixedCtx({ template, profile: { addressFromWebsite, keyFacts: [] } })).body;
+  assert.match(body(true), /Grund\. Von Ihrer Website\./);
+  assert.doesNotMatch(body(false), /Von Ihrer Website/);
+  assert.deepEqual(require('../src/services/aimail').unknownPlaceholders('inquiry', '{{#adresse_website}}x{{/adresse_website}}'), []);
+});

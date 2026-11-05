@@ -13,6 +13,17 @@ const sites = require('./sites');
 
 const mailtemplates = require('./mailtemplates');
 
+// Abmeldelink: Diese Mails löst der Empfänger selbst aus, sie gehen trotz Abmeldung raus (dazu jede Antwort auf eine Mail von ihm)
+const OPT_OUT_EXEMPT = new Set(['verify', 'live', 'rejected', 'duplicate', 'review-verify', 'lead-verify', 'request-verify', 'inquiry-answered']);
+const optOutApplies = (template, inReplyTo) => !inReplyTo && !OPT_OUT_EXEMPT.has(template);
+
+// Hat sich dieser Betrieb oder diese Adresse über den Abmeldelink abgemeldet?
+async function optedOut(to, entityId = null) {
+  return Boolean(await db.one(
+    `SELECT 1 AS x FROM entities WHERE inquiry_opt_out_at IS NOT NULL AND (id = $1 OR lower(contact_email) = lower($2)) LIMIT 1`, [entityId, to]
+  ));
+}
+
 // Betreff für Mails ohne Vorlage (Agenten-Mails setzen ihn selbst)
 const SUBJECTS = {};
 
@@ -76,6 +87,14 @@ async function send({
   const transport = transports[config.mail.provider];
   if (!transport) throw new Error(`Unbekannter MAIL_PROVIDER „${config.mail.provider}“`);
   const s = site || (await sites.getDefault());
+  if (optOutApplies(template, inReplyTo) && await optedOut(to, entityId)) {
+    await db.query(
+      `INSERT INTO email_log (submission_id, inquiry_id, recipient, template, status, subject, site_id, entity_id, camp_provider_id, sent_by)
+       VALUES ($1, $2, $3, $4, 'blocked', $5, $6, $7, $8, $9)`,
+      [submissionId, inquiryId, to, template, (data && data.subject) || null, s ? s.id : null, entityId, campProviderId, sentBy]
+    );
+    return false;
+  }
   const locals = { ...data, site: s, baseUrl: sites.urlFor(s) };
   const from = sites.mailFrom(s, persona);
   const ownPersona = (config.mail.personaSender === 'own' || (persona && persona.own_sender)) && persona && persona.email;
@@ -110,4 +129,4 @@ async function send({
   return status === 'sent';
 }
 
-module.exports = { send, templateFor, newMessageId, htmlToText };
+module.exports = { send, templateFor, newMessageId, htmlToText, optedOut, optOutApplies };

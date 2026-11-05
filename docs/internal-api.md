@@ -188,11 +188,12 @@ Typen und `data` (Pflichtfelder des Hubs **fett**; weitere Felder sind Zusatzinf
 | `contact.profile` | Ansprechpartner fürs Profil angegeben (ab Paket P2) | `inquiryId`, **`person`** {`salutation` (`herr`/`frau`/`neutral`/null), `firstName`, **`lastName`**, `position`, **`email`**, `phone`, `language`}, `legalBasis` (`legitimate_interest`), `notice` {`text`, **`version`**, `url`} (Datenschutzhinweis bei Erhebung) |
 | `contact.consent` | E-Mail-Einwilligung im Antwortformular erteilt | `inquiryId`, `project` (`tri-hotel`), **`person`** wie oben, **`consent`** {**`channel`** (`email`), `purpose`, **`text`**, `textVersion`, `language`, **`givenAt`**, und entweder **`verification`** {**`method`** (`personal_link`), `linkSentAt`} oder **`doubleOptIn`** {`sentAt`, **`confirmedAt`**}} |
 | `photos.permission` | Nutzungserlaubnis für Fotos erteilt bzw. abgelehnt/widerrufen | `inquiryId`, **`granted`** (bool), `count`, `scope` (Text), `scopes[]` (`profile`, `social`), `credit`, `textVersion`, `grantedAt`, `withdrawnAt` |
+| `mail.opt_out` | Betrieb hat sich über den Abmeldelink abgemeldet | `inquiryId`, **`emails[]`** (angeschriebene und im Formular genannte Adressen), **`optedOutAt`**. Der Hub setzt je Adresse einen Sperrvermerk, ein vorhandener Kontakt wird `do_not_contact` mit `email_consent = revoked` |
 
 Hinweise:
 - `contact.consent` geht direkt nach dem Absenden des Formulars raus, ohne Bestätigungsmail (Entscheidung Daniel 04.11.2026, ändert D1, rechtliche Prüfung offen):
   `verification.method = personal_link`, `person.email` ist die angeschriebene Adresse, ein Name ist Pflicht. Der Hub speichert Art der Einwilligung + `text` +
-  `textVersion` + Zeitpunkte + Ereignis-ID als Nachweis („kein Double-Opt-in“ steht darin) und hebt den Lead auf „Interesse bekundet“. **Widerrufe** sind in v1 kein Ereignis
+  `textVersion` + Zeitpunkte + Ereignis-ID als Nachweis („kein Double-Opt-in“ steht darin) und hebt den Lead auf „Interesse bekundet“. **Widerrufe** über den Abmeldelink kommen als `mail.opt_out`, sonst sind sie in v1 kein Ereignis
   (Daniel trägt sie im Hub ein); ein eigener Typ folgt bei Bedarf.
 - `contact.profile` ist **keine** Werbe-Einwilligung (Rechtsgrundlage berechtigtes Interesse, Profilpflege).
 - Heute ausgelöst: `inquiry.sent`, `inquiry.answered`, `contact.profile`, `contact.consent`. `photos.permission` ist in tri-hotel gebaut und getestet

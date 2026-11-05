@@ -25,18 +25,18 @@ const mail = 'Guten Tag\n\nhttps://example.test/anfrage/abc\n\nViele Grüße\n\n
 
 test('Anfrage-Mail: Link nur als Knopf, nicht zusätzlich als Adresse', async () => {
   const html = await ejs.renderFile(path.join(views, 'inquiry.ejs'), { ...base, language: 'de', text: mail });
-  assert.match(html, /<a href="https:\/\/example\.test\/anfrage\/abc" style="[^"]*"[^>]*>Jetzt Angaben ergänzen und Fotos hochladen<\/a>/);
+  assert.match(html, /<a href="https:\/\/example\.test\/anfrage\/abc" style="[^"]*"[^>]*>👉 Angaben prüfen<\/a>/);
   assert.equal(html.split('https://example.test/anfrage/abc').length - 1, 1);
 });
 
 test('Anfrage-Mail: rechtliche Fußzeile bei einem Menschen klein und grau, auch die Links', async () => {
   const html = await ejs.renderFile(path.join(views, 'inquiry.ejs'), { ...base, language: 'de', text: mail, smallFooter: true });
-  assert.match(html, /<p style="color:#6a737d;font-size:12px">--<br>Warum Sie diese Mail erhalten: Text<br>Datenschutz: <a href="https:\/\/example\.test\/datenschutz" style="color:#6a737d">/);
+  assert.match(html, /<p style="color:#6a737d;font-size:12px">Warum Sie diese Mail erhalten: Text<br>Datenschutz: <a href="https:\/\/example\.test\/datenschutz" style="color:#6a737d">/);
 });
 
 test('Anfrage-Mail: Absatz mit „--“ (KI-Hinweis) bleibt ohne Kennzeichen normal', async () => {
   const html = await ejs.renderFile(path.join(views, 'inquiry.ejs'), { ...base, language: 'de', text: mail });
-  assert.doesNotMatch(html, /<p style="color:#6a737d;font-size:12px">--/);
+  assert.doesNotMatch(html, /font-size:12px">Warum/);
   assert.match(html, /<p>--<br>Warum Sie diese Mail erhalten/);
 });
 

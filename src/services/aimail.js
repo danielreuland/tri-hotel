@@ -13,7 +13,7 @@ const KEYS = {
     label: 'Datenanfrage', persona: 'founder', ai: false,
     trigger: 'Anfrage an den Betreiber (Reiter Kommunikation → Entwurf formulieren)',
     vars: { score: 'Score (bei „vorläufig“ mit Zusatz)', platz: 'Platz im Ranking', gesamt: 'Anzahl Objekte im Ranking', kernfakten: '3–5 erfasste Leistungen', hotelseite: 'Link zur Objektseite', datenschutz: 'Link zur Datenschutzerklärung', abmelden: 'Abmeldelink (beim Versand ersetzt)', marke: 'Name der Site', objekt: 'Name des Objekts', objekte: 'Objekte (Mehrzahl, z. B. „Hotels“)', objekt_art: 'Objektart (Einzahl, z. B. „Hotel“)', name: 'Vorname der Persona', anzahl: 'Anzahl bekannter Angaben zum Bestätigen', LINK: 'persönlicher Antwortlink (Pflicht)' },
-    sections: { fotos: 'nur, wenn Fotos angefragt werden', bestaetigen: 'nur, wenn bekannte Angaben bestätigt werden sollen', platz: 'nur, wenn das Objekt einen Platz im Ranking hat', ohne_platz: 'nur ohne Platz im Ranking', kernfakten: 'nur, wenn Leistungen erfasst sind', hotelseite: 'nur, wenn die Objektseite öffentlich ist' },
+    sections: { fotos: 'nur, wenn Fotos angefragt werden', bestaetigen: 'nur, wenn bekannte Angaben bestätigt werden sollen', platz: 'nur, wenn das Objekt einen Platz im Ranking hat', ohne_platz: 'nur ohne Platz im Ranking', kernfakten: 'nur, wenn Leistungen erfasst sind', hotelseite: 'nur, wenn die Objektseite öffentlich ist', adresse_website: 'nur, wenn die Kontaktadresse von der Website des Objekts stammt' },
   },
   inquiry_reminder: {
     label: 'Erinnerung zur Datenanfrage', persona: 'data_inquiry', ai: false,

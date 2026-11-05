@@ -1,0 +1,20 @@
+{
+  "id": "0d6c2a1e-7777-4a5b-9c8d-7e6f5a4b3c2d",
+  "type": "mail.opt_out",
+  "version": 1,
+  "occurredAt": "2026-10-23T09:00:00.000Z",
+  "site": "tri-hotel.de",
+  "subject": {
+    "kind": "entity",
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Club La Santa"
+  },
+  "data": {
+    "inquiryId": "b1a2c3d4-e5f6-4789-8abc-def012345678",
+    "emails": [
+      "info@clublasanta.com",
+      "ana@clublasanta.com"
+    ],
+    "optedOutAt": "2026-10-23T09:00:00.000Z"
+  }
+}

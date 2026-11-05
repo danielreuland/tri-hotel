@@ -58,14 +58,14 @@ function closedPage(res, found) {
 router.get('/anfrage/:token/abmelden', wrap(async (req, res) => {
   const found = await inquiries.findForOptOut(req.params.token);
   if (!found) return closedPage(res, { status: 'invalid' });
-  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren Anfragen' : 'No further requests', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: Boolean(found.entity.inquiry_opt_out_at) });
+  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren E-Mails' : 'No further emails', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: Boolean(found.entity.inquiry_opt_out_at) });
 }));
 
 router.post('/anfrage/:token/abmelden', limiter, wrap(async (req, res) => {
   const found = await inquiries.findForOptOut(req.params.token);
   if (!found) return closedPage(res, { status: 'invalid' });
   await inquiries.optOut(found);
-  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren Anfragen' : 'No further requests', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: true });
+  res.render('public/inquiry-optout', { title: found.inquiry.language === 'de' ? 'Keine weiteren E-Mails' : 'No further emails', noindex: true, lang: found.inquiry.language, entityName: found.entity.name, done: true });
 }));
 
 router.get('/anfrage/:token', wrap(async (req, res) => {

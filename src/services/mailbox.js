@@ -281,6 +281,8 @@ async function compose({ messageId = null, entityId = null, campProviderId = nul
   if (messageId && !orig) throw new Error('Mail nicht gefunden.');
   const recipient = lower(orig ? orig.from_email : to);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(recipient)) throw new Error('Keine gültige Empfängeradresse.');
+  // Neue Mail an einen abgemeldeten Betrieb: klare Meldung statt „Versand fehlgeschlagen“. Antworten auf seine Mails bleiben möglich
+  if (!orig && await mailer.optedOut(recipient, entityId)) throw new Error('Dieser Betrieb hat sich über den Abmeldelink abgemeldet und bekommt keine E-Mails mehr von uns.');
   const persona = personaId ? await db.one('SELECT * FROM personas WHERE id = $1', [personaId]) : null;
   const site = persona ? await sites.get(persona.site_id) : await sites.getDefault();
   const subj = orig ? replySubject(orig.subject) : String(subject || '').trim();

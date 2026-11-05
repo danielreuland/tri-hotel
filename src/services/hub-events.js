@@ -12,7 +12,7 @@ const APP = 'tri-hotel';
 const VERSION = 1;
 const MAX_ATTEMPTS = 10;
 const TIMEOUT_MS = 5000;
-const TYPES = ['inquiry.sent', 'inquiry.answered', 'contact.profile', 'contact.consent', 'photos.permission'];
+const TYPES = ['inquiry.sent', 'inquiry.answered', 'contact.profile', 'contact.consent', 'photos.permission', 'mail.opt_out'];
 // pg-boss: 9 Wiederholungen mit wachsendem Abstand ab 2 min (2, 4, 8 … 512 min) ≈ 17 h
 const JOB_OPTIONS = { retryLimit: MAX_ATTEMPTS - 1, retryDelay: 120, retryBackoff: true };
 
@@ -117,6 +117,13 @@ function contactConsent({
       consent: { channel: 'email', purpose: str(purpose, 500), text, textVersion, language, givenAt: iso(givenAt), ...proof },
     },
   });
+}
+
+// Abmeldelink: keine weiteren E-Mails an diese Adressen, auch eine Werbe-Einwilligung endet
+function mailOptOut({ inquiry = null, entity, site, emails = [], at = new Date() }) {
+  const list = [...new Set(emails.map((e) => String(e || '').trim().toLowerCase()).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
+  if (!list.length) throw new Error('mail.opt_out braucht mindestens eine E-Mail-Adresse');
+  return envelope({ type: 'mail.opt_out', site, entity, occurredAt: at, data: { inquiryId: inquiry ? inquiry.id : null, emails: list, optedOutAt: iso(at) } });
 }
 
 const PHOTO_SCOPES = { photos_profile: 'profile', photos_social: 'social' };
@@ -232,6 +239,6 @@ async function maintenance({ keepDays = 90 } = {}) {
 
 module.exports = {
   TYPES, MAX_ATTEMPTS, JOB_OPTIONS, setEnqueue,
-  envelope, inquirySent, inquiryAnswered, contactProfile, contactConsent, photosPermission,
+  envelope, inquirySent, inquiryAnswered, contactProfile, contactConsent, photosPermission, mailOptOut,
   emit, emitSafe, post, retriable, deliver, maintenance,
 };

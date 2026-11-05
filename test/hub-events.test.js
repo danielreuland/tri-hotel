@@ -96,6 +96,12 @@ test('contact.consent über persönlichen Link entspricht dem Fixture und behaup
   assert.equal(ev.data.consent.doubleOptIn, undefined);
 });
 
+test('mail.opt_out entspricht dem Fixture, Adressen klein, ohne Doppelte und Ungültige', () => {
+  const ev = hub.mailOptOut({ inquiry, entity, site, emails: ['Info@ClubLaSanta.com', 'info@clublasanta.com', null, 'kein-mail', 'ana@clublasanta.com'], at: new Date('2026-10-23T09:00:00Z') });
+  assert.deepEqual({ ...ev, id: null }, { ...fx('mail.opt_out'), id: null });
+  assert.throws(() => hub.mailOptOut({ inquiry, entity, site, emails: [null] }), /E-Mail-Adresse/);
+});
+
 test('Ereignisse: Pflichtangaben und Nachweis der Einwilligung werden erzwungen', () => {
   const base = { inquiry, entity, site, person: { lastName: 'B', email: 'a@b.de' }, textVersion: 'v1', text: 'Wortlaut', givenAt: new Date() };
   assert.throws(() => hub.contactConsent(base), /Double-Opt-in oder den persönlichen Link/);

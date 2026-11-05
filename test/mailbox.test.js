@@ -82,3 +82,9 @@ test('Postfach: Betreff und Zitat der Antwort', () => {
   assert.match(q, /schrieb Anna:\n> Zeile 1\n> Zeile 2$/);
   assert.equal(mb.quote({ body_text: '' }), '');
 });
+
+test('Abmeldelink: gilt für alle Mails außer Antworten und selbst ausgelösten', () => {
+  for (const t of ['inquiry', 'message', 'lead-forward-hotel', 'lead-forward', 'lead-followup']) assert.equal(mailer.optOutApplies(t, null), true, t);
+  for (const t of ['verify', 'live', 'rejected', 'duplicate', 'review-verify', 'lead-verify', 'request-verify']) assert.equal(mailer.optOutApplies(t, null), false, t);
+  assert.equal(mailer.optOutApplies('message', '<id@x>'), false, 'Antwort auf eine Mail des Betriebs');
+});

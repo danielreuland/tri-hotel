@@ -176,16 +176,16 @@ function templateVars({ entity, ranking, brand, persona, language, confirm, prof
   const facts = String(keyFacts || '').trim() || (pr.keyFacts || []).join(', ');
   return {
     score: pr.scoreText ?? null, platz: pr.rank ?? null, gesamt: pr.total ?? null, kernfakten: facts || null,
-    hotelseite: pr.url ?? null, datenschutz: pr.privacyUrl ?? null,
+    hotelseite: pr.url ?? null, datenschutz: pr.privacyUrl ?? null, adresse_website: Boolean(pr.addressFromWebsite),
     anzahl: confirmCount(confirm),
     marke: brand, objekt: entity.name, objekt_art: ranking.entity_label_sg, name: personaOr(persona, brand).name,
     objekte: language === 'en' ? String(ranking.entity_label_pl || '').toLowerCase() : ranking.entity_label_pl,
   };
 }
 
-// Abschnitte der festen Vorlage: Platz im Ranking, Leistungen und Objektseite nur, wenn vorhanden
+// Abschnitte der festen Vorlage: Platz im Ranking, Leistungen, Objektseite und Herkunft der Adresse nur, wenn vorhanden bzw. zutreffend
 function profileFlags(vars) {
-  return { platz: vars.platz != null, ohne_platz: vars.platz == null, kernfakten: Boolean(vars.kernfakten), hotelseite: Boolean(vars.hotelseite) };
+  return { platz: vars.platz != null, ohne_platz: vars.platz == null, kernfakten: Boolean(vars.kernfakten), hotelseite: Boolean(vars.hotelseite), adresse_website: vars.adresse_website };
 }
 
 // Ohne KI: Mustertext des Anlasses (template) wörtlich ausgefüllt, sonst die eingebaute Vorlage

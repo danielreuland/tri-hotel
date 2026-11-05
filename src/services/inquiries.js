@@ -28,7 +28,7 @@ function setEnqueue(fn) {
 
 const { unclearCriteria } = agent;
 
-const OPT_OUT_ERROR = 'Dieser Betreiber möchte keine weiteren Anfragen (Abmeldelink).';
+const OPT_OUT_ERROR = 'Dieser Betreiber möchte keine weiteren E-Mails (Abmeldelink).';
 // Datenschutzhinweis beim Ansprechpartner im Antwortformular (Version für den Nachweis im CRM)
 const CONTACT_NOTICE_VERSION = '2026-11-04';
 const contactNotice = (lang) => (lang === 'de'
@@ -63,6 +63,7 @@ async function profileOf(entity, ranking, site, language) {
     keyFacts: features.filter((f) => f.filterable).slice(0, 5).map((f) => f.label),
     url: isPublic ? `${base}${path}` : null,
     privacyUrl: `${base}${language === 'de' ? '/datenschutz' : '/privacy'}`,
+    addressFromWebsite: entity.contact_email_source === 'website',
   };
 }
 
@@ -388,7 +389,8 @@ async function send(inquiryId) {
   }
 }
 
-// Abmeldelink aus der Anfrage-Mail: keine weiteren Anfragen an diesen Betrieb, offene Anfragen werden geschlossen.
+// Abmeldelink aus der Anfrage-Mail: keine weiteren E-Mails an diesen Betrieb (Sperre in mailer.send), offene Anfragen werden geschlossen,
+// die Kooperations-Einwilligung endet, der Hub bekommt einen Sperrvermerk.
 // Gilt auch nach Ablauf der Anfrage. Ergebnis: { inquiry, entity } oder null
 async function findForOptOut(token) {
   const inquiry = await db.one('SELECT * FROM inquiries WHERE token_hash = $1 OR reminder_token_hash = $1', [sha256(token)]);
@@ -398,8 +400,15 @@ async function findForOptOut(token) {
 
 async function optOut(found) {
   await db.query('UPDATE entities SET inquiry_opt_out_at = COALESCE(inquiry_opt_out_at, now()) WHERE id = $1', [found.entity.id]);
-  await db.query(`UPDATE inquiries SET status = 'closed', error = 'Abmeldelink: keine weiteren Anfragen', updated_at = now() WHERE entity_id = $1 AND status IN ('draft', 'queued', 'sent')`, [found.entity.id]);
+  await db.query(`UPDATE inquiries SET status = 'closed', error = 'Abmeldelink: keine weiteren E-Mails', updated_at = now() WHERE entity_id = $1 AND status IN ('draft', 'queued', 'sent')`, [found.entity.id]);
+  await db.query(`UPDATE consents SET withdrawn_at = now(), note = COALESCE(note || ' · ', '') || 'Abmeldelink' WHERE entity_id = $1 AND type = 'partner_contact' AND withdrawn_at IS NULL`, [found.entity.id]);
   await logAction(null, 'inquiry', found.inquiry.id, 'inquiry_opt_out', { entity: found.entity.id });
+  // CRM im Hub: alle Adressen, die wir zu diesem Betrieb aus Anfragen kennen
+  const entity = await db.one('SELECT id, name, contact_email FROM entities WHERE id = $1', [found.entity.id]);
+  const rows = await db.many('SELECT recipient, reply_email FROM inquiries WHERE entity_id = $1', [found.entity.id]);
+  const emails = [entity.contact_email, ...rows.flatMap((r) => [r.recipient, r.reply_email])];
+  const ranking = await rankings.getRanking(found.inquiry.ranking_id);
+  await hubEvents.emitSafe(hubEvents.mailOptOut, { inquiry: found.inquiry, entity, site: await sites.forRanking(ranking), emails, at: new Date() });
 }
 
 async function findByToken(token) {

@@ -1,12 +1,12 @@
 <%- include('../partials/head') %>
 <% var de = lang === 'de'; %>
-<h1><%= de ? 'Keine weiteren Anfragen' : 'No further requests' %></h1>
+<h1><%= de ? 'Keine weiteren E-Mails' : 'No further emails' %></h1>
 <div class="card">
   <% if (done) { %>
-    <p style="margin:0"><%= de ? 'Erledigt: Wir schicken ' + entityName + ' keine weiteren Anfragen. Ihr Profil bleibt bestehen; Korrekturen können Sie uns jederzeit per E-Mail senden.' : 'Done: we will not send ' + entityName + ' any further requests. Your profile remains listed; you can send us corrections by email at any time.' %></p>
+    <p style="margin:0"><%= de ? 'Erledigt: Wir schicken ' + entityName + ' keine weiteren E-Mails. Eine Einwilligung zu Kooperationen endet damit ebenfalls. Ihr Profil bleibt bestehen. Schreiben Sie uns, antworten wir Ihnen weiterhin.' : 'Done: we will not send ' + entityName + ' any further emails. Any consent regarding cooperation also ends. Your profile remains listed. If you write to us, we will still reply.' %></p>
   <% } else { %>
-    <p style="margin-top:0"><%= de ? 'Möchten Sie, dass wir ' + entityName + ' keine weiteren Anfragen schicken?' : 'Would you like us to stop sending requests to ' + entityName + '?' %></p>
-    <form method="post"><button class="btn" type="submit"><%= de ? 'Keine weiteren Anfragen' : 'No further requests' %></button></form>
+    <p style="margin-top:0"><%= de ? 'Möchten Sie, dass wir ' + entityName + ' keine weiteren E-Mails schicken?' : 'Would you like us to stop sending emails to ' + entityName + '?' %></p>
+    <form method="post"><button class="btn" type="submit"><%= de ? 'Keine weiteren E-Mails' : 'No further emails' %></button></form>
   <% } %>
 </div>
 <%- include('../partials/foot') %>

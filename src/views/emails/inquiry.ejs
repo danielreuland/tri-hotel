@@ -17,14 +17,14 @@
     answer: { de: 'Fragen beantworten', en: 'Answer the questions' },
     confirm: { de: 'Angaben prüfen', en: 'Check the details' },
     photos: { de: 'Fotos hochladen', en: 'Upload photos' },
-    profile: { de: 'Jetzt Angaben ergänzen und Fotos hochladen', en: 'Complete your details and upload photos' },
+    profile: { de: '👉 Angaben prüfen', en: '👉 Check your details' },
   };
   var buttonText = (BUTTONS[locals.cta] || BUTTONS.answer)[language === 'de' ? 'de' : 'en'];
 %>
 <% text.split(/\n{2,}/).forEach(function (para) {
-     // Rechtliche Fußzeile („--“ am Absatzanfang) klein und grau; nur bei Mails eines Menschen, KI-Hinweise bleiben normal lesbar
+     // Rechtliche Fußzeile („--“ am Absatzanfang, Trennzeile wird nicht angezeigt) klein und grau; nur bei Mails eines Menschen, KI-Hinweise bleiben normal lesbar
      if (locals.smallFooter && /^--\n/.test(para.trim())) { %>
-  <p style="<%= muted %>;font-size:12px"><%- para.trim().split('\n').map(function (l) { return linkify(l, muted); }).join('<br>') %></p>
+  <p style="<%= muted %>;font-size:12px"><%- para.trim().split('\n').slice(1).map(function (l) { return linkify(l, muted); }).join('<br>') %></p>
 <%   return; }
      var lines = para.split('\n'); var buf = []; %>
   <% lines.forEach(function (line) { var url = line.trim(); if (/^https?:\/\/\S+$/.test(url)) { %>
