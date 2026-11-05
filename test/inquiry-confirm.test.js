@@ -133,11 +133,29 @@ test('defaultConfirmSelection: Stufe 2 und 4, nicht strittig, nicht gefragt, kei
   assert.deepEqual(inquiries.defaultConfirmSelection([gym], [{ ...factRows[0], disputed: true }], [], []).criteriaIds, []);
 });
 
-test('formValue: Mehrfachauswahl mit mehreren Becken wird nicht als Einzelwert zur Bestätigung angeboten', () => {
-  const agent = require('../src/services/inquiry-agent');
-  const c = { scoring: { type: 'option', multi: true, points: { a: 2, b: 1 } } };
-  assert.equal(agent.formValue(c, { option: 'a', options: ['a', 'b'] }), null);
-  assert.equal(agent.formValue(c, { option: 'a', options: ['a'] }), 'a');
+test('Mehrfachauswahl: alle Angaben werden gezeigt, bestätigt und korrigiert, ohne welche zu verlieren', () => {
+  const pool = { id: 'p', code: 'swim_pool', label: 'Becken', scoring: { type: 'option', multi: true, points: { a: 10, b: 5, none: 0 }, labels: { a: 'A', b: 'B', none: 'Keins' } } };
+  assert.deepEqual(agent.formValue(pool, { option: 'a', options: ['a', 'b'] }), ['a', 'b']);
+  assert.deepEqual(agent.formValue(pool, { option: 'a' }), ['a']);
+  assert.equal(agent.formValue(pool, { option: 'x', options: ['x'] }), null);
+  const fact = { criterion_id: 'p', value: { option: 'a', options: ['a', 'b'] }, trust_level: 2, disputed: false };
+  // vollständige Prüfung: bekannt, also Bestätigung statt offener Frage
+  assert.deepEqual(inquiries.fullCheckSelection([pool], [fact], []).confirmCriteriaIds, ['p']);
+  const conf = agent.fallbackConfirmations({ criteria: [pool], features: [], offer: [] }, { p: fact }, 'de');
+  assert.equal(conf.criteria[0].current_text, 'A, B');
+  // „stimmt“ erhält alle Angaben
+  const ok = agent.parseConfirmAnswers(conf, { k_p: 'ok' }, [pool]);
+  assert.deepEqual(ok.criteria[0].value, { option: 'a', options: ['a', 'b'] });
+  assert.deepEqual(ok.criteria[0].value, ok.criteria[0].previous, 'unverändert');
+  // Korrektur mit Häkchen; nur eins angehakt und ohne Haken
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong', kv_p: ['b', 'a'] }, [pool]).criteria[0].value, { option: 'a', options: ['a', 'b'] });
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong', kv_p: 'b' }, [pool]).criteria[0].value, { option: 'b', options: ['b'] });
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong' }, [pool]).incomplete, ['Becken']);
+  // ungültiger Wert wird nicht übernommen
+  assert.equal(agent.toFactValue(pool, ['a', 'hack']), null);
+  // Frage mit mehreren Häkchen
+  assert.deepEqual(agent.toFactValue(pool, ['b', 'a']), { option: 'a', options: ['a', 'b'] });
+  assert.equal(agent.toFactValue(pool, []), null);
 });
 
 test('Anfrage: persönliche Links, Knopf der festen Vorlage, Ansprechpartner aus dem Namensfeld', () => {

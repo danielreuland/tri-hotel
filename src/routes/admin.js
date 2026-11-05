@@ -298,7 +298,9 @@ async function loadDetail(id) {
   const consents = entity
     ? await db.many(`SELECT * FROM consents WHERE entity_id = $1 AND site_id = $2 ORDER BY withdrawn_at NULLS FIRST, granted_at DESC`, [entity.id, ranking.site_id])
     : [];
-  const personas = Object.fromEntries((await db.many('SELECT id, name, is_ai FROM personas')).map((p) => [p.id, p.is_ai ? `${p.name} (KI)` : p.name]));
+  const personaRows = await db.many('SELECT id, name, is_ai FROM personas');
+  const personas = Object.fromEntries(personaRows.map((p) => [p.id, p.is_ai ? `${p.name} (KI)` : p.name]));
+  const humanPersonaIds = personaRows.filter((p) => !p.is_ai).map((p) => p.id);
   // Leistungen: Katalog, abgeleitete (aus Fakten) und manuell gepflegte
   const featureCatalog = await featureService.catalog(ranking.entity_type);
   const present = entity ? await featureService.forEntity(ranking.entity_type, entity.id) : [];
@@ -348,7 +350,7 @@ async function loadDetail(id) {
     basicsMissing, BASICS_KEYS: basics.KEYS, placesEnabledForBasics: places.enabled(),
     mailThread, mailPersonas, mailDefaultPersona,
     partnerAbsent, campLinks, campSource, hunterInfo, campProviderOptions, campSelectedIds, heldReview, partnerPrograms, partnerLinks,
-    sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas,
+    sub, ranking, categories, criteria, entity, er, facts, climate, images, result, emails, inquiryList, unclear, consents, personas, humanPersonaIds,
     featureCatalog, presentFeatureIds: present.map((f) => f.id), manualFeatures, duplicateOf, llmUsage, llmMonth, text, textStale,
     confirmFeatureList, offerFeatureCount, confirmDefaults,
   };

@@ -33,6 +33,7 @@ function render(res, found, extra = {}) {
     scripts: ['/static/js/inquiry-form.js'],
     inquiry,
     entity,
+    multiIds: found.multiIds || [],
     lang: inquiry.language,
     consents: inquiries.formConsents(inquiry.language, site, entity.name),
     maxPhotos: inquiries.MAX_PHOTOS,

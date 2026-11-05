@@ -10,6 +10,7 @@
 const config = require('../config');
 const consents = require('../lib/consents');
 const aimail = require('./aimail');
+const scoring = require('./scoring');
 
 const LINK = '{{LINK}}';
 const GERMAN_SPEAKING = ['DE', 'AT', 'CH', 'LI', 'LU'];
@@ -40,7 +41,9 @@ function unclearCriteria(criteria, facts) {
   });
 }
 
+// Formularwert -> Faktwert. Mehrfachauswahl: ein oder mehrere Werte, gespeichert wie im Admin (scoring.optionValue)
 function toFactValue(c, raw) {
+  if (c.scoring.multi) return scoring.optionValue(c.scoring, raw) || null;
   const v = String(raw || '');
   if (c.scoring.type === 'bool') return v === 'true' ? { bool: true } : v === 'false' ? { bool: false } : null;
   return Object.prototype.hasOwnProperty.call(c.scoring.points || {}, v) ? { option: v } : null;
@@ -103,9 +106,17 @@ function confirmCount(confirm) {
 function formValue(c, value) {
   if (!value) return null;
   if (c.scoring.type === 'bool') return typeof value.bool === 'boolean' ? String(value.bool) : null;
-  // mehrere Ausprägungen lassen sich im Antwortformular (eine Auswahl) nicht bestätigen, ohne welche zu verlieren
-  if (Array.isArray(value.options) && value.options.length > 1) return null;
+  // Mehrfachauswahl: alle Ausprägungen als Liste; eine unbekannte macht den Wert ungültig
+  if (c.scoring.multi) {
+    const list = scoring.selectedOptions(value);
+    return list.length && list.every((k) => Object.prototype.hasOwnProperty.call(c.scoring.points || {}, k)) ? list : null;
+  }
   return value.option && Object.prototype.hasOwnProperty.call(c.scoring.points || {}, value.option) ? value.option : null;
+}
+
+// Anzeige des aktuellen Werts: bei Mehrfachauswahl alle Bezeichnungen
+function currentText(options, current) {
+  return [].concat(current).map((v) => (options.find((o) => o.value === v) || { text: v }).text).join(', ');
 }
 
 // Bestätigungsliste ohne KI: Bezeichnungen aus dem Ranking und dem Leistungskatalog
@@ -120,7 +131,7 @@ function fallbackConfirmations(confirm, facts = {}, language = 'de') {
     const current = f ? formValue(c, f.value) : null;
     if (!current) return null;
     const options = optionsOf(c);
-    return { criterion_id: c.id, label: c.label, current, current_text: options.find((o) => o.value === current).text, options };
+    return { criterion_id: c.id, label: c.label, current, current_text: currentText(options, current), options };
   }).filter(Boolean);
   const features = [
     ...(confirm.features || []).map((ft) => ({ feature_id: ft.id, text: ft.label, known: true })),
@@ -254,7 +265,7 @@ function translateConfirmations(base, draft, criteria, confirm) {
         const mo = (m.options || []).find((x) => String(x.value) === o.value);
         return { value: o.value, text: (mo && clean(mo.text, 200)) || o.text };
       });
-      return { ...it, label: clean(m.label, 200) || it.label, options, current_text: options.find((o) => o.value === it.current).text };
+      return { ...it, label: clean(m.label, 200) || it.label, options, current_text: currentText(options, it.current) };
     }),
     features: base.features.map((ft) => ({ ...ft, text: ftexts.get(ft.feature_id) || ft.text })),
   };

@@ -74,10 +74,12 @@ async function collect() {
   }
   // Anfrage-Entwürfe und fehlgeschlagene Anfragen
   for (const r of await db.many(
-    `SELECT i.id, i.status, i.recipient, i.error, cardinality(i.criteria_ids) AS n, i.entity_id, e.name, COALESCE(i.submission_id, ${latestSub}) AS sub_id
-       FROM inquiries i JOIN entities e ON e.id = i.entity_id WHERE i.status IN ('draft', 'failed')`)) {
+    `SELECT i.id, i.status, i.recipient, i.error, cardinality(i.criteria_ids) AS n, i.body IS NOT NULL AS has_text, p.is_ai, i.entity_id, e.name, COALESCE(i.submission_id, ${latestSub}) AS sub_id
+       FROM inquiries i JOIN entities e ON e.id = i.entity_id LEFT JOIN personas p ON p.id = i.persona_id WHERE i.status IN ('draft', 'failed')`)) {
     if (r.status === 'draft') {
-      push({ source: 'draft', source_key: `draft:${r.id}`, title: r.name, detail: [{ level: 'todo', text: `${r.n} Fragen an ${r.recipient} – freigeben oder verwerfen` }], link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
+      push({ source: 'draft', source_key: `draft:${r.id}`, title: r.name, detail: [{ level: 'todo', text: r.is_ai === false
+        ? `Anfrage mit vollständiger Prüfung an ${r.recipient} – ${r.has_text ? 'prüfen und senden' : 'Entwurf erstellen und senden'}`
+        : `${r.n} Fragen an ${r.recipient} – freigeben oder verwerfen` }], link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
     } else {
       push({ source: 'inquiry_failed', source_key: `failed:${r.id}`, title: r.name, detail: [{ level: 'block', text: r.error || 'Versand fehlgeschlagen' }], link: detailLink(r.sub_id, 'anfragen'), entity_id: r.entity_id });
     }

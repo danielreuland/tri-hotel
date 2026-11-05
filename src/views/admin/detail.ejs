@@ -539,11 +539,14 @@
          var hasApprovedImage = images.some(function (i) { return i.approved_at }); %>
       <% if (!entity.contact_email) { %>
         <p class="errors" style="margin:0">Für Anfragen fehlt die Kontakt-E-Mail des Betreibers (Stammdaten).</p>
-      <% } else if (draftInq) { var draftIds = draftInq.criteria_ids; %>
+      <% } else if (draftInq) { var draftIds = draftInq.criteria_ids; var fullCheck = humanPersonaIds.indexOf(draftInq.persona_id) >= 0; %>
         <form method="post" action="/admin/anfragen/<%= draftInq.id %>/formulieren" class="draft-box" data-busy="Der Agent formuliert …">
           <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
           <p style="margin-top:0"><span class="badge warn">Entwurf</span> <strong>Anfrage an <%= draftInq.recipient %></strong>
             <small class="muted">· <%= draftInq.auto_created ? 'automatisch angelegt' : 'angelegt' %> <%= formatDate(draftInq.created_at) %><%= draftInq.persona_id && personas[draftInq.persona_id] ? ' · schreibt: ' + personas[draftInq.persona_id] : '' %></small></p>
+          <% if (fullCheck) { %>
+          <p class="muted" style="margin:0 0 6px"><small><strong>Schritt 1:</strong> Entwurf aus der festen Vorlage erstellen (<%= draftInq.language.toUpperCase() %>), mit aktuellem Score und Platz. Das Formular zeigt dem Betreiber alle Angaben zum Prüfen, eine Auswahl ist nicht nötig. Gesendet wird erst in Schritt 2.</small></p>
+          <% } else { %>
           <p class="muted" style="margin:0 0 6px"><small><strong>Schritt 1:</strong> Auswahl anpassen und formulieren lassen – der Agent schreibt die Mail in der Sprache des Betreibers (<%= draftInq.language.toUpperCase() %>). Gesendet wird erst in Schritt 2.</small></p>
           <div class="grid grid-2" style="gap:2px 16px;margin:6px 0 10px">
             <% askable.filter(function (c) { return draftIds.indexOf(c.id) >= 0 || unclearIds.indexOf(c.id) >= 0 }).forEach(function (c) { var f = factByCrit[c.id]; %>
@@ -557,8 +560,9 @@
           <label class="inline"><input type="checkbox" name="ask_photos" <%= draftInq.ask_photos ? 'checked' : '' %>> <span>Fotos mit Nutzungserlaubnis anfragen</span></label>
           <label for="draft-note">Hinweis an den Agenten <small class="muted">optional</small></label>
           <textarea id="draft-note" name="note" style="min-height:50px"><%= draftInq.admin_note || '' %></textarea>
+          <% } %>
           <div class="filters" style="margin-bottom:0">
-            <button class="btn <%= draftInq.body ? 'secondary' : '' %>" type="submit"><%= draftInq.body ? 'Neu formulieren' : 'Entwurf formulieren' %></button>
+            <button class="btn <%= draftInq.body ? 'secondary' : '' %>" type="submit"><%= draftInq.body ? (fullCheck ? 'Neu erstellen' : 'Neu formulieren') : (fullCheck ? 'Entwurf erstellen' : 'Entwurf formulieren') %></button>
             <button class="btn small secondary" type="submit" formaction="/admin/anfragen/<%= draftInq.id %>/verwerfen" formnovalidate>Entwurf verwerfen</button>
           </div>
         </form>

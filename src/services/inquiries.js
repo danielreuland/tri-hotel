@@ -411,7 +411,9 @@ async function findByToken(token) {
   const entity = await db.one('SELECT * FROM entities WHERE id = $1', [inq.entity_id]);
   const ranking = await rankings.getRanking(inq.ranking_id);
   const site = await sites.forRanking(ranking);
-  return { status: 'ok', inquiry: inq, entity, site };
+  // Kriterien mit Mehrfachauswahl zeigt das Formular mit Häkchen statt Einzelauswahl (auch bei schon versendeten Anfragen)
+  const multiIds = (await rankings.getCriteria(inq.ranking_id)).filter((c) => c.scoring && c.scoring.multi).map((c) => c.id);
+  return { status: 'ok', inquiry: inq, entity, site, multiIds };
 }
 
 // Prüft die ersten Bytes, damit nur echte Bilder gespeichert werden.
@@ -439,7 +441,7 @@ async function submitAnswers(inq, entity, site, body, files = []) {
   const answers = [];
   for (const c of criteria) {
     const raw = body[`q_${c.id}`];
-    if (raw === undefined || raw === '') continue;
+    if (raw === undefined || raw === '' || (Array.isArray(raw) && !raw.length)) continue;
     const value = raw === 'unknown' ? null : agent.toFactValue(c, raw);
     if (raw !== 'unknown' && !value) continue;
     answers.push({ criterionId: c.id, value, comment: String(body[`c_${c.id}`] || '').trim().slice(0, 500) || null });

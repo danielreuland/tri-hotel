@@ -252,7 +252,7 @@ später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Ei
   `/anfrage/:token/abmelden`), Feld „E-Mail für Rückfragen“ im Formular → Ereignis `contact.profile` ans CRM. Erinnerung kommt weiter von Mia mit KI-Hinweis.
   Das Formular zeigt alle erfragbaren Angaben zum Prüfen (`fullCheckSelection`). Header und DKIM an echter Mail geprüft (bestanden), Weiterleitung `daniel@` → `info@` eingerichtet.
   Englische Fassung von Daniel freigegeben (04.11.).
-  **Vor dem Versand beheben (gefunden 04.11.):** Das Formular kann Mehrfachauswahl (`scoring.multi`, Becken) nicht abbilden. Hotels mit mehreren Becken-Angaben (8 von 81, davon 5 mit offenem Entwurf: Sport Hotel Monte Feliz, Thanyapura, Iberostar Playa de Muro, Lyttos Beach Hotel, Valamar Diamant Hotel) bekommen das Becken als offene Frage mit Einzelauswahl; wird die Antwort übernommen, überschreibt sie alle Angaben mit einer einzigen. Diese 5 Entwürfe bis dahin nicht freigeben.
+  Mehrfachauswahl (`scoring.multi`, Becken) im Formular mit Häkchen, gespeichert wie im Admin (05.11.). Texte der Entwürfe entstehen bewusst erst beim Klick auf „Entwurf erstellen“, damit Score und Platz aktuell sind und keine KI-Kosten auf Vorrat anfallen (etwa 6 Cent je Entwurf).
   Robinson Club Fleesensee und Tauern Spa Zell am See-Kaprun sind auf die neue Vorlage umgestellt (Entwürfe, alter Text im Audit-Log). Alle 48 Entwürfe laufen unter Daniel. BCL Podium wurde schon am 26.10. versendet.
 - **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
   IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an; DKIM-Signatur `s1-ionos` an echter Mail bestätigt (04.11.).
