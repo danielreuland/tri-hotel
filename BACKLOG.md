@@ -251,7 +251,8 @@ später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Ei
   `personas.own_sender`, `is_ai`), Kurzprofil aus Score/Platz/Leistungen, Knopf „Jetzt Angaben ergänzen und Fotos hochladen“, Abmeldelink (`entities.inquiry_opt_out_at`,
   `/anfrage/:token/abmelden`), Feld „E-Mail für Rückfragen“ im Formular → Ereignis `contact.profile` ans CRM. Erinnerung kommt weiter von Mia mit KI-Hinweis.
   Das Formular zeigt alle erfragbaren Angaben zum Prüfen (`fullCheckSelection`). Header und DKIM an echter Mail geprüft (bestanden), Weiterleitung `daniel@` → `info@` eingerichtet.
-  **Vor dem ersten Versand:** englische Fassung von Daniel freigeben lassen, Becken-Anzeige bei mehreren Angaben prüfen.
+  Englische Fassung von Daniel freigegeben (04.11.).
+  **Vor dem Versand beheben (gefunden 04.11.):** Das Formular kann Mehrfachauswahl (`scoring.multi`, Becken) nicht abbilden. Hotels mit mehreren Becken-Angaben (8 von 81, davon 5 mit offenem Entwurf: Sport Hotel Monte Feliz, Thanyapura, Iberostar Playa de Muro, Lyttos Beach Hotel, Valamar Diamant Hotel) bekommen das Becken als offene Frage mit Einzelauswahl; wird die Antwort übernommen, überschreibt sie alle Angaben mit einer einzigen. Diese 5 Entwürfe bis dahin nicht freigeben.
   Robinson Club Fleesensee und Tauern Spa Zell am See-Kaprun sind auf die neue Vorlage umgestellt (Entwürfe, alter Text im Audit-Log). Alle 48 Entwürfe laufen unter Daniel. BCL Podium wurde schon am 26.10. versendet.
 - **D2 entschieden (04.11.):** Absender der ersten Mail ist `daniel@tri-hotel.de`, ein **eigenes Postfach** bei IONOS (kein Alias von `info@`).
   IONOS nimmt die Adresse beim SMTP-Dialog mit der `info@`-Anmeldung an; DKIM-Signatur `s1-ionos` an echter Mail bestätigt (04.11.).
@@ -269,6 +270,7 @@ Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Te
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
 ## Kleinere offene Punkte
+- **Seite „Über tri-hotel“ erstellen** (Wunsch Daniel 05.11.): Was ist tri-hotel? Wieso und weshalb gibt es die Seite? Was ist das Ziel?
 - **Dashboard: Besucher und Besuche** (Wunsch Daniel 02.11.): neben Seitenaufrufen auch Unique Visitors und Total Visits anzeigen – in den Kennzahlen und im Funnel (Plausible-Metriken `visitors`, `visits`), je Zeitraum und Seite.
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
