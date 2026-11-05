@@ -148,11 +148,14 @@ function parseConfirmAnswers(confirmations, body, criteria) {
   for (const item of (confirmations && confirmations.criteria) || []) {
     const c = byId.get(item.criterion_id);
     if (!c) continue;
-    const choice = body[`k_${item.criterion_id}`];
     const previous = toFactValue(c, item.current);
+    const entered = toFactValue(c, body[`kv_${item.criterion_id}`]);
+    // Ohne Auswahl gilt ein abweichend eingegebener Wert als Korrektur, sonst ginge er beim Absenden still verloren
+    const changed = entered && JSON.stringify(entered) !== JSON.stringify(previous);
+    const choice = body[`k_${item.criterion_id}`] || (changed ? 'wrong' : undefined);
     let value = null;
     if (choice === 'ok') value = previous;
-    else if (choice === 'wrong') value = toFactValue(c, body[`kv_${item.criterion_id}`]);
+    else if (choice === 'wrong') value = entered;
     if (choice === 'wrong' && !value) out.incomplete.push(item.label);
     if (!value) continue;
     out.criteria.push({ criterionId: c.id, value, previous, comment: String(body[`kc_${item.criterion_id}`] || '').trim().slice(0, 500) || null });

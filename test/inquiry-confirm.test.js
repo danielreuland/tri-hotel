@@ -151,6 +151,17 @@ test('Mehrfachauswahl: alle Angaben werden gezeigt, bestätigt und korrigiert, o
   assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong', kv_p: ['b', 'a'] }, [pool]).criteria[0].value, { option: 'a', options: ['a', 'b'] });
   assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong', kv_p: 'b' }, [pool]).criteria[0].value, { option: 'b', options: ['b'] });
   assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'wrong' }, [pool]).incomplete, ['Becken']);
+  // Häkchen geändert, ohne „stimmt nicht“ zu wählen: gilt als Korrektur
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { kv_p: 'b' }, [pool]).criteria[0].value, { option: 'b', options: ['b'] });
+  // Häkchen unverändert (vorausgewählt), nichts gewählt: keine Aussage
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { kv_p: ['a', 'b'] }, [pool]).criteria, []);
+  // ausdrückliche Wahl geht vor
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'unknown', kv_p: 'b' }, [pool]).criteria, []);
+  assert.deepEqual(agent.parseConfirmAnswers(conf, { k_p: 'ok', kv_p: 'b' }, [pool]).criteria[0].value, { option: 'a', options: ['a', 'b'] });
+  // Einzelauswahl: Liste gewählt, ohne „stimmt nicht“
+  const single = agent.fallbackConfirmations({ criteria: [gym], features: [], offer: [] }, facts, 'de');
+  assert.deepEqual(agent.parseConfirmAnswers(single, { kv_g: 'athletic' }, [gym]).criteria[0].value, { option: 'athletic' });
+  assert.deepEqual(agent.parseConfirmAnswers(single, { kv_g: '' }, [gym]).criteria, []);
   // ungültiger Wert wird nicht übernommen
   assert.equal(agent.toFactValue(pool, ['a', 'hack']), null);
   // Frage mit mehreren Häkchen
