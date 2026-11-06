@@ -230,7 +230,8 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 ### Zustellung der Anfrage-Mails (06.11.2026)
 mail-tester.com: 9/10 von `daniel@` (SPF, DKIM, DMARC bestanden, SpamAssassin 0,2, keine Blocklist); Abzug für 2 fehlerhafte Links, vermutlich der erfundene Beispiel-Link im Test. DMARC bleibt `p=none`, Berichtsadresse fehlt.
 Gebaut (Migration 106): erster Aufruf des Antwortlinks im Browser (`inquiries.first_opened_at`, im Admin „Link geöffnet“; Scanner und Admin zählen nicht) und Abmeldung im Mail-Kopf (`List-Unsubscribe`, One-Click per POST).
-Stand 06.11.: 29 Hotels angeschrieben, 4 Links geöffnet (Logdateien ab 30.10.), 0 Formulare abgeschickt, 1 Unzustellbar.
+Stand 06.11. nach Abruf von `daniel@`: 29 Hotels angeschrieben, 4 Links geöffnet (Logdateien ab 30.10.), 0 Formulare abgeschickt, 1 Mail-Antwort (Las Gaviotas), 3 Unzustellbar (Tauern Spa, Allsun Hotel Bella Paguera, Portblue Club Pollentia – bei den beiden neuen Adresse prüfen, dann neu senden). Mail von „Valamar No-Reply“ hat keinen Bezug erkannt und bleibt draußen; Valamar Diamant bekommt deshalb die Erinnerung, außer Daniel schließt die Anfrage.
+Der Rückläufer-Test zeigte: Meldung kam nur in `daniel@` an, seit dem Abruf von `daniel@` erkennt der Admin sie.
 
 ### Partnerbereich (Konzept von Daniel, 06.11.2026, noch nicht begonnen)
 Volltext: `docs/konzept-partnerbereich.md`. Gemeinsamer Partnerbereich für beide Portale in drei Phasen: (1) Seite „Für Partner“ mit Anfrageformular ohne Login, (2) Stripe und Affiliate-Codes, (3) Partner-Portal mit Login. Hauptprodukt: Bundle aus Premium-Profil, Badge-Paket und Kurzbericht für ca. 449 € im Jahr.
