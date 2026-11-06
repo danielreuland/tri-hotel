@@ -141,6 +141,7 @@ test('Erinnerung: neuer Text mit Absender der ersten Mail, KI-Hinweis vor dem Zi
   const text = sent[0].data.text;
   assert.match(text, /^Hallo,\n\nbestimmt ist die erste E-Mail von Daniel untergegangen/);
   assert.match(text, /An wen darf ich mich wenden\?/);
+  assert.match(text, /Viele Grüße\nMia\nDigitale Assistenz von Testseite\nDiese Nachricht/, 'Name und Rolle in eigenen Zeilen');
   assert.ok(text.indexOf('KI-Assistenz') < text.indexOf('Ursprüngliche Nachricht'), 'KI-Hinweis vor dem Zitat');
   assert.equal(text.match(/KI-Assistenz/g).length, 1, 'nur einmal');
   assert.match(text, /\[Abmelden\]\(https:\/\/example\.org\/anfrage\/\S+\/abmelden\)/);

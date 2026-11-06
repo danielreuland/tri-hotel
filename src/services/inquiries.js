@@ -691,7 +691,7 @@ function reminderVars(site, first, persona, language) {
   const human = first && first.is_ai === false;
   return {
     absender: human ? String(first.name).split(' ')[0] : site.name,
-    ki_hinweis: persona && persona.is_ai !== false ? consentTexts.aiDisclosure(language, persona, site.name) : (persona ? persona.name : site.name),
+    ki_hinweis: persona && persona.is_ai !== false ? consentTexts.aiDisclosure(language, persona, site.name, { ownLine: true }) : (persona ? persona.name : site.name),
   };
 }
 

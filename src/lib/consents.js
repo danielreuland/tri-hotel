@@ -35,10 +35,12 @@ function text(type, language, brand, entityName) {
 }
 
 // Hinweis unter jeder Mail eines Agenten (Transparenzpflicht für KI, EU AI Act Art. 50)
-function aiDisclosure(language, persona, brand) {
+// ownLine: Name und Rolle in eigenen Zeilen (Gruß der Erinnerung), sonst in einer Zeile
+function aiDisclosure(language, persona, brand, { ownLine = false } = {}) {
+  const sep = ownLine ? '\n' : ' · ';
   return language === 'de'
-    ? `${persona.name} · ${persona.title} von ${brand}\nDiese Nachricht wurde von unserer KI-Assistenz verfasst. Ihre Antwort liest ein Mensch aus unserem Team.`
-    : `${persona.name} · AI assistant at ${brand}\nThis message was written by our AI assistant. A member of our team reads your reply.`;
+    ? `${persona.name}${sep}${persona.title} von ${brand}\nDiese Nachricht wurde von unserer KI-Assistenz verfasst. Ihre Antwort liest ein Mensch aus unserem Team.`
+    : `${persona.name}${sep}AI assistant at ${brand}\nThis message was written by our AI assistant. A member of our team reads your reply.`;
 }
 
 module.exports = { VERSION, TYPES, text, aiDisclosure };
