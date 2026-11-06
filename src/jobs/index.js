@@ -25,6 +25,7 @@ async function start() {
   await boss.createQueue('lead-followup');
   await boss.createQueue('hub-event');
   await boss.createQueue('internal-cleanup');
+  await boss.createQueue('daily-report');
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -101,6 +102,17 @@ async function start() {
     }
   });
   await boss.schedule('internal-cleanup', '45 3 * * *');
+
+  // Morgenbericht mit den Zahlen des Vortags, nur wenn eine Adresse konfiguriert ist (Uhrzeit nach Berliner Zeit)
+  if (config.dailyReport.to) {
+    const dailyReport = require('../services/daily-report');
+    await boss.work('daily-report', async () => {
+      if (!await dailyReport.send()) throw new Error('Morgenbericht nicht versendet');
+    });
+    await boss.schedule('daily-report', config.dailyReport.cron, null, { tz: dailyReport.TZ });
+  } else {
+    await boss.unschedule('daily-report').catch(() => {});
+  }
 
   // Postfach abrufen (alle 5 Minuten), nur wenn ein Empfang konfiguriert ist
   if (config.mail.inbound.provider !== 'none') {

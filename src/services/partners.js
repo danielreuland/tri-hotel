@@ -237,7 +237,7 @@ function clickSource({ von, referer } = {}) {
 async function countClick(link, source = '') {
   const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, current_date, $3, 1)
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 1)
      ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target, String(source || '').slice(0, 60)]);
 }
 

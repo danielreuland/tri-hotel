@@ -80,6 +80,11 @@ module.exports = {
   // Vorab-Phase: Login über HTTP-Tunnel erlauben (COOKIE_SECURE=false) und Suchmaschinen aussperren (NOINDEX=true)
   cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production',
   noindex: process.env.NOINDEX === 'true',
+  // Morgenbericht per Mail: ohne Adresse aus; Uhrzeit als Cron-Ausdruck nach Berliner Zeit
+  dailyReport: {
+    to: process.env.DAILY_REPORT_TO || null,
+    cron: process.env.DAILY_REPORT_CRON || '0 7 * * *',
+  },
   // Plausible (ohne Cookies), z. B. https://analytics.triprep.de/js/script.outbound-links.tagged-events.js
   plausibleSrc: process.env.PLAUSIBLE_SRC || null,
   // Stats API fürs Admin-Dashboard (Schlüssel aus Plausible → Einstellungen → API-Schlüssel); URL sonst aus PLAUSIBLE_SRC

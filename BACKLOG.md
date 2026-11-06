@@ -395,6 +395,10 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
   Ausstattung, Live-Trefferzahl über `/finder/treffer`; `src/lib/finder.js`), Lockerungsvorschläge in der Liste bei < 3 Treffern,
   Slider der Top-Hotels ab TriScore 75, Bestenliste ab Platz 1, Camp-Anfrage im Camp-Band; Platz in der Liste = Gesamtranking.
 - 01.11. **Hotelsuche findet Regionen und Länder** („Mallorca“ → alle 12 Hotels im Umkreis der Region).
+- 06.11. **Morgenbericht per Mail** (`services/daily-report.js`, Job `daily-report`, von Hand `scripts/daily-report.js`): Vortag nach Berliner
+  Zeit je Seite aus `funnel_domains`. `DAILY_REPORT_TO` leer = aus, `DAILY_REPORT_CRON` Standard 7 Uhr; abgerufene Adressen (info@) werden
+  abgelehnt. „Klicks auf Hotels“ = Aufrufe der Objektseiten (Plausible); bei fitnessracing-hotel.de die Aufrufe auf tri-hotel.de mit dieser
+  Herkunft. Antworten von Betreibern: Formular + Mails mit Bezug zu Anfrage oder Objekt, zweite Seite über `funnel_domains.ranking_id` (Migration 107).
 - 01.11. **Dashboard-Funnel** mit Monatszielen (Seitenaufrufe → Hotelseiten → Partner-Klicks, → Camp-Seiten → Camp-Anfragen),
   Zeiträume gestern/7/30 Tage/Monat, je Seite (tri-hotel.de, fitnessracing-hotel.de, alle zusammen; Migrationen 094/095).
 - 01.11. **Hybrid-Camps**: Site-Thema um Hybrid/Fitness Racing erweitert, Hotel-Meldungen je Anbieter abschaltbar (Migration 092),

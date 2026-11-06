@@ -14,7 +14,7 @@ const sites = require('./sites');
 const mailtemplates = require('./mailtemplates');
 
 // Abmeldelink: Diese Mails löst der Empfänger selbst aus, sie gehen trotz Abmeldung raus (dazu jede Antwort auf eine Mail von ihm)
-const OPT_OUT_EXEMPT = new Set(['verify', 'live', 'rejected', 'duplicate', 'review-verify', 'lead-verify', 'request-verify', 'inquiry-answered']);
+const OPT_OUT_EXEMPT = new Set(['verify', 'live', 'rejected', 'duplicate', 'review-verify', 'lead-verify', 'request-verify', 'inquiry-answered', 'daily-report']);
 const optOutApplies = (template, inReplyTo) => !inReplyTo && !OPT_OUT_EXEMPT.has(template);
 
 // Hat sich dieser Betrieb oder diese Adresse über den Abmeldelink abgemeldet?

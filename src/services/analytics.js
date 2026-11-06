@@ -84,4 +84,17 @@ async function pageStats(domain, path, from, to, { cacheMs = 6 * 60 * 60 * 1000 
   }
 }
 
-module.exports = { overview, pageviews, pageStats };
+// Unique Visitors, Besuche und Seitenaufrufe eines Tages (YYYY-MM-DD). Ergebnis: { visitors, visits, pageviews }, null oder { error: true }
+async function dayStats(domain, day) {
+  if (!config.plausibleApiKey || !apiBase() || !domain) return null;
+  try {
+    const r = await get('aggregate', { site_id: domain, period: 'custom', date: `${day},${day}`, metrics: 'visitors,visits,pageviews' });
+    const val = (v) => Number(v && typeof v === 'object' ? v.value : v) || 0;
+    return { visitors: val(r.visitors), visits: val(r.visits), pageviews: val(r.pageviews) };
+  } catch (err) {
+    console.error('[analytics]', err.message);
+    return { error: true };
+  }
+}
+
+module.exports = { overview, pageviews, pageStats, dayStats };

@@ -77,8 +77,11 @@ function scopeOf(key, domains) {
 }
 
 async function domains() {
-  return db.many('SELECT domain, label, site_id FROM funnel_domains ORDER BY sort_order, domain');
+  return db.many('SELECT domain, label, site_id, ranking_id FROM funnel_domains ORDER BY sort_order, domain');
 }
+
+// Plausible-Filter für Objektseiten: Standard-Ranking unter /<objekttyp>/<slug>, weitere Rankings unter /rankings/<ranking>/<slug>
+const entityFilter = (ranking) => `event:page==/${ranking.entity_type}/**|/rankings/*/*`;
 
 async function goals(siteId, scope) {
   const list = await db.many('SELECT stage, monthly_goal FROM funnel_goals WHERE site_id = $1 AND scope = $2', [siteId, scope]);
@@ -115,8 +118,8 @@ async function load(site, ranking, periodKey, scopeKey) {
   const scope = scopeOf(scopeKey, all);
   const chosen = scope === ALL ? all : all.filter((d) => d.domain === scope);
 
-  // Seitenaufrufe je Domain. Objektseiten: Standard-Ranking unter /<objekttyp>/<slug>, weitere Rankings unter /rankings/<ranking>/<slug>
-  const groups = { entity: `event:page==/${ranking.entity_type}/**|/rankings/*/*`, camp: 'event:page==/trainingscamp|/trainingscamp/**' };
+  // Seitenaufrufe je Domain
+  const groups = { entity: entityFilter(ranking), camp: 'event:page==/trainingscamp|/trainingscamp/**' };
   const views = await Promise.all(chosen.map((d) => analytics.pageviews(d.domain, range.from, range.to, groups)));
   const okViews = views.filter((v) => v && !v.error);
   const status = views.some((v) => v && v.error) ? 'error' : okViews.length ? 'ok' : 'off';
@@ -152,4 +155,4 @@ async function load(site, ranking, periodKey, scopeKey) {
   };
 }
 
-module.exports = { STAGES, PERIODS, ALL, periodRange, rows, clickDomain, scopeOf, sum, domains, goals, saveGoals, load };
+module.exports = { STAGES, PERIODS, ALL, periodRange, rows, clickDomain, scopeOf, sum, domains, entityFilter, goals, saveGoals, load };
