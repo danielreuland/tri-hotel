@@ -1,6 +1,8 @@
 # StayAPI – Vorschlag für tri-hotel und fitnessracing-hotel
 
-Stand 06.11.2026, zur Prüfung durch Daniel. Geprüft wurden Website, Dokumentation, Nutzungsbedingungen und Datenschutzerklärung.
+**Entscheidung Daniel, 06.11.2026: kein Einsatz.** Der Nutzen wäre im Kern nur die schnellere Zuordnung von Partnerlinks, das Risiko dafür zu hoch.
+
+Stand 06.11.2026. Geprüft wurden Website, Dokumentation, Nutzungsbedingungen und Datenschutzerklärung.
 Die API selbst ist noch nicht aufgerufen, dafür fehlt ein Konto.
 
 ## Empfehlung
