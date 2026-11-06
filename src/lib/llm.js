@@ -29,6 +29,7 @@ const DEFAULT_PRICES = {
   'claude-haiku-5-5': { input: 0.1, output: 0.5 },
 };
 const CACHE_READ_FACTOR = 0.1;
+const WEB_SEARCH_USD = 0.01;
 const CACHE_WRITE_FACTOR = 1.25;
 
 function priceFor(model, prices = { ...DEFAULT_PRICES, ...config.llm.prices }) {
@@ -47,9 +48,12 @@ function costOf(model, usage, prices) {
     cacheWrite: (usage && usage.cache_creation_input_tokens) || 0,
   };
   const p = priceFor(model, prices);
-  const usd = p
+  const tokens = p
     ? (u.input * p.input + u.cacheRead * p.input * CACHE_READ_FACTOR + u.cacheWrite * p.input * CACHE_WRITE_FACTOR + u.output * p.output) / 1e6
     : 0;
+  // Websuche der API: 10 US-Dollar je 1000 Suchanfragen, zusätzlich zu den Tokens
+  const searches = (usage && usage.server_tool_use && usage.server_tool_use.web_search_requests) || 0;
+  const usd = tokens + searches * WEB_SEARCH_USD;
   return { ...u, usd: Math.round(usd * 10000) / 10000, priced: Boolean(p) };
 }
 

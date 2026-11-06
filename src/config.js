@@ -62,6 +62,8 @@ module.exports = {
       describe: process.env.LLM_MODEL_DESCRIBE || 'claude-sonnet-5-5',
       // Gegenprüfung der Beschreibungstexte (jede Aussage gegen die Daten) – günstiges Modell reicht
       describe_check: process.env.LLM_MODEL_DESCRIBE_CHECK || 'claude-haiku-5-5',
+      // Website eines Objekts per Websuche finden (services/website-finder.js)
+      website: process.env.LLM_MODEL_WEBSITE || 'claude-sonnet-5-5',
     },
     // Preise je 1 Mio. Tokens überschreiben, z. B. {"opus":{"input":5,"output":25}}
     prices: parseJson(process.env.LLM_PRICES, {}),

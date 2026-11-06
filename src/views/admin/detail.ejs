@@ -60,11 +60,28 @@
         <strong>Website</strong>
         <% if (entity.website) { %><a href="<%= entity.website %>" target="_blank" rel="noopener"><%= entity.website %></a>
         <% } else if (ba.no_website) { %><span class="muted">keine Website (markiert)</span>
-        <% } else { %><span>fehlt – in den <a href="#stammdaten">Stammdaten</a> eintragen</span><% } %>
+        <% } else { %><span>fehlt</span><% } %>
         <% if (!entity.website) { %>
+          <% if (!ba.no_website) { %>
+            <form method="post" action="/admin/meldungen/<%= sub.id %>/grunddaten/website-suchen" class="inline-form" data-busy="Website wird gesucht … (bis zu 30 Sekunden)"><button class="btn small" type="submit">Website suchen</button></form>
+          <% } %>
           <form method="post" action="/admin/meldungen/<%= sub.id %>/grunddaten/fehlt" class="inline-form"><input type="hidden" name="key" value="website"><input type="hidden" name="absent" value="<%= ba.no_website ? '0' : '1' %>"><button class="btn small secondary" type="submit"><%= ba.no_website ? 'Markierung aufheben' : 'Hat keine Website' %></button></form>
         <% } %>
       </li>
+      <% var wsug = ba.website_suggestion; if (!entity.website && !ba.no_website && wsug) { %>
+        <li class="todo" style="list-style:none">
+          <% if (wsug.url) { %>
+            <span class="badge warn">Vorschlag</span> <a href="<%= wsug.url %>" target="_blank" rel="noopener nofollow"><%= wsug.url %> ↗</a>
+            <small class="muted">· <%= wsug.source %> · <%= wsug.reason %> – bitte kurz öffnen und prüfen</small>
+            <form method="post" action="/admin/meldungen/<%= sub.id %>/grunddaten/website-vorschlag" class="inline-form">
+              <button class="btn small" type="submit" name="action" value="uebernehmen">Übernehmen</button>
+              <button class="btn small secondary" type="submit" name="action" value="verwerfen">Verwerfen</button>
+            </form>
+          <% } else { %>
+            <small class="muted">Letzte Suche ohne Treffer<%= (wsug.tried || []).length ? ': ' + wsug.tried.join(' · ') : '' %>. Adresse in den <a href="#stammdaten">Stammdaten</a> eintragen.</small>
+          <% } %>
+        </li>
+      <% } %>
       <% if (placesEnabledForBasics) { %>
       <li class="<%= basicsMissing.indexOf('place') >= 0 ? 'todo' : 'done' %>">
         <strong>Google-Eintrag</strong>
@@ -120,8 +137,8 @@
     <% } %>
     <% if (sub.status === 'basics') { %>
       <form method="post" action="/admin/meldungen/<%= sub.id %>/pruefen" style="margin-top:10px">
-        <button class="btn small secondary" type="submit">Grunddaten erneut suchen</button>
-        <small class="muted">z. B. nach Änderung von Name, Ort oder Website</small>
+        <button class="btn small" type="submit">Alles suchen und übernehmen</button>
+        <small class="muted">Website, Google-Eintrag und Koordinaten; Eindeutiges wird übernommen, der Rest erscheint hier als Vorschlag</small>
       </form>
     <% } %>
   </section>

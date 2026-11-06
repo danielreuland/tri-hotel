@@ -643,6 +643,42 @@ router.post('/meldungen/:id/koordinaten', wrap(async (req, res, next) => {
 }));
 
 // Grunddaten: „Keine Website“ bzw. „Kein Google-Eintrag“ markieren (oder Markierung aufheben)
+// Website suchen (OpenStreetMap, dann Websuche): Eindeutiges wird übernommen, sonst Vorschlag zum Bestätigen
+router.post('/meldungen/:id/grunddaten/website-suchen', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const back = (key, msg) => res.redirect(`/admin/meldungen/${t.sub.id}?${key}=${encodeURIComponent(msg)}#grunddaten`);
+  if (t.entity.website) return back('ok', 'Website ist schon eingetragen.');
+  let r;
+  try {
+    r = await require('../services/website-finder').run(t.entity, { adminId: req.session.admin.id, submissionId: t.sub.id });
+  } catch (err) {
+    return back('fehler', `Suche fehlgeschlagen: ${err.message.slice(0, 200)}`);
+  }
+  if (!r.url) return back('fehler', 'Keine passende Website gefunden.');
+  if (!r.saved) return back('ok', `Vorschlag gefunden – bitte prüfen: ${r.url}`);
+  const note = await basics.continueIfReady(t.sub.id);
+  return back('ok', `Website übernommen: ${r.url}${note ? ` – ${note}` : ''}`);
+}));
+
+router.post('/meldungen/:id/grunddaten/website-vorschlag', wrap(async (req, res, next) => {
+  const t = await subEntity(req.params.id);
+  if (!t) return next();
+  const back = (key, msg) => res.redirect(`/admin/meldungen/${t.sub.id}?${key}=${encodeURIComponent(msg)}#grunddaten`);
+  const finder = require('../services/website-finder');
+  if (req.body.action === 'verwerfen') {
+    await finder.dismiss(t.entity.id, req.session.admin.id);
+    return back('ok', 'Vorschlag verworfen.');
+  }
+  try {
+    await finder.accept(t.entity, req.session.admin.id);
+  } catch (err) {
+    return back('fehler', err.message);
+  }
+  const note = await basics.continueIfReady(t.sub.id);
+  return back('ok', `Website übernommen${note ? ` – ${note}` : ''}`);
+}));
+
 router.post('/meldungen/:id/grunddaten/fehlt', wrap(async (req, res, next) => {
   const t = await subEntity(req.params.id);
   if (!t) return next();

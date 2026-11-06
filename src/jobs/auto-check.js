@@ -226,6 +226,18 @@ async function identifyBasics(sub, entity, ranking, criteria) {
   const out = { pages: null, site: { geo: [], addresses: [], emails: [], amenities: [] }, address: null };
   const attrs = entity.attributes || {};
 
+  // Website fehlt: OpenStreetMap, dann Websuche; nur Eindeutiges wird gespeichert, sonst Vorschlag im Admin
+  if (!entity.website && !attrs.no_website) {
+    await step(sub.id, 'Website suchen', async () => {
+      const r = await require('../services/website-finder').run(entity, { submissionId: sub.id });
+      if (r.saved) {
+        entity.website = r.url;
+        return `${r.url} (${r.source}: ${r.reason}).`;
+      }
+      throw new Error(r.url ? `Vorschlag ${r.url} (${r.source}): ${r.reason} – bitte in den Grunddaten bestätigen.` : `Nicht gefunden – ${(r.tried || []).join(' · ')}`);
+    });
+  }
+
   if (entity.website) {
     await step(sub.id, 'Website lesen', async () => {
       const catalog = await featureService.catalog(ranking.entity_type);
