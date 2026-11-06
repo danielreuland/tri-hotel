@@ -37,7 +37,7 @@ async function templateFor(site, key, language = 'de') {
 
 let smtpTransport = null;
 
-async function sendSmtp({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references }) {
+async function sendSmtp({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references, headers }) {
   if (!smtpTransport) {
     const nodemailer = require('nodemailer');
     smtpTransport = nodemailer.createTransport({
@@ -49,7 +49,7 @@ async function sendSmtp({ from, to, subject, html, text, replyTo, messageId, inR
   }
   const info = await smtpTransport.sendMail({
     from, to, subject, html, text, replyTo: replyTo || undefined, messageId,
-    inReplyTo: inReplyTo || undefined, references: references && references.length ? references : undefined,
+    inReplyTo: inReplyTo || undefined, references: references && references.length ? references : undefined, headers: headers || undefined,
   });
   return info.messageId;
 }
@@ -65,6 +65,11 @@ const transports = { console: sendConsole, smtp: sendSmtp };
 function newMessageId(from) {
   const m = /@([^\s>]+)>?\s*$/.exec(String(from || ''));
   return `<${crypto.randomUUID()}@${m ? m[1].toLowerCase() : 'localhost'}>`;
+}
+
+// Abmeldung im Mail-Kopf: Mailprogramme bieten sie direkt an (RFC 8058, ein POST auf die Adresse meldet ab)
+function unsubscribeHeaders(url) {
+  return url ? { 'List-Unsubscribe': `<${url}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : null;
 }
 
 function htmlToText(html) {
@@ -83,6 +88,7 @@ function htmlToText(html) {
 async function send({
   to, template, data, site = null, persona = null, submissionId = null, inquiryId = null, replyTo: replyToOverride = null,
   entityId = null, campProviderId = null, inReplyTo = null, references = null, keepBody = false, sentBy = null, replyToMessage = null,
+  unsubscribeUrl = null,
 }) {
   const transport = transports[config.mail.provider];
   if (!transport) throw new Error(`Unbekannter MAIL_PROVIDER „${config.mail.provider}“`);
@@ -114,7 +120,7 @@ async function send({
   const messageId = newMessageId(from);
   const text = htmlToText(html);
   try {
-    providerId = await transport({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references });
+    providerId = await transport({ from, to, subject, html, text, replyTo, messageId, inReplyTo, references, headers: unsubscribeHeaders(unsubscribeUrl) });
   } catch (err) {
     status = 'failed';
     console.error(`[mail] Versand fehlgeschlagen (${template} an ${to}):`, err.message);
@@ -129,4 +135,5 @@ async function send({
   return status === 'sent';
 }
 
-module.exports = { send, templateFor, newMessageId, htmlToText, optedOut, optOutApplies };
+module.exports = {
+  unsubscribeHeaders, send, templateFor, newMessageId, htmlToText, optedOut, optOutApplies };

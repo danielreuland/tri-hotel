@@ -365,6 +365,7 @@ async function send(inquiryId) {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
+      unsubscribeUrl: `${answerUrl(site, tok.token)}/abmelden`,
       data: {
         subject: draft.subject, text: personalize(draft.body, site, tok.token), language: inq.language, cta: buttonKind(inq, persona),
         smallFooter: Boolean(persona && persona.is_ai === false),
@@ -392,6 +393,17 @@ async function send(inquiryId) {
 // Abmeldelink aus der Anfrage-Mail: keine weiteren E-Mails an diesen Betrieb (Sperre in mailer.send), offene Anfragen werden geschlossen,
 // die Kooperations-Einwilligung endet, der Hub bekommt einen Sperrvermerk.
 // Gilt auch nach Ablauf der Anfrage. Ergebnis: { inquiry, entity } oder null
+// Mail-Scanner und Vorschauen rufen Links automatisch auf, das zählt nicht als gelesen
+const BOT_UA = /bot|crawl|spider|scan|proofpoint|barracuda|mimecast|python|curl|wget|preview|safelinks|headless|go-http|java\/|okhttp|libwww|microsoft office/i;
+function isHumanVisit(userAgent) {
+  return Boolean(userAgent) && !BOT_UA.test(userAgent);
+}
+
+// Erster Aufruf des Antwortlinks (Admin zählt nicht), nur einmal gesetzt
+async function markOpened(inquiryId) {
+  await db.query('UPDATE inquiries SET first_opened_at = now() WHERE id = $1 AND first_opened_at IS NULL', [inquiryId]);
+}
+
 async function findForOptOut(token) {
   const inquiry = await db.one('SELECT * FROM inquiries WHERE token_hash = $1 OR reminder_token_hash = $1', [sha256(token)]);
   if (!inquiry) return null;
@@ -724,6 +736,7 @@ async function dailyMaintenance() {
       persona,
       inquiryId: inq.id,
       entityId: inq.entity_id,
+      unsubscribeUrl: `${answerUrl(site, tok.token)}/abmelden`,
       data: {
         subject: aimail.fill(tpl.subject, vars).slice(0, 200),
         text: personalize(aimail.fill(tpl.body, vars) + hint, site, tok.token),
@@ -769,7 +782,7 @@ async function withdrawConsent(consentId, adminId, note) {
 }
 
 module.exports = {
-  reminderVars,
+  reminderVars, isHumanVisit, markOpened,
   createDraft,
   startDraft,
   formulate,

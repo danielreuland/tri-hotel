@@ -146,6 +146,19 @@ test('Erinnerung: neuer Text mit Absender der ersten Mail, KI-Hinweis vor dem Zi
   assert.equal(text.match(/KI-Assistenz/g).length, 1, 'nur einmal');
   assert.match(text, /\[Abmelden\]\(https:\/\/example\.org\/anfrage\/\S+\/abmelden\)/);
   assert.equal(sent[0].persona.name, 'Mia');
+  assert.match(sent[0].unsubscribeUrl, /^https:\/\/example\.org\/anfrage\/\S+\/abmelden$/, 'Abmeldung auch im Mail-Kopf der Erinnerung');
   assert.ok(!/\{\{/.test(text), 'keine offenen Platzhalter');
   assert.deepEqual(inquiries.reminderVars({ name: 'Marke' }, { name: 'Mia', is_ai: true }, null, 'de').absender, 'Marke', 'KI-Absender: Marke');
+});
+
+test('Erster Aufruf: Browser zählt, Scanner nicht; Abmeldung im Mail-Kopf', () => {
+  const mailer = require('../src/services/mailer');
+  assert.equal(inquiries.isHumanVisit('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0 Safari/537.36'), true);
+  for (const ua of ['Mozilla/5.0 (compatible; Googlebot/2.1)', 'python-requests/2.31', 'Barracuda Sentinel (EE)', 'curl/8.4', '', undefined]) {
+    assert.equal(inquiries.isHumanVisit(ua), false, String(ua));
+  }
+  assert.deepEqual(mailer.unsubscribeHeaders('https://x.example/anfrage/t/abmelden'), {
+    'List-Unsubscribe': '<https://x.example/anfrage/t/abmelden>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  });
+  assert.equal(mailer.unsubscribeHeaders(null), null);
 });

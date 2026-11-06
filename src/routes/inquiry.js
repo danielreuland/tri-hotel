@@ -71,6 +71,7 @@ router.post('/anfrage/:token/abmelden', limiter, wrap(async (req, res) => {
 router.get('/anfrage/:token', wrap(async (req, res) => {
   const found = await inquiries.findByToken(req.params.token);
   if (found.status !== 'ok') return closedPage(res, found);
+  if (inquiries.isHumanVisit(req.get('user-agent')) && !(req.session && req.session.admin)) await inquiries.markOpened(found.inquiry.id);
   render(res, found);
 }));
 

@@ -227,6 +227,11 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 ### Grunddaten: Website per Klick (06.11.2026, live)
 `services/website-finder.js`: OpenStreetMap, dann Claude-Websuche (etwa 7 Cent je Websuche), jeder Treffer an der Seite selbst geprüft. Eindeutig = gespeichert, sonst Vorschlag mit „Übernehmen“. Knopf „Website suchen“ und „Alles suchen und übernehmen“ (Website, Google-Eintrag, Koordinaten) in den Grunddaten; läuft auch in der Auto-Prüfung. **Nicht aus Google Places:** Dort darf nur die Place ID gespeichert werden. Probe 06.11. mit 8 Hotels aus der Warteschlange: 6 eindeutig, 1 Vorschlag, 1 (Geovillage) danach als Vorschlag nachgeschärft. Betrifft 27 Meldungen im Status `basics`.
 
+### Zustellung der Anfrage-Mails (06.11.2026)
+mail-tester.com: 9/10 von `daniel@` (SPF, DKIM, DMARC bestanden, SpamAssassin 0,2, keine Blocklist); Abzug für 2 fehlerhafte Links, vermutlich der erfundene Beispiel-Link im Test. DMARC bleibt `p=none`, Berichtsadresse fehlt.
+Gebaut (Migration 106): erster Aufruf des Antwortlinks im Browser (`inquiries.first_opened_at`, im Admin „Link geöffnet“; Scanner und Admin zählen nicht) und Abmeldung im Mail-Kopf (`List-Unsubscribe`, One-Click per POST).
+Stand 06.11.: 29 Hotels angeschrieben, 4 Links geöffnet (Logdateien ab 30.10.), 0 Formulare abgeschickt, 1 Unzustellbar.
+
 ### Partnerbereich (Konzept von Daniel, 06.11.2026, noch nicht begonnen)
 Volltext: `docs/konzept-partnerbereich.md`. Gemeinsamer Partnerbereich für beide Portale in drei Phasen: (1) Seite „Für Partner“ mit Anfrageformular ohne Login, (2) Stripe und Affiliate-Codes, (3) Partner-Portal mit Login. Hauptprodukt: Bundle aus Premium-Profil, Badge-Paket und Kurzbericht für ca. 449 € im Jahr.
 Nächste Schritte laut Konzept: Katalog und Preise festlegen, Partnerseite umsetzen, Muster-PDF eines Berichts, erste Partner ansprechen, Datenmodell anlegen.
