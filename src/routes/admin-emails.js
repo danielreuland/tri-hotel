@@ -82,7 +82,8 @@ async function renderAiEdit(req, res, site, key, language, draft, extra = {}) {
   if (key === 'inquiry_reminder') {
     // Erinnerung: Beispiel-Anfrage (Mustertext der Datenanfrage) als ursprüngliche Nachricht einsetzen
     const original = agent.fallbackDraft({ ...ctx, template: await aimail.get(site.id, 'inquiry', language) });
-    const vars = { ...agent.templateVars(ctx), betreff: original.subject, text: original.body };
+    const vars = { ...agent.templateVars(ctx), betreff: original.subject, text: original.body,
+      ...require('../services/inquiries').reminderVars(site, { name: 'Daniel Reuland', is_ai: false }, persona, language) };
     fallback = { subject: aimail.fill(tpl.subject, vars), body: aimail.fill(tpl.body, vars) };
   }
   const example = key === 'inquiry' ? await aimail.inquiryExample(language) : null;

@@ -18,7 +18,7 @@ const KEYS = {
   inquiry_reminder: {
     label: 'Erinnerung zur Datenanfrage', persona: 'data_inquiry', ai: false,
     trigger: 'automatisch 7 Tage nach der Anfrage, wenn keine Antwort kam',
-    vars: { marke: 'Name der Site', objekt: 'Name des Objekts', name: 'Vorname der Persona', betreff: 'Betreff der Anfrage', text: 'Text der Anfrage (mit Antwortlink)', LINK: 'persönlicher Antwortlink' },
+    vars: { marke: 'Name der Site', objekt: 'Name des Objekts', name: 'Vorname der Persona', betreff: 'Betreff der Anfrage', text: 'Text der Anfrage (mit Antwortlink und Abmeldelink)', LINK: 'persönlicher Antwortlink', absender: 'Vorname des Absenders der ersten Mail, bei KI-Absender die Marke', ki_hinweis: 'Name, Rolle und KI-Hinweis der Persona' },
     sections: {},
   },
 };
@@ -79,9 +79,16 @@ They can also simply reply to this email`,
   inquiry_reminder: {
     de: {
       subject: 'Erinnerung: {{betreff}}',
-      body: `Guten Tag,
+      body: `Hallo,
 
-vor einer Woche haben wir Ihnen die folgende Anfrage geschickt. Falls sie untergegangen ist: Der Link ist weiterhin gültig, und Sie können auch einfach auf diese Mail antworten.
+bestimmt ist die erste E-Mail von {{absender}} untergegangen. Daher schreibe ich Sie nochmals direkt an, mit der Bitte, die Daten zu prüfen:
+
+{{LINK}}
+
+Natürlich können Sie auch einfach auf diese E-Mail antworten. Sie sind der falsche Ansprechpartner? An wen darf ich mich wenden?
+
+Viele Grüße
+{{ki_hinweis}}
 
 -------- Ursprüngliche Nachricht --------
 {{text}}`,
@@ -91,7 +98,14 @@ vor einer Woche haben wir Ihnen die folgende Anfrage geschickt. Falls sie unterg
       subject: 'Reminder: {{betreff}}',
       body: `Hello,
 
-a week ago we sent you the request below. In case it got lost: the link is still valid, and you can also simply reply to this email.
+{{absender}}'s first email has probably got lost. So I am writing to you again directly to ask you to check the details:
+
+{{LINK}}
+
+Of course, you can also simply reply to this email. Not the right contact? Who should I get in touch with?
+
+Best regards
+{{ki_hinweis}}
 
 -------- Original message --------
 {{text}}`,

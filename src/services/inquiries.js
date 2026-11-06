@@ -686,6 +686,15 @@ async function close(inquiryId, adminId) {
 }
 
 // Täglich: einmal erinnern nach 7 Tagen (mit neuem Link), nach 30 Tagen verfallen lassen.
+// Platzhalter der Erinnerung: wer die erste Mail geschickt hat und wer jetzt schreibt (mit KI-Hinweis)
+function reminderVars(site, first, persona, language) {
+  const human = first && first.is_ai === false;
+  return {
+    absender: human ? String(first.name).split(' ')[0] : site.name,
+    ki_hinweis: persona && persona.is_ai !== false ? consentTexts.aiDisclosure(language, persona, site.name) : (persona ? persona.name : site.name),
+  };
+}
+
 async function dailyMaintenance() {
   const expired = await db.query(`UPDATE inquiries SET status = 'expired', updated_at = now() WHERE status = 'sent' AND expires_at < now()`);
   const due = await db.many(
@@ -705,8 +714,9 @@ async function dailyMaintenance() {
     const persona = first && first.is_ai === false ? (await sites.persona(site.id, 'data_inquiry')) || first : first;
     const entity = await db.one('SELECT name FROM entities WHERE id = $1', [inq.entity_id]);
     const tpl = await aimail.get(site.id, 'inquiry_reminder', inq.language);
-    const vars = { marke: site.name, objekt: entity ? entity.name : '', name: persona ? persona.name : site.name, betreff: inq.subject, text: inq.body };
-    const hint = first && first.is_ai === false && persona && persona.is_ai !== false ? `\n\n--\n${consentTexts.aiDisclosure(inq.language, persona, site.name)}` : '';
+    const vars = { marke: site.name, objekt: entity ? entity.name : '', name: persona ? persona.name : site.name, betreff: inq.subject, text: inq.body, ...reminderVars(site, first, persona, inq.language) };
+    // Im Admin geänderte Vorlage ohne {{ki_hinweis}}: Hinweis ans Ende, damit die KI immer gekennzeichnet ist
+    const hint = !String(tpl.body).includes('{{ki_hinweis}}') && first && first.is_ai === false && persona && persona.is_ai !== false ? `\n\n--\n${vars.ki_hinweis}` : '';
     const ok = await mailer.send({
       to: inq.recipient,
       template: 'inquiry',
@@ -759,6 +769,7 @@ async function withdrawConsent(consentId, adminId, note) {
 }
 
 module.exports = {
+  reminderVars,
   createDraft,
   startDraft,
   formulate,

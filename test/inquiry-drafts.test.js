@@ -118,3 +118,33 @@ test('Feste Vorlage: Herkunft der Adresse steht nur bei Adressen von der Website
   assert.doesNotMatch(body(false), /Von Ihrer Website/);
   assert.deepEqual(require('../src/services/aimail').unknownPlaceholders('inquiry', '{{#adresse_website}}x{{/adresse_website}}'), []);
 });
+
+test('Erinnerung: neuer Text mit Absender der ersten Mail, KI-Hinweis vor dem Zitat, Abmeldelink im Zitat', async (t) => {
+  const db = require('../src/db');
+  const mailer = require('../src/services/mailer');
+  const rankings = require('../src/services/rankings');
+  const sites = require('../src/services/sites');
+  const aimail = require('../src/services/aimail');
+  const agent = require('../src/services/inquiry-agent');
+  const inq = { id: 'i1', ranking_id: 'r1', entity_id: 'e1', persona_id: 'p1', recipient: 'hotel@example.org', language: 'de', subject: 'Betreff', body: `Text\n\n${agent.LINK}\n\n--\n[Abmelden]({{abmelden}})` };
+  t.mock.method(db, 'query', async () => ({ rowCount: 0, rows: [] }));
+  t.mock.method(db, 'many', async () => [inq]);
+  t.mock.method(db, 'one', async (sql) => (/personas/.test(sql) ? { id: 'p1', name: 'Daniel Reuland', is_ai: false } : { name: 'Testhotel' }));
+  t.mock.method(rankings, 'getRanking', async () => ({ id: 'r1' }));
+  t.mock.method(sites, 'forRanking', async () => ({ id: 's1', name: 'Testseite' }));
+  t.mock.method(sites, 'urlFor', () => 'https://example.org');
+  t.mock.method(sites, 'persona', async () => ({ name: 'Mia', title: 'Digitale Assistenz', is_ai: true }));
+  t.mock.method(aimail, 'get', async (siteId, key, lang) => aimail.DEFAULTS[key][lang]);
+  const sent = [];
+  t.mock.method(mailer, 'send', async (m) => { sent.push(m); return true; });
+  await inquiries.dailyMaintenance();
+  const text = sent[0].data.text;
+  assert.match(text, /^Hallo,\n\nbestimmt ist die erste E-Mail von Daniel untergegangen/);
+  assert.match(text, /An wen darf ich mich wenden\?/);
+  assert.ok(text.indexOf('KI-Assistenz') < text.indexOf('Ursprüngliche Nachricht'), 'KI-Hinweis vor dem Zitat');
+  assert.equal(text.match(/KI-Assistenz/g).length, 1, 'nur einmal');
+  assert.match(text, /\[Abmelden\]\(https:\/\/example\.org\/anfrage\/\S+\/abmelden\)/);
+  assert.equal(sent[0].persona.name, 'Mia');
+  assert.ok(!/\{\{/.test(text), 'keine offenen Platzhalter');
+  assert.deepEqual(inquiries.reminderVars({ name: 'Marke' }, { name: 'Mia', is_ai: true }, null, 'de').absender, 'Marke', 'KI-Absender: Marke');
+});
