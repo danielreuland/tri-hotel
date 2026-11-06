@@ -294,6 +294,24 @@ Anfrage → Erinnerung → nächste Stufe bis zur Klärung, inkl. Anrufen per Vo
 Unternehmen (UWG § 7 Abs. 2, mutmaßliche Einwilligung), KI-Kennzeichnung am Telefon (EU AI Act Art. 50),
 Aufzeichnung/Transkript (DSGVO), Anbieter und Kosten.
 
+### Seitenprüfung vom 06.11.2026: offene Pakete
+Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler) ist gebaut. Reihenfolge: B, C, D.
+**Nicht übernehmen:** Zählung 68 Hotels gegenüber den Regionen (rund 20 Hotels liegen außerhalb definierter Regionen), Hinweis zur Formel (steht schon auf `/triscore`), Alt-Texte „Symbolbild … – Hotel XY“ (deutet ein Foto des Hotels an), Umrechnung der Camp-Preise (nur je ein Preis in CHF und £).
+
+**Paket B: Vertrauen**
+- **Entscheidung offen, Quellen-Versprechen:** „Jeder Wert mit Quelle“ steht auf der Seite, aber nur 658 von 1.871 Werten (35 %) haben eine verlinkte Fundstelle (Stand 06.11.). Vorschlag: Satz ändern in „Jeder Wert mit Prüfstufe, Fundstelle wo vorhanden“ und Fundstellen schrittweise nachtragen. Betrifft auch Meta-Descriptions der Hotelseiten und die Startseite.
+- Seite „Über tri-hotel“ (siehe Kleinere offene Punkte) mit Person, Foto und Triathlon-Hintergrund, verlinkt aus Footer und Methodik. Stand-Datum auf `/triscore`. Foto und Angaben kommen von Daniel.
+
+**Paket C: SEO-Inhalte**
+- **Entscheidung offen, Vergleichsseiten:** `noindex, nofollow` ist Absicht (27.10., `src/routes/regions.js`, viele ähnliche Seiten). Vorschlag: nur die bis zu 13 Paare mit Redaktionstext (`region_texts.compare_slug`) indexieren, alle anderen `noindex, follow`. Vorher nötig: `a-vs-b` und `b-vs-a` sind beide erreichbar und verweisen auf sich selbst, Reihenfolge per Weiterleitung vereinheitlichen. Top-Hotels verlinken (bisher kein Link auf ein Hotel), Fazit „Für wen passt was?“, Links zu weiteren Paaren.
+- Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.
+- Hotel-Texte: 24 veröffentlicht, 8 Entwürfe prüfen und freigeben, für die übrigen 36 Hotels erzeugen (KI-Budget). Passt zum Titel „… im Check“.
+- Camp-Seite: FAQ um Stornierung und Versicherung ergänzen, Abschluss am Seitenende zur Anfrage statt nur zum Hotel-Ranking.
+
+**Paket D: Conversion (nach Klärung der Gewerbeanmeldung, siehe „Gewerbeanmeldung vor Provisionen“)**
+- Dezenter Link „Preise prüfen“ auf Hotelkarten in Liste und Regionsseiten, als Anzeige gekennzeichnet, ohne Einfluss auf die Reihenfolge. 50 von 68 Hotels haben Partnerlinks; die übrigen 18 ohne Link, das darf optisch nicht wie eine Bewertung wirken.
+- Knopf „Anfragen“ auf den Camp-Karten. Formulierung „Anbieter zahlen nicht für ihre Aufnahme; Partnerschaften sind als Anzeige gekennzeichnet“ klarer fassen. Einheitliche Preisangabe „pro Woche“ prüfen.
+
 ## Kleinere offene Punkte
 - **Seite „Über tri-hotel“ erstellen** (Wunsch Daniel 05.11.): Was ist tri-hotel? Wieso und weshalb gibt es die Seite? Was ist das Ziel?
 - **Dashboard: Besucher und Besuche** (Wunsch Daniel 02.11.): neben Seitenaufrufen auch Unique Visitors und Total Visits anzeigen – in den Kennzahlen und im Funnel (Plausible-Metriken `visitors`, `visits`), je Zeitraum und Seite.

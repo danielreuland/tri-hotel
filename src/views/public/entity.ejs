@@ -216,7 +216,7 @@
       <p class="best-time-line"><span class="bt-label">Beste Reisezeit</span> <strong><%= bestTime || 'keine Monate mit idealem Trainingsklima' %></strong><% if (bestTimeRule) { %> <small class="muted">· Ø <%= bestTimeRule.min %>–<%= bestTimeRule.max %> °C Tageshöchstwert</small><% } %></p>
       <div class="table-scroll">
         <table class="climate">
-          <tr><th></th><% climate.forEach(function (c) { %><th class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+          <tr><th></th><% climate.forEach(function (c) { %><th class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %><% if (bestMonths.indexOf(c.month) >= 0) { %><span class="sr-only"> (beste Reisezeit)</span><% } %></th><% }) %></tr>
           <tr><th>Ø max °C</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
           <tr><th>Ø min °C</th><% climate.forEach(function (c) { %><td class="<%= bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_low_c === null ? '–' : Math.round(c.avg_low_c) %></td><% }) %></tr>
           <% var rainSt = (entity.attributes || {}).rain_station; %>

@@ -34,15 +34,16 @@
      if (key === 'sea_c' && !anySea) return;
      var meta = METRICS[key]; var digits = key === 'sunshine_h' || key === 'windy_days' ? 1 : 0; %>
   <section>
-    <h2><%= meta.label %> <small class="muted">(<%= meta.unit %>)</small>
+    <div class="heading-tip">
+      <h2><%= meta.label %> <small class="muted">(<%= meta.unit %>)</small></h2>
       <% if (key === 'sea_c') { %><%- include('../partials/info-tip', { text: 'Wassertemperatur vor der Küste: Mittel küstennaher Meerespunkte je Region (Modellwert von Open-Meteo, Raster etwa 8–9 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.' }) %><% } %>
-    </h2>
+    </div>
     <div class="table-scroll">
       <table class="climate region-grid">
         <tr><th></th><% MONTHS.forEach(function (m) { %><th><%= m.slice(0, 3) %></th><% }) %></tr>
         <% rows.forEach(function (r) { %>
           <tr><th><%= r.name %></th>
-            <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, key, m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %>"><%= v === null ? (key === 'sea_c' ? 'Binnen' : '–') : fmt(v, digits) %></td><% } %>
+            <% for (var m = 1; m <= 12; m++) { var v = monthValue(r.climate, key, m); %><td class="<%= r.bestMonths.indexOf(m) >= 0 ? 'sel' : '' %>"><%= v === null ? (key === 'sea_c' ? 'Binnen' : '–') : fmt(v, digits) %><% if (r.bestMonths.indexOf(m) >= 0) { %><span class="sr-only"> (beste Reisezeit)</span><% } %></td><% } %>
           </tr>
         <% }) %>
       </table>

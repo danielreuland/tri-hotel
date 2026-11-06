@@ -57,7 +57,10 @@
 .leaflet-container { isolation: isolate; }
 .climate td, .climate th { text-align: center; padding: 8px 6px; font-size: .85rem; min-width: 2.6em; }
 .climate tr > th:first-child { text-align: left; white-space: nowrap; padding-right: 16px; }
-.climate .sel { background: var(--accent-soft); }
+.climate .sel { background: var(--accent-soft); font-weight: 700; }
+.heading-tip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.heading-tip h2 { margin-bottom: 0; }
+.heading-tip + .table-scroll { margin-top: 12px; }
 figure { margin: 0; }
 figcaption { font-size: .78rem; color: var(--muted); }
 

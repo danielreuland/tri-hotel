@@ -137,6 +137,7 @@ async function renderList(req, res, ranking) {
     canonical: `${siteUrl}${listHref}`,
     // Suchergebnis- und Filterseiten nicht indexieren (doppelte Inhalte)
     noindex: searchActive,
+    ogImage: isHost ? `${siteUrl}/og/liste.png` : undefined,
     jsonLd: [
       seo.itemListLd(ranking.name, allRanked.slice(0, 20).map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` }))),
     ],
@@ -334,10 +335,9 @@ async function renderEntity(req, res, ranking, slug) {
       name: entity.name, ort: region ? region.name : (entity.city || seo.countryName(entity.country)),
       score: result.eligible ? result.score : null, scorename: ranking.score_name,
     }) || seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
-    description: text && text.summary ? text.summary : (result.eligible
-      ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}. `
-      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich. `)
-      + (topFeatures.length ? `${topFeatures.join(', ')}. ` : '') + 'Geprüfte Fakten mit Quelle.',
+    description: text && text.summary ? text.summary : seo.descriptionWithList(result.eligible
+      ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}.`
+      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich.`, topFeatures, 'Geprüfte Fakten mit Quelle.'),
     canonical,
     ogImage,
     ogType: 'article',
@@ -680,7 +680,8 @@ async function renderArea(req, res, ranking, area) {
     ],
     heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
-    countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug)),
+    // Land mit gleichnamiger Region (z. B. Zypern) nur einmal zeigen
+    countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug) && !ov.regions.some((r) => r.name === c.name)),
     entityPath: (e) => entityPath(ranking, e),
     isHostRanking: req.hostRanking && req.hostRanking.id === ranking.id,
   });

@@ -117,7 +117,7 @@
   </div>
   <div class="table-scroll">
     <table class="climate">
-      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %><% if (d.bestMonths.indexOf(c.month) >= 0) { %><span class="sr-only"> (beste Reisezeit)</span><% } %></th><% }) %></tr>
       <% ['avg_high_c', 'avg_low_c', 'rain_days', 'sunshine_h', 'wind_kmh'].concat(rd.hasSea ? ['sea_c'] : []).forEach(function (k) { %>
         <tr><th><%= METRICS[k].short %><%= METRICS[k].unit === 'Tage' ? '' : ' ' + METRICS[k].unit %></th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c[k] === null || c[k] === undefined ? '–' : de(c[k]) %></td><% }) %></tr>
       <% }) %>
@@ -144,7 +144,7 @@
   <h2>Klima <%= area.nameIn %></h2>
   <div class="table-scroll">
     <table class="climate">
-      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %></th><% }) %></tr>
+      <tr><th></th><% d.climate.forEach(function (c) { %><th class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= MONTHS[c.month - 1].slice(0, 3) %><% if (d.bestMonths.indexOf(c.month) >= 0) { %><span class="sr-only"> (beste Reisezeit)</span><% } %></th><% }) %></tr>
       <tr><th>Ø max °C</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.avg_high_c === null ? '–' : Math.round(c.avg_high_c) %></td><% }) %></tr>
       <tr><th>Regentage</th><% d.climate.forEach(function (c) { %><td class="<%= d.bestMonths.indexOf(c.month) >= 0 ? 'sel' : '' %>"><%= c.rain_days === null ? '–' : Math.round(c.rain_days) %></td><% }) %></tr>
     </table>
@@ -202,10 +202,14 @@
 
 <section>
   <h2>Weitere Ziele</h2>
+  <% if (otherRegions.length) { %><h3>Regionen</h3>
   <div class="chips">
     <% otherRegions.forEach(function (r) { %><a class="chip" href="<%= base %>/region/<%= r.slug %>"><%= r.name %><% if (r.count) { %> <span class="muted">(<%= r.count %>)</span><% } %></a><% }) %>
+  </div><% } %>
+  <% if (countries.length) { %><h3>Länder</h3>
+  <div class="chips">
     <% countries.forEach(function (c) { %><a class="chip" href="<%= base %>/land/<%= c.slug %>"><%= c.name %> <span class="muted">(<%= c.count %>)</span></a><% }) %>
-  </div>
+  </div><% } %>
 </section>
 
 <%- include('../partials/foot') %>

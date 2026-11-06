@@ -39,9 +39,10 @@ router.get('/trainingsregionen', wrap(async (req, res, next) => {
   const crumbs = [{ name: ranking.name, url: `${siteUrl}/` }, { name: 'Trainingsregionen', url: `${siteUrl}/trainingsregionen` }];
   res.render('public/regions', {
     title: period ? `Trainingsregionen ${period.label} – Klima, Wasser, Radrevier` : 'Trainingsregionen im Überblick – Klima, Wasser, Radrevier',
-    description: `Trainingsregionen im Überblick: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier aus OpenStreetMap, geprüfte ${ranking.entity_label_pl} mit ${ranking.score_name}.`,
+    description: `Trainingsregionen im Überblick: Temperatur, Regentage, Sonne, Wind und Wasser je Monat, Radrevier und geprüfte ${ranking.entity_label_pl} mit ${ranking.score_name}.`,
     canonical: `${siteUrl}/trainingsregionen`,
     noindex: Boolean(period) || sort !== 'standard',
+    ogImage: `${siteUrl}/og/trainingsregionen.png`,
     jsonLd: [seo.breadcrumbLd(crumbs)],
     rows, period, months, sort, ranking, crumbs,
     sorts: guide.SORTS,

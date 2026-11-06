@@ -146,3 +146,21 @@ test('Schrägstrich am Ende wird weitergeleitet, Startseite und Fremd-Hosts nich
   // kein offener Redirect auf //andere-seite.de
   assert.equal(seo.withoutTrailingSlash('//evil.example/'), null);
 });
+
+test('seo.fitDescription: kürzt am Satzende, nur ohne passenden Satz mit „…“', () => {
+  const satz = 'Ein ganzer Satz mit genug Inhalt, damit er als Beschreibung für die Seite allein stehen kann.';
+  assert.equal(seo.fitDescription(`${satz} Ein zweiter langer Satz, der über die Grenze von hundertfünfundfünfzig Zeichen hinausgeht und abgeschnitten würde.`), satz);
+  const kurz = seo.fitDescription(`Kurz. ${'Wort '.repeat(50)}`);
+  assert.ok(kurz.endsWith('…') && kurz.length <= 155, 'zu kurzer Satz: am Wortende');
+});
+
+test('seo.descriptionWithList: nur ganze Einträge, Ende bleibt erhalten', () => {
+  const head = 'Hotel Beispiel (Ort): TriScore 70 – Sehr gut geeignet.';
+  const tail = 'Geprüfte Fakten mit Quelle.';
+  const items = ['Abschließbare Radgarage', 'Rennradverleih', 'Reservierte Sportlerbahnen', 'Freiwasser in der Nähe', 'Physiotherapie'];
+  const d = seo.descriptionWithList(head, items, tail);
+  assert.ok(d.length <= 155 && d.startsWith(head) && d.endsWith(tail));
+  assert.ok(!d.includes('…'));
+  assert.ok(d.includes('Abschließbare Radgarage') && !d.includes('Physiotherapie'));
+  assert.equal(seo.descriptionWithList('Kopf.', [], 'Ende.'), 'Kopf. Ende.');
+});

@@ -82,6 +82,21 @@ router.get('/og/start.png', wrap(async (req, res, next) => {
   await sendPng(res, { eyebrow: content.hero_eyebrow || r.score_name, title: content.hero_title || r.name, subtitle: `${r.name} · ${r.score_name} 0–100`, site: req.site });
 }));
 
+// Liste des Host-Rankings (z. B. /hotels)
+router.get('/og/liste.png', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  if (!r) return next();
+  const { ranked } = await rankings.listLive(r);
+  await sendPng(res, { eyebrow: `${r.score_name} · Ranking`, title: `${ranked.length} ${r.entity_label_pl} im Vergleich`, subtitle: `${r.name} · ${r.score_name} 0–100`, site: req.site });
+}));
+
+// Übersicht der Trainingsregionen
+router.get('/og/trainingsregionen.png', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  if (!r) return next();
+  await sendPng(res, { eyebrow: 'Trainingsregionen', title: 'Trainingsregionen im Überblick', subtitle: `Klima, Wasser, Radrevier · ${r.entity_label_pl} nach ${r.score_name}`, site: req.site });
+}));
+
 // Methodik-Seite des Host-Rankings (/triscore)
 router.get('/og/methodik.png', wrap(async (req, res, next) => {
   const r = req.hostRanking;

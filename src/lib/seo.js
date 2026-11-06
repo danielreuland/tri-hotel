@@ -241,6 +241,7 @@ function googleMapsEmbedUrl(entity, key) {
 // Suchergebnis-Längen: Titel ~60 Zeichen (Marke nur anhängen, wenn sie noch passt), Beschreibung ~155 am Wortende gekürzt
 const TITLE_MAX = 60;
 const DESC_MAX = 155;
+const MIN_SENTENCE_CUT = 70;
 
 // Titel der Profilseite: „Name (Ort) – TriScore 78“; zu lang → ohne Ort; noch zu lang → Name gekürzt, Score bleibt
 function entityTitle(name, place, scorePart) {
@@ -296,8 +297,21 @@ function fitTitle(title, brand) {
 function fitDescription(text) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   if (t.length <= DESC_MAX) return t;
-  const cut = t.slice(0, DESC_MAX - 1);
-  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), DESC_MAX - 30)).replace(/[\s,;:–-]+$/, '')}…`;
+  const cut = t.slice(0, DESC_MAX);
+  // Am Satzende kürzen, wenn dann noch genug Text bleibt; sonst am Wortende mit „…“
+  const sentences = [...cut.matchAll(/[.!?](?=\s)/g)].map((m) => m.index + 1);
+  const end = sentences.length ? sentences[sentences.length - 1] : 0;
+  if (end >= MIN_SENTENCE_CUT) return cut.slice(0, end);
+  const words = t.slice(0, DESC_MAX - 1);
+  return `${words.slice(0, Math.max(words.lastIndexOf(' '), DESC_MAX - 30)).replace(/[\s,;:–-]+$/, '')}…`;
+}
+
+// Beschreibung aus festem Anfang und Ende; dazwischen so viele Einträge, wie als ganzer Satz passen
+function descriptionWithList(head, items, tail) {
+  const build = (list) => [head, list.length ? `${list.join(', ')}.` : '', tail].filter(Boolean).join(' ');
+  const list = [...(items || [])];
+  while (list.length && build(list).length > DESC_MAX) list.pop();
+  return build(list);
 }
 
 module.exports = {
@@ -305,6 +319,7 @@ module.exports = {
   entityTitle,
   entityTitleFromTemplates,
   fitDescription,
+  descriptionWithList,
   TITLE_MAX,
   DESC_MAX,
   googleMapsUrl,
