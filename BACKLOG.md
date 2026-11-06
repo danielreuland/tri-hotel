@@ -246,8 +246,7 @@ Ereignis 400, falsches Geheimnis 401, von außen 404).
 **Test gelaufen (04.11.) mit nicht öffentlichem Testhotel, Testdaten danach gelöscht:** Mail mit DKIM, SPF und DMARC bestanden, Formular mit echtem Link, Abmeldung, Foto,
 Einwilligungen, `inquiry.answered`, `contact.profile`, `contact.consent` und Unternehmen im Hub. Antwort an `daniel@` laut Daniel angekommen.
 Am 05.11. per Skript auf dem Server am Testhotel geprüft: Becken mit mehreren Angaben korrigiert und übernommen, entfernter Haken als Korrektur übernommen (Leistung aus dem Profil entfernt).
-**Nicht getestet:** Erinnerung, Bedienung und Darstellung im Admin (Übernehmen per Klick, Zähler, Karte „Betreiber-Nachricht“, „Entwurf erstellen“), Häkchen und Korrektur per Klick im Formular,
-`inquiry.sent` über den Job der App (im Test per Skript versendet, das Ereignis blieb `pending`; beim ersten echten Versand prüfen, ob das Unternehmen im Hub entsteht).
+**Zweiter Test (06.11.), von Daniel als erfolgreich bestätigt, Testdaten gelöscht:** erste Mail und Erinnerung kamen an, `inquiry.sent` über den Job der App, Unternehmen im Hub entsteht (auch 19 echte Anfragen). Erinnerung danach mit Daniels neuem Text (DE, EN von ihm freigegeben; Rolle von Mia in eigener Zeile) eingespielt und an ihn verschickt. Erste echte Erinnerungen ab 12.11., 08:00 Uhr (19 Hotels).
 Bekannte Lücken: Mail-Antwort, Erinnerung und Unzustellbares erzeugen keinen CRM-Vermerk; `PRIVACY_CRM_SECTION` im Hub noch `off`.
 **Keine Sammelanlage (Entscheidung Daniel 04.11.):** Unternehmen entstehen im Hub immer durch den Versand der Anfrage-Mail (`inquiry.sent`). Sie haben dann nur den Namen und die Verknüpfung
 zum tri-hotel-Objekt, keine Website und kein Land. Die 9 bereits versendeten Anfragen haben noch kein Unternehmen, bis ein weiteres Ereignis kommt.
