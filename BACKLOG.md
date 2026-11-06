@@ -227,6 +227,16 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
 ### Grunddaten: Website per Klick (06.11.2026, live)
 `services/website-finder.js`: OpenStreetMap, dann Claude-Websuche (etwa 7 Cent je Websuche), jeder Treffer an der Seite selbst geprüft. Eindeutig = gespeichert, sonst Vorschlag mit „Übernehmen“. Knopf „Website suchen“ und „Alles suchen und übernehmen“ (Website, Google-Eintrag, Koordinaten) in den Grunddaten; läuft auch in der Auto-Prüfung. **Nicht aus Google Places:** Dort darf nur die Place ID gespeichert werden. Probe 06.11. mit 8 Hotels aus der Warteschlange: 6 eindeutig, 1 Vorschlag, 1 (Geovillage) danach als Vorschlag nachgeschärft. Betrifft 27 Meldungen im Status `basics`.
 
+### Partnerbereich (Konzept von Daniel, 06.11.2026, noch nicht begonnen)
+Volltext: `docs/konzept-partnerbereich.md`. Gemeinsamer Partnerbereich für beide Portale in drei Phasen: (1) Seite „Für Partner“ mit Anfrageformular ohne Login, (2) Stripe und Affiliate-Codes, (3) Partner-Portal mit Login. Hauptprodukt: Bundle aus Premium-Profil, Badge-Paket und Kurzbericht für ca. 449 € im Jahr.
+Nächste Schritte laut Konzept: Katalog und Preise festlegen, Partnerseite umsetzen, Muster-PDF eines Berichts, erste Partner ansprechen, Datenmodell anlegen.
+**Vor dem Start abzugleichen (Claude, 06.11., noch nicht entschieden):**
+- **Ablageort:** Laut `CLAUDE.md` und `docs/admin-aufteilung.md` gehören Partner-CRM, „Partner werden“ und Abrechnung in den Hub, das Konzept nennt eine gemeinsame Codebasis der Portale. Klären, was in tri-hotel bleibt (öffentliche Seite, Anzeige) und was in den Hub geht (Partner, Bestellungen); Datenaustausch nur über `docs/internal-api.md`.
+- **Neutralität:** „Hervorgehobene Darstellung“ und Premium nie in Liste oder Reihenfolge des Rankings; Regel und Kennzeichnung je Produkt festlegen. Analysebericht und Gespräch dürfen keinen Einfluss auf Score oder Faktenprüfung haben.
+- **Badge ab 20 Bewertungen:** Bewertungen sind noch im Aufbau; erst prüfen, wie viele Hotels die Schwelle erreichen, sonst ist das Bundle lange nicht lieferbar.
+- **Affiliate:** Zwei Modelle stehen im Konzept (Portal verdient oder Partner verdient); Cookie-Tracking braucht Einwilligung. Bezahlte Links auf Partnerseiten mit Blick auf die Google-Richtlinien (`rel="sponsored"`) prüfen.
+- **Rechtliches:** Einwilligung der Hotels für Werbemails bleibt offen (siehe Hotel-Ansprache: Kooperations-Einwilligung ohne Double-Opt-in); die Anfrage-Mail bleibt frei von Vertrieb (D1).
+
 ### StayAPI: kein Einsatz (Entscheidung Daniel 06.11.2026)
 Geprüft in `docs/vorschlag-stayapi.md`. Daten stammen aus automatischer Abfrage öffentlicher Portalseiten, ohne Rechte an den Inhalten; nutzbar wäre im Kern nur die Zuordnung für Partnerlinks, das Risiko ist dafür zu hoch. Noten und Live-Preise nur über offizielle Wege (Tripadvisor steht oben im Backlog).
 
