@@ -37,7 +37,8 @@ function svg({ eyebrow, title, subtitle, score, label, site }) {
   const logoSvg = dash > 0
     ? `${esc(logo.slice(0, dash))}<tspan fill="${c['logo-accent']}">-</tspan>${esc(logo.slice(dash + 1))}`
     : esc(logo);
-  const lines = wrap(title, score !== null && score !== undefined ? 22 : 30, 3);
+  // Breite: 66 px fett sind etwa 44 px je Zeichen, bei 1056 px Platz also höchstens 24 Zeichen
+  const lines = wrap(title, score !== null && score !== undefined ? 22 : 24, 3);
   const font = "'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
   const titleSvg = lines.map((l, i) => `<text x="72" y="${250 + i * 78}" font-family="${font}" font-size="66" font-weight="700" fill="#ffffff">${esc(l)}</text>`).join('');
   const scoreSvg = score !== null && score !== undefined
