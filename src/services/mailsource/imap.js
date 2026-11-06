@@ -31,4 +31,28 @@ async function run(handler) {
   }
 }
 
-module.exports = { run };
+// Postfach nur lesen: Nichts wird verschoben oder als gelesen markiert (Mails von den letzten sinceDays Tagen).
+// Für Postfächer, die jemand auch selbst nutzt; doppelte Mails fängt ingest über die Message-ID ab.
+async function readOnly(account, handler, { sinceDays = 14, max = 200 } = {}) {
+  const c = config.mail.inbound.imap;
+  if (!c.host || !account.user || !account.pass) throw new Error('Weiteres Postfach ist nicht konfiguriert.');
+  const client = new ImapFlow({ host: c.host, port: c.port, secure: c.port === 993, auth: { user: account.user, pass: account.pass }, logger: false });
+  await client.connect();
+  try {
+    const lock = await client.getMailboxLock(c.folder, { readOnly: true });
+    try {
+      const since = new Date(Date.now() - sinceDays * 24 * 3600 * 1000);
+      const uids = (await client.search({ since }, { uid: true })) || [];
+      for (const uid of uids.slice(-max)) {
+        const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
+        if (msg && msg.source) await handler(msg.source);
+      }
+    } finally {
+      lock.release();
+    }
+  } finally {
+    await client.logout().catch(() => {});
+  }
+}
+
+module.exports = { run, readOnly };

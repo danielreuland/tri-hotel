@@ -88,3 +88,27 @@ test('Abmeldelink: gilt für alle Mails außer Antworten und selbst ausgelösten
   for (const t of ['verify', 'live', 'rejected', 'duplicate', 'review-verify', 'lead-verify', 'request-verify']) assert.equal(mailer.optOutApplies(t, null), false, t);
   assert.equal(mailer.optOutApplies('message', '<id@x>'), false, 'Antwort auf eine Mail des Betriebs');
 });
+
+test('mailbox.isRelevantMatch: nur Mails mit Bezug zu uns kommen aus dem privaten Postfach', () => {
+  assert.equal(mb.isRelevantMatch({ entity_id: 'e' }), true);
+  assert.equal(mb.isRelevantMatch({ inquiry_id: 'i' }), true);
+  assert.equal(mb.isRelevantMatch({ camp_provider_id: 'c' }), true);
+  assert.equal(mb.isRelevantMatch({ email_log_id: 76 }), true, 'Rückläufer einer Mail ohne Objekt');
+  assert.equal(mb.isRelevantMatch({ persona_id: 'p', matched_by: null }), false, 'nur an die Persona adressiert: private Post');
+  assert.equal(mb.isRelevantMatch(null), false);
+});
+
+test('mailbox.ingest: onlyRelevant speichert Mail ohne Bezug nicht, ohne die Option wie bisher', async (t) => {
+  const db = require('../src/db');
+  const inserts = [];
+  t.mock.method(db, 'one', async (sql, params) => {
+    if (/INSERT INTO mail_messages/.test(sql)) { inserts.push(params); return { id: params[0] }; }
+    return null;
+  });
+  t.mock.method(db, 'many', async () => []);
+  const parsed = { messageId: '<p1@x.example>', from: { value: [{ address: 'kollege@privat.example', name: 'Kollege' }] }, to: { value: [{ address: 'daniel@tri-hotel.de' }] }, subject: 'Bewerbung', text: 'Hallo', date: new Date(), headers: new Map(), attachments: [] };
+  assert.equal(await mb.ingest(parsed, 'imap:daniel', { onlyRelevant: true }), null);
+  assert.equal(inserts.length, 0);
+  assert.ok(await mb.ingest(parsed, 'imap'));
+  assert.equal(inserts.length, 1);
+});

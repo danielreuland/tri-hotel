@@ -48,6 +48,12 @@ module.exports = {
         folder: process.env.IMAP_FOLDER || 'INBOX',
         doneFolder: process.env.IMAP_DONE_FOLDER || 'Verarbeitet',
       },
+      // Weiteres Postfach (Absender der ersten Anfrage-Mail, z. B. daniel@): wird nur gelesen, siehe services/mailbox.js
+      extra: {
+        user: process.env.IMAP_EXTRA_USER || null,
+        pass: process.env.IMAP_EXTRA_PASS || null,
+        days: Number(process.env.IMAP_EXTRA_DAYS || 14),
+      },
     },
   },
   llm: {

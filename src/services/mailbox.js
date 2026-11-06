@@ -149,7 +149,13 @@ function textOf(parsed) {
 }
 
 // Eine geparste Mail (mailparser-Format) speichern. Rückgabe: Zeile oder null (bereits vorhanden)
-async function ingest(parsed, source) {
+// Gehört die Mail zu uns? Bezug zu einem Objekt, einer Anfrage, einem Camp-Anbieter oder einer unserer versendeten Mails
+function isRelevantMatch(m) {
+  return Boolean(m && (m.entity_id || m.inquiry_id || m.camp_provider_id || m.email_log_id));
+}
+
+// onlyRelevant: Mail ohne Bezug nicht speichern (privates Postfach, siehe poll)
+async function ingest(parsed, source, { onlyRelevant = false } = {}) {
   const messageId = parsed.messageId ? (extractIds(parsed.messageId)[0] || parsed.messageId) : null;
   if (messageId && await db.one('SELECT 1 FROM mail_messages WHERE message_id = $1', [messageId])) return null;
   const from = (parsed.from && parsed.from.value && parsed.from.value[0]) || {};
@@ -166,6 +172,7 @@ async function ingest(parsed, source) {
     const log = inner.length ? await dbLookups.byMessageIds(inner) : null;
     if (log) Object.assign(m, { email_log_id: log.id, entity_id: log.entity_id, inquiry_id: log.inquiry_id, camp_provider_id: log.camp_provider_id, persona_id: log.persona_id, matched_by: 'thread' });
   }
+  if (onlyRelevant && !isRelevantMatch(m)) return null;
   const id = crypto.randomUUID();
   const attachments = kind === 'mail' ? await saveAttachments(id, parsed.attachments) : [];
   const row = await db.one(
@@ -207,6 +214,24 @@ async function poll() {
       return false;
     }
   });
+  // Weiteres Postfach (z. B. daniel@): nur lesen, nur Mails mit Bezug zu uns übernehmen
+  const extra = config.mail.inbound.extra;
+  if (extra && extra.user && extra.pass && source.readOnly) {
+    try {
+      await source.readOnly(extra, async (raw) => {
+        try {
+          const parsed = await simpleParser(raw);
+          if (await ingest(parsed, `${provider}:${extra.user}`, { onlyRelevant: true })) r.stored += 1;
+        } catch (err) {
+          r.errors += 1;
+          console.error('[mailbox] Mail aus weiterem Postfach nicht verarbeitet:', err.message);
+        }
+      }, { sinceDays: extra.days });
+    } catch (err) {
+      r.errors += 1;
+      console.error('[mailbox] Weiteres Postfach nicht lesbar:', err.message);
+    }
+  }
   return r;
 }
 
@@ -318,6 +343,7 @@ async function purge() {
 }
 
 module.exports = {
+  isRelevantMatch,
   KINDS, STATUS, MATCHED_BY, FILTERS, FREEMAIL,
   extractIds, domainOf, baseDomain, websiteDomain, classify, match, replySubject, quote,
   ingest, poll, list, counts, get, thread, assign, setStatus, compose, attachment, purge,
