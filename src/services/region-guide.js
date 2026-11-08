@@ -234,7 +234,7 @@ function bestTimeReasons(climate, formula, monthNames) {
 // region: { nameIn }, ranking: { entity_label_sg/pl, score_name, formula }, climate, bike (bikeFacts),
 // hotels: { count, top: { name, score } | null }, camps: [Name]
 // features: [{ q, label, entities: [Name] }] – Fragen zu einzelnen Leistungen (Vorlagen aus ranking.content.area_faq_features)
-// compare: { q, a } – Vergleich mit der Nachbarregion (aus dem Regionstext)
+// compare: [{ q, a }] – Vergleiche mit anderen Regionen (Redaktionstexte, auch einzeln als { q, a })
 function regionFaq({ region, ranking, climate = [], bike = null, hotels = { count: 0, top: null }, camps = [], features = [], compare = null }, monthNames) {
   const out = [];
   const mName = (c) => monthNames[Number(c.month) - 1];
@@ -302,7 +302,7 @@ function regionFaq({ region, ranking, climate = [], bike = null, hotels = { coun
         : `${f.label}: bei keinem der ${hotels.count} geprüften ${pl} ${region.nameIn} bestätigt.`,
     });
   }
-  if (compare) out.push(compare);
+  for (const c of [].concat(compare || [])) out.push(c);
   if (camps.length) {
     out.push({
       q: `Gibt es organisierte Trainingscamps ${region.nameIn}?`,

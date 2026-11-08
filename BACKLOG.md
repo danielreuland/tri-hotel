@@ -328,7 +328,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - Seite „Über tri-hotel“ (siehe Kleinere offene Punkte) mit Person, Foto und Triathlon-Hintergrund, verlinkt aus Footer und Methodik. Stand-Datum auf `/triscore`. Foto und Angaben kommen von Daniel.
 
 **Paket C: SEO-Inhalte**
-- **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_texts.compare_slug`/`compare_text` einer der beiden Regionen) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 8 Paare. `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
+- **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_compare_texts`, beliebig viele je Region, Migration 110) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 14 Paare (6 neue in Migration 111). `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
 - Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.
 - Hotel-Texte: 24 veröffentlicht, 8 Entwürfe prüfen und freigeben, für die übrigen 36 Hotels erzeugen (KI-Budget). Passt zum Titel „… im Check“.
 - Camp-Seite: FAQ um Stornierung und Versicherung ergänzen, Abschluss am Seitenende zur Anfrage statt nur zum Hotel-Ranking.

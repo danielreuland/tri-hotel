@@ -634,6 +634,7 @@ async function renderArea(req, res, ranking, area) {
   let rd = null;
   let regionCamps = [];
   let text = null;
+  let compares = [];
   let faq = [];
   if (area.type === 'region') {
     const [row] = await regionGuide.load(ranking, req.site.id, { slugs: [area.slug] });
@@ -645,17 +646,15 @@ async function renderArea(req, res, ranking, area) {
     }
     if (res.locals.campGuide) regionCamps = (await camps.list(req.site.id)).filter((p) => (p.regions || []).includes(area.name));
     const t = await regionText.published(area.region.id);
-    if (t) {
-      const other = t.compare_slug ? await areas.region(req.site.id, t.compare_slug) : null;
-      text = { ...t, blocks: describer.parseBody(t.body),
-        compare: other && t.compare_text ? { name: other.name, text: t.compare_text, href: `/trainingsregionen/vergleich/${regionGuide.pairSlug([area.slug, other.slug])}` } : null };
-    }
+    if (t) text = { ...t, blocks: describer.parseBody(t.body) };
+    compares = (await regionText.comparesFor(req.site.id, area.region))
+      .map((c) => ({ ...c, href: `/trainingsregionen/vergleich/${regionGuide.pairSlug([area.slug, c.slug])}` }));
     faq = regionGuide.regionFaq({
       region: area, ranking, climate: rd ? rd.climate : [], bike: rd ? rd.bike : null,
       hotels: { count: d.count, top: d.ranked[0] ? { name: d.ranked[0].name, score: d.ranked[0].score } : null },
       camps: regionCamps.map((p) => p.name),
       features: await featureQuestions(ranking, content.area_faq_features, d, fill),
-      compare: text && text.compare ? { q: fill(content.area_faq_compare || '{name} oder {andere}?', { andere: text.compare.name }), a: text.compare.text } : null,
+      compare: compares.map((c) => ({ q: fill(content.area_faq_compare || '{name} oder {andere}?', { andere: c.name }), a: c.text })),
     }, MONTHS_DE);
   }
   const siteUrl = res.locals.siteUrl;
@@ -683,7 +682,7 @@ async function renderArea(req, res, ranking, area) {
       ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
       ...(faq.length ? [seo.faqLd(faq)] : []),
     ],
-    heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
+    heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, compares, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
     // Land mit gleichnamiger Region (z. B. Zypern) nur einmal zeigen
     countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug) && !ov.regions.some((r) => r.name === c.name)),

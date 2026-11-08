@@ -98,13 +98,13 @@
   <p class="muted"><small>Redaktionstext, Stand <%= new Date(text.updated_at).toLocaleDateString('de-DE') %>. Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.</small></p>
 </section>
 <% } %>
-<% if (text && text.compare) { %>
-<section id="vergleich" class="area-text">
-  <h2><%= area.name %> oder <%= text.compare.name %>?</h2>
-  <p><%= text.compare.text %></p>
-  <p><a class="btn small secondary" href="<%= text.compare.href %>"><%= area.name %> und <%= text.compare.name %> direkt vergleichen →</a></p>
+<% compares.forEach(function (c, i) { %>
+<section <%- i === 0 ? 'id="vergleich" ' : '' %>class="area-text">
+  <h2><%= area.name %> oder <%= c.name %>?</h2>
+  <p><%= c.text %></p>
+  <p><a class="btn small secondary" href="<%= c.href %>"><%= area.name %> und <%= c.name %> direkt vergleichen →</a></p>
 </section>
-<% } %>
+<% }) %>
 
 <% if (rd) { var bt = rd.reasons; %>
 <section id="reisezeit">
