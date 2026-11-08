@@ -234,6 +234,35 @@ function clickSource({ von, referer } = {}) {
   return host(von) || host(referer) || 'direkt';
 }
 
+// Zählt dieser Aufruf als Klick eines Menschen? Bots und Vorschauen nicht, Aufrufe aus dem Admin nicht, und bei Browsern
+// mit Fetch-Metadaten nur eine Navigation durch einen echten Klick (Sec-Fetch-User). Programme, die alle Links einer Seite
+// in einer Sekunde abrufen (z. B. Sicherheits-Scanner aus Rechenzentren), geben sich als Browser aus, klicken aber nicht.
+const BOT_UA = /bot|crawl|spider|preview|slurp|facebookexternalhit|headless|python|curl|wget|go-http|java\/|okhttp|scan/i;
+function isCountableClick({ userAgent = '', method = 'GET', fetchMode = null, fetchUser = null, admin = false } = {}) {
+  if (!userAgent || BOT_UA.test(userAgent) || admin) return false;
+  if (method === 'GET' && fetchMode && fetchUser !== '?1') return false;
+  return true;
+}
+
+// Gleiche Adresse, gleiches Ziel, gleicher Tag: nur ein Klick (Doppelklicks, wiederholte Abrufe). Gilt je App-Prozess.
+const seen = new Map();
+function firstClickToday(ip, key, now = Date.now()) {
+  const day = new Date(now).toISOString().slice(0, 10);
+  const k = `${day}|${ip}|${key}`;
+  if (seen.has(k)) return false;
+  if (seen.size > 20000) seen.clear();
+  seen.set(k, true);
+  return true;
+}
+
+// Request -> darf gezählt werden (Bot-Regeln und ein Klick je Adresse, Ziel und Tag)
+function countable(req, key) {
+  return isCountableClick({
+    userAgent: req.get('user-agent') || '', method: req.method, fetchMode: req.get('sec-fetch-mode') || null,
+    fetchUser: req.get('sec-fetch-user') || null, admin: Boolean(req.session && req.session.admin),
+  }) && firstClickToday(req.ip, key);
+}
+
 async function countClick(link, source = '') {
   const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
   await db.query(
@@ -265,4 +294,4 @@ async function stats(days = 30) {
   return { byProgram, top, bySource };
 }
 
-module.exports = { KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, stats };
+module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, stats };

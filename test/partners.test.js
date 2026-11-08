@@ -176,3 +176,21 @@ test('clickSource: Parameter ?von vor Referer, nur Hostname ohne www, sonst „d
   assert.equal(p.clickSource({ von: 'ohnepunkt' }), 'direkt');
   assert.equal(p.clickSource({}), 'direkt');
 });
+
+test('isCountableClick: echter Klick zählt, Bots, Admin und Abrufe ohne Klick nicht', () => {
+  const chrome = 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+  assert.equal(partners.isCountableClick({ userAgent: chrome, fetchMode: 'navigate', fetchUser: '?1' }), true, 'Klick im Browser');
+  assert.equal(partners.isCountableClick({ userAgent: chrome }), true, 'älterer Browser ohne Fetch-Metadaten');
+  assert.equal(partners.isCountableClick({ userAgent: chrome, fetchMode: 'navigate', fetchUser: null }), false, 'Abruf ohne Klick (Scanner, Vorabladen)');
+  assert.equal(partners.isCountableClick({ userAgent: chrome, method: 'POST', fetchMode: 'no-cors' }), true, 'Zählung per Beacon beim Klick');
+  assert.equal(partners.isCountableClick({ userAgent: chrome, fetchMode: 'navigate', fetchUser: '?1', admin: true }), false, 'Admin testet');
+  for (const ua of ['', 'Googlebot/2.1', 'python-requests/2.31', 'HeadlessChrome/120']) assert.equal(partners.isCountableClick({ userAgent: ua }), false, ua);
+});
+
+test('firstClickToday: gleiche Adresse und gleiches Ziel zählen einmal am Tag', () => {
+  const t = Date.parse('2026-11-07T11:23:33Z');
+  assert.equal(partners.firstClickToday('5.102.169.1', 'club/check24/booking', t), true);
+  assert.equal(partners.firstClickToday('5.102.169.1', 'club/check24/booking', t + 500), false);
+  assert.equal(partners.firstClickToday('5.102.169.1', 'playitas/check24/booking', t), true, 'anderes Ziel');
+  assert.equal(partners.firstClickToday('5.102.169.1', 'club/check24/booking', t + 86400000), true, 'nächster Tag');
+});
