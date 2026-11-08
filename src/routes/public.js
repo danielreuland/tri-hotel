@@ -123,7 +123,7 @@ async function renderList(req, res, ranking) {
   // Startseite des Host-Rankings ist die Bereichsübersicht; die Liste hat eigene Texte (content.list_title, list_h1,
   // list_description, Platzhalter {anzahl}, {objekte}, {objekt}, {score}), damit sie nicht mit der Startseite konkurriert
   const listVars = { anzahl: allRanked.length, objekte: ranking.entity_label_pl, objekt: ranking.entity_label_sg, score: ranking.score_name };
-  const defaultDesc = `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`;
+  const defaultDesc = `${allRanked.length} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Herkunft jedes Werts und Formel öffentlich.`;
   const listTitle = isHost
     ? (content.list_title ? fillMethod(content.list_title, listVars) : `${ranking.entity_label_pl} im Ranking nach ${ranking.score_name}`)
     : (content.meta_title || ranking.name);
@@ -192,7 +192,7 @@ async function renderHome(req, res, ranking) {
   res.render('public/home', {
     title: content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name),
     description: content.meta_description
-      || `${stats.entities} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Jeder Wert mit Quelle, Formel öffentlich.`,
+      || `${stats.entities} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Herkunft jedes Werts und Formel öffentlich.`,
     canonical: `${siteUrl}/`,
     jsonLd: [
       seo.websiteLd(req.site, siteUrl, listHref),
@@ -208,11 +208,16 @@ async function renderHome(req, res, ranking) {
 // Suchparameter der alten Startseite (Ranking auf „/“) gehören zur Liste
 const LIST_PARAMS = ['q', 'land', 'monat', 'min', 'l', 'wetter', 'regen'];
 
-// Anzeige der Vertrauensstufe (Konzept: Datenqualität)
+// Herkunft eines Werts für die Hotelseite (Fundstelle als Link folgt dahinter, siehe entity.ejs)
 function trustText(fact, ranking) {
   switch (fact.trust_level) {
     case 1: return `vom ${ranking.entity_label_sg} bestätigt`;
-    case 2: return `geprüft am ${new Date(fact.checked_at).toLocaleDateString('de-DE')}`;
+    case 2: {
+      const day = new Date(fact.checked_at).toLocaleDateString('de-DE');
+      // ohne Beleg ausdrücklich als Urteil kennzeichnen; ein Vermerk (z. B. Telefonat) wird nicht veröffentlicht
+      if (fact.editorial_assessment && !fact.evidence_url && !fact.evidence_text) return `Einschätzung der Redaktion, Stand ${day}`;
+      return `geprüft am ${day}${!fact.evidence_url && fact.evidence_text ? ' · Beleg liegt uns vor' : ''}`;
+    }
     case 3: return 'von Nutzern bestätigt';
     default: return 'automatisch ermittelt';
   }
@@ -337,7 +342,7 @@ async function renderEntity(req, res, ranking, slug) {
     }) || seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
     description: text && text.summary ? text.summary : seo.descriptionWithList(result.eligible
       ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}.`
-      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich.`, topFeatures, 'Geprüfte Fakten mit Quelle.'),
+      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich.`, topFeatures, 'Geprüfte Fakten, Herkunft je Wert.'),
     canonical,
     ogImage,
     ogType: 'article',

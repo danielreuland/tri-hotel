@@ -444,9 +444,11 @@
                       <% Object.keys(TRUST_LABELS).forEach(function (t) { %><option value="<%= t %>" <%= (f ? f.trust_level : 2) == t ? 'selected' : '' %>><%= TRUST_LABELS[t] %></option><% }) %>
                     </select>
                     <input name="<%= name %>[evidence_url]" type="url" placeholder="Fundstelle (URL)" value="<%= f ? f.evidence_url || '' : '' %>" style="margin-top:4px">
-                    <details style="margin-top:4px"><summary><small>Textausschnitt<%= f && f.evidence_text ? ' ✓' : '' %></small></summary>
-                      <textarea name="<%= name %>[evidence_text]" style="min-height:60px"><%= f ? f.evidence_text || '' : '' %></textarea>
+                    <details style="margin-top:4px"><summary><small>Textausschnitt oder Vermerk<%= f && f.evidence_text ? ' ✓' : '' %></small></summary>
+                      <textarea name="<%= name %>[evidence_text]" style="min-height:60px" placeholder="z. B. Satz von der Website oder „Telefonat mit der Rezeption, 05.11.“"><%= f ? f.evidence_text || '' : '' %></textarea>
                     </details>
+                    <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="<%= name %>[assessment]" <%= f && f.editorial_assessment ? 'checked' : '' %>> <small>Kein Beleg: als Einschätzung der Redaktion kennzeichnen</small></label>
+                    <% if (f && [1, 2].indexOf(f.trust_level) >= 0 && evidenceKind(f) === 'none') { %><small class="badge warn" title="Wert ohne Fundstelle, Vermerk oder Kennzeichnung als Einschätzung">Beleg fehlt</small><% } %>
                   <% } else { %><small class="muted"><%= s.type === 'bonus' ? 'berechnet' : 'Open-Meteo' %></small><% } %>
                 </td>
                 <td>

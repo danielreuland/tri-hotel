@@ -52,7 +52,7 @@
       <summary>So entsteht der <%= ranking.score_name %></summary>
       <p>Fakten-Score <strong><%= result.factScore === null ? '–' : Math.round(result.factScore) %></strong> aus geprüften Fakten · Vollständigkeit <strong><%= Math.round(result.completeness) %> %</strong> (ins Ranking ab <%= minCompleteness %> %)<% if (athleteUsed) { %> · Athleten-Score <strong><%= Math.round(result.athleteScore) %></strong> aus <%= reviewList.length %> Bewertungen<% } else if (reviewList.length) { %> · Bewertungen fließen noch nicht ein<% } %>.</p>
       <% if (result.provisional) { %><p>Vorläufig: Der Score beruht bisher nur auf geprüften Fakten. Sobald genug Bewertungen vorliegen, fließen sie ein.</p><% } %>
-      <p><a href="#fakten">Alle Fakten mit Quelle</a> · <a href="<%= scorePath %>">Formel und Kriterien</a></p>
+      <p><a href="#fakten">Alle Fakten und ihre Herkunft</a> · <a href="<%= scorePath %>">Formel und Kriterien</a></p>
     </details>
   </section>
   <% if (hasBook) { %>

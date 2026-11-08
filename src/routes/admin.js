@@ -18,6 +18,7 @@ const featureService = require('../services/features');
 const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
+const evidence = require('../lib/evidence');
 const describer = require('../services/describer');
 const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
@@ -383,6 +384,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     IMAGE_SOURCES,
     CONSENT_TYPES: require('../lib/consents').TYPES,
     describeValue: scoring.describeValue,
+    evidenceKind: evidence.kind,
     SUMMARY_MAX: describer.SUMMARY_MAX,
     MAX_IMAGES: media.MAX_PER_ENTITY,
     flash: req.query.ok || null,
@@ -417,6 +419,7 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
   const input = req.body.facts || {};
   const adminId = req.session.admin.id;
   const errors = [];
+  const missingEvidence = [];
 
   await db.tx(async (client) => {
     for (const c of criteria) {
@@ -439,28 +442,39 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
       const evidenceUrl = normalizeUrl(f.evidence_url) || null;
       const evidenceText = String(f.evidence_text || '').trim().slice(0, 1000) || null;
       const disputed = f.disputed === 'on';
+      // „Einschätzung der Redaktion“ nur, solange es keinen Beleg gibt
+      const assessment = f.assessment === 'on' && !evidenceUrl && !evidenceText;
       const valueChanged = !old || JSON.stringify(old.value) !== JSON.stringify(value);
-      const changed =
-        valueChanged || old.trust_level !== trust || old.evidence_url !== evidenceUrl || old.evidence_text !== evidenceText || old.disputed !== disputed;
+      const changed = valueChanged || old.trust_level !== trust || old.evidence_url !== evidenceUrl || old.evidence_text !== evidenceText
+        || old.disputed !== disputed || Boolean(old.editorial_assessment) !== assessment;
       if (!changed) continue;
+      // Neuer oder geänderter Wert braucht Fundstelle, Vermerk oder die Kennzeichnung als Einschätzung
+      if ((valueChanged || old.trust_level !== trust) && evidence.missing({ trust, url: evidenceUrl, text: evidenceText, assessment })) {
+        missingEvidence.push(c.label);
+        continue;
+      }
       const row = await client.query(
-        `INSERT INTO entity_facts (entity_id, criterion_id, value, source, trust_level, evidence_url, evidence_text, disputed, checked_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+        `INSERT INTO entity_facts (entity_id, criterion_id, value, source, trust_level, evidence_url, evidence_text, disputed, editorial_assessment, checked_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
          ON CONFLICT (entity_id, criterion_id) DO UPDATE SET value = EXCLUDED.value, source = EXCLUDED.source,
            trust_level = EXCLUDED.trust_level, evidence_url = EXCLUDED.evidence_url, evidence_text = EXCLUDED.evidence_text,
-           disputed = EXCLUDED.disputed,
+           disputed = EXCLUDED.disputed, editorial_assessment = EXCLUDED.editorial_assessment,
            checked_at = CASE WHEN entity_facts.value <> EXCLUDED.value OR entity_facts.trust_level <> EXCLUDED.trust_level
                              THEN now() ELSE entity_facts.checked_at END
          RETURNING id`,
-        [sub.entity_id, c.id, JSON.stringify(value), TRUST_SOURCE[trust], trust, evidenceUrl, evidenceText, disputed]
+        [sub.entity_id, c.id, JSON.stringify(value), TRUST_SOURCE[trust], trust, evidenceUrl, evidenceText, disputed, assessment]
       );
       await logAction(adminId, 'fact', row.rows[0].id, 'edit_fact', {
-        criterion: c.code, old: old ? { value: old.value, trust: old.trust_level } : null, new: { value, trust },
+        criterion: c.code, old: old ? { value: old.value, trust: old.trust_level } : null, new: { value, trust, evidence: evidence.kind({ evidence_url: evidenceUrl, evidence_text: evidenceText, editorial_assessment: assessment }) },
       }, client);
     }
   });
   await rankings.recomputeEntity(sub.entity_id, sub.ranking_id);
-  const q = errors.length ? `fehler=${encodeURIComponent('Ungültige Werte: ' + errors.join(', '))}` : 'ok=Fakten+gespeichert';
+  const problems = [
+    errors.length ? `Ungültige Werte: ${errors.join(', ')}` : null,
+    missingEvidence.length ? `Nicht gespeichert, Beleg fehlt (Fundstelle, Vermerk oder „Einschätzung der Redaktion“): ${missingEvidence.join(', ')}` : null,
+  ].filter(Boolean);
+  const q = problems.length ? `fehler=${encodeURIComponent(problems.join(' · '))}` : 'ok=Fakten+gespeichert';
   res.redirect(`/admin/meldungen/${sub.id}?${q}#fakten`);
 }));
 
