@@ -192,6 +192,8 @@ function profileFlags(vars) {
 function fallbackDraft({ entity, ranking, criteria, language, brand, askPhotos, persona, template, confirm, facts, profile, keyFacts }) {
   const t = T[language] || T.de;
   const vars = template ? templateVars({ entity, ranking, brand, persona, language, confirm, profile, keyFacts }) : null;
+  // Leistungsnamen gibt es nur auf Deutsch: ohne Übersetzung des Modells entfällt der Satz in fremdsprachigen Mails
+  if (vars && language !== 'de' && !String(keyFacts || '').trim()) vars.kernfakten = null;
   return {
     subject: template ? aimail.fill(template.subject, vars).slice(0, 150) : t.subject(entity),
     body: template ? aimail.fill(template.body, vars, { ...profileFlags(vars), fotos: askPhotos, bestaetigen: confirmCount(confirm) > 0 }) : t.body(entity, ranking, brand, askPhotos, personaOr(persona, brand).name),

@@ -1135,6 +1135,17 @@ router.post('/anfragen/:inquiryId/verwerfen', wrap(async (req, res) => {
   res.redirect(withParam(backOrNull(req.body.back) || '/admin/anfragen', 'ok', 'Entwurf verworfen'));
 }));
 
+router.post('/anfragen/:inquiryId/erneut-senden', wrap(async (req, res) => {
+  const back = safeBack(req.body.back);
+  if (!UUID_RE.test(req.params.inquiryId)) return res.redirect(back);
+  try {
+    const r = await inquiries.resend(req.params.inquiryId, { addressChecked: req.body.address_checked === 'on' }, req.session.admin.id);
+    res.redirect(withParam(back, 'ok', `Anfrage wird erneut an ${r.recipient} gesendet.`));
+  } catch (err) {
+    res.redirect(withParam(back, 'fehler', err.message));
+  }
+}));
+
 router.post('/anfragen/:inquiryId/schliessen', wrap(async (req, res) => {
   await inquiries.close(req.params.inquiryId, req.session.admin.id);
   res.redirect(safeBack(req.body.back));

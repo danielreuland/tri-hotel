@@ -692,6 +692,26 @@ async function acceptConfirmations(inquiryId, adminId) {
   return { values: values.length, features: features.length };
 }
 
+// Fehlgeschlagene Anfrage (z. B. unzustellbar) erneut senden: derselbe freigegebene Text an die aktuelle Kontakt-E-Mail,
+// mit neuem Antwortlink; die Erinnerung läuft ab dem neuen Versand. Nur nach ausdrücklicher Prüfung der Adresse im Admin.
+async function resend(inquiryId, { addressChecked }, adminId) {
+  const inq = await db.one('SELECT * FROM inquiries WHERE id = $1', [inquiryId]);
+  if (!inq || inq.status !== 'failed') throw new Error('Nur fehlgeschlagene Anfragen lassen sich erneut senden.');
+  const entity = await db.one('SELECT contact_email, inquiry_opt_out_at FROM entities WHERE id = $1', [inq.entity_id]);
+  if (!isEmail(entity && entity.contact_email)) throw new Error('Bitte zuerst die Kontakt-E-Mail des Betreibers eintragen.');
+  if (entity.inquiry_opt_out_at) throw new Error(OPT_OUT_ERROR);
+  if (!addressChecked) throw new Error('Bitte bestätigen, dass die E-Mail-Adresse geprüft ist.');
+  const open = await db.one(`SELECT status FROM inquiries WHERE entity_id = $1 AND ranking_id = $2 AND status IN ('draft','queued','sent')`,
+    [inq.entity_id, inq.ranking_id]);
+  if (open) throw new Error(open.status === 'draft' ? 'Es gibt schon einen neuen Entwurf an diesen Betreiber.' : 'Es läuft bereits eine offene Anfrage an diesen Betreiber.');
+  await db.query(
+    `UPDATE inquiries SET status = 'queued', recipient = $2, error = NULL, reminder_sent_at = NULL, reminder_token_hash = NULL,
+       first_opened_at = NULL, updated_at = now() WHERE id = $1 AND status = 'failed'`, [inq.id, entity.contact_email]);
+  await logAction(adminId, 'inquiry', inq.id, 'resend_inquiry', { old_recipient: inq.recipient, recipient: entity.contact_email, error: inq.error });
+  await enqueue('inquiry-send', { inquiryId: inq.id });
+  return { recipient: entity.contact_email, changed: entity.contact_email !== inq.recipient };
+}
+
 async function close(inquiryId, adminId) {
   await db.query(`UPDATE inquiries SET status = 'closed', updated_at = now() WHERE id = $1 AND status IN ('queued','sent','failed')`, [inquiryId]);
   await logAction(adminId, 'inquiry', inquiryId, 'close_inquiry');
@@ -782,6 +802,7 @@ async function withdrawConsent(consentId, adminId, note) {
 }
 
 module.exports = {
+  resend,
   reminderVars, isHumanVisit, markOpened,
   createDraft,
   startDraft,

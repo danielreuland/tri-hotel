@@ -86,13 +86,16 @@ test('feste Vorlage: Text wörtlich, Modelltext wird ignoriert, übersetzte Leis
   assert.ok(!/KI|AI assistant/.test(out.body));
 });
 
-test('feste Vorlage: ohne Platz, Leistungen und öffentliche Seite fallen die Sätze weg; ohne Modell gleicher Text mit Originalbezeichnungen', () => {
+test('feste Vorlage: ohne Platz, Leistungen und öffentliche Seite fallen die Sätze weg; ohne Modell keine deutschen Leistungen in Englisch', () => {
   const agent = require('../src/services/inquiry-agent');
   const none = agent.sanitizeDraft(null, fixedCtx({ profile: { keyFacts: [], privacyUrl: 'https://x.test/privacy' } }));
   assert.match(none.body, /Hotel Muster ist erfasst\./);
   assert.ok(!/Platz|Erfasst:|Seite:|\{\{(platz|score|gesamt|hotelseite|kernfakten)\}\}/.test(none.body), none.body);
   const noModel = agent.sanitizeDraft(null, fixedCtx());
-  assert.match(noModel.body, /Erfasst: 50-m-Becken, Sauna\./);
+  assert.ok(!/Erfasst:|50-m-Becken/.test(noModel.body), noModel.body);
+  assert.match(noModel.body, /Hotel Muster hat Score 78/);
+  const noModelDe = agent.sanitizeDraft(null, fixedCtx({ language: 'de' }));
+  assert.match(noModelDe.body, /Erfasst: 50-m-Becken, Sauna\./);
 });
 
 test('Prompt der festen Vorlage: kein Mustertext, Übersetzung der Leistungen nur außerhalb von Deutsch', () => {

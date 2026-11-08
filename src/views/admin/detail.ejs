@@ -705,6 +705,18 @@
           <% var inqImages = images.filter(function (i) { return i.inquiry_id === inq.id }); if (inqImages.length) { %>
             <p style="margin:8px 0 0"><small><%= inqImages.length %> Foto(s) mit Nutzungserlaubnis eingegangen – <a href="#bilder">unten bei Bilder freigeben</a>.</small></p>
           <% } %>
+          <% if (inq.status === 'failed') { var newAddr = entity.contact_email && entity.contact_email !== inq.recipient; %>
+            <form method="post" action="/admin/anfragen/<%= inq.id %>/erneut-senden" style="margin-top:8px">
+              <input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen">
+              <% if (entity.contact_email) { %>
+                <p style="margin:0 0 6px"><small>Bisher an <%= inq.recipient %><%= newAddr ? '' : ' (Kontakt-E-Mail unverändert)' %>. Erneut senden an <strong><%= entity.contact_email %></strong><%= newAddr ? ' (neue Adresse)' : '' %> – derselbe Text, neuer Antwortlink. Adresse ändern: Stammdaten → Kontakt-E-Mail.</small></p>
+                <label class="inline" style="margin:0 0 6px"><input type="checkbox" name="address_checked" required> <small>E-Mail-Adresse ist geprüft</small></label>
+                <button class="btn small" type="submit">Erneut senden</button>
+              <% } else { %>
+                <p class="muted" style="margin:0"><small>Zum erneuten Senden zuerst in den Stammdaten eine geprüfte Kontakt-E-Mail eintragen.</small></p>
+              <% } %>
+            </form>
+          <% } %>
           <% if (['queued', 'sent', 'failed'].indexOf(inq.status) >= 0) { %>
             <form method="post" action="/admin/anfragen/<%= inq.id %>/schliessen" style="margin-top:8px"><input type="hidden" name="back" value="/admin/meldungen/<%= sub.id %>#anfragen"><button class="btn small secondary" type="submit">Anfrage schließen</button></form>
           <% } %>
