@@ -5,6 +5,8 @@ const config = require('../config');
 const rankings = require('../services/rankings');
 const areas = require('../services/areas');
 const camps = require('../services/camps');
+const regionText = require('../services/region-text');
+const regionGuide = require('../services/region-guide');
 const og = require('../services/og');
 const scoring = require('../services/scoring');
 const seo = require('../lib/seo');
@@ -55,8 +57,13 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
     for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, lastmod: r.lastmod, priority: '0.9' });
     for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, lastmod: c.lastmod, priority: '0.7' });
   }
-  // Übersicht der Trainingsregionen (Vergleichsseiten sind noindex)
-  if (res.locals.regionGuide) urls.push({ loc: `${base}/trainingsregionen`, priority: '0.9' });
+  // Übersicht der Trainingsregionen; Vergleiche nur mit Redaktionstext (alle anderen sind noindex)
+  if (res.locals.regionGuide) {
+    urls.push({ loc: `${base}/trainingsregionen`, priority: '0.9' });
+    for (const p of await regionText.comparePairs(site.id)) {
+      urls.push({ loc: `${base}/trainingsregionen/vergleich/${regionGuide.pairSlug(p.slugs)}`, lastmod: p.lastmod, priority: '0.6' });
+    }
+  }
   // Trainingscamps (falls die Site die Seite hat)
   if (res.locals.campGuide) {
     urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });

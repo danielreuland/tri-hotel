@@ -24,3 +24,9 @@ test('Grunddaten: Koordinaten-Treffer speichern oder als Vorschlag vorlegen', ()
   assert.match(basics.judge(hit('low'), null).reason, /Postleitzahl/);
   assert.equal(basics.judge({ lat: null, lng: null }, near).save, false, 'nichts gefunden');
 });
+
+test('Regionsvergleich: a-vs-b und b-vs-a haben dieselbe Adresse', () => {
+  const guide = require('../src/services/region-guide');
+  assert.equal(guide.pairSlug(['mallorca', 'costa-blanca']), 'costa-blanca-vs-mallorca');
+  assert.equal(guide.pairSlug(guide.parsePair('teneriffa-vs-gran-canaria')), 'gran-canaria-vs-teneriffa');
+});

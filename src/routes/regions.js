@@ -2,6 +2,7 @@
 // „Ich reise im …“ und Direktvergleich von 2–3 Regionen unter /trainingsregionen/vergleich/a-vs-b.
 const express = require('express');
 const guide = require('../services/region-guide');
+const regionText = require('../services/region-text');
 const seo = require('../lib/seo');
 const { MONTHS } = require('../lib/util');
 
@@ -19,6 +20,7 @@ function viewHelpers(ranking) {
     yearRange: guide.yearRange,
     bestText: (months) => seo.monthRanges(months, MONTHS),
     regionPath: (r) => `/region/${r.slug}`,
+    entityPath: (slug) => (ranking.is_default ? `/${ranking.entity_type}/${slug}` : `/rankings/${ranking.slug}/${slug}`),
     seaTip: (r) => `Wassertemperatur vor der Küste: Mittel aus ${r.seaPoints === 1 ? 'einem Küstenpunkt' : `${r.seaPoints} Küstenpunkten`} der Region `
       + '(Modellwert von Open-Meteo, Raster etwa 8–9 km). Am Strand und in flachen Buchten ist es im Sommer oft 1–2 °C wärmer, an windigen Küsten auch kühler.',
     climateTip: (r) => guide.climatePointNote(r.region),
@@ -73,6 +75,7 @@ router.get('/trainingsregionen/vergleich/:pair', wrap(async (req, res, next) => 
   if (canonicalPair !== req.params.pair) return res.redirect(301, `/trainingsregionen/vergleich/${canonicalPair}`);
   const siteUrl = res.locals.siteUrl;
   const heading = rows.map((r) => r.name).join(' vs. ');
+  const texts = await regionText.compareTexts(req.site.id, rows.map((r) => r.slug));
   const crumbs = [
     { name: ranking.name, url: `${siteUrl}/` },
     { name: 'Trainingsregionen', url: `${siteUrl}/trainingsregionen` },
@@ -82,10 +85,11 @@ router.get('/trainingsregionen/vergleich/:pair', wrap(async (req, res, next) => 
     title: `${heading} – Trainingsregionen im Vergleich`,
     description: `${heading}: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier und ${ranking.entity_label_pl} im direkten Vergleich.`,
     canonical: `${siteUrl}/trainingsregionen/vergleich/${canonicalPair}`,
-    // Kombinationen nicht indexieren (sonst sehr viele ähnliche Seiten)
-    noindex: true,
+    // Nur Paare mit Redaktionstext indexieren; alle anderen Kombinationen wären viele ähnliche Seiten ohne eigenen Inhalt
+    noindex: !texts.length,
+    robots: 'noindex, follow',
     jsonLd: [seo.breadcrumbLd(crumbs)],
-    rows, heading, ranking, crumbs,
+    rows, heading, ranking, crumbs, texts,
     metricKeys: ['avg_high_c', 'avg_low_c', 'rain_days', 'sunshine_h', 'wind_kmh', 'windy_days', 'sea_c'],
     ...viewHelpers(ranking),
   });

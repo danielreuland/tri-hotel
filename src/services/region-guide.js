@@ -372,9 +372,10 @@ async function load(ranking, siteId, { month = null, slugs = null } = {}) {
   });
 }
 
-// Vergleichs-URL: Slugs mit „-vs-“ verbunden (Slugs selbst enthalten kein „-vs-“)
+// Vergleichs-URL: Slugs alphabetisch mit „-vs-“ verbunden (Slugs selbst enthalten kein „-vs-“), damit a-vs-b und b-vs-a
+// dieselbe Adresse haben
 function pairSlug(slugs) {
-  return slugs.join('-vs-');
+  return [...slugs].sort().join('-vs-');
 }
 function parsePair(pair) {
   const slugs = String(pair || '').split('-vs-').map((s) => s.trim()).filter((s) => /^[a-z0-9-]+$/.test(s));

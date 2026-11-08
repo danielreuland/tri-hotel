@@ -11,6 +11,14 @@
   <p class="lead">Klima je Monat, Wasser, Wind, Radrevier und <%= ranking.entity_label_pl %> nebeneinander. Markiert ist jeweils die beste Reisezeit.</p>
 </section>
 
+<% if (texts.length) { %>
+<section id="einschaetzung" class="area-text">
+  <h2><%= rows.map(function (r) { return r.name; }).join(' oder ') %>?</h2>
+  <p class="muted"><small>Einschätzung der Redaktion</small></p>
+  <% texts.forEach(function (t) { %><p><%= t.text %></p><% }) %>
+</section>
+<% } %>
+
 <section>
   <h2>Auf einen Blick</h2>
   <div class="table-scroll">
@@ -23,7 +31,7 @@
         <tr><th>Pässe</th><% rows.forEach(function (r) { %><td><%= r.bike && r.bike.passes !== null ? fmt(r.bike.passes) : '–' %></td><% }) %></tr>
         <tr><th>Höhenunterschied</th><% rows.forEach(function (r) { %><td><%= r.bike && r.bike.reliefM !== null ? fmt(r.bike.reliefM) + ' m' : '–' %></td><% }) %></tr>
         <tr><th>Geprüfte <%= ranking.entity_label_pl %></th><% rows.forEach(function (r) { %><td><% if (r.hotels) { %><a href="<%= regionPath(r) %>"><%= r.hotels %></a><% } else { %>–<% } %></td><% }) %></tr>
-        <tr><th>Bester <%= scoreName %></th><% rows.forEach(function (r) { %><td><%= r.topScore !== null ? r.topScore : '–' %><% if (r.top) { %><br><small class="muted"><%= r.top.name %></small><% } %></td><% }) %></tr>
+        <tr><th>Bester <%= scoreName %></th><% rows.forEach(function (r) { %><td><%= r.topScore !== null ? r.topScore : '–' %><% if (r.top) { %><br><small><a href="<%= entityPath(r.top.slug) %>"><%= r.top.name %></a></small><% } %></td><% }) %></tr>
         <% if (locals.campGuide) { %><tr><th>Camp-Anbieter</th><% rows.forEach(function (r) { %><td><% if (r.camps) { %><a href="/trainingscamp?region=<%= encodeURIComponent(r.name) %>"><%= r.camps %></a><% } else { %>–<% } %></td><% }) %></tr><% } %>
       </tbody>
     </table>

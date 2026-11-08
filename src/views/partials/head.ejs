@@ -10,7 +10,7 @@
   <title><%= pageTitle %></title>
   <% if (metaDesc) { %><meta name="description" content="<%= metaDesc %>"><% } %>
   <% if (canonicalUrl) { %><link rel="canonical" href="<%= canonicalUrl %>"><% } %>
-  <% if ((typeof noindex !== 'undefined' && noindex) || locals.noindexAll) { %><meta name="robots" content="noindex, nofollow"><% } %>
+  <% if ((typeof noindex !== 'undefined' && noindex) || locals.noindexAll) { %><meta name="robots" content="<%= (!locals.noindexAll && locals.robots) || 'noindex, nofollow' %>"><% } %>
   <meta property="og:type" content="<%= locals.ogType || 'website' %>">
   <meta property="og:locale" content="de_DE">
   <% if (locals.site) { %><meta property="og:site_name" content="<%= site.name %>"><% } %>
