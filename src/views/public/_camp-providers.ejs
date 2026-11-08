@@ -43,7 +43,7 @@
       <% if (price) { %><p class="camp-price"><strong><%= price.price %></strong> <span class="muted">· <%= price.label %>, <%= price.duration %></span></p><% } %>
       <p class="camp-actions">
         <a href="/trainingscamp/anbieter/<%= p.slug %>">Profil &amp; Hotels</a>
-        <a class="btn small secondary" href="/go/camp/<%= p.slug %>" target="_blank" rel="<%= p.partner ? 'sponsored nofollow noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
+        <a class="btn small secondary" href="/go/camp/<%= p.slug %>" data-count="/go/camp/<%= p.slug %>/klick" target="_blank" rel="<%= p.partner ? 'sponsored nofollow noopener' : 'nofollow noopener' %>" data-goal="Camp-Anbieter">Zum Anbieter ↗</a>
       </p>
     </article>
   <% }) %>

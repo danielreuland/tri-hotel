@@ -120,12 +120,22 @@ router.get('/anfrage-bestaetigen/:token', wrap(async (req, res) => {
   res.render('public/lead-done', { title: 'Anfrage bestätigt', noindex: true, provider, status: r.status });
 }));
 
+// Klick auf einen Anbieter-Link unserer Seiten (Beacon aus public/js/site.js), nur Anzahl je Tag
+router.post('/go/camp/:slug/klick', wrap(async (req, res) => {
+  const p = req.site && /^[a-z0-9-]+$/.test(req.params.slug) && (await camps.bySlug(req.site.id, req.params.slug));
+  const partners = require('../services/partners');
+  if (p && partners.countable(req, `camp/${req.params.slug}`)) await camps.countClick(p.id, partners.clickSource({ referer: req.get('referer') }));
+  res.set('Cache-Control', 'no-store');
+  res.status(204).end();
+}));
+
 // Gezählte Weiterleitung zum Anbieter (nur Anzahl je Tag, keine personenbezogenen Daten)
 router.get('/go/camp/:slug', wrap(async (req, res, next) => {
   const p = req.site && (await camps.bySlug(req.site.id, req.params.slug));
   if (!p) return next();
   // Bots und Vorschau-Abrufe nicht zählen
-  if (require('../services/partners').countable(req, `camp/${req.params.slug}`)) await camps.countClick(p.id, require('../services/partners').clickSource({ von: req.query.von, referer: req.get('referer') }));
+  // Gezählt wird per Beacon (POST …/klick); hier nur Links von außen mit ?von=, siehe routes/partners.js
+  if (req.query.von && require('../services/partners').countable(req, `camp/${req.params.slug}`)) await camps.countClick(p.id, require('../services/partners').clickSource({ von: req.query.von, referer: req.get('referer') }));
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.redirect(302, camps.outboundUrl(p, req.site.primary_domain));
 }));

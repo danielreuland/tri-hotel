@@ -26,13 +26,17 @@ router.get('/go/:slug/:program/:kind?', wrap(async (req, res, next) => {
   if (!r || !kind || !/^[a-z0-9-]+$/.test(req.params.slug) || !/^[a-z0-9_-]+$/.test(req.params.program)) return next();
   const link = await partners.resolve(r.entity_type, req.params.slug, req.params.program, kind);
   if (!link) return next();
-  if (partners.countable(req, `${req.params.slug}/${req.params.program}/${kind}`)) await partners.countClick(link, partners.clickSource({ von: req.query.von, referer: req.get('referer') }));
+  // Klicks auf unseren Seiten zählt der Beacon (POST …/klick). Hier nur Links von außen mit ?von= (z. B. statische Seiten
+  // ohne unser Skript); Bot-Netze rufen /go/ direkt ohne Seitenaufruf ab und zählen so nicht mit.
+  if (req.query.von && partners.countable(req, `${req.params.slug}/${req.params.program}/${kind}`)) {
+    await partners.countClick(link, partners.clickSource({ von: req.query.von, referer: req.get('referer') }));
+  }
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.set('Cache-Control', 'no-store');
   res.redirect(302, partners.buildUrl(link, link.url, { slug: req.params.slug }));
 }));
 
-// Direktlinks (direct_link, z. B. Expedia): der Browser geht direkt zum Anbieter, gezählt wird per Beacon beim Klick
+// Zählung per Beacon beim Klick auf unseren Seiten (alle Partnerlinks; Direktlinks gehen ohne Zwischenadresse zum Anbieter)
 router.post(['/go/:slug/:program/klick', '/go/:slug/:program/bewertungen/klick'], wrap(async (req, res) => {
   const r = req.hostRanking;
   const kind = req.path.endsWith('/bewertungen/klick') ? 'reviews' : 'booking';

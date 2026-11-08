@@ -147,7 +147,8 @@ function groupLinks(links, slug) {
     g.kinds.push(l.kind);
     const go = `/go/${slug}/${l.code}${l.kind === 'reviews' ? '/bewertungen' : ''}`;
     g.href[l.kind] = l.direct_link ? buildUrl(l, l.url, { slug }) : go;
-    g.count[l.kind] = l.direct_link ? `${go}/klick` : null;
+    // Gezählt wird der Klick per Beacon aus der Seite (Bots, die Links nur abrufen, lösen ihn nicht aus)
+    g.count[l.kind] = `${go}/klick`;
   }
   return groups;
 }

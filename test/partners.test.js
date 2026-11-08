@@ -46,7 +46,7 @@ test('Partnerlinks gruppieren: Weiterleitung über /go oder direkt (z. B. Expedi
   assert.equal(ex.trademark_notice, 'EXPEDIA ist eine Marke …');
   const ta = groups.find((g) => g.code === 'tripadvisor');
   assert.equal(ta.href.reviews, '/go/hotel-x/tripadvisor/bewertungen');
-  assert.equal(ta.count.reviews, null);
+  assert.equal(ta.count.reviews, '/go/hotel-x/tripadvisor/bewertungen/klick', 'auch Links über /go/ werden per Beacon gezählt');
 });
 
 test('CJ-Deeplink: Zieladresse kodiert, Objekt-Slug als sid', () => {

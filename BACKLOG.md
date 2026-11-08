@@ -233,6 +233,14 @@ Gebaut (Migration 106): erster Aufruf des Antwortlinks im Browser (`inquiries.fi
 Stand 06.11. nach Abruf von `daniel@`: 29 Hotels angeschrieben, 4 Links geöffnet (Logdateien ab 30.10.), 0 Formulare abgeschickt, 1 Mail-Antwort (Las Gaviotas), 3 Unzustellbar (Tauern Spa, Allsun Hotel Bella Paguera, Portblue Club Pollentia – bei den beiden neuen Adresse prüfen, dann neu senden). Mail von „Valamar No-Reply“ hat keinen Bezug erkannt und bleibt draußen; Valamar Diamant bekommt deshalb die Erinnerung, außer Daniel schließt die Anfrage.
 Der Rückläufer-Test zeigte: Meldung kam nur in `daniel@` an, seit dem Abruf von `daniel@` erkennt der Admin sie.
 
+### Klickzählung ohne Bots (08.11.2026)
+Anlass: CHECK24 meldet 4 Aufrufe in 30 Tagen, das Dashboard mehr. Logauswertung 02.–08.11.: 65 von 68 gezählten /go/-Abrufen waren Bots
+(Bot-Netze über private Anschlüsse: je Adresse ein Abruf ohne jeden Seitenaufruf; Scanner aus einem Rechenzentrum, alle Links einer
+Seite in einer Sekunde). Bereinigt: diese 65 Klicks aus `outbound_clicks` entfernt (Probelauf, dann angewendet). Davor (bis 01.11.)
+gibt es keine Logdateien mehr; die Zahlen vom 29.–31.10. bleiben, wie sie sind.
+Neu: Klicks zählen auf unseren Seiten nur per Beacon beim Anklicken (alle Partner- und Camp-Links), der Abruf von /go/ zählt nur bei
+Links von außen mit `?von=`; dazu Fetch-Metadaten, Admin zählt nicht, ein Klick je Adresse, Ziel und Tag.
+
 ### Partnerbereich (Konzept von Daniel, 06.11.2026, noch nicht begonnen)
 Volltext: `docs/konzept-partnerbereich.md`. Gemeinsamer Partnerbereich für beide Portale in drei Phasen: (1) Seite „Für Partner“ mit Anfrageformular ohne Login, (2) Stripe und Affiliate-Codes, (3) Partner-Portal mit Login. Hauptprodukt: Bundle aus Premium-Profil, Badge-Paket und Kurzbericht für ca. 449 € im Jahr.
 Nächste Schritte laut Konzept: Katalog und Preise festlegen, Partnerseite umsetzen, Muster-PDF eines Berichts, erste Partner ansprechen, Datenmodell anlegen.
