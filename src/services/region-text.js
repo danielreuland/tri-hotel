@@ -33,7 +33,41 @@ async function comparesFor(siteId, region) {
   return rows.filter((r) => !seen.has(r.slug) && seen.add(r.slug)).map(({ slug, name, text }) => ({ slug, name, text }));
 }
 
-// Alle Regionspaare mit Text (für die Sitemap): [{ slugs: [a, b], lastmod }]
+// Admin-Schalter je Paar (Migration 113): false = trotz Text nicht indexieren; null = Standard
+async function pairSetting(siteId, slugs) {
+  const row = await db.one('SELECT indexable FROM region_pair_settings WHERE site_id = $1 AND pair = $2', [siteId, [...slugs].sort().join('-vs-')]);
+  return row ? row.indexable : null;
+}
+
+// Indexieren nur mit Text und ohne Abschaltung im Admin
+const pairIndexable = (hasText, setting) => Boolean(hasText) && setting !== false;
+
+// Alle Paare aktiver Regionen einer Site für den Admin: [{ pair, a, b, texts: [Regionsname], setting, indexable }]
+async function pairOverview(siteId) {
+  const regions = await db.many(`SELECT id, slug, name FROM regions WHERE site_id = $1 AND status = 'active' ORDER BY name`, [siteId]);
+  const texts = await db.many(
+    `SELECT r.slug, r.name, t.compare_slug FROM region_compare_texts t JOIN regions r ON r.id = t.region_id WHERE r.site_id = $1`, [siteId]);
+  const settings = new Map((await db.many('SELECT pair, indexable FROM region_pair_settings WHERE site_id = $1', [siteId])).map((s) => [s.pair, s.indexable]));
+  const out = [];
+  for (let i = 0; i < regions.length; i++) {
+    for (let j = i + 1; j < regions.length; j++) {
+      const [a, b] = [regions[i], regions[j]].sort((x, y) => x.slug.localeCompare(y.slug));
+      const pair = `${a.slug}-vs-${b.slug}`;
+      const by = texts.filter((t) => (t.slug === a.slug && t.compare_slug === b.slug) || (t.slug === b.slug && t.compare_slug === a.slug)).map((t) => t.name);
+      const setting = settings.has(pair) ? settings.get(pair) : null;
+      out.push({ pair, a, b, texts: by, setting, indexable: pairIndexable(by.length, setting) });
+    }
+  }
+  return out.sort((x, y) => (y.texts.length > 0) - (x.texts.length > 0) || x.pair.localeCompare(y.pair));
+}
+
+async function setPairIndexable(siteId, pair, indexable) {
+  await db.query(
+    `INSERT INTO region_pair_settings (site_id, pair, indexable) VALUES ($1, $2, $3)
+     ON CONFLICT (site_id, pair) DO UPDATE SET indexable = EXCLUDED.indexable, updated_at = now()`, [siteId, pair, indexable]);
+}
+
+// Alle indexierbaren Regionspaare (für die Sitemap): [{ slugs: [a, b], lastmod }]
 async function comparePairs(siteId) {
   const rows = await db.many(
     `SELECT r.slug, t.compare_slug, t.updated_at FROM region_compare_texts t
@@ -46,9 +80,16 @@ async function comparePairs(siteId) {
     const prev = pairs.get(key);
     if (!prev || row.updated_at > prev.lastmod) pairs.set(key, { slugs: key.split(' '), lastmod: row.updated_at });
   }
-  return [...pairs.values()].sort((a, b) => a.slugs.join().localeCompare(b.slugs.join()));
+  const off = new Set((await db.many('SELECT pair FROM region_pair_settings WHERE site_id = $1 AND NOT indexable', [siteId])).map((r) => r.pair));
+  return [...pairs.values()].filter((p) => !off.has(p.slugs.join('-vs-'))).sort((a, b) => a.slugs.join().localeCompare(b.slugs.join()));
 }
 
 const wordCount = (body) => String(body || '').replace(/^## .*$/gm, '').split(/\s+/).filter(Boolean).length;
 
-module.exports = { published, compareTexts, comparesFor, comparePairs, wordCount };
+// Redaktionstext einer Länderseite (Tabelle country_texts, je Ranking): { summary, body, faq: [{ q, a }], updated_at } oder null
+async function countryText(rankingId, country) {
+  return db.one(`SELECT summary, body, faq, updated_at FROM country_texts WHERE ranking_id = $1 AND country = $2 AND body <> ''`,
+    [rankingId, String(country || '').toUpperCase()]);
+}
+
+module.exports = { published, countryText, compareTexts, comparesFor, comparePairs, pairSetting, pairIndexable, pairOverview, setPairIndexable, wordCount };

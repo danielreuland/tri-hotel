@@ -31,6 +31,26 @@
 </div>
 
 <% var e = edit || { status: 'active', sort_order: 100 }; %>
+<h2 id="vergleiche">Vergleichsseiten</h2>
+<p class="muted">Paare mit Redaktionstext werden indexiert und stehen in der Sitemap, alle anderen bleiben erreichbar, aber <code>noindex</code>. Texte kommen per Migration (Tabelle <code>region_compare_texts</code>); ohne Text ist der Schalter wirkungslos.</p>
+<% pairs.forEach(function (g) { var withText = g.list.filter(function (p) { return p.texts.length; }); var without = g.list.filter(function (p) { return !p.texts.length; }); %>
+  <% if (pairs.length > 1) { %><h3><%= g.site.name %></h3><% } %>
+  <div class="table-scroll"><table>
+    <tr><th>Paar</th><th>Redaktionstext</th><th>Indexiert</th><th></th></tr>
+    <% withText.forEach(function (p) { %>
+      <tr>
+        <td><a href="/trainingsregionen/vergleich/<%= p.pair %>" target="_blank" rel="noopener"><%= p.a.name %> – <%= p.b.name %></a></td>
+        <td>von <%= p.texts.join(' und ') %></td>
+        <td><span class="badge <%= p.indexable ? 'good' : 'warn' %>"><%= p.indexable ? 'ja' : 'nein (abgeschaltet)' %></span></td>
+        <td><form method="post" action="/admin/regionen/vergleich" style="display:inline"><input type="hidden" name="site_id" value="<%= g.site.id %>"><input type="hidden" name="pair" value="<%= p.pair %>"><input type="hidden" name="indexable" value="<%= p.indexable ? '0' : '1' %>"><button class="btn small secondary" type="submit"><%= p.indexable ? 'Nicht indexieren' : 'Indexieren' %></button></form></td>
+      </tr>
+    <% }) %>
+  </table></div>
+  <details style="margin:8px 0 24px"><summary><%= without.length %> Paare ohne Text (noindex)</summary>
+    <p><% without.forEach(function (p, i) { %><%= i ? ' · ' : '' %><a href="/trainingsregionen/vergleich/<%= p.pair %>" target="_blank" rel="noopener"><%= p.a.name %> – <%= p.b.name %></a><% }) %></p>
+  </details>
+<% }) %>
+
 <h2 id="form"><%= edit && edit.id ? 'Region bearbeiten: ' + edit.name : 'Neue Region' %></h2>
 <form method="post" action="/admin/regionen<%= edit && edit.id ? '/' + edit.id : '' %>" class="card">
   <div class="form-row">

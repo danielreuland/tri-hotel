@@ -95,7 +95,7 @@
     <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
     <% } else { %><p><%= b.text %></p><% } %>
   <% }) %>
-  <p class="muted"><small>Redaktionstext, Stand <%= new Date(text.updated_at).toLocaleDateString('de-DE') %>. Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.</small></p>
+  <p class="muted"><small>Redaktionstext, Stand <%= new Date(text.updated_at).toLocaleDateString('de-DE') %>.<%= area.type === 'region' ? ' Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.' : ' Angaben zu den Hotels stammen aus den geprüften Werten unten.' %></small></p>
 </section>
 <% } %>
 <% compares.forEach(function (c, i) { %>

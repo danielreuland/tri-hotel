@@ -328,6 +328,11 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - Seite „Über tri-hotel“ (siehe Kleinere offene Punkte) mit Person, Foto und Triathlon-Hintergrund, verlinkt aus Footer und Methodik. Stand-Datum auf `/triscore`. Foto und Angaben kommen von Daniel.
 
 **Paket C: SEO-Inhalte**
+- **B-31 (Plan 08.11., Daniel):** 1–3 gebaut (Commit folgt), Hotel-Texte erst nach Budgetfreigabe (E-03).
+  1. Vergleichsseiten: Admin → Regionen → „Vergleichsseiten“: alle Paare mit/ohne Text, Schalter „indexieren“ je Paar mit Text (`region_pair_settings`, Migration 113); ohne Text immer noindex.
+  2. Länderseiten DE/AT: Redaktionstext + 3 eigene Fragen (`country_texts`, Migration 112), dazu berechnete Fragen (Hotelzahl, Leistungen) als FAQPage. Länder mit 1 Hotel sind über die Mindestzahl schon noindex (B-37).
+  3. Camp-FAQ `/trainingscamp`: + Pauschalreise/Einzelbuchung, Preisbestandteile, Absage/Versicherung (11 Fragen).
+  4. Hotel-Texte: 39 Live-Hotels ohne Text (Stand 08.11.: 70 live, 24 freigegeben, 7 Entwürfe), ca. 0,04 $ je Text. Import-Prüfung der 99 geparkten Hotels: tatsächlich ca. 0,32 $ KI je Hotel (max. 0,85 $) + Places, zusammen ca. 35–40 $.
 - **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_compare_texts`, beliebig viele je Region, Migration 110) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 14 Paare (6 neue in Migration 111). `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
 - Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.
 - Hotel-Texte: 24 veröffentlicht, 8 Entwürfe prüfen und freigeben, für die übrigen 36 Hotels erzeugen (KI-Budget). Passt zum Titel „… im Check“.
@@ -358,6 +363,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - `geo-refresh` für live-Objekte: würde ungeprüfte Vorschläge sofort in den Score bringen.
 
 ## Zu erledigen (Daniel)
+- **KI-Schlüssel läuft am ca. 08.12.2026 ab** (am 08.11. mit 30 Tagen Laufzeit neu angelegt, der alte lief am 07.11. ab und legte Auto-Prüfung, Texte und KI-Mails still). Vorher neuen Schlüssel ohne Ablauf anlegen und setzen.
 - **Import vom 01.11. prüfen:** lief um 08:00 – 20 neue Meldungen aus dem Abgleich sports-hotels.com und 7 erneut gestartete
   Auto-Prüfungen geparkter Importe; Ergebnisse in der Warteschlange prüfen.
 - **Hybrid-Camp-Anbieter freigeben** (Reiseathleten, Titan Fitness Camp Algarve, BlackBOX Tenerife, UF Bootcamp – am 01.11. neu

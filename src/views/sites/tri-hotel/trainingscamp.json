@@ -37,6 +37,18 @@
     {
       "q": "Kann ich mit Partner oder Familie anreisen?",
       "a": "Oft ja. Manche Camps bieten Kinderbetreuung, Jugendcamps oder Rabatte für Begleitpersonen ohne Sportpaket."
+    },
+    {
+      "q": "Pauschalreise oder einzeln buchen?",
+      "a": "Bei einer Pauschalreise bucht der Veranstalter Camp, Hotel und oft auch den Flug als Paket. Du hast einen Ansprechpartner, und dein Geld ist gegen eine Insolvenz des Veranstalters abgesichert. Einzeln buchst du Camp, Hotel und Anreise selbst: Das ist flexibler bei Termin und Unterkunft, bei Problemen kümmerst du dich aber um jeden Teil selbst."
+    },
+    {
+      "q": "Was ist im Preis enthalten?",
+      "a": "Das hängt vom Modell ab. Reine Camps berechnen eine Campgebühr für Trainingsplan, geführte Einheiten auf dem Rad, beim Laufen und Schwimmen und oft eine Technikanalyse. Veranstalter und Sportresorts verkaufen Pakete mit Hotel und Verpflegung, manchmal mit Flug. Häufig extra kosten Leihrad, Radtransport im Flugzeug, Transfers und der Eintritt ins Schwimmbad. Was genau dabei ist, steht beim jeweiligen Anbieter."
+    },
+    {
+      "q": "Was passiert, wenn ich absagen muss?",
+      "a": "Bei einer Pauschalreise kannst du vor Reisebeginn jederzeit zurücktreten; der Veranstalter darf dafür eine angemessene Entschädigung verlangen, meist gestaffelt nach dem Zeitpunkt. Bei einzeln gebuchten Camps gelten die Stornobedingungen des Anbieters. Eine Reiserücktrittsversicherung übernimmt die Kosten etwa bei Krankheit oder Verletzung; prüfe dabei, ob Sportverletzungen eingeschlossen sind."
     }
   ]
 }

@@ -76,6 +76,7 @@ router.get('/trainingsregionen/vergleich/:pair', wrap(async (req, res, next) => 
   const siteUrl = res.locals.siteUrl;
   const heading = rows.map((r) => r.name).join(' vs. ');
   const texts = await regionText.compareTexts(req.site.id, rows.map((r) => r.slug));
+  const indexable = rows.length === 2 && regionText.pairIndexable(texts.length, await regionText.pairSetting(req.site.id, rows.map((r) => r.slug)));
   const crumbs = [
     { name: ranking.name, url: `${siteUrl}/` },
     { name: 'Trainingsregionen', url: `${siteUrl}/trainingsregionen` },
@@ -86,7 +87,7 @@ router.get('/trainingsregionen/vergleich/:pair', wrap(async (req, res, next) => 
     description: `${heading}: Temperatur, Regentage, Sonne, Wind und Wassertemperatur je Monat, Radrevier und ${ranking.entity_label_pl} im direkten Vergleich.`,
     canonical: `${siteUrl}/trainingsregionen/vergleich/${canonicalPair}`,
     // Nur Paare mit Redaktionstext indexieren; alle anderen Kombinationen wären viele ähnliche Seiten ohne eigenen Inhalt
-    noindex: !texts.length,
+    noindex: !indexable,
     robots: 'noindex, follow',
     jsonLd: [seo.breadcrumbLd(crumbs)],
     rows, heading, ranking, crumbs, texts,

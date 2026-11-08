@@ -657,6 +657,17 @@ async function renderArea(req, res, ranking, area) {
       compare: compares.map((c) => ({ q: fill(content.area_faq_compare || '{name} oder {andere}?', { andere: c.name }), a: c.text })),
     }, MONTHS_DE);
   }
+  // Länder: Redaktionstext mit eigenen Fragen; Hotelzahl und Leistungen rechnet die Seite aus den aktuellen Daten
+  if (area.type === 'country') {
+    const t = await regionText.countryText(ranking.id, area.country || area.code);
+    if (t) text = { ...t, blocks: describer.parseBody(t.body) };
+    faq = regionGuide.regionFaq({
+      region: area, ranking,
+      hotels: { count: d.count, top: d.ranked[0] ? { name: d.ranked[0].name, score: d.ranked[0].score } : null },
+      features: await featureQuestions(ranking, content.area_faq_features, d, fill),
+      compare: (t && Array.isArray(t.faq) ? t.faq : []).filter((f) => f && f.q && f.a),
+    }, MONTHS_DE);
+  }
   const siteUrl = res.locals.siteUrl;
   const base = rankingBase(ranking);
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
@@ -672,7 +683,7 @@ async function renderArea(req, res, ranking, area) {
     description: text && text.summary ? text.summary : (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
-      + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Jeder Wert mit Quelle.',
+      + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Herkunft jedes Werts öffentlich.',
     canonical: `${siteUrl}${path}`,
     ogImage: `${siteUrl}/og/${area.type === 'region' ? 'region' : 'land'}/${area.slug}.png`,
     // Seiten mit zu wenigen Einträgen und Monatsansichten nicht indexieren

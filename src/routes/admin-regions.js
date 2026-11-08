@@ -5,6 +5,7 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { slugify } = require('../lib/util');
 const regionData = require('../services/region-data');
+const regionText = require('../services/region-text');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -47,10 +48,26 @@ async function render(res, extra = {}) {
        FROM regions r JOIN sites s ON s.id = r.site_id LEFT JOIN bike_areas b ON b.key = 'region:' || r.id
       ORDER BY s.name, r.sort_order, r.name`);
   const sites = await db.many(`SELECT id, name FROM sites ORDER BY is_default DESC, name`);
-  res.render('admin/regions', { title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, climatePointText: regionData.climatePointText, lowM: regionData.LOW_M, minHotels: regionData.MIN_HOTELS, ...extra });
+  const pairs = [];
+  for (const s of sites) {
+    const list = await regionText.pairOverview(s.id);
+    if (list.length) pairs.push({ site: s, list });
+  }
+  res.render('admin/regions', { pairs, title: 'Regionen', rows, sites, errors: [], flash: null, edit: null, climatePointText: regionData.climatePointText, lowM: regionData.LOW_M, minHotels: regionData.MIN_HOTELS, ...extra });
 }
 
 router.get('/', wrap(async (req, res) => render(res, { flash: req.query.ok || null })));
+
+// Vergleichsseite eines Regionspaars indexieren ja/nein (wirkt nur mit Redaktionstext)
+router.post('/vergleich', wrap(async (req, res) => {
+  const siteId = UUID_RE.test(req.body.site_id || '') ? req.body.site_id : null;
+  const pair = String(req.body.pair || '');
+  if (!siteId || !/^[a-z0-9-]+-vs-[a-z0-9-]+$/.test(pair)) return res.redirect('/admin/regionen#vergleiche');
+  const indexable = req.body.indexable === '1';
+  await regionText.setPairIndexable(siteId, pair, indexable);
+  await logAction(req.session.admin.id, 'region', siteId, 'set_pair_indexable', { pair, indexable });
+  res.redirect(`/admin/regionen?ok=${encodeURIComponent(`${pair}: ${indexable ? 'wird indexiert' : 'noindex'}`)}#vergleiche`);
+}));
 
 // Daten je Region (Klima mit Wind/Sonne/Wasser, Radrevier aus OSM) im Hintergrund berechnen – dauert je Region 1–3 Minuten
 router.post('/daten', wrap(async (req, res) => {
