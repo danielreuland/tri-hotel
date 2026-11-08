@@ -241,6 +241,23 @@ gibt es keine Logdateien mehr; die Zahlen vom 29.–31.10. bleiben, wie sie sind
 Neu: Klicks zählen auf unseren Seiten nur per Beacon beim Anklicken (alle Partner- und Camp-Links), der Abruf von /go/ zählt nur bei
 Links von außen mit `?von=`; dazu Fetch-Metadaten, Admin zählt nicht, ein Klick je Adresse, Ziel und Tag.
 
+### Tripadvisor-Fotos für Top-Hotels ohne eigene Fotos (Konzept von Daniel, 08.11.2026, noch nicht begonnen)
+Volltext: `docs/konzept-tripadvisor-fotos.md` (endet mitten in US6 – Rest von Daniel nachreichen). Kern: Fotos live über die
+Tripadvisor Content API bzw. Terra, nur auf Hotelseiten nach Klick auf „Fotos ansehen“, Budget-Wächter mit höchstens 400 Aufrufen
+im Monat und rund 15 am Tag, nur `location_id` speichern, Attribution laut Display Requirements, kein Einfluss auf den Score.
+Passt zum Punkt „Tripadvisor-Note“ oben (gleiche API, gleicher Schlüssel, gleiche `location_id`) – zusammen planen.
+**Vor dem Start abzugleichen (Claude, 08.11., noch nicht entschieden):**
+- **Regel „Kein Hotlinking“ (`CLAUDE.md`):** Tripadvisor verlangt, dass Bilder von seinen Adressen geladen werden. Das ist eine
+  ausdrückliche Erlaubnis des Anbieters und kein Hotlinking im Sinne der Regel; die Regel in `CLAUDE.md` dafür präzisieren.
+- **Datenschutz:** Beim Laden der Bilder geht die IP-Adresse des Besuchers an Tripadvisor – wie bei den Google-Bewertungen erst
+  nach Klick laden (US4 sieht das bevorzugt vor) und in der Datenschutzerklärung nennen; Content-Security-Policy für die Bilddomain.
+- **Zugang und Kosten:** Freischaltung, kostenloses Kontingent und Zukunft der Content API (Ablösung durch Terra laut Drittquelle)
+  in der aktuellen Tripadvisor-Doku prüfen; erst dann `TRIPADVISOR_KEY` vom Daniel in die Server-`.env`.
+- **Bot-Schutz:** Für den Budget-Wächter dieselben Regeln wie bei der Klickzählung nutzen (Bot-Netze geben sich als Browser aus,
+  siehe „Klickzählung ohne Bots“); Aufruf nur per Klick verhindert Verbrauch durch Bots am zuverlässigsten.
+- **Auswahl:** „Top-Hotels nach TriScore“ bevorzugt Hotels wegen ihres Scores bei der Darstellung – mit der Neutralität vereinbar,
+  da der Score selbst die Grundlage ist und nichts gekauft wird; Regel und Hinweis trotzdem festhalten.
+
 ### Partnerbereich (Konzept von Daniel, 06.11.2026, noch nicht begonnen)
 Volltext: `docs/konzept-partnerbereich.md`. Gemeinsamer Partnerbereich für beide Portale in drei Phasen: (1) Seite „Für Partner“ mit Anfrageformular ohne Login, (2) Stripe und Affiliate-Codes, (3) Partner-Portal mit Login. Hauptprodukt: Bundle aus Premium-Profil, Badge-Paket und Kurzbericht für ca. 449 € im Jahr.
 Nächste Schritte laut Konzept: Katalog und Preise festlegen, Partnerseite umsetzen, Muster-PDF eines Berichts, erste Partner ansprechen, Datenmodell anlegen.
