@@ -886,6 +886,15 @@ Viele Grüße</textarea>
       </div>
     <% } %>
 
+    <% if (sub.status === 'rejected') { %>
+      <div class="card" style="margin-top:12px">
+        <form method="post" action="/admin/meldungen/<%= sub.id %>/erneut-pruefen" data-confirm="<%= sub.entity_name %> erneut prüfen? Die Meldung geht zurück in die Auto-Prüfung und danach in die Freigabe. Es wird keine Mail verschickt.">
+          <button class="btn small" type="submit" style="width:100%">Erneut prüfen</button>
+        </form>
+        <p class="muted" style="margin:6px 0 0"><small>Öffnet die Meldung wieder: Auto-Prüfung läuft neu, deine Werte bleiben erhalten, danach wie jede Meldung freigeben oder ablehnen. Keine Mail an den Melder.</small></p>
+      </div>
+    <% } %>
+
     <% if (['received', 'expired'].includes(sub.status)) { %>
       <div class="card" style="margin-top:12px">
         <p style="margin-top:0"><strong><%= sub.status === 'expired' ? 'Bestätigungslink abgelaufen' : 'Wartet auf E-Mail-Bestätigung' %></strong><br>

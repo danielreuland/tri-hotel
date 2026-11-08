@@ -262,7 +262,34 @@ async function hold(submissionId, adminId, note) {
   await logAction(adminId, 'submission', submissionId, 'hold', { note });
 }
 
+// Abgelehnte Meldung erneut prüfen: zurück auf „bestätigt“, Auto-Prüfung läuft neu, danach wie jede Meldung in die
+// Freigabe. Ohne Mail. Läuft für das Objekt im selben Ranking schon eine andere Prüfung oder ist es dort live, bleibt die
+// Meldung abgelehnt und das Ergebnis verweist auf die andere. Ergebnis: { submissionId, reopened }
+async function reopen(submissionId, adminId) {
+  const sub = await db.one('SELECT * FROM submissions WHERE id = $1', [submissionId]);
+  if (!sub) throw new Error('Meldung nicht gefunden.');
+  if (sub.status !== 'rejected') throw new Error('Nur abgelehnte Meldungen lassen sich erneut prüfen.');
+  if (sub.entity_id) {
+    const other = await db.one(
+      `SELECT id FROM submissions WHERE entity_id = $1 AND ranking_id = $2 AND id <> $3
+          AND status IN ('received', 'verified', 'auto_check', 'basics', 'admin_review', 'live')
+        ORDER BY created_at DESC LIMIT 1`, [sub.entity_id, sub.ranking_id, sub.id]);
+    if (other) return { submissionId: other.id, reopened: false };
+  }
+  await db.tx(async (c) => {
+    await c.query(`UPDATE submissions SET status = 'verified', rejection_reason = NULL, updated_at = now() WHERE id = $1`, [sub.id]);
+    if (sub.entity_id) {
+      await c.query(`UPDATE entity_rankings SET status = 'draft', updated_at = now() WHERE entity_id = $1 AND ranking_id = $2 AND status = 'rejected'`,
+        [sub.entity_id, sub.ranking_id]);
+    }
+    await logAction(adminId, 'submission', sub.id, 'reopen', { previous_reason: sub.rejection_reason }, c);
+  });
+  await enqueue('auto-check', { submissionId: sub.id });
+  return { submissionId: sub.id, reopened: true };
+}
+
 module.exports = {
+  reopen,
   setEnqueue,
   enqueue,
   entityUrl,

@@ -842,6 +842,16 @@ router.post('/meldungen/:id/ablehnen', wrap(async (req, res) => {
   res.redirect(`/admin/meldungen/${req.params.id}?ok=Abgelehnt`);
 }));
 
+router.post('/meldungen/:id/erneut-pruefen', wrap(async (req, res) => {
+  try {
+    const r = await submissions.reopen(req.params.id, req.session.admin.id);
+    if (!r.reopened) return res.redirect(`/admin/meldungen/${r.submissionId}?ok=${encodeURIComponent('Für dieses Objekt läuft bereits diese Prüfung bzw. es ist live')}`);
+    res.redirect(`/admin/meldungen/${r.submissionId}?ok=${encodeURIComponent('Wieder geöffnet, Auto-Prüfung läuft')}`);
+  } catch (err) {
+    res.redirect(`/admin/meldungen/${req.params.id}?fehler=${encodeURIComponent(err.message)}`);
+  }
+}));
+
 router.post('/meldungen/:id/dublette', wrap(async (req, res) => {
   try {
     if (req.body.decision === 'same') {
