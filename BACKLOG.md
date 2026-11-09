@@ -247,7 +247,8 @@ Links von außen mit `?von=`; dazu Fetch-Metadaten, Admin zählt nicht, ein Klic
 Nur `location_id` speichern; Pflicht: Logo, Link zur TA-Seite, „See all photos“. **Blocker:** API Master Terms §3.4.2 (i) – TA-Inhalte
 nicht „near, or in conjunction with“ Buchungsfunktionen anderer Plattformen (unsere Partnerlinks). **E-07 von Daniel grundsätzlich
 freigegeben, aber erst bauen, wenn Tripadvisor schriftlich bestätigt**, dass Fotos auf `/hotel/<slug>/fotos` (ohne Buchungslinks,
-noindex) neben Hotelseiten mit gekennzeichneten Partnerlinks zulässig sind. Geplant: 6 $/Monat (400 Einheiten, 20/Tag, Dashboard 25),
+noindex) neben Hotelseiten mit gekennzeichneten Partnerlinks zulässig sind. Anfrage an Tripadvisor am 09.11. verschickt (inkl. Frage nach dem
+TA-Affiliate-Programm und ob dessen „Check Rates“-Links auf der Fotoseite mit §3.4.2 (i) vereinbar sind) – Antwort abwarten. Geplant: 6 $/Monat (400 Einheiten, 20/Tag, Dashboard 25),
 Fotos für die 10 besten Hotels (Häkchen Daniel), `location_id` einmalig für alle Hotels ab Score 70 (26, Nearby-Suche, ≤ 78 Einheiten).
 Volltext: `docs/konzept-tripadvisor-fotos.md` (endet mitten in US6 – Rest von Daniel nachreichen). Kern: Fotos live über die
 Tripadvisor Content API bzw. Terra, nur auf Hotelseiten nach Klick auf „Fotos ansehen“, Budget-Wächter mit höchstens 400 Aufrufen
