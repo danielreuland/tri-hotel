@@ -328,7 +328,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - Seite „Über tri-hotel“ (siehe Kleinere offene Punkte) mit Person, Foto und Triathlon-Hintergrund, verlinkt aus Footer und Methodik. Stand-Datum auf `/triscore`. Foto und Angaben kommen von Daniel.
 
 **Paket C: SEO-Inhalte**
-- **B-31 (Plan 08.11., Daniel):** 1–3 gebaut (Commit folgt), Hotel-Texte erst nach Budgetfreigabe (E-03).
+- **B-31 (Plan 08.11., Daniel):** 1–3 live seit 08.11. (Abnahme an Stichproben geprüft). Punkt 4 **zurückgestellt (09.11., Daniel):** Hotel-Texte erst einzeln im Admin erzeugen, um Styleguide und Mustertexte zu schärfen; danach Sammellauf für die übrigen.
   1. Vergleichsseiten: Admin → Regionen → „Vergleichsseiten“: alle Paare mit/ohne Text, Schalter „indexieren“ je Paar mit Text (`region_pair_settings`, Migration 113); ohne Text immer noindex.
   2. Länderseiten DE/AT: Redaktionstext + 3 eigene Fragen (`country_texts`, Migration 112), dazu berechnete Fragen (Hotelzahl, Leistungen) als FAQPage. Länder mit 1 Hotel sind über die Mindestzahl schon noindex (B-37).
   3. Camp-FAQ `/trainingscamp`: + Pauschalreise/Einzelbuchung, Preisbestandteile, Absage/Versicherung (11 Fragen).
