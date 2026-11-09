@@ -1,0 +1,69 @@
+<%- include('../../partials/head') %>
+<%# Text von Daniel freigegeben (B-12). Abschnitt zum TriScore am 09.11. mit Daniel an die Methodik angepasst (Klima, Bewertungen). %>
+<article class="about-page">
+<h1>Über tri-hotel.de</h1>
+<p class="lead">tri-hotel.de vergleicht Hotels für das Triathlon-Trainingslager. Nicht nach Sternen oder Poolfläche, sondern nach dem, was im Training zählt: ein Sportpool mit freien Bahnen, ein Radrevier mit wenig Verkehr, ein sicherer Platz für dein Rad und ein Essensangebot, das sich an den Anforderungen von Sportlern orientiert.</p>
+
+<h2>Warum es tri-hotel.de gibt</h2>
+<p>Wer ein Trainingslager plant, findet auf Buchungsportalen Sterne, Zimmerfotos und Wellness. Die Fragen, die über ein gutes Trainingscamp entscheiden, bleiben offen: Gibt es ein Sportbecken und ist es 25 oder 50 Meter lang? Gibt es Leinen für Sportler? Wo steht das Rad während des Aufenthalts? Wie ist das Radrevier rund um das Hotel? Wie gut ist der Kraftraum ausgestattet?</p>
+<p>tri-hotel.de sammelt genau diese und weitere Fakten, prüft sie und macht Hotels damit vergleichbar.</p>
+
+<h2>So entsteht der TriScore</h2>
+<%# Drei Zustände: Bewertungen fließen in den Score ein (scoreUsesReviews) · Bewertungen möglich, zählen aber noch nicht · keine Bewertungsfunktion.
+    Klima steht bewusst nicht bei den Fakten: Es fließt seit Migration 029 nicht in den TriScore ein. %>
+<% if (scoreUsesReviews) { %>
+<p>Jedes Hotel erhält einen TriScore von 0 bis 100. Er setzt sich zusammen aus</p>
+<ul>
+  <li><strong>Fakten</strong> zu Schwimmen, Rad, Laufen, Verpflegung, Regeneration sowie Logistik und</li>
+  <li><strong>Bewertungen</strong> von Athletinnen und Athleten, die selbst dort trainiert haben.</li>
+</ul>
+<% } else { %>
+<p>Jedes Hotel erhält einen TriScore von 0 bis 100. Er beruht auf geprüften <strong>Fakten</strong> zu Schwimmen, Rad, Laufen, Verpflegung, Regeneration und Logistik.</p>
+<% if (reviewsLive) { %>
+<p>Zusätzlich zum TriScore helfen dir die <strong>Bewertungen</strong> anderer Triathletinnen und Triathleten, die selbst dort trainiert haben. Du findest sie auf jeder Hotelseite.</p>
+<% } %>
+<% } %>
+<p>Das Klima zeigen wir je Monat als beste Reisezeit. In den TriScore fließt es nicht ein, weil die Saison von deinem Trainingsplan abhängt und nicht von der Qualität des Hotels.</p>
+<p>Bei jedem Wert steht, woher er stammt und wann wir ihn geprüft haben: vom Hotel bestätigt, von uns geprüft, von Athleten bestätigt oder automatisch aus offenen Daten ermittelt. Was sich nicht belegen lässt, etwa die Qualität der Küche, kennzeichnen wir als Einschätzung der Redaktion.</p>
+<%# Satz „Ohne Becken ab 25 Metern im Umkreis von 5 km gibt es keinen TriScore.“ aus B-12 bewusst nicht übernommen: seit Migration 054 gibt es kein K.O. mehr (Becken = 0 Punkte). Entscheidung Daniel 09.11. %>
+<p>Formel, Gewichte und Kriterien sind vollständig offen: <a href="<%= scorePath %>">So funktioniert der TriScore</a></p>
+
+<h2>Neutral und unabhängig</h2>
+<ul>
+  <li><strong>Platzierungen sind nicht käuflich.</strong> Partnerschaften, Werbung oder Zahlungen beeinflussen weder Score noch Reihenfolge.</li>
+  <li><strong>Der Eintrag ist kostenlos.</strong> Jedes Hotel kann seine Angaben kostenlos prüfen und korrigieren lassen.</li>
+  <li><strong>So finanziert sich tri-hotel.de:</strong> über gekennzeichnete Buchungslinks zu Partnerportalen und Zusatzangebote für Hotels und Camp-Anbieter. Beides hat keinen Einfluss auf das Ranking.</li>
+</ul>
+
+<h2>Wer hinter tri-hotel.de steht</h2>
+<div class="about-person">
+  <% if (photo) { %>
+  <figure class="about-photo">
+    <img src="<%= photo.src %>?v=<%= assetVersion %>" width="240" height="240" alt="<%= photo.alt %>" loading="lazy" decoding="async">
+    <% if (photo.credit) { %><figcaption class="muted"><small><%= photo.credit %></small></figcaption><% } %>
+  </figure>
+  <% } %>
+  <p>tri-hotel.de wird von Daniel Reuland betrieben: Triathlet aus Kaiserslautern, stellvertretender Abteilungsleiter der Triathlonabteilung des 1. FC Kaiserslautern, Inhaber der DOSB-Trainer-C-Lizenz Leistungssport Triathlon und Organisationsleiter des SWK Triathlon in Kaiserslautern. Er kennt beide Seiten: als Sportler, der im Hotel trainiert, und als Organisator, der für eine ganze Gruppe bucht.</p>
+</div>
+<% if (action) { %>
+<figure class="about-action">
+  <img src="<%= action.src %>?v=<%= assetVersion %>" width="1086" height="724" alt="<%= action.alt %>" loading="lazy" decoding="async">
+  <% if (action.credit) { %><figcaption class="muted"><small><%= action.credit %></small></figcaption><% } %>
+</figure>
+<% } %>
+<p>Mehr über Daniel und seine weiteren Projekte: <a href="https://danielreuland.com" rel="noopener">danielreuland.com</a></p>
+
+<h2>Mitmachen</h2>
+<ul>
+  <li><strong>Du kennst ein gutes Trainingshotel, das hier fehlt?</strong> <a href="/<%= ranking.entity_type %>-hinzufuegen">Hotel hinzufügen</a> – wir prüfen die Fakten und nehmen es ins Ranking auf.</li>
+  <li><strong>Du betreibst ein Hotel oder ein Trainingscamp?</strong> Prüfe die Angaben zu deinem Haus oder schreib uns, wenn etwas nicht stimmt.</li>
+  <% if (reviewsLive) { %>
+  <li><strong>Du warst im Trainingslager?</strong> Deine Bewertung hilft anderen bei der Wahl. <a href="<%= listHref %>">Hotel auswählen und bewerten</a></li>
+  <% } %>
+</ul>
+
+<h2>Kontakt</h2>
+<p>E-Mail: <a href="mailto:<%= email %>"><%= email %></a> · <a href="/kontakt">Kontaktformular</a></p>
+</article>
+
+<%- include('../../partials/foot') %>

@@ -106,5 +106,6 @@
   <li><a href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a> – mit Filtern nach Land, Reisemonat und Leistungen</li>
   <% if (locals.regionGuide) { %><li><a href="/trainingsregionen">Trainingsregionen im Überblick</a> – Klima, Wasser und Radrevier je Region</li><% } %>
 </ul>
+<% if (locals.aboutPath && locals.site) { %><p class="method-about">Wer hinter <%= site.primary_domain || site.name %> steht: <a href="<%= aboutPath %>"><%= aboutLabel %></a></p><% } %>
 
 <%- include('../partials/foot') %>

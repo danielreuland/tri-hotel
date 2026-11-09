@@ -7,6 +7,7 @@
     <a href="/impressum">Impressum</a>
     <a href="/datenschutz">Datenschutz</a>
     <% if (locals.hostRanking) { %><a href="<%= locals.scorePath %>">Methodik</a><% } %>
+    <% if (locals.aboutPath) { %><a href="<%= aboutPath %>"><%= aboutLabel %></a><% } %>
   </div>
 </footer>
 <%# site.js auf jeder öffentlichen Seite (Menü am Handy, Ziele, Formulare); weitere Skripte je Seite %>

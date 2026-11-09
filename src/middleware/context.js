@@ -3,6 +3,7 @@ const sites = require('../services/sites');
 const media = require('../services/media');
 const regionGuide = require('../services/region-guide');
 const seo = require('../lib/seo');
+const about = require('../services/about');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,6 +31,10 @@ async function rankingContext(req, res, next) {
     res.locals.siteUrl = sites.urlFor(site);
     res.locals.hostRanking = ranking;
     res.locals.campGuide = hasCampGuide(site);
+    // „Über uns“-Seite der Site (falls es die Vorlage gibt): Link in Fußzeile und Methodik
+    const aboutPage = ranking ? about.pageFor(site) : null;
+    res.locals.aboutPath = aboutPage ? aboutPage.path : null;
+    res.locals.aboutLabel = aboutPage ? aboutPage.meta.footer_label || `Über ${site.code}` : null;
     res.locals.listPath = ranking ? seo.listPath(ranking) : null;
     res.locals.regionGuide = Boolean(ranking) && !req.path.startsWith('/admin') && (await regionGuide.hasRegions(site && site.id));
     // Stimmungsbilder der Site je Platz/Region (nur für öffentliche Seiten relevant, zwischengespeichert)

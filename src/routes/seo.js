@@ -64,6 +64,8 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
       urls.push({ loc: `${base}/trainingsregionen/vergleich/${regionGuide.pairSlug(p.slugs)}`, lastmod: p.lastmod, priority: '0.6' });
     }
   }
+  // „Über uns“-Seite der Site
+  if (res.locals.aboutPath) urls.push({ loc: `${base}${res.locals.aboutPath}`, priority: '0.5' });
   // Trainingscamps (falls die Site die Seite hat)
   if (res.locals.campGuide) {
     urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });

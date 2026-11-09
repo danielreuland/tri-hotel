@@ -129,6 +129,7 @@ app.use('/', require('./routes/regions'));
 app.use('/', require('./routes/partners'));
 app.use('/', require('./routes/reviews'));
 app.use('/', require('./routes/inquiry'));
+app.use('/', require('./routes/about'));
 app.use('/', require('./routes/seo'));
 app.use('/', require('./routes/public'));
 
