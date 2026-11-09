@@ -107,6 +107,13 @@ document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
     clearTimeout(timer);
     timer = setTimeout(preview, 250);
   });
+
+  // Nach abgelehntem Speichern: Eingaben stehen wieder im Formular – zur ersten offenen Zeile springen, Vorschau dazu rechnen
+  var rejected = form.querySelector('tr[data-rejected]');
+  if (rejected) {
+    preview();
+    setTimeout(function () { rejected.scrollIntoView({ block: 'center' }); }, 50);
+  }
 })();
 
 

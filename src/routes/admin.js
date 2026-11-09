@@ -19,6 +19,7 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
 const evidence = require('../lib/evidence');
+const factDraft = require('../lib/fact-draft');
 const describer = require('../services/describer');
 const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
@@ -385,6 +386,9 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     CONSENT_TYPES: require('../lib/consents').TYPES,
     describeValue: scoring.describeValue,
     evidenceKind: evidence.kind,
+    evidenceNeeded: evidence.needed,
+    draft: factDraft.take(req.session, req.params.id),
+    draftFields: factDraft.fields,
     SUMMARY_MAX: describer.SUMMARY_MAX,
     MAX_IMAGES: media.MAX_PER_ENTITY,
     flash: req.query.ok || null,
@@ -420,6 +424,7 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
   const adminId = req.session.admin.id;
   const errors = [];
   const missingEvidence = [];
+  const rejected = []; // abgelehnte Zeilen: Eingabe bleibt im Formular stehen (lib/fact-draft.js)
 
   await db.tx(async (client) => {
     for (const c of criteria) {
@@ -429,6 +434,7 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
       const old = existing[c.id];
       if (value === null) {
         errors.push(c.label);
+        rejected.push({ id: c.id, input: f, reason: 'invalid' });
         continue;
       }
       if (value === undefined) {
@@ -449,8 +455,9 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
         || old.disputed !== disputed || Boolean(old.editorial_assessment) !== assessment;
       if (!changed) continue;
       // Neuer oder geänderter Wert braucht Fundstelle, Vermerk oder die Kennzeichnung als Einschätzung
-      if ((valueChanged || old.trust_level !== trust) && evidence.missing({ trust, url: evidenceUrl, text: evidenceText, assessment })) {
+      if ((valueChanged || old.trust_level !== trust) && evidence.missing({ trust, url: evidenceUrl, text: evidenceText, assessment, value })) {
         missingEvidence.push(c.label);
+        rejected.push({ id: c.id, input: f, reason: 'evidence' });
         continue;
       }
       const row = await client.query(
@@ -472,10 +479,14 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
   await rankings.recomputeEntity(sub.entity_id, sub.ranking_id);
   const problems = [
     errors.length ? `Ungültige Werte: ${errors.join(', ')}` : null,
-    missingEvidence.length ? `Nicht gespeichert, Beleg fehlt (Fundstelle, Vermerk oder „Einschätzung der Redaktion“): ${missingEvidence.join(', ')}` : null,
+    missingEvidence.length ? `Noch nicht gespeichert, Beleg fehlt (Fundstelle, Vermerk oder „Einschätzung der Redaktion“): ${missingEvidence.join(', ')}` : null,
   ].filter(Boolean);
-  const q = problems.length ? `fehler=${encodeURIComponent(problems.join(' · '))}` : 'ok=Fakten+gespeichert';
-  res.redirect(`/admin/meldungen/${sub.id}?${q}#fakten`);
+  const note = problems.length ? ' · Deine Eingaben stehen noch im Formular (rot markiert) – ergänzen und erneut speichern. Alle anderen Zeilen sind gespeichert.' : '';
+  const q = problems.length ? `fehler=${encodeURIComponent(problems.join(' · ') + note)}` : 'ok=Fakten+gespeichert';
+  const draft = factDraft.build(sub.id, rejected);
+  if (draft) req.session.factDraft = draft;
+  else delete req.session.factDraft;
+  req.session.save(() => res.redirect(`/admin/meldungen/${sub.id}?${q}#fakten`));
 }));
 
 // Live-Score-Vorschau beim Bearbeiten (ohne zu speichern)

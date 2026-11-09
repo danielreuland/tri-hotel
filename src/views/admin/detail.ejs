@@ -402,9 +402,9 @@
           <% categories.forEach(function (cat) { %>
             <tr><th colspan="5"><h3 style="margin:.4em 0"><%= cat.label %></h3></th></tr>
             <% criteria.filter(function (c) { return c.category_id === cat.id }).forEach(function (c) {
-                 var f = factByCrit[c.id]; var d = detailByCrit[c.id]; var s = c.scoring; var name = 'facts[' + c.id + ']'; var cur = valueString(c, f); %>
+                 var f = factByCrit[c.id]; var d = detailByCrit[c.id]; var s = c.scoring; var name = 'facts[' + c.id + ']'; var dr = draft && draft.rows[c.id]; var e = draftFields(f, dr); var cur = dr ? e.value : valueString(c, f); %>
               <% var state = s.type === 'bonus' ? (d && d.known ? 'ok' : 'missing') : s.type === 'climate' ? (climateRow ? 'ok' : 'missing') : !f ? 'missing' : f.disputed ? 'disputed' : f.trust_level === 4 ? 'auto' : 'ok'; %>
-              <tr class="crit-row state-<%= state %> <%= d && d.ko ? 'ko' : '' %>" data-crit="<%= c.id %>">
+              <tr class="crit-row state-<%= state %> <%= d && d.ko ? 'ko' : '' %> <%= e.rejected ? 'rejected changed' : '' %>" <% if (e.rejected) { %>data-rejected="<%= e.rejected %>"<% } %> data-crit="<%= c.id %>">
                 <td style="min-width:200px"><%= c.label %><% if (c.is_ko) { %> <span class="badge bad">K.O.</span><% } %>
                   <% if (state === 'auto') { %> <span class="badge warn" data-state-badge>Vorschlag</span> <button type="button" class="btn small" data-accept-fact title="Wert unverändert als „Admin geprüft“ übernehmen – wird sofort gespeichert">✓ Übernehmen</button><% } else if (state === 'missing') { %> <span class="badge">fehlt</span><% } else if (state === 'disputed') { %> <span class="badge bad">strittig</span><% } %>
                   <br><small class="muted"><%= c.code %> · max <%= c.max_points %></small>
@@ -441,19 +441,20 @@
                 <td style="min-width:240px">
                   <% if (s.type !== 'climate' && s.type !== 'bonus') { %>
                     <select name="<%= name %>[trust]" data-trust>
-                      <% Object.keys(TRUST_LABELS).forEach(function (t) { %><option value="<%= t %>" <%= (f ? f.trust_level : 2) == t ? 'selected' : '' %>><%= TRUST_LABELS[t] %></option><% }) %>
+                      <% Object.keys(TRUST_LABELS).forEach(function (t) { %><option value="<%= t %>" <%= e.trust == t ? 'selected' : '' %>><%= TRUST_LABELS[t] %></option><% }) %>
                     </select>
-                    <input name="<%= name %>[evidence_url]" type="url" placeholder="Fundstelle (URL)" value="<%= f ? f.evidence_url || '' : '' %>" style="margin-top:4px">
-                    <details style="margin-top:4px"><summary><small>Textausschnitt oder Vermerk<%= f && f.evidence_text ? ' ✓' : '' %></small></summary>
-                      <textarea name="<%= name %>[evidence_text]" style="min-height:60px" placeholder="z. B. Satz von der Website oder „Telefonat mit der Rezeption, 05.11.“"><%= f ? f.evidence_text || '' : '' %></textarea>
+                    <input name="<%= name %>[evidence_url]" type="url" placeholder="Fundstelle (URL)" value="<%= e.evidence_url %>" style="margin-top:4px">
+                    <details style="margin-top:4px" <%= e.rejected ? 'open' : '' %>><summary><small>Textausschnitt oder Vermerk<%= e.evidence_text ? ' ✓' : '' %></small></summary>
+                      <textarea name="<%= name %>[evidence_text]" style="min-height:60px" placeholder="z. B. Satz von der Website oder „Telefonat mit der Rezeption, 05.11.“"><%= e.evidence_text %></textarea>
                     </details>
-                    <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="<%= name %>[assessment]" <%= f && f.editorial_assessment ? 'checked' : '' %>> <small>Kein Beleg: als Einschätzung der Redaktion kennzeichnen</small></label>
-                    <% if (f && [1, 2].indexOf(f.trust_level) >= 0 && evidenceKind(f) === 'none') { %><small class="badge warn" title="Wert ohne Fundstelle, Vermerk oder Kennzeichnung als Einschätzung">Beleg fehlt</small><% } %>
+                    <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="<%= name %>[assessment]" <%= e.assessment ? 'checked' : '' %>> <small>Kein Beleg: als Einschätzung der Redaktion kennzeichnen</small></label>
+                    <% if (e.rejected) { %><small class="reject-hint" role="alert">Nicht gespeichert – <%= e.hint %></small>
+                    <% } else if (f && [1, 2].indexOf(f.trust_level) >= 0 && evidenceNeeded(f.value) && evidenceKind(f) === 'none') { %><small class="badge warn" title="Wert ohne Fundstelle, Vermerk oder Kennzeichnung als Einschätzung">Beleg fehlt</small><% } %>
                   <% } else { %><small class="muted"><%= s.type === 'bonus' ? 'berechnet' : 'Open-Meteo' %></small><% } %>
                 </td>
                 <td>
                   <% if (s.type !== 'climate' && s.type !== 'bonus') { %>
-                    <label class="inline" style="margin:0"><input type="checkbox" name="<%= name %>[disputed]" <%= f && f.disputed ? 'checked' : '' %>><small>strittig</small></label>
+                    <label class="inline" style="margin:0"><input type="checkbox" name="<%= name %>[disputed]" <%= e.disputed ? 'checked' : '' %>><small>strittig</small></label>
                     <% if (f) { %><small class="muted"><%= formatDate(f.checked_at) %></small><% } %>
                   <% } %>
                 </td>

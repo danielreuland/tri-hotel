@@ -9,9 +9,14 @@ function kind({ evidence_url: url, evidence_text: text, editorial_assessment: as
   return 'none';
 }
 
-// Fehlt der Beleg? Nur für Werte, die ein Mensch bestätigt (Stufe 1 vom Betreiber, Stufe 2 von uns)
-function missing({ trust, url, text, assessment }) {
-  return [1, 2].includes(Number(trust)) && !url && !text && !assessment;
+// „nein“ heißt: Die Leistung gibt es nicht – dafür gibt es nichts zu belegen (Daniel, 09.11.)
+function needed(value) {
+  return !(value && value.bool === false);
 }
 
-module.exports = { kind, missing };
+// Fehlt der Beleg? Nur für Werte, die ein Mensch bestätigt (Stufe 1 vom Betreiber, Stufe 2 von uns); nie bei „nein“
+function missing({ trust, url, text, assessment, value }) {
+  return [1, 2].includes(Number(trust)) && needed(value) && !url && !text && !assessment;
+}
+
+module.exports = { kind, needed, missing };
