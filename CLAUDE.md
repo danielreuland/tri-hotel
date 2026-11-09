@@ -105,7 +105,7 @@ Mails: (1) Danke + Bestätigungslink, (2) Absage mit Begründung, (3) „Deine H
 
 Vertrauensstufen in `entity_facts.trust_level`: 1 = vom Hotel bestätigt, 2 = Admin geprüft, 3 = von Nutzern bestätigt, 4 = automatisch ermittelt.
 
-Beleg je Wert (`src/lib/evidence.js`, Migration 108): Fundstelle (Link), Vermerk (`evidence_text`, z. B. „Telefonat 05.11.“) oder ausdrücklich `editorial_assessment` = „Einschätzung der Redaktion“ (für Werte ohne Nachweis, z. B. Küche). Neue oder geänderte Werte der Stufen 1/2 speichert der Admin nur mit einem davon; Altwerte ohne Beleg zeigt der Admin als „Beleg fehlt“. Ausnahme: Der Wert „nein“ braucht keinen Beleg (`evidence.needed`). Abgelehnte Zeilen bleiben im Formular stehen (`src/lib/fact-draft.js`). Öffentlich heißt es „Herkunft“, nicht „mit Quelle“ (Migration 109).
+Beleg je Wert (`src/lib/evidence.js`, Migration 108): Fundstelle (Link), Vermerk (`evidence_text`, z. B. „Telefonat 05.11.“) oder ausdrücklich `editorial_assessment` = „Einschätzung der Redaktion“ (für Werte ohne Nachweis, z. B. Küche). Neue oder geänderte Werte der Stufen 1/2 speichert der Admin nur mit einem davon; Altwerte ohne Beleg zeigt der Admin als „Beleg fehlt“. Ausnahme: Der Wert „nein“ und Auswahlwerte mit 0 Punkten brauchen keinen Beleg (`evidence.needed`). Abgelehnte Zeilen bleiben im Formular stehen (`src/lib/fact-draft.js`). Öffentlich heißt es „Herkunft“, nicht „mit Quelle“ (Migration 109).
 
 Die Werte 0,6/0,4, C, m und Mindest-Vollständigkeit stammen aus `rankings.formula`, nicht aus dem Code. Scoring-Logik gehört ausschließlich in `services/scoring.js` und braucht Unit-Tests für jede Regel (auch mit einem zweiten Test-Ranking, z. B. Hyrox, damit nichts Triathlon-spezifisch wird).
 

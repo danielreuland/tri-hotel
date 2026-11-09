@@ -449,7 +449,7 @@
                     </details>
                     <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="<%= name %>[assessment]" <%= e.assessment ? 'checked' : '' %>> <small>Kein Beleg: als Einschätzung der Redaktion kennzeichnen</small></label>
                     <% if (e.rejected) { %><small class="reject-hint" role="alert">Nicht gespeichert – <%= e.hint %></small>
-                    <% } else if (f && [1, 2].indexOf(f.trust_level) >= 0 && evidenceNeeded(f.value) && evidenceKind(f) === 'none') { %><small class="badge warn" title="Wert ohne Fundstelle, Vermerk oder Kennzeichnung als Einschätzung">Beleg fehlt</small><% } %>
+                    <% } else if (f && [1, 2].indexOf(f.trust_level) >= 0 && evidenceNeeded(f.value, s) && evidenceKind(f) === 'none') { %><small class="badge warn" title="Wert ohne Fundstelle, Vermerk oder Kennzeichnung als Einschätzung">Beleg fehlt</small><% } %>
                   <% } else { %><small class="muted"><%= s.type === 'bonus' ? 'berechnet' : 'Open-Meteo' %></small><% } %>
                 </td>
                 <td>

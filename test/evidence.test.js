@@ -29,3 +29,16 @@ test('„nein“ braucht keinen Beleg – es gibt keine Leistung zu belegen', ()
   assert.strictEqual(evidence.missing({ trust: 2, value: { bool: true } }), true);
   assert.strictEqual(evidence.missing({ trust: 2, value: { bool: true }, text: 'Telefonat 05.11.' }), false);
 });
+
+test('Auswahl mit 0 Punkten braucht keinen Beleg; Mehrfachauswahl nur, wenn alle gewählten 0 Punkte haben', () => {
+  const s = { type: 'option', points: { hotel: 7, near: 3, none: 0, unknown_gym: 0 } };
+  assert.strictEqual(evidence.needed({ option: 'none' }, s), false);
+  assert.strictEqual(evidence.needed({ option: 'near' }, s), true);
+  assert.strictEqual(evidence.needed({ option: 'gibt_es_nicht' }, s), true);
+  assert.strictEqual(evidence.needed({ options: ['none', 'unknown_gym'] }, s), false);
+  assert.strictEqual(evidence.needed({ options: ['none', 'near'] }, s), true);
+  assert.strictEqual(evidence.needed({ options: [] }, s), true);
+  assert.strictEqual(evidence.needed({ number: 0 }, { type: 'rating', min: 0, max: 5 }), true);
+  assert.strictEqual(evidence.missing({ trust: 2, value: { option: 'none' }, scoring: s }), false);
+  assert.strictEqual(evidence.missing({ trust: 2, value: { option: 'hotel' }, scoring: s }), true);
+});

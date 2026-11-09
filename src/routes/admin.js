@@ -455,7 +455,7 @@ router.post('/meldungen/:id/fakten', wrap(async (req, res, next) => {
         || old.disputed !== disputed || Boolean(old.editorial_assessment) !== assessment;
       if (!changed) continue;
       // Neuer oder geänderter Wert braucht Fundstelle, Vermerk oder die Kennzeichnung als Einschätzung
-      if ((valueChanged || old.trust_level !== trust) && evidence.missing({ trust, url: evidenceUrl, text: evidenceText, assessment, value })) {
+      if ((valueChanged || old.trust_level !== trust) && evidence.missing({ trust, url: evidenceUrl, text: evidenceText, assessment, value, scoring: c.scoring })) {
         missingEvidence.push(c.label);
         rejected.push({ id: c.id, input: f, reason: 'evidence' });
         continue;
