@@ -51,7 +51,8 @@
   <% if (action.credit) { %><figcaption class="muted"><small><%= action.credit %></small></figcaption><% } %>
 </figure>
 <% } %>
-<p>Mehr über Daniel und seine weiteren Projekte: <a href="https://danielreuland.com" rel="noopener">danielreuland.com</a></p>
+<p>Mehr über Daniel und seine weiteren Projekte: <a href="https://danielreuland.com" rel="noopener">danielreuland.com</a><% if (locals.profiles && profiles.length) { %><br>
+Daniel auf <% profiles.forEach(function (p, i) { %><%= i ? ' · ' : '' %><a href="<%= p.url %>" rel="me noopener" target="_blank"><%= p.label %></a><% }) %><% } %></p>
 
 <h2>Mitmachen</h2>
 <ul>

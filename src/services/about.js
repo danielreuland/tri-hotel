@@ -46,9 +46,21 @@ function updated(meta) {
   return m ? { iso: m[0], label: `${m[3]}.${m[2]}.${m[1]}` } : null;
 }
 
+// Profile des Gründers (ueber.json → founder.same_as): nur https-Adressen
+const sameAsOf = (f) => (Array.isArray(f && f.same_as) ? f.same_as : []).filter((u) => /^https:\/\//.test(u));
+
+// Sichtbare Profil-Links: Beschriftung aus dem Hostnamen (bekannte Netzwerke mit Namen, sonst die Domain)
+const NETWORKS = { 'linkedin.com': 'LinkedIn', 'instagram.com': 'Instagram', 'strava.com': 'Strava', 'youtube.com': 'YouTube', 'facebook.com': 'Facebook' };
+function profiles(f) {
+  return sameAsOf(f).map((url) => {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return { url, label: NETWORKS[host] || host };
+  });
+}
+
 // Gründer als Person: Name und URL, dazu Rolle, Porträt und weitere Profile (same_as), soweit vorhanden
 function founderLd(f, siteUrl, portrait) {
-  const sameAs = (Array.isArray(f.same_as) ? f.same_as : []).filter((u) => /^https:\/\//.test(u));
+  const sameAs = sameAsOf(f);
   return {
     '@type': 'Person', name: f.name, url: f.url,
     ...(f.job_title ? { jobTitle: f.job_title } : {}),
@@ -94,10 +106,11 @@ function viewData(site, ranking, siteUrl) {
       scoreUsesReviews: reviewsLive && Boolean(scoring.withDefaults(ranking.formula).athlete_enabled),
       listHref: seo.listPath(ranking),
       photo: portrait,
+      profiles: profiles(m.founder),
       updated: updated(m),
       action: credited(m.action, actionPhoto(site)),
     },
   };
 }
 
-module.exports = { pageFor, photo, actionPhoto, credited, updated, founderLd, aboutLd, viewData };
+module.exports = { pageFor, photo, actionPhoto, credited, updated, profiles, founderLd, aboutLd, viewData };

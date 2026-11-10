@@ -85,6 +85,8 @@ test('Über-Seite: strukturierte Daten AboutPage mit Organization und Gründer',
       sameAs: ['https://www.linkedin.com/in/daniel-reuland-022614111/', 'https://www.instagram.com/daniel.reuland/', 'https://www.strava.com/athletes/25872767'],
     });
     assert.equal(ld.dateModified, '2026-11-09');
+    // Profile auch sichtbar auf der Seite, nicht nur in den strukturierten Daten
+    assert.match(html, /Daniel auf <a href="https:\/\/www\.linkedin\.com\/in\/daniel-reuland-022614111\/" rel="me noopener" target="_blank">LinkedIn<\/a> · <a href="https:\/\/www\.instagram\.com\/daniel\.reuland\/"[^>]*>Instagram<\/a> · <a href="https:\/\/www\.strava\.com\/athletes\/25872767"[^>]*>Strava<\/a>/);
     assert.match(html, /Stand: <time datetime="2026-11-09">09\.11\.2026<\/time>/);
     assert.ok(ld.name.length <= 60, 'Titel passt in die Trefferzeile');
   });
@@ -97,6 +99,9 @@ test('Über-Seite: Gründer-Daten nur mit dem, was vorhanden ist; Stand nur mit 
     about.founderLd({ name: 'A', url: 'https://a.de', same_as: ['https://www.linkedin.com/in/a', 'javascript:x', 'http://b.de'] }, 'https://x.de', { src: '/static/p.jpg' }),
     { '@type': 'Person', name: 'A', url: 'https://a.de', image: 'https://x.de/static/p.jpg', sameAs: ['https://www.linkedin.com/in/a'] }
   );
+  assert.deepEqual(about.profiles({ same_as: ['https://www.strava.com/athletes/1', 'https://example.org/a', 'http://b.de'] }),
+    [{ url: 'https://www.strava.com/athletes/1', label: 'Strava' }, { url: 'https://example.org/a', label: 'example.org' }]);
+  assert.deepEqual(about.profiles(undefined), []);
   assert.deepEqual(about.updated({ updated: '2026-11-09' }), { iso: '2026-11-09', label: '09.11.2026' });
   assert.equal(about.updated({ updated: '9.11.2026' }), null);
   assert.equal(about.updated({}), null);
