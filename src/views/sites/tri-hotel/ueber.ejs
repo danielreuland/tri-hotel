@@ -64,6 +64,7 @@
 
 <h2>Kontakt</h2>
 <p>E-Mail: <a href="mailto:<%= email %>"><%= email %></a> · <a href="/kontakt">Kontaktformular</a></p>
+<% if (locals.updated) { %><p class="muted"><small>Stand: <time datetime="<%= updated.iso %>"><%= updated.label %></time></small></p><% } %>
 </article>
 
 <%- include('../../partials/foot') %>

@@ -51,7 +51,7 @@ test('Über-Seite: rendert mit 200, Titel, Beschreibung, Canonical, indexierbar'
     const { status, html } = await get('/ueber-tri-hotel');
     assert.equal(status, 200);
     assert.match(html, /<h1>Über tri-hotel\.de<\/h1>/);
-    assert.match(html, /<title>Über tri-hotel\.de – neutrales Ranking für Triathlon-Trainingshotels/);
+    assert.match(html, /<title>Über tri-hotel\.de – neutrales Ranking für Trainingshotels/);
     assert.match(html, /<meta name="description" content="Wie tri-hotel\.de Hotels fürs Triathlon-Trainingslager vergleicht: TriScore aus geprüften Fakten, Herkunft jedes Werts, Platzierungen nicht käuflich\.">/);
     assert.match(html, /<link rel="canonical" href="https:\/\/tri-hotel\.de\/ueber-tri-hotel">/);
     assert.doesNotMatch(html, /name="robots"/);
@@ -79,8 +79,26 @@ test('Über-Seite: strukturierte Daten AboutPage mit Organization und Gründer',
     assert.equal(ld.url, 'https://tri-hotel.de/ueber-tri-hotel');
     assert.equal(ld.mainEntity['@type'], 'Organization');
     assert.equal(ld.mainEntity.name, 'tri-hotel.de');
-    assert.deepEqual(ld.mainEntity.founder, { '@type': 'Person', name: 'Daniel Reuland', url: 'https://danielreuland.com' });
+    assert.deepEqual(ld.mainEntity.founder, {
+      '@type': 'Person', name: 'Daniel Reuland', url: 'https://danielreuland.com', jobTitle: 'Gründer und Betreiber',
+      image: 'https://tri-hotel.de/static/sites/tri-hotel/ueber-portrait.jpg',
+    });
+    assert.equal(ld.dateModified, '2026-11-09');
+    assert.match(html, /Stand: <time datetime="2026-11-09">09\.11\.2026<\/time>/);
+    assert.ok(ld.name.length <= 60, 'Titel passt in die Trefferzeile');
   });
+});
+
+test('Über-Seite: Gründer-Daten nur mit dem, was vorhanden ist; Stand nur mit gültigem Datum', () => {
+  const about = require('../src/services/about');
+  assert.deepEqual(about.founderLd({ name: 'A', url: 'https://a.de' }, 'https://x.de', null), { '@type': 'Person', name: 'A', url: 'https://a.de' });
+  assert.deepEqual(
+    about.founderLd({ name: 'A', url: 'https://a.de', same_as: ['https://www.linkedin.com/in/a', 'javascript:x', 'http://b.de'] }, 'https://x.de', { src: '/static/p.jpg' }),
+    { '@type': 'Person', name: 'A', url: 'https://a.de', image: 'https://x.de/static/p.jpg', sameAs: ['https://www.linkedin.com/in/a'] }
+  );
+  assert.deepEqual(about.updated({ updated: '2026-11-09' }), { iso: '2026-11-09', label: '09.11.2026' });
+  assert.equal(about.updated({ updated: '9.11.2026' }), null);
+  assert.equal(about.updated({}), null);
 });
 
 test('Über-Seite: Bewertungen möglich, zählen aber noch nicht – „Zusätzlich zum TriScore“, Punkt „Du warst im Trainingslager?“', async () => {

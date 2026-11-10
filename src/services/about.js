@@ -40,16 +40,35 @@ function credited(meta, img) {
   return { ...img, alt: meta.alt || '', credit: meta.credit || null };
 }
 
-// AboutPage mit Organization (die Site) und Gründer als Person
-function aboutLd(site, siteUrl, page) {
+// Stand der Seite (ueber.json → updated, JJJJ-MM-TT): sichtbar als „Stand: TT.MM.JJJJ“ und als dateModified
+function updated(meta) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((meta && meta.updated) || '');
+  return m ? { iso: m[0], label: `${m[3]}.${m[2]}.${m[1]}` } : null;
+}
+
+// Gründer als Person: Name und URL, dazu Rolle, Porträt und weitere Profile (same_as), soweit vorhanden
+function founderLd(f, siteUrl, portrait) {
+  const sameAs = (Array.isArray(f.same_as) ? f.same_as : []).filter((u) => /^https:\/\//.test(u));
+  return {
+    '@type': 'Person', name: f.name, url: f.url,
+    ...(f.job_title ? { jobTitle: f.job_title } : {}),
+    ...(portrait ? { image: `${siteUrl}${portrait.src}` } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  };
+}
+
+// AboutPage mit Organization (die Site) und Gründer als Person. portrait: nur das freigegebene Bild (credited)
+function aboutLd(site, siteUrl, page, portrait) {
   const f = page.meta.founder;
+  const stand = updated(page.meta);
   return {
     '@context': 'https://schema.org', '@type': 'AboutPage',
     name: page.meta.title, description: page.meta.description, url: `${siteUrl}${page.path}`, inLanguage: 'de',
+    ...(stand ? { dateModified: stand.iso } : {}),
     mainEntity: {
       '@type': 'Organization', name: site.primary_domain || site.name, url: `${siteUrl}/`,
       ...(page.meta.email ? { email: page.meta.email } : {}),
-      ...(f ? { founder: { '@type': 'Person', name: f.name, url: f.url } } : {}),
+      ...(f ? { founder: founderLd(f, siteUrl, portrait || null) } : {}),
     },
   };
 }
@@ -60,12 +79,13 @@ function viewData(site, ranking, siteUrl) {
   if (!page || !ranking) return null;
   const m = page.meta;
   const reviewsLive = reviews.config(ranking).enabled;
+  const portrait = credited(m.photo, photo(site));
   return {
     view: page.view,
     locals: {
       title: m.title, description: m.description, canonical: `${siteUrl}${page.path}`,
       jsonLd: [
-        aboutLd(site, siteUrl, page),
+        aboutLd(site, siteUrl, page, portrait),
         seo.breadcrumbLd([{ name: site.name, url: `${siteUrl}/` }, { name: m.breadcrumb || 'Über uns', url: `${siteUrl}${page.path}` }]),
       ],
       ranking, email: m.email, founder: m.founder || null,
@@ -73,10 +93,11 @@ function viewData(site, ranking, siteUrl) {
       // Bewertungen zählen erst im Score, wenn die Formel des Rankings sie einrechnet (wie auf der Methodik-Seite)
       scoreUsesReviews: reviewsLive && Boolean(scoring.withDefaults(ranking.formula).athlete_enabled),
       listHref: seo.listPath(ranking),
-      photo: credited(m.photo, photo(site)),
+      photo: portrait,
+      updated: updated(m),
       action: credited(m.action, actionPhoto(site)),
     },
   };
 }
 
-module.exports = { pageFor, photo, actionPhoto, credited, aboutLd, viewData };
+module.exports = { pageFor, photo, actionPhoto, credited, updated, founderLd, aboutLd, viewData };

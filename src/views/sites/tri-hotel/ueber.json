@@ -1,9 +1,10 @@
 {
-  "title": "Über tri-hotel.de – neutrales Ranking für Triathlon-Trainingshotels",
+  "title": "Über tri-hotel.de – neutrales Ranking für Trainingshotels",
   "description": "Wie tri-hotel.de Hotels fürs Triathlon-Trainingslager vergleicht: TriScore aus geprüften Fakten, Herkunft jedes Werts, Platzierungen nicht käuflich.",
   "breadcrumb": "Über tri-hotel.de",
+  "updated": "2026-11-09",
   "email": "daniel@tri-hotel.de",
-  "founder": { "name": "Daniel Reuland", "url": "https://danielreuland.com" },
+  "founder": { "name": "Daniel Reuland", "url": "https://danielreuland.com", "job_title": "Gründer und Betreiber", "same_as": [] },
   "photo": { "alt": "Daniel Reuland, Betreiber von tri-hotel.de", "credit": "", "no_credit": true },
   "action": { "alt": "Daniel Reuland auf dem Zeitfahrrad im Wettkampf", "credit": "", "no_credit": true }
 }
