@@ -396,7 +396,7 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     MAX_IMAGES: media.MAX_PER_ENTITY,
     // Urhebervermerk für eigene Fotos: Name des Gründers der Site (Persona „founder“, kein KI-Absender)
     ownPhotoCredit: await (async () => {
-      const founder = await require('../services/sites').persona(ranking.site_id, 'founder');
+      const founder = await require('../services/sites').persona(d.ranking.site_id, 'founder');
       return founder && founder.is_ai === false ? founder.name : '';
     })(),
     flash: req.query.ok || null,
