@@ -770,13 +770,14 @@
     <section class="card" style="margin-top:16px" id="bilder" data-tab="inhalte">
       <h2 style="margin-top:0">Bilder</h2>
       <p class="muted">Nur mit dokumentierter Berechtigung. Keine Fotos von fremden Websites übernehmen. Öffentlich erst nach Freigabe und solange die Rechte gültig sind.</p>
-      <% images.forEach(function (img) { %>
+      <% images.forEach(function (img, imgIndex) { var imgD = img.valid_until ? new Date(img.valid_until) : null; var imgDate = imgD ? imgD.getFullYear() + '-' + String(imgD.getMonth() + 1).padStart(2, '0') + '-' + String(imgD.getDate()).padStart(2, '0') : ''; %>
         <div class="grid grid-2" style="border-bottom:1px solid var(--border);padding:10px 0">
           <img src="/admin/bilder/<%= img.id %>/datei" alt="" style="max-height:160px;object-fit:cover">
           <div>
             <small><%= IMAGE_SOURCES[img.source] %> · <%= img.license %> · © <%= String(img.credit).replace(/^\s*(©|\(c\))\s*/i, "") %><br>
               Nachweis: <%= img.release_proof %><br>
-              <%= img.valid_until ? 'gültig bis ' + formatDate(img.valid_until) : 'unbefristet' %><%= img.is_primary ? ' · Hauptbild' : '' %></small><br>
+              <%= img.valid_until ? 'Rechte gültig bis ' + formatDate(img.valid_until) : 'Rechte dauerhaft gültig' %></small><br>
+            <span class="badge <%= imgIndex === 0 ? 'accent' : '' %>"><%= imgIndex === 0 ? 'Hauptbild · Platz 1' : 'Platz ' + (imgIndex + 1) %></span>
             <% if (img.approved_at) { %><span class="badge good">freigegeben <%= formatDate(img.approved_at) %></span>
             <% } else { %>
               <form method="post" action="/admin/bilder/<%= img.id %>/freigeben" style="display:inline"><input type="hidden" name="submission_id" value="<%= sub.id %>"><button class="btn small" type="submit">Freigeben</button></form>
@@ -786,6 +787,31 @@
               <input type="hidden" name="reason" value="Admin">
               <button class="btn small danger" type="submit">Entfernen</button>
             </form>
+            <% if (images.length > 1) { %>
+              <form method="post" action="/admin/bilder/<%= img.id %>/verschieben" style="margin-top:6px">
+                <input type="hidden" name="submission_id" value="<%= sub.id %>">
+                <button class="btn small secondary" type="submit" name="dir" value="up" <%= imgIndex === 0 ? 'disabled' : '' %> title="Eine Position nach vorn">↑</button>
+                <button class="btn small secondary" type="submit" name="dir" value="down" <%= imgIndex === images.length - 1 ? 'disabled' : '' %> title="Eine Position nach hinten">↓</button>
+                <% if (imgIndex > 0) { %><button class="btn small secondary" type="submit" name="dir" value="first">Als Hauptbild</button><% } %>
+              </form>
+            <% } %>
+            <details style="margin-top:6px"><summary><small>Angaben zu den Rechten ändern</small></summary>
+              <form method="post" action="/admin/bilder/<%= img.id %>/angaben">
+                <input type="hidden" name="submission_id" value="<%= sub.id %>">
+                <div class="form-row">
+                  <div><label>Lizenz *</label><input name="license" type="text" required value="<%= img.license || '' %>"></div>
+                  <div><label>Urhebervermerk *</label><input name="credit" type="text" required value="<%= img.credit || '' %>"></div>
+                </div>
+                <div class="form-row">
+                  <div><label>Nachweis der Freigabe *</label><input name="release_proof" type="text" required value="<%= img.release_proof || '' %>"></div>
+                  <div><label>Fundstelle / Lizenzseite</label><input name="source_url" type="url" value="<%= img.source_url || '' %>"></div>
+                </div>
+                <div class="form-row">
+                  <div><label>Rechte gültig bis <small class="muted">leer = dauerhaft gültig</small></label><input name="valid_until" type="date" value="<%= imgDate %>"></div>
+                </div>
+                <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button></p>
+              </form>
+            </details>
           </div>
         </div>
       <% }) %>
@@ -801,16 +827,17 @@
           </div>
           <p class="muted" style="margin:6px 0 0"><small>Quelle, Lizenz, Urhebervermerk und Nachweis gelten für alle Bilder dieses Uploads. Bilder mit anderer Herkunft bitte getrennt hochladen.</small></p>
           <div class="form-row">
-            <div><label>Quelle *</label><select name="source" required><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
-            <div><label>Lizenz *</label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>
+            <% var IMAGE_DEFAULTS = { owner_release: { license: 'Freigabe des Betreibers für die Nutzung auf dieser Website', credit: 'Foto: ' + entity.name }, own: { license: 'Eigenes Foto' }, user_upload: { license: 'Nutzungserlaubnis des Einsenders' } }; %>
+            <div><label>Quelle *</label><select name="source" required data-image-defaults="<%= JSON.stringify(IMAGE_DEFAULTS) %>"><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
+            <div><label>Lizenz * <small class="muted">woraus sich das Nutzungsrecht ergibt</small></label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>
           </div>
           <div class="form-row">
-            <div><label>Urhebervermerk *</label><input name="credit" type="text" required></div>
+            <div><label>Urhebervermerk * <small class="muted">steht öffentlich am Bild</small></label><input name="credit" type="text" required placeholder="z. B. Foto: Hotel XY / Max Muster"></div>
             <div><label>Fundstelle / Lizenzseite</label><input name="source_url" type="url"></div>
           </div>
           <div class="form-row">
             <div><label>Nachweis der Freigabe *</label><input name="release_proof" type="text" required placeholder="z. B. Mail vom 12.10.2026, Ablage …"></div>
-            <div><label>Rechte gültig bis</label><input name="valid_until" type="date"></div>
+            <div><label>Rechte gültig bis <small class="muted">leer = dauerhaft gültig</small></label><input name="valid_until" type="date"></div>
           </div>
           <label class="inline"><input type="checkbox" name="is_primary"> Hauptbild <small class="muted">(bei mehreren: das erste)</small></label>
           <p><button class="btn small" type="submit">Hochladen</button></p>

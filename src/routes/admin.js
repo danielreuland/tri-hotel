@@ -19,6 +19,7 @@ const { requireAdmin } = require('../middleware/context');
 const { logAction } = require('../lib/audit');
 const { normalizeUrl } = require('../lib/util');
 const evidence = require('../lib/evidence');
+const imageOrder = require('../lib/image-order');
 const factDraft = require('../lib/fact-draft');
 const describer = require('../services/describer');
 const media = require('../services/media');
@@ -37,6 +38,8 @@ const STATUS_LABELS = {
 };
 const TRUST_LABELS = { 1: '1 – vom Betreiber bestätigt', 2: '2 – Admin geprüft', 3: '3 – Nutzer bestätigt', 4: '4 – automatisch' };
 const TRUST_SOURCE = { 1: 'hotel', 2: 'admin', 3: 'users', 4: 'auto' };
+// Reihenfolge wie auf der öffentlichen Seite: Hauptbild zuerst
+const IMAGE_ORDER = 'is_primary DESC, sort_order, created_at';
 const IMAGE_SOURCES = {
   owner_release: 'Schriftliche Freigabe des Betreibers', affiliate_feed: 'Partner-Feed', places_api: 'Places-API (mit Attribution)',
   user_upload: 'Nutzerfoto', own: 'Eigenes Foto', free_license: 'Freie Lizenz (nur generische Motive)',
@@ -271,7 +274,7 @@ async function loadDetail(id) {
     er = await db.one('SELECT * FROM entity_rankings WHERE entity_id = $1 AND ranking_id = $2', [entity.id, ranking.id]);
     facts = await rankings.getFacts(entity.id, ranking.id);
     climate = await rankings.getClimate(entity.id);
-    images = await db.many('SELECT * FROM entity_images WHERE entity_id = $1 ORDER BY sort_order, created_at', [entity.id]);
+    images = await db.many(`SELECT * FROM entity_images WHERE entity_id = $1 ORDER BY ${IMAGE_ORDER}`, [entity.id]);
   }
   const result = scoring.computeScore(criteria, rankings.factMap(facts), climate, await rankings.scoreOptions(ranking));
   const emails = await db.many('SELECT * FROM email_log WHERE submission_id = $1 ORDER BY created_at', [sub.id]);
@@ -1205,6 +1208,15 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
 });
 
+// Reihenfolge speichern: Position als sort_order, das erste Bild ist das Hauptbild
+async function saveImageOrder(entityId, ids) {
+  await db.tx(async (client) => {
+    for (let i = 0; i < ids.length; i++) {
+      await client.query('UPDATE entity_images SET sort_order = $3, is_primary = $4 WHERE id = $1 AND entity_id = $2', [ids[i], entityId, (i + 1) * 10, i === 0]);
+    }
+  });
+}
+
 // Ein oder mehrere Bilder auf einmal (Auswahl oder Drag & Drop); Quelle, Lizenz, Urhebervermerk und Nachweis gelten für alle
 router.post('/objekte/:entityId/bilder', (req, res, next) => {
   upload.array('file', media.MAX_PER_ENTITY)(req, res, (err) => {
@@ -1231,6 +1243,8 @@ router.post('/objekte/:entityId/bilder', (req, res, next) => {
   if (free <= 0) return fail(`Höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt – bitte erst ein Bild entfernen.`);
   const take = files.slice(0, free);
   cleanup(files.slice(free));
+  const existingIds = (await db.many(`SELECT id FROM entity_images WHERE entity_id = $1 ORDER BY ${IMAGE_ORDER}`, [req.params.entityId])).map((r) => r.id);
+  const newIds = [];
   let saved = 0;
   const failed = [];
   for (const file of take) {
@@ -1249,11 +1263,14 @@ router.post('/objekte/:entityId/bilder', (req, res, next) => {
       `INSERT INTO entity_images (id, entity_id, storage_path, source, license, credit, source_url, release_proof, valid_until, is_primary, width, height, variants)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [id, req.params.entityId, `entity-images/${id}`, b.source, b.license.trim(), b.credit.trim(), normalizeUrl(b.source_url),
-        b.release_proof.trim(), b.valid_until || null, b.is_primary === 'on' && saved === 0, info.width, info.height, info.variants]
+        b.release_proof.trim(), b.valid_until || null, false, info.width, info.height, info.variants]
     );
     await logAction(req.session.admin.id, 'image', id, 'upload_image', { source: b.source, license: b.license, file: file.originalname });
+    newIds.push(id);
     saved++;
   }
+  // neue Bilder ans Ende, mit „Hauptbild“ das erste neue nach vorn
+  if (newIds.length) await saveImageOrder(req.params.entityId, imageOrder.append(existingIds, newIds, b.is_primary === 'on'));
   const notes = [];
   if (files.length > free) notes.push(`${files.length - free} nicht übernommen (höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt)`);
   if (failed.length) notes.push(`nicht verarbeitet: ${failed.join('; ')}`);
@@ -1310,6 +1327,36 @@ router.post('/bilder/:id/freigeben', wrap(async (req, res) => {
   await db.query('UPDATE entity_images SET approved_at = now(), approved_by = $2 WHERE id = $1', [req.params.id, req.session.admin.id]);
   await logAction(req.session.admin.id, 'image', req.params.id, 'approve_image');
   res.redirect(withParam(backOrNull(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`, 'ok', 'Bild freigegeben'));
+}));
+
+// Reihenfolge ändern: hoch, runter oder als Hauptbild nach vorn
+router.post('/bilder/:id/verschieben', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.id)) return next();
+  const img = await db.one('SELECT id, entity_id FROM entity_images WHERE id = $1', [req.params.id]);
+  if (!img) return next();
+  const back = backOrNull(req.body.back) || `/admin/meldungen/${req.body.submission_id}#bilder`;
+  const ids = (await db.many(`SELECT id FROM entity_images WHERE entity_id = $1 ORDER BY ${IMAGE_ORDER}`, [img.entity_id])).map((r) => r.id);
+  const next_ = imageOrder.move(ids, img.id, req.body.dir);
+  await saveImageOrder(img.entity_id, next_);
+  await logAction(req.session.admin.id, 'image', img.id, 'reorder_images', { dir: req.body.dir, position: next_.indexOf(img.id) + 1 });
+  res.redirect(back);
+}));
+
+// Angaben zu den Rechten nachträglich ändern (Lizenz, Urhebervermerk, Nachweis, Gültigkeit; leer = dauerhaft gültig)
+router.post('/bilder/:id/angaben', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.id)) return next();
+  const b = req.body;
+  const back = backOrNull(b.back) || `/admin/meldungen/${b.submission_id}#bilder`;
+  const old = await db.one('SELECT license, credit, release_proof, valid_until FROM entity_images WHERE id = $1', [req.params.id]);
+  if (!old) return next();
+  const f = { license: String(b.license || '').trim(), credit: String(b.credit || '').trim(), release_proof: String(b.release_proof || '').trim() };
+  if (!f.license || !f.credit || !f.release_proof) return res.redirect(withParam(back, 'fehler', 'Lizenz, Urhebervermerk und Nachweis dürfen nicht leer sein.'));
+  const validUntil = /^\d{4}-\d{2}-\d{2}$/.test(b.valid_until || '') ? b.valid_until : null;
+  await db.query('UPDATE entity_images SET license = $2, credit = $3, release_proof = $4, source_url = $5, valid_until = $6 WHERE id = $1',
+    [req.params.id, f.license, f.credit, f.release_proof, normalizeUrl(b.source_url), validUntil]);
+  await logAction(req.session.admin.id, 'image', req.params.id, 'edit_image_rights', {
+    old: { license: old.license, credit: old.credit, valid_until: old.valid_until }, new: { ...f, valid_until: validUntil } });
+  res.redirect(withParam(back, 'ok', 'Angaben zum Bild gespeichert'));
 }));
 
 // Löschen = auch Takedown auf Verlangen des Rechteinhabers

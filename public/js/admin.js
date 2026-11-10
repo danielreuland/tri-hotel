@@ -321,3 +321,21 @@ document.querySelectorAll('[data-file-drop]').forEach(function (zone) {
     render();
   });
 });
+
+// Bild-Upload: Lizenz und Urhebervermerk je Quelle vorbelegen (nur leere oder zuvor vorbelegte Felder), frei änderbar
+document.querySelectorAll('select[data-image-defaults]').forEach(function (select) {
+  var defaults = {};
+  try { defaults = JSON.parse(select.dataset.imageDefaults); } catch (e) { return; }
+  var form = select.form;
+  var apply = function () {
+    var d = defaults[select.value] || {};
+    ['license', 'credit'].forEach(function (name) {
+      var field = form.querySelector('[name=' + name + ']');
+      if (!field || (field.value && field.value !== field.dataset.prefill)) return;
+      field.value = d[name] || '';
+      field.dataset.prefill = field.value;
+    });
+  };
+  select.addEventListener('change', apply);
+  apply();
+});
