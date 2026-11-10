@@ -11,6 +11,8 @@
     <p class="eyebrow"><%= MODELS[p.model] %><%= p.model_label && p.model_label !== MODELS[p.model] ? ' · ' + p.model_label : '' %></p>
     <h1><%= p.name %></h1>
     <p class="muted"><%= p.destinations.join(' · ') %><%= p.seat ? ' — Sitz: ' + p.seat : '' %></p>
+    <% if (locals.canonical) { %><%- include('../partials/share', { url: canonical, kind: 'Camp-Anbieter',
+      text: p.name + ' – Trainingscamps im Überblick' + (locals.site ? ' auf ' + site.name : '') + ':' }) %><% } %>
   </div>
   <div class="camp-head-cta">
     <% if (p.partner) { %><span class="badge ad-badge">Anzeige · Partner</span><% } %>

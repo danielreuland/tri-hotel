@@ -18,6 +18,8 @@
   <h1><%= entity.name %></h1>
   <p class="muted"><%= [entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ') %>
     <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
+  <% if (locals.canonical) { %><%- include('../partials/share', { url: canonical, kind: ranking.entity_label_sg,
+    text: entity.name + (result.score === null ? '' : ' – ' + ranking.score_name + ' ' + result.score) + (locals.site ? ' auf ' + site.name : '') + ':' }) %><% } %>
 </div>
 
 <%# Steckbrief: Score mit Punkten je Kategorie, Kernfakten; Herleitung zum Aufklappen. Daneben „Buchen & Anfragen“ (am Handy nur die Leiste unten). %>

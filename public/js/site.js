@@ -15,6 +15,33 @@ document.querySelectorAll('[data-goal]').forEach(function (el) {
   if (el.matches('a, button')) { el.addEventListener('click', send); return; }
   if (window.plausible) send(); else window.addEventListener('load', send);
 });
+// „Link kopieren“ (partials/share.ejs): Adresse in die Zwischenablage, kurze Rückmeldung am Knopf
+document.querySelectorAll('[data-copy]').forEach(function (btn) {
+  var label = btn.textContent;
+  var done = function (ok) {
+    btn.textContent = ok ? 'Link kopiert ✓' : 'Kopieren nicht möglich';
+    setTimeout(function () { btn.textContent = label; }, 2500);
+  };
+  var fallback = function (url) {
+    var input = document.createElement('input');
+    input.value = url;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(input);
+    done(ok);
+  };
+  btn.addEventListener('click', function () {
+    var url = btn.getAttribute('data-copy');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { done(true); }, function () { fallback(url); });
+    } else fallback(url);
+  });
+});
 document.querySelectorAll('select[data-autosubmit], input[data-autosubmit-check]').forEach(function (el) {
   el.addEventListener('change', function () { el.form.submit(); });
 });
