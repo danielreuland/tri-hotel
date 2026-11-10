@@ -1,6 +1,6 @@
 <%# Teilen: WhatsApp als einfacher Link (kein Skript von Dritten) und „Link kopieren“ (public/js/site.js).
     Parameter: url (kanonische Adresse), text (kurzer Satz vor dem Link), kind (Angabe für die Statistik) %>
-<p class="share">
+<p class="share-row">
   <span class="muted">Teilen:</span>
   <a class="btn small secondary" href="https://wa.me/?text=<%= encodeURIComponent(text + ' ' + url) %>" target="_blank" rel="noopener nofollow" data-goal="Teilen" data-goal-prop-weg="WhatsApp" data-goal-prop-art="<%= kind %>">WhatsApp</a>
   <button class="btn small secondary" type="button" data-copy="<%= url %>" data-goal="Teilen" data-goal-prop-weg="Link kopiert" data-goal-prop-art="<%= kind %>">Link kopieren</button>

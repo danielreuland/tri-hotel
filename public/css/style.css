@@ -445,8 +445,8 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .camp-head h1 { margin: .1em 0; }
 .camp-head-cta { display: flex; gap: 10px; align-items: center; }
 /* Teilen (WhatsApp, Link kopieren) auf Hotel- und Camp-Anbieter-Seiten */
-.share { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
-.share .muted { font-size: .9rem; }
+.share-row, .entity-head .share-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+.share-row .muted { font-size: .9rem; }
 .rank-item.static { cursor: default; }
 .other-opinions { margin: 12px 0 0; }
 
