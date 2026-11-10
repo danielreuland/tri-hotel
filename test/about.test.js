@@ -82,6 +82,7 @@ test('Über-Seite: strukturierte Daten AboutPage mit Organization und Gründer',
     assert.deepEqual(ld.mainEntity.founder, {
       '@type': 'Person', name: 'Daniel Reuland', url: 'https://danielreuland.com', jobTitle: 'Gründer und Betreiber',
       image: 'https://tri-hotel.de/static/sites/tri-hotel/ueber-portrait.jpg',
+      sameAs: ['https://www.linkedin.com/in/daniel-reuland-022614111/', 'https://www.instagram.com/daniel.reuland/'],
     });
     assert.equal(ld.dateModified, '2026-11-09');
     assert.match(html, /Stand: <time datetime="2026-11-09">09\.11\.2026<\/time>/);
