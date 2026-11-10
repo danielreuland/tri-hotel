@@ -257,3 +257,67 @@ document.addEventListener('change', function (e) {
   if (!table) return;
   table.querySelectorAll('input[type="checkbox"]:not([data-check-all])').forEach(function (b) { b.checked = e.target.checked; });
 });
+
+// Bilder hochladen: mehrere Dateien per Auswahl oder Drag & Drop (Prüfansicht → Inhalte). Die Dateien landen im normalen
+// Dateifeld und gehen mit dem Formular ab; die Liste zeigt, was ausgewählt ist.
+document.querySelectorAll('[data-file-drop]').forEach(function (zone) {
+  var input = zone.querySelector('input[type=file]');
+  var list = zone.querySelector('.file-drop-list');
+  var maxFiles = Number(zone.dataset.maxFiles) || 0;
+  var maxMb = Number(zone.dataset.maxMb) || 45;
+  var types = (input.getAttribute('accept') || '').split(',');
+  var mb = function (bytes) { return (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB'; };
+  var render = function () {
+    var files = Array.prototype.slice.call(input.files || []);
+    list.innerHTML = '';
+    list.hidden = !files.length;
+    var total = 0;
+    var problem = '';
+    files.forEach(function (f) {
+      total += f.size;
+      var li = document.createElement('li');
+      li.textContent = f.name + ' · ' + mb(f.size);
+      if (f.size > 8 * 1048576) { li.className = 'bad'; problem = 'Ein Bild ist größer als 8 MB.'; }
+      list.appendChild(li);
+    });
+    if (!problem && maxFiles && files.length > maxFiles) problem = 'Zu viele Bilder: noch ' + maxFiles + ' möglich.';
+    if (!problem && total > maxMb * 1048576) problem = 'Zusammen mehr als ' + maxMb + ' MB – bitte in zwei Schritten hochladen.';
+    if (files.length) {
+      var sum = document.createElement('li');
+      sum.className = problem ? 'bad' : 'sum';
+      sum.textContent = problem || (files.length + (files.length === 1 ? ' Bild' : ' Bilder') + ' · ' + mb(total));
+      list.appendChild(sum);
+    }
+    if (files.length) {
+      var li = document.createElement('li');
+      var reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = 'btn small secondary';
+      reset.textContent = 'Auswahl leeren';
+      reset.addEventListener('click', function () { input.value = ''; render(); });
+      li.appendChild(reset);
+      list.appendChild(li);
+    }
+    input.setCustomValidity(problem);
+  };
+  input.addEventListener('change', render);
+  ['dragenter', 'dragover'].forEach(function (name) {
+    zone.addEventListener(name, function (e) { e.preventDefault(); zone.classList.add('drop-target'); });
+  });
+  ['dragleave', 'dragend'].forEach(function (name) {
+    zone.addEventListener(name, function () { zone.classList.remove('drop-target'); });
+  });
+  zone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    zone.classList.remove('drop-target');
+    if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+    var dt = new DataTransfer();
+    // bereits gewählte Dateien behalten, neue dazu (nur Bildformate des Feldes, keine Doppelten)
+    Array.prototype.slice.call(input.files || []).concat(Array.prototype.slice.call(e.dataTransfer.files)).forEach(function (f) {
+      var known = Array.prototype.some.call(dt.files, function (x) { return x.name === f.name && x.size === f.size; });
+      if (types.indexOf(f.type) >= 0 && !known) dt.items.add(f);
+    });
+    input.files = dt.files;
+    render();
+  });
+});

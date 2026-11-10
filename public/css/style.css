@@ -347,6 +347,14 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .task-col .count { font-family: inherit; font-size: .85rem; color: var(--muted); }
 .task-list { display: grid; gap: 8px; min-height: 60px; border-radius: 8px; transition: background .15s; }
 .task-list.drop-target { background: var(--accent-soft); }
+/* Admin: Ablagefläche für mehrere Bilder (Auswahl oder Drag & Drop) */
+.file-drop { border: 2px dashed var(--border); border-radius: 10px; padding: 14px; background: var(--surface-2); }
+.file-drop.drop-target { border-color: var(--accent); background: var(--accent-soft); }
+.file-drop-hint { margin: 8px 0 0; font-size: .9rem; color: var(--muted); }
+.file-drop-list { list-style: none; margin: 8px 0 0; padding: 0; font-size: .9rem; }
+.file-drop-list li { padding: 2px 0; }
+.file-drop-list .sum { font-weight: 600; }
+.file-drop-list .bad { color: var(--bad); font-weight: 600; }
 .task-list .empty { display: none; text-align: center; margin: 12px 0; }
 .task-list .empty:only-child { display: block; }
 .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: grab; }

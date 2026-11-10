@@ -790,10 +790,16 @@
         </div>
       <% }) %>
       <details style="margin-top:12px">
-        <summary>Bild hochladen <small class="muted">(<%= images.length %> von <%= MAX_IMAGES %>)</small></summary>
+        <summary>Bilder hochladen <small class="muted">(<%= images.length %> von <%= MAX_IMAGES %>)</small></summary>
         <form method="post" action="/admin/objekte/<%= entity.id %>/bilder" enctype="multipart/form-data">
           <input type="hidden" name="submission_id" value="<%= sub.id %>">
-          <label>Datei (JPG, PNG, WebP, max. 8 MB – wird automatisch verkleinert) *</label><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+          <label>Dateien (JPG, PNG, WebP, je max. 8 MB – werden automatisch verkleinert) *</label>
+          <div class="file-drop" data-file-drop data-max-files="<%= Math.max(MAX_IMAGES - images.length, 0) %>" data-max-mb="45">
+            <input type="file" name="file" accept="image/jpeg,image/png,image/webp" multiple required>
+            <p class="file-drop-hint">Mehrere Bilder auswählen oder hierher ziehen<%= images.length < MAX_IMAGES ? ' (noch ' + (MAX_IMAGES - images.length) + ' möglich)' : ' – erst ein Bild entfernen' %>.</p>
+            <ul class="file-drop-list" hidden></ul>
+          </div>
+          <p class="muted" style="margin:6px 0 0"><small>Quelle, Lizenz, Urhebervermerk und Nachweis gelten für alle Bilder dieses Uploads. Bilder mit anderer Herkunft bitte getrennt hochladen.</small></p>
           <div class="form-row">
             <div><label>Quelle *</label><select name="source" required><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
             <div><label>Lizenz *</label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>
@@ -806,7 +812,7 @@
             <div><label>Nachweis der Freigabe *</label><input name="release_proof" type="text" required placeholder="z. B. Mail vom 12.10.2026, Ablage …"></div>
             <div><label>Rechte gültig bis</label><input name="valid_until" type="date"></div>
           </div>
-          <label class="inline"><input type="checkbox" name="is_primary"> Hauptbild</label>
+          <label class="inline"><input type="checkbox" name="is_primary"> Hauptbild <small class="muted">(bei mehreren: das erste)</small></label>
           <p><button class="btn small" type="submit">Hochladen</button></p>
         </form>
       </details>

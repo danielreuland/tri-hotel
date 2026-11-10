@@ -1205,34 +1205,61 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
 });
 
-router.post('/objekte/:entityId/bilder', upload.single('file'), wrap(async (req, res) => {
+// Ein oder mehrere Bilder auf einmal (Auswahl oder Drag & Drop); Quelle, Lizenz, Urhebervermerk und Nachweis gelten für alle
+router.post('/objekte/:entityId/bilder', (req, res, next) => {
+  upload.array('file', media.MAX_PER_ENTITY)(req, res, (err) => {
+    if (err) {
+      req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'Ein Bild ist größer als 8 MB.'
+        : err.code === 'LIMIT_UNEXPECTED_FILE' ? `Höchstens ${media.MAX_PER_ENTITY} Bilder auf einmal.` : `Upload fehlgeschlagen: ${err.message}`;
+    }
+    next();
+  });
+}, wrap(async (req, res) => {
   const b = req.body;
+  const files = req.files || [];
   const back = backOrNull(b.back) || `/admin/meldungen/${b.submission_id}#bilder`;
+  const cleanup = (list) => list.forEach((f) => fs.unlink(f.path, () => {}));
   const fail = (msg) => {
-    if (req.file) fs.unlink(req.file.path, () => {});
+    cleanup(files);
     res.redirect(withParam(back, 'fehler', msg));
   };
+  if (req.uploadError) return fail(req.uploadError);
   const missing = ['license', 'credit', 'release_proof'].filter((k) => !String(b[k] || '').trim());
-  if (!req.file || !IMAGE_SOURCES[b.source] || missing.length) return fail('Bild, Quelle, Lizenz, Urhebervermerk und Nachweis sind Pflicht.');
+  if (!files.length || !IMAGE_SOURCES[b.source] || missing.length) return fail('Bild (JPG, PNG, WebP), Quelle, Lizenz, Urhebervermerk und Nachweis sind Pflicht.');
   const { n } = await db.one('SELECT count(*)::int AS n FROM entity_images WHERE entity_id = $1', [req.params.entityId]);
-  if (n >= media.MAX_PER_ENTITY) return fail(`Höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt – bitte erst ein Bild entfernen.`);
-  // WebP-Varianten erzeugen, Original verwerfen
-  const id = crypto.randomUUID();
-  let info;
-  try {
-    info = await media.processEntityImage(id, req.file.path);
-  } catch (err) {
-    return fail(`Bild konnte nicht verarbeitet werden: ${err.message}`);
+  const free = media.MAX_PER_ENTITY - n;
+  if (free <= 0) return fail(`Höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt – bitte erst ein Bild entfernen.`);
+  const take = files.slice(0, free);
+  cleanup(files.slice(free));
+  let saved = 0;
+  const failed = [];
+  for (const file of take) {
+    // WebP-Varianten erzeugen, Original verwerfen
+    const id = crypto.randomUUID();
+    let info;
+    try {
+      info = await media.processEntityImage(id, file.path);
+    } catch (err) {
+      failed.push(`${file.originalname}: ${err.message}`);
+      fs.unlink(file.path, () => {});
+      continue;
+    }
+    fs.unlink(file.path, () => {});
+    await db.query(
+      `INSERT INTO entity_images (id, entity_id, storage_path, source, license, credit, source_url, release_proof, valid_until, is_primary, width, height, variants)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [id, req.params.entityId, `entity-images/${id}`, b.source, b.license.trim(), b.credit.trim(), normalizeUrl(b.source_url),
+        b.release_proof.trim(), b.valid_until || null, b.is_primary === 'on' && saved === 0, info.width, info.height, info.variants]
+    );
+    await logAction(req.session.admin.id, 'image', id, 'upload_image', { source: b.source, license: b.license, file: file.originalname });
+    saved++;
   }
-  fs.unlink(req.file.path, () => {});
-  await db.query(
-    `INSERT INTO entity_images (id, entity_id, storage_path, source, license, credit, source_url, release_proof, valid_until, is_primary, width, height, variants)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-    [id, req.params.entityId, `entity-images/${id}`, b.source, b.license.trim(), b.credit.trim(), normalizeUrl(b.source_url),
-      b.release_proof.trim(), b.valid_until || null, b.is_primary === 'on', info.width, info.height, info.variants]
-  );
-  await logAction(req.session.admin.id, 'image', id, 'upload_image', { source: b.source, license: b.license });
-  res.redirect(withParam(back, 'ok', 'Bild hochgeladen – noch nicht freigegeben'));
+  const notes = [];
+  if (files.length > free) notes.push(`${files.length - free} nicht übernommen (höchstens ${media.MAX_PER_ENTITY} Bilder je Objekt)`);
+  if (failed.length) notes.push(`nicht verarbeitet: ${failed.join('; ')}`);
+  if (!saved) return res.redirect(withParam(back, 'fehler', `Kein Bild gespeichert – ${notes.join(' · ')}`));
+  res.redirect(withParam(back, notes.length ? 'fehler' : 'ok',
+    `${saved === 1 ? 'Bild' : `${saved} Bilder`} hochgeladen – noch nicht freigegeben${notes.length ? ` · ${notes.join(' · ')}` : ''}`));
 }));
 
 // Übersicht aller Objektbilder: Freigaben, ablaufende Rechte, Quelle, Suche nach Objekt
