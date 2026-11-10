@@ -827,7 +827,7 @@
           </div>
           <p class="muted" style="margin:6px 0 0"><small>Quelle, Lizenz, Urhebervermerk und Nachweis gelten für alle Bilder dieses Uploads. Bilder mit anderer Herkunft bitte getrennt hochladen.</small></p>
           <div class="form-row">
-            <% var IMAGE_DEFAULTS = { owner_release: { license: 'Freigabe des Betreibers für die Nutzung auf dieser Website', credit: 'Foto: ' + entity.name }, own: { license: 'Eigenes Foto' }, user_upload: { license: 'Nutzungserlaubnis des Einsenders' } }; %>
+            <% var IMAGE_DEFAULTS = { owner_release: { license: 'Freigabe des Betreibers für die Nutzung auf dieser Website', credit: 'Foto: ' + entity.name }, own: { license: 'Eigenes Foto', credit: ownPhotoCredit ? 'Foto: ' + ownPhotoCredit : '' }, user_upload: { license: 'Nutzungserlaubnis des Einsenders', creditHint: 'Name des Nutzers, z. B. Foto: Max Muster' } }; %>
             <div><label>Quelle *</label><select name="source" required data-image-defaults="<%= JSON.stringify(IMAGE_DEFAULTS) %>"><% Object.keys(IMAGE_SOURCES).forEach(function (k) { %><option value="<%= k %>"><%= IMAGE_SOURCES[k] %></option><% }) %></select></div>
             <div><label>Lizenz * <small class="muted">woraus sich das Nutzungsrecht ergibt</small></label><input name="license" type="text" required placeholder="z. B. Freigabe Hotel, CC BY 4.0"></div>
           </div>

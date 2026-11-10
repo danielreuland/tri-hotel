@@ -394,6 +394,11 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     draftFields: factDraft.fields,
     SUMMARY_MAX: describer.SUMMARY_MAX,
     MAX_IMAGES: media.MAX_PER_ENTITY,
+    // Urhebervermerk für eigene Fotos: Name des Gründers der Site (Persona „founder“, kein KI-Absender)
+    ownPhotoCredit: await (async () => {
+      const founder = await require('../services/sites').persona(ranking.site_id, 'founder');
+      return founder && founder.is_ai === false ? founder.name : '';
+    })(),
     flash: req.query.ok || null,
     error: req.query.fehler || null,
   });

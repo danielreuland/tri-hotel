@@ -335,6 +335,12 @@ document.querySelectorAll('select[data-image-defaults]').forEach(function (selec
       field.value = d[name] || '';
       field.dataset.prefill = field.value;
     });
+    // Hinweis im leeren Feld, wo der Vermerk nicht vorbelegt werden kann (z. B. Name des Nutzers)
+    var credit = form.querySelector('[name=credit]');
+    if (credit) {
+      if (!credit.dataset.hint) credit.dataset.hint = credit.placeholder || '';
+      credit.placeholder = d.creditHint || credit.dataset.hint;
+    }
   };
   select.addEventListener('change', apply);
   apply();
