@@ -20,13 +20,17 @@ function modelFor(purpose) {
   return config.llm.models[purpose] || config.llm.models.extract;
 }
 
-// Listenpreise in US-Dollar je 1 Mio. Tokens (Ein-/Ausgabe) je Modellfamilie.
-// Startwerte – bitte mit der Preisliste der Claude Console abgleichen; überschreibbar per LLM_PRICES.
+// Listenpreise in US-Dollar je 1 Mio. Tokens (Ein-/Ausgabe, optional cacheRead) – genaue Modell-ID vor Modellfamilie.
+// Stand 11.11.2026 laut Anthropic-Preisliste; bei neuen Modellen hier nachtragen oder per LLM_PRICES überschreiben.
+// Die Familienwerte gelten nur für ältere Modelle ohne eigenen Eintrag (z. B. Sonnet 4.6, Opus 5, Haiku 4.5).
 const DEFAULT_PRICES = {
+  'claude-opus-5-5': { input: 4, output: 20, cacheRead: 0.2 },
+  'claude-sonnet-5-5': { input: 2, output: 10, cacheRead: 0.1 },
+  'claude-sonnet-5': { input: 2, output: 10 },
+  'claude-haiku-5-5': { input: 0.1, output: 0.5 },
   opus: { input: 5, output: 25 },
   sonnet: { input: 3, output: 15 },
   haiku: { input: 1, output: 5 },
-  'claude-haiku-5-5': { input: 0.1, output: 0.5 },
 };
 const CACHE_READ_FACTOR = 0.1;
 const WEB_SEARCH_USD = 0.01;
@@ -49,7 +53,7 @@ function costOf(model, usage, prices) {
   };
   const p = priceFor(model, prices);
   const tokens = p
-    ? (u.input * p.input + u.cacheRead * p.input * CACHE_READ_FACTOR + u.cacheWrite * p.input * CACHE_WRITE_FACTOR + u.output * p.output) / 1e6
+    ? (u.input * p.input + u.cacheRead * (p.cacheRead ?? p.input * CACHE_READ_FACTOR) + u.cacheWrite * p.input * CACHE_WRITE_FACTOR + u.output * p.output) / 1e6
     : 0;
   // Websuche der API: 10 US-Dollar je 1000 Suchanfragen, zusätzlich zu den Tokens
   const searches = (usage && usage.server_tool_use && usage.server_tool_use.web_search_requests) || 0;

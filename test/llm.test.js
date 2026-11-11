@@ -3,8 +3,12 @@ const assert = require('node:assert/strict');
 const llm = require('../src/lib/llm');
 
 test('llm.priceFor: Modellfamilie aus der Modell-ID, unbekannt -> null', () => {
-  assert.deepEqual(llm.priceFor('claude-opus-5-5', llm.DEFAULT_PRICES), llm.DEFAULT_PRICES.opus);
-  assert.deepEqual(llm.priceFor('claude-sonnet-5-5', llm.DEFAULT_PRICES), llm.DEFAULT_PRICES.sonnet);
+  assert.deepEqual(llm.priceFor('claude-opus-4-8', llm.DEFAULT_PRICES), llm.DEFAULT_PRICES.opus);
+  assert.deepEqual(llm.priceFor('claude-sonnet-4-6', llm.DEFAULT_PRICES), llm.DEFAULT_PRICES.sonnet);
+  // aktuelle Modelle haben eigene Preise (Sonnet 5.5: 2/10 $, Opus 5.5: 4/20 $), nicht die der älteren Familie
+  assert.deepEqual(llm.priceFor('claude-sonnet-5-5', llm.DEFAULT_PRICES), { input: 2, output: 10, cacheRead: 0.1 });
+  assert.deepEqual(llm.priceFor('claude-opus-5-5', llm.DEFAULT_PRICES), { input: 4, output: 20, cacheRead: 0.2 });
+  assert.equal(llm.costOf('claude-sonnet-5-5', { input_tokens: 1e6, output_tokens: 1e5, cache_read_input_tokens: 1e6 }, llm.DEFAULT_PRICES).usd, 3.1);
   assert.equal(llm.priceFor('irgendwas', llm.DEFAULT_PRICES), null);
   const own = { 'claude-sonnet-5-5': { input: 2, output: 10 }, sonnet: { input: 3, output: 15 } };
   assert.equal(llm.priceFor('claude-sonnet-5-5', own).input, 2, 'genaue Modell-ID vor Familie');
