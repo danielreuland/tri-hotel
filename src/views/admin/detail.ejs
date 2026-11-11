@@ -218,7 +218,7 @@
           <div><label>Land</label><input name="country" type="text" maxlength="2" value="<%= entity.country || '' %>"></div>
         </div>
         <div class="form-row">
-          <div><label>Website</label><input name="website" type="url" value="<%= entity.website || '' %>"></div>
+          <div><label>Website<% if (entity.website) { %> <a href="<%= entity.website %>" target="_blank" rel="noopener noreferrer" style="font-weight:400">öffnen ↗</a><% } %></label><input name="website" type="url" value="<%= entity.website || '' %>"></div>
           <div><label>Breitengrad</label><input name="lat" type="text" value="<%= entity.lat || '' %>"></div>
           <div><label>Längengrad</label><input name="lng" type="text" value="<%= entity.lng || '' %>"></div>
         </div>
