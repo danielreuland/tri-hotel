@@ -407,4 +407,4 @@ async function retryOsm(submissionId, attempt) {
     result.ko ? `K.O.: ${result.koReason}` : `Neu berechnet: ${ranking.score_name} ${result.score ?? '–'}, Vollständigkeit ${result.completeness} %`);
 }
 
-module.exports = { run, retryOsm, geoFollowup, insertAutoFacts, rankPages, sumCost };
+module.exports = { run, retryOsm, geoFollowup, climateStep, insertAutoFacts, rankPages, sumCost };

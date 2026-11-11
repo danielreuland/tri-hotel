@@ -51,10 +51,26 @@ function range() {
   return { start_date: `${lastYear - 2}-01-01`, end_date: `${lastYear}-12-31` };
 }
 
-async function getJson(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(30000) });
-  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-  return res.json();
+// Open-Meteo antwortet gelegentlich mit 503 oder gar nicht: bis zu zwei Wiederholungen mit Pause. Dauerhafte Fehler
+// (z. B. 400 bei ungültigen Koordinaten) werden nicht wiederholt.
+const RETRY_WAITS_MS = [2000, 6000];
+const retryable = (status) => status === 429 || status >= 500;
+
+async function getJson(url, { fetchImpl = fetch, waits = RETRY_WAITS_MS, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= waits.length; attempt++) {
+    if (attempt) await sleep(waits[attempt - 1]);
+    try {
+      const res = await fetchImpl(url, { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(30000) });
+      if (res.ok) return res.json();
+      lastError = new Error(`Open-Meteo ${res.status}`);
+      if (!retryable(res.status)) throw lastError;
+    } catch (err) {
+      if (err === lastError && !/ (429|5\d\d)$/.test(err.message)) throw err;
+      lastError = err;
+    }
+  }
+  throw new Error(`${lastError.message} (nach ${waits.length + 1} Versuchen)`);
 }
 
 async function monthlyClimate({ lat, lng }, { extended = false } = {}) {
@@ -170,4 +186,4 @@ async function hotelSea(point) {
   return { months: await seaMonthly([hit]), points: [{ lat: hit.lat, lng: hit.lng, distance_km: hit.distance_km }] };
 }
 
-module.exports = { monthlyClimate, aggregateMonthly, seaTemperature, hotelSea, seaCandidates, pickSeaPoint, pickCoastPoints, WINDY_KMH, HOTEL_SEA_KM };
+module.exports = { getJson, monthlyClimate, aggregateMonthly, seaTemperature, hotelSea, seaCandidates, pickSeaPoint, pickCoastPoints, WINDY_KMH, HOTEL_SEA_KM };
