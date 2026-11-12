@@ -236,6 +236,8 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
   background: rgba(0, 0, 0, .45); padding: 2px 8px; border-radius: 999px; max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .band-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 .hero-band.has-photo, .cta-band.has-photo { position: relative; overflow: hidden; }
+/* Im Kopfbereich sitzt der Finder: sein Ausstattungs-Menü darf über die Unterkante hinausragen. Foto und Verlauf liegen mit inset: 0 innerhalb, brauchen also keinen Zuschnitt */
+.hero-band.has-photo { overflow: visible; }
 .hero-band.has-photo::before, .cta-band.has-photo::before { content: ""; position: absolute; inset: 0; z-index: 1; }
 .hero-band.has-photo > .wrap, .cta-band.has-photo > .wrap { position: relative; z-index: 2; }
 /* Text links bleibt lesbar: Verlauf aus der Hintergrundfarbe (hell wie dunkel über Tokens) */
