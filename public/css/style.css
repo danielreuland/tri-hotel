@@ -956,6 +956,8 @@ a.kpi:hover { border-color: var(--accent); }
   .hf-more { justify-self: stretch; }
   .hf-more > summary { width: 100%; justify-content: center; }
   .hf-pop { position: static; width: auto; max-height: none; box-shadow: none; margin-top: 6px; }
+  /* Geöffnet über die ganze Breite, sonst bleibt für die Ausstattung nur eine halbe Spalte */
+  .hf-more[open] { grid-column: 1 / -1; }
   .hf-group { grid-template-columns: 1fr; }
   .hf-go { grid-column: 1 / -1; width: 100%; }
   .home-hero { padding-block: 32px 20px; }
