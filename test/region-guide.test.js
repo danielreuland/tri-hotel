@@ -199,6 +199,6 @@ test('Regionen: Frage zu einer Veranstaltung nennt die nächsten Objekte nach Lu
   const hotels = [{ name: 'Weit', lat: 39.5, lng: 2.7 }, { name: 'Nah', lat: 39.84, lng: 3.12 }, { name: 'Mittel', lat: 39.75, lng: 3.1 }, { name: 'Ohne', lat: null, lng: null }];
   const f = guide.eventFaq(ev, hotels, distanceKm);
   assert.equal(f.q, ev.q);
-  assert.match(f.a, /^Start in A\. Am nächsten liegen \(Luftlinie\): Nah \(\d+(,\d)? km\), Mittel \(\d+(,\d)? km\)\.$/);
+  assert.match(f.a, /^Start in A\. Am nächsten liegen \(Luftlinie\): Nah \(\d,\d km\), Mittel \(\d,\d km\)\.$/, 'unter 10 km mit einer Nachkommastelle');
   assert.equal(guide.eventFaq({ q: 'x' }, hotels, distanceKm), null, 'ohne Ort keine Frage');
 });

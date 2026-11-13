@@ -351,7 +351,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - Knopf „Anfragen“ auf den Camp-Karten. Formulierung „Anbieter zahlen nicht für ihre Aufnahme; Partnerschaften sind als Anzeige gekennzeichnet“ klarer fassen. Einheitliche Preisangabe „pro Woche“ prüfen.
 
 ### B-45 und B-32: SEO-Titel und Saisonseiten (Keyword-Analyse 12.11.2026, M1 Saisonstart bis 15.12.2026)
-Gebaut am 13.11. (Migration 115), live erst nach „veröffentlichen“ von Daniel.
+Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Titles und H1 der 6 Seiten, Themenseite mit 18 Hotels (in der Sitemap, ItemList), FAQ-Daten auf den Regionsseiten. Zypern ist noindex (1 Hotel), die Frage wirkt dort erst mit mehr Hotels.
 - **Titel/H1 je Seite:** Objekt `entity_rankings.seo_title/seo_h1/seo_description`, Region `region_texts.seo_title/seo_h1`, Startseite `rankings.content.meta_title/hero_title` (Admin-Feld), `/trainingscamp` in `src/views/sites/tri-hotel/trainingscamp.json` und `.ejs`. Gesetzt nur für Club La Santa, Barceló Lanzarote Active Resort, Startseite, `/trainingscamp`, Mallorca, Lanzarote. Im Admin noch nicht bearbeitbar (Objekt und Region nur per Migration).
 - **Abschnitt „Erfahrungen“** auf allen Hotelseiten: Anker `#erfahrungen`, Überschrift „Erfahrungen mit … : Athleten-Bewertungen“, nur echte Bewertungen; ohne Bewertungen Hinweis auf die geprüften Fakten.
 - **Themenseite** `/region/mallorca/hotels-mit-25-m-becken` (Tabelle `area_topics`: Kriterium + Ausprägungen, `min_count` 5, sonst noindex und nicht in der Sitemap), verlinkt unter „Gezielt suchen“ auf der Regionsseite.

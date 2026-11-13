@@ -402,7 +402,7 @@ function eventFaq(event, entities, distanceKm) {
     .map((e) => ({ name: e.name, km: distanceKm(at, { lat: Number(e.lat), lng: Number(e.lng) }) }))
     .sort((a, b) => a.km - b.km).slice(0, Number(event.limit) || 5);
   if (!near.length) return null;
-  const fmt = (km) => (km < 10 ? de(Math.round(km * 10) / 10) : de(Math.round(km)));
+  const fmt = (km) => (km < 10 ? de(km, 1) : de(km));
   return { q: event.q, a: `${event.intro ? `${event.intro} ` : ''}Am nächsten liegen (Luftlinie): ${near.map((n) => `${n.name} (${fmt(n.km)} km)`).join(', ')}.` };
 }
 
