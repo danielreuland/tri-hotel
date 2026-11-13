@@ -164,3 +164,12 @@ test('seo.descriptionWithList: nur ganze Einträge, Ende bleibt erhalten', () =>
   assert.ok(d.includes('Abschließbare Radgarage') && !d.includes('Physiotherapie'));
   assert.equal(seo.descriptionWithList('Kopf.', [], 'Ende.'), 'Kopf. Ende.');
 });
+
+test('Themenseiten: Mehrfachauswahl passt, sobald eine Angabe dabei ist', () => {
+  const topics = require('../src/services/area-topics');
+  const opts = ['pool_50_hotel', 'pool_25_hotel'];
+  assert.equal(topics.matches({ option: 'pool_25_hotel', options: ['pool_25_hotel', 'pool_50_within_5km'] }, opts), true);
+  assert.equal(topics.matches({ option: 'pool_25_hotel' }, opts), true, 'Einzelwert');
+  assert.equal(topics.matches({ option: 'none', options: ['none'] }, opts), false);
+  assert.equal(topics.matches(null, opts), false);
+});

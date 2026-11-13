@@ -3,7 +3,7 @@
 const db = require('../db');
 
 async function published(regionId) {
-  return db.one(`SELECT summary, body, updated_at FROM region_texts WHERE region_id = $1 AND body <> ''`, [regionId]);
+  return db.one(`SELECT summary, body, updated_at, seo_title, seo_h1, faq_months, faq_event FROM region_texts WHERE region_id = $1 AND body <> ''`, [regionId]);
 }
 
 // Vergleichstexte (Tabelle region_compare_texts, Migration 110). Ein Text gilt für das Paar beider Regionen.

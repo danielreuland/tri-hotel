@@ -18,6 +18,7 @@ const reviewsService = require('../services/reviews');
 const home = require('../services/home');
 const regionGuide = require('../services/region-guide');
 const regionText = require('../services/region-text');
+const areaTopics = require('../services/area-topics');
 const { slugify } = require('../lib/util');
 const finder = require('../lib/finder');
 
@@ -336,14 +337,16 @@ async function renderEntity(req, res, ranking, slug) {
   const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
     // Titel nach Suchbegriffen aus rankings.content.entity_title (z. B. „{name} {ort}: … im Check“), Ort = Region, sonst Ort/Land
-    title: seo.entityTitleFromTemplates((ranking.content || {}).entity_title, {
+    // Eigener Titel je Objekt und Ranking (entity_rankings.seo_title) vor der Vorlage des Rankings
+    title: er.seo_title || seo.entityTitleFromTemplates((ranking.content || {}).entity_title, {
       name: entity.name, ort: region ? region.name : (entity.city || seo.countryName(entity.country)),
       score: result.eligible ? result.score : null, scorename: ranking.score_name,
     }) || seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
-    description: text && text.summary ? text.summary : seo.descriptionWithList(result.eligible
+    description: er.seo_description || (text && text.summary) || seo.descriptionWithList(result.eligible
       ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}.`
       : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich.`, topFeatures, 'Geprüfte Fakten, Herkunft je Wert.'),
     canonical,
+    seoH1: er.seo_h1 || null,
     ogImage,
     ogType: 'article',
     jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary, features: entityFeatureList,
@@ -636,6 +639,7 @@ async function renderArea(req, res, ranking, area) {
   let text = null;
   let compares = [];
   let faq = [];
+  let topics = [];
   if (area.type === 'region') {
     const [row] = await regionGuide.load(ranking, req.site.id, { slugs: [area.slug] });
     if (row && row.climate.length) {
@@ -656,6 +660,13 @@ async function renderArea(req, res, ranking, area) {
       features: await featureQuestions(ranking, content.area_faq_features, d, fill),
       compare: compares.map((c) => ({ q: fill(content.area_faq_compare || '{name} oder {andere}?', { andere: c.name }), a: c.text })),
     }, MONTHS_DE);
+    // Zusatzfragen je Region (region_texts): Wetter in bestimmten Monaten, nächstgelegene Objekte zu einer Veranstaltung
+    const extra = [
+      t && t.faq_months && t.faq_months.length ? regionGuide.monthsFaq(area, rd ? rd.climate : [], t.faq_months, MONTHS_DE) : null,
+      t && t.faq_event ? regionGuide.eventFaq(t.faq_event, d.ranked, seo.distanceKm) : null,
+    ].filter(Boolean);
+    faq = [...faq.slice(0, 1), ...extra, ...faq.slice(1)];
+    topics = await areaTopics.forArea(ranking, area, d);
   }
   // Länder: Redaktionstext mit eigenen Fragen; Hotelzahl und Leistungen rechnet die Seite aus den aktuellen Daten
   if (area.type === 'country') {
@@ -673,13 +684,14 @@ async function renderArea(req, res, ranking, area) {
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
   const ov = await areas.overview(ranking, req.site.id);
   const best = seo.bestTimeText(d.bestMonths, MONTHS_DE);
-  const heading = content.area_h1 ? fill(content.area_h1) : `${ranking.name} ${area.nameIn}`;
+  // Eigene Überschrift oder eigener Titel je Region (region_texts.seo_h1/seo_title) vor der Vorlage des Rankings
+  const heading = text && text.seo_h1 ? text.seo_h1 : (content.area_h1 ? fill(content.area_h1) : `${ranking.name} ${area.nameIn}`);
   const subline = content.area_subline ? fill(content.area_subline) : null;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   res.render('public/area', {
-    title: content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`,
+    title: text && text.seo_title ? text.seo_title : (content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`),
     description: text && text.summary ? text.summary : (d.count
       ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
@@ -693,7 +705,7 @@ async function renderArea(req, res, ranking, area) {
       ...(d.ranked.length ? [seo.itemListLd(heading, d.ranked.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : []),
       ...(faq.length ? [seo.faqLd(faq)] : []),
     ],
-    heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, compares, faq, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
+    heading, subline, ranking, area, d, month, best, crumbs, base, rd, regionCamps, text, compares, faq, topics, campModels: camps.MODELS, METRICS: regionGuide.METRICS,
     otherRegions: ov.regions.filter((r) => !(area.type === 'region' && r.slug === area.slug)),
     // Land mit gleichnamiger Region (z. B. Zypern) nur einmal zeigen
     countries: ov.countries.filter((c) => !(area.type === 'country' && c.slug === area.slug) && !ov.regions.some((r) => r.name === c.name)),
@@ -716,6 +728,33 @@ router.get('/:kind(region|land)/:slug', wrap(async (req, res, next) => {
   const area = r && (await findArea(req.site.id, req.params.kind, req.params.slug));
   if (!area) return next();
   await renderArea(req, res, r, area);
+}));
+
+// Themenseite einer Region (area_topics), z. B. /region/mallorca/hotels-mit-25-m-becken
+async function renderAreaTopic(req, res, ranking, area, topicSlug) {
+  const topic = await areaTopics.get(ranking, area, topicSlug);
+  if (!topic) return false;
+  const d = await areas.pageData(ranking, area, null);
+  const list = await areaTopics.matching(ranking, topic, d.ranked);
+  const siteUrl = res.locals.siteUrl;
+  const base = rankingBase(ranking);
+  const areaPath = `${base}/region/${area.slug}`;
+  const path = `${areaPath}/${topic.slug}`;
+  const fill = (tpl) => String(tpl || '').replace(/\{anzahl\}/g, String(list.length)).replace(/\{score\}/g, ranking.score_name);
+  const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }, { name: area.name, url: `${siteUrl}${areaPath}` }, { name: fill(topic.h1), url: `${siteUrl}${path}` }];
+  res.render('public/area-topic', {
+    title: fill(topic.title), description: fill(topic.description), canonical: `${siteUrl}${path}`,
+    noindex: list.length < topic.min_count,
+    jsonLd: [seo.breadcrumbLd(crumbs), ...(list.length ? [seo.itemListLd(fill(topic.h1), list.map((e) => ({ name: e.name, url: `${siteUrl}${entityPath(ranking, e)}` })))] : [])],
+    heading: fill(topic.h1), intro: fill(topic.intro), list, ranking, area, areaPath, entityPath: (e) => entityPath(ranking, e),
+  });
+  return true;
+}
+
+router.get('/region/:slug/:topic', wrap(async (req, res, next) => {
+  const r = req.hostRanking;
+  const area = r && (await findArea(req.site.id, 'region', req.params.slug));
+  if (!area || !(await renderAreaTopic(req, res, r, area, req.params.topic))) return next();
 }));
 
 router.get('/rankings/:rslug/:kind(region|land)/:slug', wrap(async (req, res, next) => {

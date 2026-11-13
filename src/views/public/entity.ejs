@@ -15,7 +15,7 @@
    var shownGroups = groups.filter(function (g) { return g.max > 0; }); %>
 
 <div class="entity-head">
-  <h1><%= entity.name %></h1>
+  <h1><%= locals.seoH1 || entity.name %></h1>
   <p class="muted"><%= [entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ') %>
     <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
   <% if (locals.canonical) { %><%- include('../partials/share', { url: canonical, kind: ranking.entity_label_sg,
@@ -239,12 +239,13 @@
 
 <% if (reviewCfg.enabled) { var starStr = function (v) { var n = Math.round(v || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }; %>
   <section id="bewertungen" style="margin-top:24px">
+    <span id="erfahrungen"></span>
     <div class="facts-head">
-      <h2>Athleten-Bewertungen<% if (reviewList.length) { %> <small class="muted">· <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> von 5 aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></small><% } %></h2>
+      <h2>Erfahrungen mit <%= entity.name %>: Athleten-Bewertungen<% if (reviewList.length) { %> <small class="muted">· <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> von 5 aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></small><% } %></h2>
       <a class="btn small cta" href="/<%= ranking.entity_type %>/<%= entity.slug %>/bewerten">Bewertung schreiben</a>
     </div>
     <% if (!reviewList.length) { %>
-      <p class="muted">Noch keine Bewertungen. Warst du zum Training hier? Erzähl anderen, wie es war.</p>
+      <p class="muted">Noch keine Bewertungen. Warst du zum Training hier? Erzähl anderen, wie es war. Bis dahin zeigen die <a href="#fakten">geprüften Fakten</a>, was das <%= ranking.entity_label_sg %> fürs Training bietet.</p>
     <% } else { %>
       <div class="review-summary">
         <% reviewDims.filter(function (d) { return d.avg !== null }).forEach(function (d) { %><div><span><%= d.label %></span><span><span class="star-line" aria-hidden="true"><%= starStr(d.avg) %></span> <%= String(d.avg).replace('.', ',') %></span></div><% }) %>

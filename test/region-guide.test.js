@@ -181,3 +181,24 @@ test('Regionsseite: Fragen zu Leistungen und zum Vergleich mit der Nachbarregion
     features: [{ q: 'Welches Hotel auf Mallorca hat ein 50-m-Becken?', label: '50-m-Becken im Hotel', entities: [] }] }, M);
   assert.equal(none[1].a, '50-m-Becken im Hotel: bei keinem der 13 geprüften Hotels auf Mallorca bestätigt.');
 });
+
+test('Regionen: Frage zum Wetter in bestimmten Monaten aus dem Klima der Region', () => {
+  const guide = require('../src/services/region-guide');
+  const M = require('../src/lib/util').MONTHS;
+  const climate = [{ month: 1, avg_high_c: 21.2, rain_days: 3 }, { month: 2, avg_high_c: 21.6, rain_days: 2 }, { month: 3, avg_high_c: 23, rain_days: null }];
+  const f = guide.monthsFaq({ nameIn: 'auf Lanzarote' }, climate, [1, 2, 3], M);
+  assert.equal(f.q, 'Wie warm ist es auf Lanzarote im Januar, Februar und März?');
+  assert.match(f.a, /^Januar: Ø 21 °C am Tag, 3 Regentage; Februar: Ø 22 °C am Tag, 2 Regentage; März: Ø 23 °C am Tag\. /);
+  assert.equal(guide.monthsFaq({ nameIn: 'x' }, [], [1], M), null, 'ohne Klimadaten keine Frage');
+});
+
+test('Regionen: Frage zu einer Veranstaltung nennt die nächsten Objekte nach Luftlinie', () => {
+  const guide = require('../src/services/region-guide');
+  const { distanceKm } = require('../src/lib/seo');
+  const ev = { q: 'Welche Hotels liegen nah am Rennen?', intro: 'Start in A.', lat: 39.835, lng: 3.13, limit: 2 };
+  const hotels = [{ name: 'Weit', lat: 39.5, lng: 2.7 }, { name: 'Nah', lat: 39.84, lng: 3.12 }, { name: 'Mittel', lat: 39.75, lng: 3.1 }, { name: 'Ohne', lat: null, lng: null }];
+  const f = guide.eventFaq(ev, hotels, distanceKm);
+  assert.equal(f.q, ev.q);
+  assert.match(f.a, /^Start in A\. Am nächsten liegen \(Luftlinie\): Nah \(\d+(,\d)? km\), Mittel \(\d+(,\d)? km\)\.$/);
+  assert.equal(guide.eventFaq({ q: 'x' }, hotels, distanceKm), null, 'ohne Ort keine Frage');
+});

@@ -191,6 +191,15 @@
 </section>
 <% } %>
 
+<% if (locals.topics && topics.length) { %>
+<section>
+  <h2>Gezielt suchen</h2>
+  <div class="chips">
+    <% topics.forEach(function (t) { %><a class="chip" href="<%= base %>/region/<%= area.slug %>/<%= t.slug %>"><%= t.label %> <span class="muted">(<%= t.count %>)</span></a><% }) %>
+  </div>
+</section>
+<% } %>
+
 <% if (faq.length) { %>
 <section id="fragen" class="area-faq">
   <h2>Häufige Fragen zu <%= area.name %></h2>

@@ -4,6 +4,7 @@ const db = require('../db');
 const config = require('../config');
 const rankings = require('../services/rankings');
 const areas = require('../services/areas');
+const areaTopics = require('../services/area-topics');
 const camps = require('../services/camps');
 const regionText = require('../services/region-text');
 const regionGuide = require('../services/region-guide');
@@ -55,6 +56,18 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
     // Regionen und Länder nur, wenn genug Einträge (keine dünnen Seiten)
     const ov = await areas.overview(ranking, site.id);
     for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, lastmod: r.lastmod, priority: '0.9' });
+    // Themenseiten der Regionen (nur mit genug Treffern, sonst noindex)
+    if (ranking.is_default) {
+      for (const r of ov.regions) {
+        const area = areas.regionArea(await areas.region(site.id, r.slug));
+        const topics = await areaTopics.list(ranking, r.slug);
+        if (!topics.length) continue;
+        const d = await areas.pageData(ranking, area, null);
+        for (const t of topics) {
+          if ((await areaTopics.matching(ranking, t, d.ranked)).length >= t.min_count) urls.push({ loc: `${base}/region/${r.slug}/${t.slug}`, lastmod: r.lastmod, priority: '0.7' });
+        }
+      }
+    }
     for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, lastmod: c.lastmod, priority: '0.7' });
   }
   // Übersicht der Trainingsregionen; Vergleiche nur mit Redaktionstext (alle anderen sind noindex)

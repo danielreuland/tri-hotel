@@ -382,4 +382,28 @@ function parsePair(pair) {
   return [...new Set(slugs)].slice(0, 3);
 }
 
-module.exports = { hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeRule, bestTimeReasons, regionFaq, climatePointNote, load, pairSlug, parsePair };
+// Frage „Wie warm ist es … im Januar, Februar und März?“ aus dem Klima der Region (region_texts.faq_months)
+function monthsFaq(region, climate, months, monthNames) {
+  const rows = (months || []).map((m) => (climate || []).find((c) => Number(c.month) === Number(m))).filter(Boolean)
+    .filter((c) => num(c.avg_high_c) !== null);
+  if (!rows.length) return null;
+  const names = rows.map((c) => monthNames[Number(c.month) - 1]);
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} und ${names[names.length - 1]}` : names[0];
+  const parts = rows.map((c) => `${monthNames[Number(c.month) - 1]}: Ø ${de(c.avg_high_c)} °C am Tag`
+    + (num(c.rain_days) !== null ? `, ${de(c.rain_days)} Regentage` : ''));
+  return { q: `Wie warm ist es ${region.nameIn} im ${list}?`, a: `${parts.join('; ')}. Modellwerte von Open-Meteo, Mittel der letzten drei Jahre.` };
+}
+
+// Frage zu einer Veranstaltung mit den nächstgelegenen Objekten (region_texts.faq_event: { q, intro, lat, lng, limit })
+function eventFaq(event, entities, distanceKm) {
+  if (!event || !event.q || !Number.isFinite(Number(event.lat)) || !Number.isFinite(Number(event.lng))) return null;
+  const at = { lat: Number(event.lat), lng: Number(event.lng) };
+  const near = (entities || []).filter((e) => e.lat !== null && e.lat !== undefined && e.lng !== null && e.lng !== undefined)
+    .map((e) => ({ name: e.name, km: distanceKm(at, { lat: Number(e.lat), lng: Number(e.lng) }) }))
+    .sort((a, b) => a.km - b.km).slice(0, Number(event.limit) || 5);
+  if (!near.length) return null;
+  const fmt = (km) => (km < 10 ? de(Math.round(km * 10) / 10) : de(Math.round(km)));
+  return { q: event.q, a: `${event.intro ? `${event.intro} ` : ''}Am nächsten liegen (Luftlinie): ${near.map((n) => `${n.name} (${fmt(n.km)} km)`).join(', ')}.` };
+}
+
+module.exports = { monthsFaq, eventFaq, hasRegions, METRICS, SORTS, SEASONS, seasonFor, parsePeriod, monthValue, yearRange, inBestTime, sortText, sortRegions, bikeFacts, bikeText, bestTimeRule, bestTimeReasons, regionFaq, climatePointNote, load, pairSlug, parsePair };

@@ -1,0 +1,26 @@
+<%- include('../partials/head') %>
+
+<p class="crumbs"><a href="<%= areaPath %>">← <%= area.name %></a></p>
+<h1><%= heading %></h1>
+<% if (intro) { %><p class="lead"><%= intro %></p><% } %>
+
+<% if (!list.length) { %>
+  <p class="muted">Derzeit keine passenden <%= ranking.entity_label_pl %>.</p>
+<% } else { %>
+  <ol class="rank-list">
+    <% list.forEach(function (e, i) { %>
+      <li class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
+        <div>
+          <a href="<%= entityPath(e) %>"><strong><%= i + 1 %>. <%= e.name %></strong></a><br>
+          <small class="muted"><%= [e.city, e.topicValue].filter(Boolean).join(' · ') %></small>
+        </div>
+        <span class="badge"><%= ranking.score_name %> <%= e.score %></span>
+      </li>
+    <% }) %>
+  </ol>
+<% } %>
+
+<p class="muted"><small>Sortiert nach <%= ranking.score_name %>. Partnerschaften ändern die Reihenfolge nicht.</small></p>
+<p><a href="<%= areaPath %>">Alle <%= ranking.entity_label_pl %> <%= area.nameIn %> →</a></p>
+
+<%- include('../partials/foot') %>
