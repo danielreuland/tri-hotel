@@ -127,7 +127,7 @@
 
   <% var D = d.direct, sg = d.ranking.entity_label_sg; %>
   <section class="card dash-wide" id="direkt">
-    <h2>Direkt beim <%= sg %> <small class="muted">Klicks auf die Website des <%= sg %>s in „Buchen &amp; Anfragen“</small></h2>
+    <h2>Direkt beim <%= sg %> <small class="muted">Klicks auf die Website des <%= sg %>s</small></h2>
     <dl class="dash-list cols">
       <div><dt>Klicks 7 Tage</dt><dd><%= n(D.c7) %></dd></div>
       <div><dt>Klicks 30 Tage</dt><dd><%= n(D.c30) %></dd></div>
@@ -140,7 +140,7 @@
       <h3>Meistgeklickt (30 Tage)</h3>
       <dl class="dash-list"><% D.top.forEach(function (x) { %><div><dt><%= x.name %></dt><dd><%= x.clicks %></dd></div><% }) %></dl>
     <% } %>
-    <p class="muted" style="margin:6px 0 0"><small>Gezählt werden die Zeile „Direkt beim <%= sg %>“ und der Knopf „Direkt beim <%= sg %> buchen“ auf den Objektseiten, mit denselben Regeln wie bei den Partnerlinks (keine Bots, ein Klick je Besucher, <%= sg %> und Tag). Die Zählung beginnt mit dem Einbau am 13.11.2026. Ohne Einfluss auf Score und Reihenfolge.</small></p>
+    <p class="muted" style="margin:6px 0 0"><small>Gezählt werden auf den Objektseiten die Zeile „Direkt beim <%= sg %>“, der Knopf „Direkt beim <%= sg %> buchen“ und der Link „Website“ unter dem Namen, mit denselben Regeln wie bei den Partnerlinks (keine Bots, ein Klick je Besucher, <%= sg %> und Tag). Die Zählung beginnt mit dem Einbau am 13.11.2026. Ohne Einfluss auf Score und Reihenfolge.</small></p>
   </section>
 
   <section class="card dash-wide">

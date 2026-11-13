@@ -17,7 +17,7 @@
 <div class="entity-head">
   <h1><%= locals.seoH1 || entity.name %></h1>
   <p class="muted"><%= [entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ') %>
-    <% if (entity.website) { %> · <a href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
+    <% if (entity.website) { %> · <a href="<%= entity.website %>" data-count="/go/<%= entity.slug %>/direkt/klick" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Website</a><% } %></p>
   <% if (locals.canonical) { %><%- include('../partials/share', { url: canonical, kind: ranking.entity_label_sg,
     text: entity.name + (result.score === null ? '' : ' – ' + ranking.score_name + ' ' + result.score) + (locals.site ? ' auf ' + site.name : '') + ':' }) %><% } %>
 </div>
