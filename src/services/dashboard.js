@@ -97,7 +97,8 @@ async function load(site) {
          FROM partner_programs p WHERE p.status = 'active' ORDER BY p.sort_order, lower(p.name)`, [R]),
     db.many(
       `SELECT day, sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search'))::int AS partner,
-              sum(clicks) FILTER (WHERE kind = 'camp')::int AS camp
+              sum(clicks) FILTER (WHERE kind = 'camp')::int AS camp,
+              sum(clicks) FILTER (WHERE kind = '${partners.DIRECT_KIND}')::int AS direct
          FROM outbound_clicks WHERE day > current_date - 30 GROUP BY day`),
     // Suchlinks (z. B. Bewertungen auf Tripadvisor) sind keinem Hotel zugeordnet: je Programm eine Zeile
     partners.stats(30).then((s) => [...s.top, ...s.byProgram.filter((p) => p.search_clicks).map((p) => ({ name: 'Suchlink', program: p.name, clicks: p.search_clicks, search: true }))]
@@ -111,7 +112,7 @@ async function load(site) {
   ]);
 
   const activeCamps = campRows.filter((c) => c.status === 'active');
-  const days = daySeries(clickDays, 30, new Date(), ['partner', 'camp']);
+  const days = daySeries(clickDays, 30, new Date(), ['partner', 'camp', 'direct']);
   const sum = (list, k) => list.reduce((s, d) => s + d[k], 0);
   const campClicks = { c7: sum(days.slice(-7), 'camp'), c30: sum(days, 'camp') };
   const partnerClicks = { c7: sum(days.slice(-7), 'partner'), c30: sum(days, 'partner') };
@@ -133,6 +134,8 @@ async function load(site) {
         .filter((p) => p.monetized || p.links > 0 || p.clicks30 > 0),
       clicks: partnerClicks, days, top: topClicks,
     },
+    // Klicks auf „Direkt beim <Objekt>“ (Website des Objekts, kein Partnerprogramm)
+    direct: await partners.directStats(R, 30),
     costs: { ...costs, api: apiCalls, budget: await llm.monthSpend() },
     visits: await analytics.overview(site.primary_domain),
   };

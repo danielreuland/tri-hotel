@@ -125,6 +125,24 @@
     <% } %>
   </section>
 
+  <% var D = d.direct, sg = d.ranking.entity_label_sg; %>
+  <section class="card dash-wide" id="direkt">
+    <h2>Direkt beim <%= sg %> <small class="muted">Klicks auf die Website des <%= sg %>s in „Buchen &amp; Anfragen“</small></h2>
+    <dl class="dash-list cols">
+      <div><dt>Klicks 7 Tage</dt><dd><%= n(D.c7) %></dd></div>
+      <div><dt>Klicks 30 Tage</dt><dd><%= n(D.c30) %></dd></div>
+      <div><dt>Zum Vergleich: Partnerlinks 30 Tage</dt><dd><%= n(P.clicks.c30) %></dd></div>
+      <div><dt><%= label %> mit Klick (30 Tage)</dt><dd><%= n(D.objects) %></dd></div>
+    </dl>
+    <h3>Klicks direkt zum <%= sg %> je Tag (30 Tage)</h3>
+    <%- include('_bars', { series: P.days.map(function (x) { return { day: x.day, value: x.direct }; }), name: 'Klicks' }) %>
+    <% if (D.top.length) { %>
+      <h3>Meistgeklickt (30 Tage)</h3>
+      <dl class="dash-list"><% D.top.forEach(function (x) { %><div><dt><%= x.name %></dt><dd><%= x.clicks %></dd></div><% }) %></dl>
+    <% } %>
+    <p class="muted" style="margin:6px 0 0"><small>Gezählt werden die Zeile „Direkt beim <%= sg %>“ und der Knopf „Direkt beim <%= sg %> buchen“ auf den Objektseiten, mit denselben Regeln wie bei den Partnerlinks (keine Bots, ein Klick je Besucher, <%= sg %> und Tag). Die Zählung beginnt mit dem Einbau am 13.11.2026. Ohne Einfluss auf Score und Reihenfolge.</small></p>
+  </section>
+
   <section class="card dash-wide">
     <h2>Seitenaufrufe <small class="muted">Plausible</small></h2>
     <% if (v) { %>

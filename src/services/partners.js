@@ -271,6 +271,25 @@ async function countClick(link, source = '') {
      ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target, String(source || '').slice(0, 60)]);
 }
 
+// Klick auf „Direkt beim <Objekt>“ (eigene Website des Objekts, kein Partnerprogramm): Anzahl je Objekt, Tag und Herkunft
+const DIRECT_KIND = 'entity_website';
+async function countDirectClick(entityId, source = '') {
+  await db.query(
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 1)
+     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [DIRECT_KIND, entityId, String(source || '').slice(0, 60)]);
+}
+
+// Dashboard: Klicks „Direkt beim <Objekt>“ für die Objekte eines Rankings – Summen und meistgeklickte Objekte
+async function directStats(rankingId, days = 30) {
+  const rows = await db.many(
+    `SELECT e.name, sum(c.clicks)::int AS clicks, COALESCE(sum(c.clicks) FILTER (WHERE c.day > current_date - 7), 0)::int AS clicks7
+       FROM outbound_clicks c JOIN entities e ON e.id = c.target_id
+      WHERE c.kind = $1 AND c.day > current_date - $3::int
+        AND EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.ranking_id = $2)
+      GROUP BY e.id, e.name ORDER BY clicks DESC, e.name`, [DIRECT_KIND, rankingId, days]);
+  return { c7: rows.reduce((s, r) => s + r.clicks7, 0), c30: rows.reduce((s, r) => s + r.clicks, 0), objects: rows.length, top: rows.slice(0, 5) };
+}
+
 // Admin-Übersicht: Klicks der letzten Tage je Programm und je Objekt
 async function stats(days = 30) {
   const byProgram = await db.many(
@@ -295,4 +314,4 @@ async function stats(days = 30) {
   return { byProgram, top, bySource };
 }
 
-module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, stats };
+module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, countDirectClick, directStats, DIRECT_KIND, stats };

@@ -75,13 +75,13 @@
           </a></li>
         <% }) %>
         <% if (entity.website) { %>
-          <li><a class="book-row direct" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">
+          <li><a class="book-row direct" href="<%= entity.website %>" data-count="/go/<%= entity.slug %>/direkt/klick" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">
             <span class="book-logo"><strong>Direkt beim <%= ranking.entity_label_sg %></strong></span><span class="book-go">Website<span class="arr" aria-hidden="true">↗</span></span>
           </a></li>
         <% } %>
       </ul>
     <% } else if (entity.website) { %>
-      <div class="book-actions"><a class="btn cta large" href="<%= entity.website %>" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Direkt beim <%= ranking.entity_label_sg %> buchen ↗</a></div>
+      <div class="book-actions"><a class="btn cta large" href="<%= entity.website %>" data-count="/go/<%= entity.slug %>/direkt/klick" rel="nofollow noopener" target="_blank" data-goal="Hotel-Website">Direkt beim <%= ranking.entity_label_sg %> buchen ↗</a></div>
     <% } %>
     <% if (hotelInquiryUrl) { %><div class="book-actions" style="margin-top:10px"><a class="btn secondary large" href="<%= hotelInquiryUrl %>" data-goal="Hotel-Anfrage-Start">Trainingslager anfragen</a></div><% } %>
   </section>

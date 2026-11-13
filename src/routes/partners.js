@@ -4,6 +4,7 @@ const fs = require('fs');
 const express = require('express');
 const config = require('../config');
 const partners = require('../services/partners');
+const db = require('../db');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -34,6 +35,20 @@ router.get('/go/:slug/:program/:kind?', wrap(async (req, res, next) => {
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.set('Cache-Control', 'no-store');
   res.redirect(302, partners.buildUrl(link, link.url, { slug: req.params.slug }));
+}));
+
+// „Direkt beim <Objekt>“: Klick auf die eigene Website des Objekts zählen (Beacon wie bei den Partnerlinks, gleiche Bot-Regeln).
+// Steht vor der allgemeinen Route, weil „direkt“ sonst als Programm gelesen würde.
+router.post('/go/:slug/direkt/klick', wrap(async (req, res) => {
+  const r = req.hostRanking;
+  if (r && /^[a-z0-9-]+$/.test(req.params.slug) && partners.countable(req, `${req.params.slug}/direkt`)) {
+    const e = await db.one(
+      `SELECT e.id FROM entities e WHERE e.entity_type = $1 AND e.slug = $2 AND e.website IS NOT NULL
+          AND EXISTS (SELECT 1 FROM entity_rankings er WHERE er.entity_id = e.id AND er.status = 'live')`, [r.entity_type, req.params.slug]);
+    if (e) await partners.countDirectClick(e.id, partners.clickSource({ von: req.query.von, referer: req.get('referer') }));
+  }
+  res.set('Cache-Control', 'no-store');
+  res.status(204).end();
 }));
 
 // Zählung per Beacon beim Klick auf unseren Seiten (alle Partnerlinks; Direktlinks gehen ohne Zwischenadresse zum Anbieter)
