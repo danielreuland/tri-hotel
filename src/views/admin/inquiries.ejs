@@ -22,13 +22,13 @@
       <tr><th>Objekt</th><th>An</th><th>Fragen</th><th>Status</th><th>Verlauf</th><th></th></tr>
       <% rows.forEach(function (i) { var labels = i.criteria_labels || []; %>
         <tr>
-          <td><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><strong><%= i.entity_name %></strong></a><br><small class="muted"><%= i.city || '' %></small></td>
+          <td><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><strong><%= i.entity_name %></strong></a><br><small class="muted"><%= i.city || '' %></small><% if (i.opt_out_at) { %><br><span class="badge bad" title="<%= i.opt_out_note || '' %>">abgemeldet <%= formatDate(i.opt_out_at) %></span><% } %></td>
           <td><small><%= i.recipient %><br><%= i.persona_name ? 'von ' + i.persona_name + (i.persona_is_ai ? ' (KI)' : '') : '' %> · <%= i.language.toUpperCase() %></small></td>
           <td><% if (i.status === 'draft' && i.persona_is_ai === false) { %><small>Vollständige Prüfung + Fotos<br><span class="muted"><%= i.body ? 'Entwurf erstellt' : 'Entwurf noch nicht erstellt' %></span></small><% } else { %><small title="<%= labels.join(', ') %>"><%= labels.length %> Fragen<%= i.ask_photos ? ' + Fotos' : '' %><br><span class="muted"><%= labels.slice(0, 3).join(', ') %><%= labels.length > 3 ? ' …' : '' %></span></small><% } %></td>
           <td>
             <span class="badge <%= i.status === 'draft' ? 'warn' : i.status === 'answered' ? 'good' : i.status === 'failed' ? 'bad' : '' %>"><%= INQUIRY_STATUS[i.status] %></span>
             <% if (i.pending_answers) { %><br><small><a href="/admin/meldungen/<%= i.sub_id %>#anfragen"><%= i.pending_answers %> Antwort(en) übernehmen</a></small><% } %>
-            <% if (i.error && i.status !== 'closed') { %><br><small style="color:var(--bad)"><%= i.error %></small><% } %>
+            <% if (i.error && (i.status !== 'closed' || /abmeld/i.test(i.error))) { %><br><small style="color:var(--bad)"><%= i.error %></small><% } %>
           </td>
           <td><small class="muted">
             <%= i.auto_created ? 'Entwurf automatisch' : 'angelegt von ' + (i.created_by_email || 'Admin') %> · <%= formatDate(i.created_at) %>

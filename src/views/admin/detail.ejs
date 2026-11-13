@@ -251,6 +251,29 @@
         </div>
         <p><button class="btn small" type="submit">Stammdaten speichern</button> <small class="muted">Slug: <%= entity.slug %></small></p>
       </form>
+      <%# Abmeldung von E-Mails: über den Abmeldelink oder hier eingetragen; sperrt Anfragen und Erinnerungen an dieses Objekt %>
+      <% var OPT_SRC = { link: 'über den Abmeldelink', admin: 'im Admin eingetragen' }; %>
+      <div class="card" id="abmeldung" style="margin-top:14px;padding:12px 14px;<%= entity.inquiry_opt_out_at ? 'border-color:var(--bad)' : '' %>">
+        <% if (entity.inquiry_opt_out_at) { %>
+          <p style="margin:0 0 6px"><span class="badge bad">Von E-Mails abgemeldet</span> seit <%= formatDate(entity.inquiry_opt_out_at) %> · <%= OPT_SRC[entity.inquiry_opt_out_source] || OPT_SRC.link %><% if (entity.inquiry_opt_out_note) { %><br><small>Vermerk: <%= entity.inquiry_opt_out_note %></small><% } %></p>
+          <p class="muted" style="margin:0 0 6px"><small>Es gehen keine Anfragen und Erinnerungen mehr an dieses <%= ranking.entity_label_sg %> und seine Adresse. Im CRM (Hub) steht ein Sperrvermerk für die E-Mail-Adressen.</small></p>
+          <details><summary><small>Abmeldung aufheben</small></summary>
+            <form method="post" action="/admin/objekte/<%= entity.id %>/abmeldung" data-confirm="Abmeldung für <%= entity.name %> aufheben? Danach sind wieder Anfragen per E-Mail möglich.">
+              <input type="hidden" name="submission_id" value="<%= sub.id %>"><input type="hidden" name="action" value="undo">
+              <label>Begründung *</label><input name="note" type="text" required maxlength="300" placeholder="z. B. Hotel bittet am 20.11. wieder um Anfragen">
+              <p style="margin:6px 0 0"><button class="btn small secondary" type="submit">Abmeldung aufheben</button> <small class="muted">Den Sperrvermerk im Hub entfernst du dort von Hand.</small></p>
+            </form>
+          </details>
+        <% } else { %>
+          <details><summary><strong>Keine Anfragen mehr senden</strong> <small class="muted">Abmeldung eintragen, z. B. nach einer Bitte per Antwort-Mail oder Telefon</small></summary>
+            <form method="post" action="/admin/objekte/<%= entity.id %>/abmeldung" data-confirm="<%= entity.name %> von E-Mails abmelden? Offene Anfragen werden geschlossen, es gehen keine Anfragen und Erinnerungen mehr raus.">
+              <input type="hidden" name="submission_id" value="<%= sub.id %>"><input type="hidden" name="action" value="set">
+              <label>Vermerk *</label><input name="note" type="text" required maxlength="300" placeholder="z. B. Bitte per Antwort-Mail vom 12.11.">
+              <p style="margin:6px 0 0"><button class="btn small danger" type="submit">Abmeldung eintragen</button> <small class="muted">Wird auch dem CRM im Hub gemeldet (Sperrvermerk für die E-Mail-Adressen).</small></p>
+            </form>
+          </details>
+        <% } %>
+      </div>
       <form id="contact-search" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-suche" data-busy="Suche läuft …"></form>
       <form id="contact-accept" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/uebernehmen"></form>
       <form id="contact-dismiss" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/verwerfen"></form>
@@ -552,6 +575,7 @@
 
     <section class="card" style="margin-top:16px" id="anfragen" data-tab="kommunikation">
       <h2 style="margin-top:0">Anfragen an den Betreiber</h2>
+      <% if (entity.inquiry_opt_out_at) { %><div class="flash" style="border-color:var(--bad)"><strong>Von E-Mails abgemeldet</strong> seit <%= formatDate(entity.inquiry_opt_out_at) %> (<%= entity.inquiry_opt_out_source === 'admin' ? 'im Admin eingetragen' : 'über den Abmeldelink' %>). Neue Anfragen sind gesperrt – Details und Aufheben unter <a href="#abmeldung">Stammdaten</a>.</div><% } %>
       <% var draftInq = inquiryList.find(function (i) { return i.status === 'draft' });
          var openInq = inquiryList.find(function (i) { return i.status === 'queued' || i.status === 'sent' });
          var askable = criteria.filter(function (c) { return c.scoring.type === 'option' || c.scoring.type === 'bool' });

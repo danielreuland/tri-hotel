@@ -1096,6 +1096,7 @@ const INQUIRY_FILTERS = {
   answered: { label: 'beantwortet', where: `i.status = 'answered'` },
   failed: { label: 'fehlgeschlagen', where: `i.status = 'failed'` },
   closed: { label: 'abgelaufen oder geschlossen', where: `i.status IN ('expired','closed')` },
+  optout: { label: 'abgemeldet', where: 'e.inquiry_opt_out_at IS NOT NULL' },
   alle: { label: 'alle', where: 'true' },
 };
 const INQUIRY_STATUS = { draft: 'Entwurf', queued: 'wird formuliert', sent: 'versendet', answered: 'beantwortet', expired: 'abgelaufen', failed: 'fehlgeschlagen', closed: 'geschlossen' };
@@ -1104,7 +1105,7 @@ router.get('/anfragen', wrap(async (req, res) => {
   const status = INQUIRY_FILTERS[req.query.status] ? req.query.status : 'offen';
   const q = String(req.query.q || '').trim().slice(0, 100);
   const rows = await db.many(
-    `SELECT i.*, e.name AS entity_name, e.city, p.name AS persona_name, p.is_ai AS persona_is_ai, u.email AS created_by_email, a.email AS approved_by_email,
+    `SELECT i.*, e.name AS entity_name, e.city, e.inquiry_opt_out_at AS opt_out_at, e.inquiry_opt_out_note AS opt_out_note, p.name AS persona_name, p.is_ai AS persona_is_ai, u.email AS created_by_email, a.email AS approved_by_email,
             (SELECT array_agg(c.label ORDER BY c.sort_order) FROM criteria c WHERE c.id = ANY(i.criteria_ids)) AS criteria_labels,
             (SELECT count(*)::int FROM inquiry_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending')
               + (SELECT count(*)::int FROM inquiry_feature_answers x WHERE x.inquiry_id = i.id AND x.status = 'pending') AS pending_answers,
@@ -1117,7 +1118,7 @@ router.get('/anfragen', wrap(async (req, res) => {
     [q ? `%${q}%` : null]
   );
   const counts = Object.fromEntries(await Promise.all(Object.entries(INQUIRY_FILTERS).map(async ([k, f]) =>
-    [k, (await db.one(`SELECT count(*)::int AS n FROM inquiries i WHERE ${f.where}`)).n])));
+    [k, (await db.one(`SELECT count(*)::int AS n FROM inquiries i JOIN entities e ON e.id = i.entity_id WHERE ${f.where}`)).n])));
   res.render('admin/inquiries', { title: 'Anfragen', rows, status, q, counts, INQUIRY_FILTERS, INQUIRY_STATUS, mailProvider: config.mail.provider });
 }));
 
@@ -1152,6 +1153,24 @@ router.post('/anfragen/:inquiryId/freigeben', wrap(async (req, res) => {
 router.post('/anfragen/:inquiryId/verwerfen', wrap(async (req, res) => {
   await inquiries.discardDraft(req.params.inquiryId, req.session.admin.id);
   res.redirect(withParam(backOrNull(req.body.back) || '/admin/anfragen', 'ok', 'Entwurf verworfen'));
+}));
+
+// Abmeldung von E-Mails im Admin eintragen (z. B. Bitte per Antwort-Mail) oder mit Begründung aufheben
+router.post('/objekte/:entityId/abmeldung', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId)) return next();
+  const sub = UUID_RE.test(req.body.submission_id || '') ? await db.one('SELECT id, ranking_id FROM submissions WHERE id = $1 AND entity_id = $2', [req.body.submission_id, req.params.entityId]) : null;
+  if (!sub) return next();
+  const back = `/admin/meldungen/${sub.id}#abmeldung`;
+  try {
+    if (req.body.action === 'undo') {
+      await inquiries.undoOptOut(req.params.entityId, { note: req.body.note }, req.session.admin.id);
+      return res.redirect(withParam(back, 'ok', 'Abmeldung aufgehoben – den Sperrvermerk im Hub bitte dort entfernen'));
+    }
+    const r = await inquiries.adminOptOut(req.params.entityId, { note: req.body.note, rankingId: sub.ranking_id }, req.session.admin.id);
+    res.redirect(withParam(back, 'ok', r.hub ? 'Abmeldung eingetragen und an den Hub gemeldet' : 'Abmeldung eingetragen – ohne bekannte E-Mail-Adresse keine Meldung an den Hub'));
+  } catch (err) {
+    res.redirect(withParam(back, 'fehler', err.message));
+  }
 }));
 
 router.post('/anfragen/:inquiryId/erneut-senden', wrap(async (req, res) => {

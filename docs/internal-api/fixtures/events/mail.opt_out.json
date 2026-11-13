@@ -15,6 +15,13 @@
       "info@clublasanta.com",
       "ana@clublasanta.com"
     ],
-    "optedOutAt": "2026-10-23T09:00:00.000Z"
+    "optedOutAt": "2026-10-23T09:00:00.000Z",
+    "source": "link",
+    "note": null,
+    "location": {
+      "city": "Tinajo",
+      "country": "ES",
+      "website": "https://www.clublasanta.com"
+    }
   }
 }

@@ -97,7 +97,11 @@ test('contact.consent über persönlichen Link entspricht dem Fixture und behaup
 });
 
 test('mail.opt_out entspricht dem Fixture, Adressen klein, ohne Doppelte und Ungültige', () => {
-  const ev = hub.mailOptOut({ inquiry, entity, site, emails: ['Info@ClubLaSanta.com', 'info@clublasanta.com', null, 'kein-mail', 'ana@clublasanta.com'], at: new Date('2026-10-23T09:00:00Z') });
+  const place = { ...entity, city: 'Tinajo', country: 'ES', website: 'https://www.clublasanta.com' };
+  const ev = hub.mailOptOut({ inquiry, entity: place, site, emails: ['Info@ClubLaSanta.com', 'info@clublasanta.com', null, 'kein-mail', 'ana@clublasanta.com'], at: new Date('2026-10-23T09:00:00Z') });
+  const manual = hub.mailOptOut({ entity: place, site, emails: ['info@clublasanta.com'], source: 'admin', note: '  Bitte per Antwort-Mail vom 12.11.  ' });
+  assert.deepEqual([manual.data.source, manual.data.note, manual.data.inquiryId], ['admin', 'Bitte per Antwort-Mail vom 12.11.', null]);
+  assert.deepEqual(hub.mailOptOut({ entity, site, emails: ['a@b.de'] }).data.location, { city: null, country: null, website: null });
   assert.deepEqual({ ...ev, id: null }, { ...fx('mail.opt_out'), id: null });
   assert.throws(() => hub.mailOptOut({ inquiry, entity, site, emails: [null] }), /E-Mail-Adresse/);
 });

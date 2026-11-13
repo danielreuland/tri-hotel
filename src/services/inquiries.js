@@ -28,7 +28,7 @@ function setEnqueue(fn) {
 
 const { unclearCriteria } = agent;
 
-const OPT_OUT_ERROR = 'Dieser Betreiber möchte keine weiteren E-Mails (Abmeldelink).';
+const OPT_OUT_ERROR = 'Dieser Betreiber möchte keine weiteren E-Mails (Abmeldung, siehe Stammdaten).';
 // Datenschutzhinweis beim Ansprechpartner im Antwortformular (Version für den Nachweis im CRM)
 const CONTACT_NOTICE_VERSION = '2026-11-04';
 const contactNotice = (lang) => (lang === 'de'
@@ -410,17 +410,51 @@ async function findForOptOut(token) {
   return { inquiry, entity: await db.one('SELECT id, name, inquiry_opt_out_at FROM entities WHERE id = $1', [inquiry.entity_id]) };
 }
 
-async function optOut(found) {
-  await db.query('UPDATE entities SET inquiry_opt_out_at = COALESCE(inquiry_opt_out_at, now()) WHERE id = $1', [found.entity.id]);
-  await db.query(`UPDATE inquiries SET status = 'closed', error = 'Abmeldelink: keine weiteren E-Mails', updated_at = now() WHERE entity_id = $1 AND status IN ('draft', 'queued', 'sent')`, [found.entity.id]);
-  await db.query(`UPDATE consents SET withdrawn_at = now(), note = COALESCE(note || ' · ', '') || 'Abmeldelink' WHERE entity_id = $1 AND type = 'partner_contact' AND withdrawn_at IS NULL`, [found.entity.id]);
-  await logAction(null, 'inquiry', found.inquiry.id, 'inquiry_opt_out', { entity: found.entity.id });
-  // CRM im Hub: alle Adressen, die wir zu diesem Betrieb aus Anfragen kennen
-  const entity = await db.one('SELECT id, name, contact_email FROM entities WHERE id = $1', [found.entity.id]);
-  const rows = await db.many('SELECT recipient, reply_email FROM inquiries WHERE entity_id = $1', [found.entity.id]);
+// Abmeldung von E-Mails eintragen: source 'link' (Abmeldelink) oder 'admin' (im Admin, z. B. Bitte per Antwort-Mail oder
+// Telefon, mit Vermerk). Sperrt weitere Anfragen und Erinnerungen (mailer.send), schließt offene Anfragen, beendet die
+// Kooperations-Einwilligung und meldet es dem Hub. Eine bestehende Abmeldung bleibt mit ihrem Zeitpunkt stehen.
+async function applyOptOut({ entityId, inquiry = null, rankingId = null, source, note = null, adminId = null }) {
+  const closeNote = source === 'admin' ? 'Abmeldung im Admin eingetragen: keine weiteren E-Mails' : 'Abmeldelink: keine weiteren E-Mails';
+  await db.query(
+    `UPDATE entities SET inquiry_opt_out_at = COALESCE(inquiry_opt_out_at, now()), inquiry_opt_out_source = COALESCE(inquiry_opt_out_source, $2),
+            inquiry_opt_out_note = COALESCE(inquiry_opt_out_note, $3) WHERE id = $1`, [entityId, source, note]);
+  await db.query(`UPDATE inquiries SET status = 'closed', error = $2, updated_at = now() WHERE entity_id = $1 AND status IN ('draft', 'queued', 'sent')`, [entityId, closeNote]);
+  await db.query(`UPDATE consents SET withdrawn_at = now(), note = COALESCE(note || ' · ', '') || $2 WHERE entity_id = $1 AND type = 'partner_contact' AND withdrawn_at IS NULL`,
+    [entityId, source === 'admin' ? 'Abmeldung im Admin' : 'Abmeldelink']);
+  if (inquiry) await logAction(adminId, 'inquiry', inquiry.id, 'inquiry_opt_out', { entity: entityId, source });
+  else await logAction(adminId, 'entity', entityId, 'inquiry_opt_out', { source, note });
+  // CRM im Hub: alle Adressen, die wir zu diesem Betrieb aus Anfragen kennen, dazu Ort und Website für die Postanschrift
+  const entity = await db.one('SELECT id, name, contact_email, city, country, website FROM entities WHERE id = $1', [entityId]);
+  const rows = await db.many('SELECT recipient, reply_email FROM inquiries WHERE entity_id = $1', [entityId]);
   const emails = [entity.contact_email, ...rows.flatMap((r) => [r.recipient, r.reply_email])];
-  const ranking = await rankings.getRanking(found.inquiry.ranking_id);
-  await hubEvents.emitSafe(hubEvents.mailOptOut, { inquiry: found.inquiry, entity, site: await sites.forRanking(ranking), emails, at: new Date() });
+  const ranking = await rankings.getRanking(inquiry ? inquiry.ranking_id : rankingId);
+  return hubEvents.emitSafe(hubEvents.mailOptOut, { inquiry, entity, site: await sites.forRanking(ranking), emails, at: new Date(), source, note });
+}
+
+async function optOut(found) {
+  await applyOptOut({ entityId: found.entity.id, inquiry: found.inquiry, source: 'link' });
+}
+
+// Im Admin eintragen (Vermerk Pflicht). Ergebnis: { hub: true|false } – ohne bekannte E-Mail-Adresse geht nichts an den Hub
+async function adminOptOut(entityId, { note, rankingId }, adminId) {
+  const text = String(note || '').trim().slice(0, 300);
+  if (!text) throw new Error('Bitte einen Vermerk angeben (z. B. „Bitte per Antwort-Mail vom 12.11.“).');
+  const entity = await db.one('SELECT inquiry_opt_out_at FROM entities WHERE id = $1', [entityId]);
+  if (!entity) throw new Error('Objekt nicht gefunden.');
+  if (entity.inquiry_opt_out_at) throw new Error('Für dieses Objekt ist bereits eine Abmeldung eingetragen.');
+  const ev = await applyOptOut({ entityId, rankingId, source: 'admin', note: text, adminId });
+  return { hub: Boolean(ev) };
+}
+
+// Abmeldung aufheben (Begründung Pflicht, z. B. „Hotel bittet am 20.11. wieder um Anfragen“). Der Sperrvermerk im Hub
+// bleibt bestehen und muss dort von Hand entfernt werden – dafür gibt es im Vertrag kein Ereignis.
+async function undoOptOut(entityId, { note }, adminId) {
+  const text = String(note || '').trim().slice(0, 300);
+  if (!text) throw new Error('Bitte begründen, warum die Abmeldung aufgehoben wird.');
+  const old = await db.one('SELECT inquiry_opt_out_at, inquiry_opt_out_source, inquiry_opt_out_note FROM entities WHERE id = $1', [entityId]);
+  if (!old || !old.inquiry_opt_out_at) throw new Error('Für dieses Objekt ist keine Abmeldung eingetragen.');
+  await db.query('UPDATE entities SET inquiry_opt_out_at = NULL, inquiry_opt_out_source = NULL, inquiry_opt_out_note = NULL WHERE id = $1', [entityId]);
+  await logAction(adminId, 'entity', entityId, 'inquiry_opt_out_undo', { reason: text, was: { at: old.inquiry_opt_out_at, source: old.inquiry_opt_out_source, note: old.inquiry_opt_out_note } });
 }
 
 async function findByToken(token) {
@@ -810,7 +844,7 @@ module.exports = {
   approveDraft,
   discardDraft,
   draftCriteria,
-  defaultConfirmSelection, manualFeatures, buttonKind, parseReplyName, personalize, findForOptOut, optOut, CONTACT_NOTICE_VERSION, contactNotice, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
+  defaultConfirmSelection, manualFeatures, buttonKind, parseReplyName, personalize, findForOptOut, optOut, adminOptOut, undoOptOut, CONTACT_NOTICE_VERSION, contactNotice, acceptFeatureAnswer, rejectFeatureAnswer, acceptConfirmations,
   setEnqueue, fullCheckSelection, unclearCriteria, formConsents, hasConsent, addConsent, withdrawConsent, start, send, findByToken, submitAnswers, acceptAnswer, rejectAnswer, close,
   dailyMaintenance, isImageFile, MAX_PHOTOS,
 };

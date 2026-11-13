@@ -119,11 +119,20 @@ function contactConsent({
   });
 }
 
-// Abmeldelink: keine weiteren E-Mails an diese Adressen, auch eine Werbe-Einwilligung endet
-function mailOptOut({ inquiry = null, entity, site, emails = [], at = new Date() }) {
+// Abmeldung von E-Mails (Abmeldelink oder im Admin eingetragen): keine weiteren E-Mails an diese Adressen, auch eine
+// Werbe-Einwilligung endet. source und note sagen, wie die Abmeldung zustande kam; location (Ort, Land, Website) hilft im
+// CRM, die Postanschrift zu ermitteln – eine Anschrift speichert tri-hotel selbst nicht.
+function mailOptOut({ inquiry = null, entity, site, emails = [], at = new Date(), source = 'link', note = null }) {
   const list = [...new Set(emails.map((e) => String(e || '').trim().toLowerCase()).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
   if (!list.length) throw new Error('mail.opt_out braucht mindestens eine E-Mail-Adresse');
-  return envelope({ type: 'mail.opt_out', site, entity, occurredAt: at, data: { inquiryId: inquiry ? inquiry.id : null, emails: list, optedOutAt: iso(at) } });
+  return envelope({
+    type: 'mail.opt_out', site, entity, occurredAt: at,
+    data: {
+      inquiryId: inquiry ? inquiry.id : null, emails: list, optedOutAt: iso(at),
+      source: source === 'admin' ? 'admin' : 'link', note: str(note, 300),
+      location: { city: str(entity.city), country: str(entity.country, 2), website: str(entity.website, 300) },
+    },
+  });
 }
 
 const PHOTO_SCOPES = { photos_profile: 'profile', photos_social: 'social' };

@@ -90,6 +90,8 @@ Auto-Prüfung:
 
 Mails: (1) Danke + Bestätigungslink, (2) Absage mit Begründung, (3) „Deine Hotelseite ist online“ mit Link.
 
+Abmeldung von E-Mails je Objekt (`entities.inquiry_opt_out_at`/`_source`/`_note`, Migration 116): über den Abmeldelink der Anfrage oder im Admin eingetragen (Stammdaten → „Keine Anfragen mehr senden“, Vermerk Pflicht; Aufheben mit Begründung). Sperrt Anfragen und Erinnerungen (`mailer.send`), sichtbar in Stammdaten, Anfragen-Übersicht (Filter „abgemeldet“) und Morgenbericht; geht als `mail.opt_out` an den Hub (`services/inquiries.js` → `applyOptOut`).
+
 ## Scoring (Kurzfassung – Details im Konzept)
 
 - `TriScore = round(0.6 * F + 0.4 * A)`; in Version 1 ohne Bewertungen gilt `TriScore = round(F)` und der Score ist als **vorläufig** markiert.

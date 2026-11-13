@@ -15,5 +15,12 @@
   <% if (s.analytics === 'error') { %><p style="color:#57606a;font-size:13px;margin:4px 0">Plausible war nicht erreichbar, die Werte fehlen deshalb.</p><% } %>
   <% if (s.analytics === 'off') { %><p style="color:#57606a;font-size:13px;margin:4px 0">Plausible ist nicht eingerichtet.</p><% } %>
 <% }) %>
+<% var outs = locals.optOuts || []; if (outs.length) { %>
+  <p style="font-weight:bold;margin:20px 0 4px">Abmeldungen von E-Mails: <%= outs.length %></p>
+  <ul style="margin:0;padding-left:18px">
+    <% outs.forEach(function (o) { %><li><%= o.name %> (<%= o.source === 'admin' ? 'im Admin eingetragen' : 'über den Abmeldelink' %>)</li><% }) %>
+  </ul>
+  <p style="color:#57606a;font-size:13px;margin:4px 0">An diese Betriebe gehen keine Anfragen und Erinnerungen mehr. Liste im Admin: Kommunikation → Anfragen → „abgemeldet“.</p>
+<% } %>
 <p style="color:#57606a;font-size:13px;margin-top:20px">Klicks auf <%= ranking.entity_label_pl %> sind Aufrufe der Objektseiten. Bei Seiten ohne eigene Objektseiten sind es Aufrufe auf <%= sites[0] ? sites[0].label : '' %> von Besuchern, die von dieser Seite kamen; bei <%= sites[0] ? sites[0].label : '' %> sind sie mitgezählt.</p>
 <%- include('_layout_bottom') %>

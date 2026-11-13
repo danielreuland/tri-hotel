@@ -58,7 +58,7 @@ async function collect(day) {
   const ranking = await db.one('SELECT * FROM rankings WHERE site_id = $1 AND is_default LIMIT 1', [site.id]);
   const entity = funnel.entityFilter(ranking);
   const home = domains[0];
-  const [views, hotelViews, clickRows, answerRows] = await Promise.all([
+  const [views, hotelViews, clickRows, answerRows, optOuts] = await Promise.all([
     Promise.all(domains.map((d) => analytics.dayStats(d.domain, day))),
     // Domains ohne eigene Objektseiten (statische Seiten) verlinken auf die erste Domain: dort zählen die Aufrufe, die von ihnen kommen
     Promise.all(domains.map((d) => (d.site_id || d === home
@@ -74,8 +74,13 @@ async function collect(day) {
          FROM mail_messages m CROSS JOIN span LEFT JOIN inquiries i ON i.id = m.inquiry_id
         WHERE m.kind = 'mail' AND (m.inquiry_id IS NOT NULL OR m.entity_id IS NOT NULL) AND m.received_at >= span.a AND m.received_at < span.b
         GROUP BY i.ranking_id`, [day]),
+    // Abmeldungen von E-Mails am Vortag (Abmeldelink oder im Admin eingetragen)
+    db.many(
+      `SELECT e.name, e.inquiry_opt_out_source AS source FROM entities e
+        WHERE e.inquiry_opt_out_at >= $1::date::timestamp AT TIME ZONE '${TZ}' AND e.inquiry_opt_out_at < ($1::date + 1)::timestamp AT TIME ZONE '${TZ}'
+        ORDER BY e.inquiry_opt_out_at`, [day]),
   ]);
-  return { day, ranking, sites: assemble({ domains, views, hotelViews, clickRows, answerRows }) };
+  return { day, ranking, optOuts, sites: assemble({ domains, views, hotelViews, clickRows, answerRows }) };
 }
 
 const dayLabel = (day) => new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${day}T00:00:00Z`));
