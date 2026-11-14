@@ -242,6 +242,7 @@ Neu: Klicks zählen auf unseren Seiten nur per Beacon beim Anklicken (alle Partn
 Links von außen mit `?von=`; dazu Fetch-Metadaten, Admin zählt nicht, ein Klick je Adresse, Ziel und Tag.
 
 ### Tripadvisor-Fotos für Top-Hotels ohne eigene Fotos (Konzept von Daniel, 08.11.2026, noch nicht begonnen)
+**Vorgaben für die Umsetzung (alle Entscheidungen, Korrekturen vom 14.11., offener Punkt Buchungslinks):** `docs/tripadvisor-fotos-umsetzung.md` – zuerst lesen.
 **Stand 09.11. (B-87, Phase 1 erledigt):** Terra statt Content API. Freikontingent einmalig 1.000 Einheiten je Konto, danach
 0,015 $ je Einheit (Fotoabruf = 1 je Hotel, Suche = 1 je Treffer); kein Euro-Limit, nur Tageslimit im Terra-Dashboard.
 Nur `location_id` speichern; Pflicht: Logo, Link zur TA-Seite, „See all photos“. **Blocker:** API Master Terms §3.4.2 (i) – TA-Inhalte
