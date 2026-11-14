@@ -69,6 +69,12 @@
   <p>Auf Profilseiten kannst du per Klick auf „Google-Bewertungen laden“ eine Karte von Google Maps mit der Google-Bewertung der Unterkunft einblenden. Erst nach diesem Klick stellt dein Browser eine Verbindung zu Google her; dabei werden deine IP-Adresse und technische Daten an die Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) übertragen, und Google kann Cookies setzen. Eine Übermittlung an Google LLC in den USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert. Rechtsgrundlage ist deine Einwilligung durch den Klick (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Die Google-Bewertung ist nicht Teil unseres Scores. Weitere Informationen: <a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Datenschutzerklärung von Google</a>.</p>
   <% } %>
 
+  <% if (locals.taPhotosEnabled) { %>
+  <%# Textvorschlag (14.11.2026), vor dem Einschalten von Daniel freizugeben – siehe docs/tripadvisor-fotos-umsetzung.md %>
+  <h2 id="tripadvisor">Fotos von Tripadvisor</h2>
+  <p>Zu einigen Unterkünften ohne eigene Fotos kannst du über „Fotos ansehen (Tripadvisor)“ Bilder von Tripadvisor einblenden. Erst nach diesem Klick lädt dein Browser die Bilder direkt von den Servern der Tripadvisor LLC (400 1st Avenue, Needham, MA 02494, USA); dabei werden deine IP-Adresse und technische Daten deines Browsers (z. B. Browsertyp, aufgerufene Bildadresse) dorthin übertragen. Tripadvisor ist nach dem EU-US Data Privacy Framework zertifiziert. Rechtsgrundlage ist deine Einwilligung durch den Klick (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG); du kannst sie für die Zukunft widerrufen, indem du die Fotos nicht erneut lädst. Wir selbst speichern die Bilder nicht. Damit dieselben Fotos nicht mehrfach abgerufen werden, speichern wir deine IP-Adresse nur als gesalzenen Hashwert zusammen mit der Unterkunft für höchstens <%= retention.taLockDays === 1 ? 'einen Tag' : retention.taLockDays + ' Tage' %> (Art. 6 Abs. 1 lit. f DSGVO, Schutz vor Missbrauch). Die Fotos sind nicht Teil unseres Scores. Weitere Informationen: <a href="https://tripadvisor.mediaroom.com/de-privacy-policy" rel="noopener" target="_blank">Datenschutzerklärung von Tripadvisor</a>.</p>
+  <% } %>
+
   <h2>Links zu Buchungsportalen</h2>
   <p>Als „Anzeige“ gekennzeichnete Links führen zu Buchungsportalen. Erst wenn du einen solchen Link anklickst, verlässt du unsere Seite; ab dann gelten die Datenschutzhinweise des jeweiligen Anbieters.</p>
 
@@ -78,6 +84,7 @@
     <li>Anthropic PBC (KI-Auswertung öffentlicher Hotel-Inhalte, Textentwürfe) – Auftragsverarbeiter, USA, Standardvertragsklauseln</li>
     <li>OpenStreetMap Foundation (Kartenkacheln, nur nach Klick auf „Karte laden“) – Vereinigtes Königreich</li>
     <% if (locals.googleMapsEnabled) { %><li>Google Ireland Limited / Google LLC (Google-Bewertungen, nur nach Klick) – Irland/USA, Data Privacy Framework</li><% } %>
+    <% if (locals.taPhotosEnabled) { %><li>Tripadvisor LLC (Fotos von Tripadvisor, nur nach Klick) – USA, Data Privacy Framework</li><% } %>
     <li>Google Ireland Limited (Anmeldung im internen Adminbereich, nur unser Team)</li>
   </ul>
 

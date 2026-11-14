@@ -14,6 +14,8 @@ const RETENTION = {
   heldReviewDays: 7,          // Bewertung zu einem Vorschlag, der abgelaufen ist (nicht bestätigt)
   leadUnconfirmedDays: 7,     // unbestätigte Camp-Anfragen löschen
   leadMonths: 12,
+  taLockDays: 1,              // Tripadvisor-Fotos: gehashte IP je Besucher und Objekt (Sperre gegen Mehrfachabrufe)
+  taCallMonths: 24,           // Tripadvisor: Protokoll der Abrufe (ohne Inhalte, ohne Besucherdaten)
   mailMonths: 24,             // eingegangene Mails im Postfach samt Anhängen (siehe services/mailbox.js)             // Kontaktdaten aus Camp-Anfragen nach Weitergabe/Ablehnung (Zählung für die Abrechnung bleibt)
 };
 
@@ -59,6 +61,8 @@ async function run() {
       WHERE anonymized_at IS NULL AND status IN ('forwarded', 'rejected') AND updated_at < now() - make_interval(months => $1)`, [RETENTION.leadMonths]);
   await q('requestIpHashes', `UPDATE camp_requests SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
   await q('leadIpHashes', `UPDATE camp_leads SET ip_hash = NULL WHERE ip_hash IS NOT NULL AND created_at < now() - make_interval(days => $1)`, [RETENTION.ipHashDays]);
+  await q('taViewLocks', `DELETE FROM ta_view_locks WHERE created_at < now() - make_interval(days => $1)`, [RETENTION.taLockDays]);
+  await q('taCalls', `DELETE FROM ta_calls WHERE created_at < now() - make_interval(months => $1)`, [RETENTION.taCallMonths]);
   r.mails = await require('./mailbox').purge();
   await q('consents', `DELETE FROM consents WHERE withdrawn_at IS NOT NULL AND withdrawn_at < now() - make_interval(years => $1)`, [RETENTION.consentYearsAfterEnd]);
   return r;

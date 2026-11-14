@@ -3,6 +3,7 @@
 // entfallene Anlässe -> „Erledigt“ (automatisch), geänderte Anlässe öffnen eine erledigte Karte wieder.
 const db = require('../db');
 const reviewlist = require('./reviewlist');
+const tripadvisor = require('./tripadvisor');
 const { logAction } = require('../lib/audit');
 
 const STATUSES = { open: 'Offen', in_progress: 'In Arbeit', done: 'Erledigt' };
@@ -20,6 +21,7 @@ const LABELS = {
   partner_link: 'Partnerlink',
   user_review: 'Bewertung',
   google_place: 'Google Place ID',
+  tripadvisor: 'Tripadvisor-Fotos',
   camp_lead: 'Camp-Anfrage',
   camp_check: 'Camp-Anbieter prüfen',
   camp_pitch: 'Partnerschaft anbieten',
@@ -189,6 +191,22 @@ async function collect() {
     const [level, text] = c.check_status === 'failed' ? ['block', 'Automatische Prüfung abgebrochen – erneut starten'] : Q[c.qualification] || Q.review;
     push({ source: 'camp_check', source_key: `camp-check:${c.id}`, title: c.name,
       detail: [{ level, text }, ...open.slice(0, 3).map((t) => ({ level: 'todo', text: t }))], link: `/admin/camps/${c.id}#pruefung`, entity_id: null });
+  }
+  // Tripadvisor-Fotos: ausgewählte Objekte, die inzwischen eigene Fotos haben (dann zeigt die Seite die eigenen),
+  // und Warnung, sobald das einmalige Freikontingent zu 80 % verbraucht ist
+  const taOwn = await db.many(
+    `SELECT e.name FROM entities e WHERE e.ta_photos_enabled AND ${tripadvisor.OWN_IMAGES_SQL} > 0 ORDER BY lower(e.name)`);
+  if (taOwn.length) {
+    push({ source: 'tripadvisor', source_key: 'ta-own-photos', title: 'Eigene Fotos vorhanden, TA abschalten',
+      detail: [{ level: 'todo', text: `Tripadvisor-Fotos abwählen (die Location ID verlässt dann die Allowlist): ${taOwn.map((e) => e.name).join(', ')}` }],
+      fingerprint: taOwn.map((e) => e.name).join('|'), link: '/admin/tripadvisor', entity_id: null });
+  }
+  const taUse = await tripadvisor.usage();
+  if (taUse.freeLevel !== 'ok') {
+    push({ source: 'tripadvisor', source_key: 'ta-free-quota', title: 'Freikontingent zu 80 % verbraucht',
+      detail: [{ level: taUse.freeLevel === 'full' ? 'block' : 'todo',
+        text: `Tripadvisor: ${taUse.freeUsed} von ${taUse.freeUnits} kostenlosen Einheiten verbraucht. Danach kostet jede Einheit; die Monatsgrenze (${taUse.monthLimit} Einheiten, höchstens ${String(taUse.maxCostUsd.toFixed(2)).replace('.', ',')} USD) gilt weiter.` }],
+      fingerprint: taUse.freeLevel, link: '/admin/tripadvisor', entity_id: null });
   }
   // Google Place IDs: eine Sammelkarte für alle offenen Vorschläge
   const places = await db.many(

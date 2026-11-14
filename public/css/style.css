@@ -975,6 +975,7 @@ a.kpi:hover { border-color: var(--accent); }
 .ta-consent { padding: 24px 16px; text-align: center; background: var(--surface-2); border-radius: var(--radius); }
 .ta-consent p { max-width: 46em; margin: 0 auto 12px; }
 .ta-gallery { grid-auto-rows: 200px; }
+.ta-gallery[hidden] { display: none; }
 .ta-gallery a { display: block; height: 100%; }
 .ta-empty { margin: 0; padding: 20px 16px; text-align: center; background: var(--surface-2); border-radius: var(--radius); }
 @media (max-width: 700px) {

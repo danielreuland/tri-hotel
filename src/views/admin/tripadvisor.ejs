@@ -1,7 +1,7 @@
 <%- include('../partials/admin-head') %>
 <h1>Tripadvisor-Fotos</h1>
 <p class="muted">Platzhalter für <%= adminNav.objectsLabel %> ohne eigene Fotos: bis zu <%= cfg.photoCount %> Bilder, die der Browser des Besuchers erst nach Klick direkt von Tripadvisor lädt – auf einer eigenen Fotoseite ohne Buchungslinks. Gespeichert wird nur die Location ID. Ohne Einfluss auf Score, Reihenfolge oder Faktenprüfung.</p>
-<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<%# Erfolgsmeldungen zeigt der Seitenkopf als Hinweis; Fehler bleiben zusätzlich hier stehen (Abbruch, Grenzen, Allowlist) %>
 <% if (error) { %><div class="errors"><%= error %></div><% } %>
 
 <% if (!cfg.enabled) { %>

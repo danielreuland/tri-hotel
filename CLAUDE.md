@@ -92,6 +92,8 @@ Mails: (1) Danke + Bestätigungslink, (2) Absage mit Begründung, (3) „Deine H
 
 Abmeldung von E-Mails je Objekt (`entities.inquiry_opt_out_at`/`_source`/`_note`, Migration 116): über den Abmeldelink der Anfrage oder im Admin eingetragen (Stammdaten → „Keine Anfragen mehr senden“, Vermerk Pflicht; Aufheben mit Begründung). Sperrt Anfragen und Erinnerungen (`mailer.send`), sichtbar in Stammdaten, Anfragen-Übersicht (Filter „abgemeldet“) und Morgenbericht; geht als `mail.opt_out` an den Hub (`services/inquiries.js` → `applyOptOut`).
 
+Tripadvisor-Fotos (B-87, Migration 117, `services/tripadvisor.js`, `lib/ta-budget.js`, Admin unter Inhalte → „Tripadvisor-Fotos“): Platzhalter für ausgewählte Objekte ohne eigene Fotos, nur auf der Unterseite `…/fotos` (keine Partnerlinks, noindex), Abruf erst nach Klick. Not-Aus `TA_PHOTOS_ENABLED` – ohne „true“ geht kein Aufruf an Tripadvisor. Jeder Aufruf läuft über den Budget-Wächter (Einheiten je Monat/Tag, Grenzen in der `.env`); Allowlist nur APPEND/DELETE. Stand, offene Punkte und Einschalt-Liste: `docs/tripadvisor-fotos-umsetzung.md`.
+
 ## Scoring (Kurzfassung – Details im Konzept)
 
 - `TriScore = round(0.6 * F + 0.4 * A)`; in Version 1 ohne Bewertungen gilt `TriScore = round(F)` und der Score ist als **vorläufig** markiert.
@@ -123,6 +125,7 @@ Die Werte 0,6/0,4, C, m und Mindest-Vollständigkeit stammen aus `rankings.formu
 - Datenbankänderungen nur über Migrationen in `db/migrations/`.
 - Jede Admin-Änderung an Fakten oder Status schreibt einen Eintrag in `admin_actions`.
 - Keine Fotos von fremden Websites übernehmen (Urheberrecht). Version 1: Hotelseiten ohne Hotelfoto (Karte/Platzhalter). Bilder nur mit dokumentierter Berechtigung in `entity_images` (Hotel-Freigabe, Partner-Feed nach dessen Bedingungen, Places mit Attribution, eigene Fotos, freie Lizenzen nur für generische Motive). Kein Hotlinking, Urhebervermerk immer anzeigen.
+  - Ausnahme Tripadvisor-API: Fotos aus der Tripadvisor-API werden ausschließlich über die von der API gelieferten URLs eingebunden und erst nach Klick des Nutzers geladen. Sie werden nie gespeichert, nie auf unserem Server abgelegt und nie in Datenbank, Logs oder Caches geschrieben (gespeichert wird nur die Location ID). Sie stehen immer mit Tripadvisor-Logo, Link zur Tripadvisor-Seite des Hotels und ‚See all photos‘, klar getrennt von unseren eigenen Inhalten, und haben keinen Einfluss auf Score, Reihenfolge oder Faktenprüfung.
 - Keine Triathlon-Annahmen im Code: Kategorien, Kriterien, Formel, Labels, Beschriftungen immer aus `rankings`/`criteria` lesen.
 
 ## Arbeiten auf zwei Rechnern

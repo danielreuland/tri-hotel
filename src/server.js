@@ -85,6 +85,8 @@ app.locals.imgAttrs = require('./services/media').imgAttrs;
 app.locals.retention = require('./services/retention').RETENTION;
 app.locals.legalDate = '4. November 2026';
 app.locals.googleMapsEnabled = Boolean(config.googleMapsEmbedKey);
+// Abschnitt in der Datenschutzerklärung nur, wenn Tripadvisor-Fotos eingeschaltet sind
+app.locals.taPhotosEnabled = config.tripadvisor.enabled;
 app.locals.entityImgAttrs = require('./services/media').entityImgAttrs;
 
 // Vorab-Phase: nichts indexieren

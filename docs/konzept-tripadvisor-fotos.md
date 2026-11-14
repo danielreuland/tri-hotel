@@ -3,6 +3,12 @@
 Von Daniel am 08.11.2026 in den Backlog gegeben. Wortlaut unverändert; der Text endet mitten in US6 (so eingefügt).
 Abgleich mit bisherigen Regeln und offene Punkte: `BACKLOG.md`, Abschnitt „Tripadvisor-Fotos“.
 
+**Stand 14.11.2026:** Gebaut und ausgeschaltet. Die Umsetzung weicht vom Wortlaut unten ab, wo Daniel am 09.11. und 14.11.
+anders entschieden hat – maßgeblich ist `docs/tripadvisor-fotos-umsetzung.md`: gezählt wird in abrechenbaren Einheiten statt
+Calls (Freikontingent 1.000 einmalig, danach 0,015 USD), Tageslimit 20, höchstens 10 Objekte, Location IDs über Catalog
+Search mit Bestätigung und Allowlist (US2), Fotos nur auf der Unterseite `…/fotos` statt auf der Objektseite (US4/US5),
+Admin-Übersicht nach dem Vorschlag zu US6.
+
 ## Ziel
 Für ausgewählte Top-Hotels ohne eigene Fotos werden Bilder live über die
 Tripadvisor Content API (bzw. Nachfolger "Terra") angezeigt. Harte Grenze:

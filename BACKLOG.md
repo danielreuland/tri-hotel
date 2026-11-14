@@ -241,7 +241,13 @@ gibt es keine Logdateien mehr; die Zahlen vom 29.–31.10. bleiben, wie sie sind
 Neu: Klicks zählen auf unseren Seiten nur per Beacon beim Anklicken (alle Partner- und Camp-Links), der Abruf von /go/ zählt nur bei
 Links von außen mit `?von=`; dazu Fetch-Metadaten, Admin zählt nicht, ein Klick je Adresse, Ziel und Tag.
 
-### Tripadvisor-Fotos für Top-Hotels ohne eigene Fotos (Konzept von Daniel, 08.11.2026, noch nicht begonnen)
+### Tripadvisor-Fotos für Top-Hotels ohne eigene Fotos (Konzept von Daniel, 08.11.2026; gebaut 14.11.2026, ausgeschaltet)
+**Stand 14.11. (B-87):** Gebaut mit Not-Aus (`TA_PHOTOS_ENABLED=false`), Migration 117: Budget-Wächter in Einheiten mit Tests,
+Admin „Tripadvisor-Fotos“ (Verbrauch, Suche, Auswahl, Allowlist), Fotoseite `…/fotos`, Board-Aufgaben. Kein echter Aufruf an
+Tripadvisor bisher. **Vor dem Einschalten offen:** Antwort von Tripadvisor (§3.4.2 (i), dazu „Check Rates“-Link aus der Linking
+Policy), Allowlist im Paket Discover (Test im Admin), Pflichtlinks aus der Location ID im Browser prüfen, Logo-Datei,
+Datenschutz-Text freigeben, einmaliger Lauf für die Location IDs. Liste in `docs/tripadvisor-fotos-umsetzung.md`, Abschnitt
+„Offen vor dem Einschalten“.
 **Vorgaben für die Umsetzung (alle Entscheidungen, Korrekturen vom 14.11., offener Punkt Buchungslinks):** `docs/tripadvisor-fotos-umsetzung.md` – zuerst lesen.
 **Stand 09.11. (B-87, Phase 1 erledigt):** Terra statt Content API. Freikontingent einmalig 1.000 Einheiten je Konto, danach
 0,015 $ je Einheit (Fotoabruf = 1 je Hotel, Suche = 1 je Treffer); kein Euro-Limit, nur Tageslimit im Terra-Dashboard.
@@ -250,7 +256,7 @@ nicht „near, or in conjunction with“ Buchungsfunktionen anderer Plattformen 
 freigegeben, aber erst bauen, wenn Tripadvisor schriftlich bestätigt**, dass Fotos auf `/hotel/<slug>/fotos` (ohne Buchungslinks,
 noindex) neben Hotelseiten mit gekennzeichneten Partnerlinks zulässig sind. Anfrage an Tripadvisor am 09.11. verschickt (inkl. Frage nach dem
 TA-Affiliate-Programm und ob dessen „Check Rates“-Links auf der Fotoseite mit §3.4.2 (i) vereinbar sind) – Antwort abwarten. Geplant: 6 $/Monat (400 Einheiten, 20/Tag, Dashboard 25),
-Fotos für die 10 besten Hotels (Häkchen Daniel), `location_id` einmalig für alle Hotels ab Score 70 (26, Nearby-Suche, ≤ 78 Einheiten).
+Fotos für die 10 besten Hotels (Häkchen Daniel), `location_id` einmalig für alle Hotels ab Score 70 (26, Catalog Search nach Name, ≤ 78 Einheiten).
 Volltext: `docs/konzept-tripadvisor-fotos.md` (endet mitten in US6 – Rest von Daniel nachreichen). Kern: Fotos live über die
 Tripadvisor Content API bzw. Terra, nur auf Hotelseiten nach Klick auf „Fotos ansehen“, Budget-Wächter mit höchstens 400 Aufrufen
 im Monat und rund 15 am Tag, nur `location_id` speichern, Attribution laut Display Requirements, kein Einfluss auf den Score.
