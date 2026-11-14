@@ -46,6 +46,14 @@ document.querySelectorAll('select[data-autosubmit], input[data-autosubmit-check]
   el.addEventListener('change', function () { el.form.submit(); });
 });
 
+// Knopf „Fotos ansehen (Tripadvisor)“: Der Klick gilt als Einwilligung, die Fotoseite lädt dann ohne zweiten Klick.
+// Wer die Fotoseite nur abruft (Bots, direkter Aufruf), löst nichts aus.
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a[data-ta-go]');
+  if (!a) return;
+  try { window.sessionStorage.setItem('ta-go', a.getAttribute('data-ta-go')); } catch (err) { /* dann eben mit Knopf auf der Fotoseite */ }
+});
+
 var mapBtn = document.getElementById('load-map');
 if (mapBtn) {
   mapBtn.addEventListener('click', function () {

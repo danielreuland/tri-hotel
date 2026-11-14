@@ -21,6 +21,7 @@ const regionText = require('../services/region-text');
 const areaTopics = require('../services/area-topics');
 const { slugify } = require('../lib/util');
 const finder = require('../lib/finder');
+const tripadvisor = require('../services/tripadvisor');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -374,6 +375,8 @@ async function renderEntity(req, res, ranking, slug) {
     bestTimeRule: (ranking.formula || {}).best_time || null,
     campProviders, CAMP_MODELS: camps.MODELS,
     guestPhotos, regionExamples, galleryRegion: region, partnerGroups,
+    // Tripadvisor-Fotos nur als Platzhalter ohne eigene Bilder: hier steht bloß der Knopf zur Fotoseite, kein Abruf
+    taPhotos: tripadvisor.photoStatus(entity, { ownImages: images.length }) === 'active' ? { path: `${entityPath(ranking, entity)}/fotos` } : null,
     // „Trainingslager anfragen“: Anfrage direkt ans Hotel (über die Camp-Anfrage), nur mit Kontaktadresse
     hotelInquiryUrl: res.locals.campGuide && entity.contact_email ? `/trainingscamp/angebote?hotel=${encodeURIComponent(entity.slug)}` : null,
     reviewCfg, reviewList, reviewDims: reviewsService.dimensionAverages(reviewList, reviewCfg.dimensions),

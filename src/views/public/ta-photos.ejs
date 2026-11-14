@@ -1,0 +1,27 @@
+<%- include('../partials/head') %>
+<%# Fotoseite mit Tripadvisor-Fotos: bewusst ohne Buchungs- oder Partnerlinks (API Master Terms §3.4.2 (i)), noindex.
+    Die Bilder lädt erst der Klick; Inhalte von Tripadvisor stehen getrennt von unseren eigenen und unverändert. %>
+<nav class="crumbs" aria-label="Brotkrumen"><a href="<%= backPath %>">← Zurück zu <%= entity.name %></a></nav>
+
+<div class="entity-head">
+  <h1>Fotos: <%= entity.name %></h1>
+  <p class="muted"><%= [entity.city, entity.country ? countryName(entity.country) : null].filter(Boolean).join(', ') %></p>
+</div>
+
+<section class="ta-photos" id="ta-photos" data-url="<%= loadUrl %>" data-key="<%= entity.slug %>" data-name="<%= entity.name %>" data-page="<%= taLinks.page %>" aria-label="Fotos von Tripadvisor">
+  <div class="ta-source">
+    <a href="<%= taLinks.page %>" target="_blank" rel="noopener" class="ta-brand"><% if (taLogo) { %><img src="<%= taLogo %>" alt="Tripadvisor" height="28"><% } else { %><strong>Tripadvisor</strong><% } %></a>
+    <span>Diese Fotos stammen von Tripadvisor, nicht von uns: <a href="<%= taLinks.page %>" target="_blank" rel="noopener"><%= entity.name %> auf Tripadvisor</a> · <a href="<%= taLinks.photos %>" target="_blank" rel="noopener">Alle Fotos ansehen (See all photos)</a></span>
+  </div>
+
+  <div class="ta-consent" id="ta-consent">
+    <p>Die Fotos lädt dein Browser direkt von Tripadvisor. Dabei wird deine IP-Adresse an Tripadvisor übertragen. Mehr dazu in der <a href="/datenschutz#tripadvisor">Datenschutzerklärung</a>.</p>
+    <button class="btn" type="button" id="ta-load">Fotos von Tripadvisor laden</button>
+  </div>
+  <div class="gallery ta-gallery" id="ta-gallery" hidden></div>
+  <p class="ta-empty" id="ta-empty" hidden>Die Fotos sind gerade nicht verfügbar. Du findest sie direkt bei Tripadvisor: <a href="<%= taLinks.photos %>" target="_blank" rel="noopener">Alle Fotos ansehen (See all photos)</a>.</p>
+  <noscript><p class="ta-empty">Zum Laden der Fotos wird JavaScript gebraucht. Du findest sie direkt bei Tripadvisor: <a href="<%= taLinks.photos %>" target="_blank" rel="noopener">Alle Fotos ansehen</a>.</p></noscript>
+</section>
+
+<p class="muted"><small>Die Fotos sind eine Momentaufnahme von Gästen und Betreibern bei Tripadvisor. Sie fließen nicht in den <%= ranking.score_name %> ein und werden von uns weder geprüft noch gespeichert. Die geprüften Fakten stehen auf der <a href="<%= backPath %>">Seite des <%= ranking.entity_label_sg %>s</a>.</small></p>
+<%- include('../partials/foot') %>

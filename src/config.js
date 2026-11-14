@@ -11,6 +11,13 @@ function parseJson(raw, fallback) {
   }
 }
 
+// Ganze Zahl ≥ 0 aus der Umgebung; leer oder ungültig = Standard (0 bleibt 0, z. B. als Sperre)
+function int(raw, fallback) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+}
+
 const baseUrl = (process.env.BASE_URL || 'http://localhost:3010').replace(/\/$/, '');
 
 module.exports = {
@@ -99,6 +106,35 @@ module.exports = {
   hunter: {
     apiKey: process.env.HUNTER_API_KEY || null,
     monthlyLimit: Number(process.env.HUNTER_MONTHLY_LIMIT) || 40,
+  },
+  // Tripadvisor-Fotos über Terra (docs/tripadvisor-fotos-umsetzung.md). Not-Aus: nur TA_PHOTOS_ENABLED=true schaltet
+  // Abrufe frei – ohne diesen Wert geht kein einziger Aufruf an Tripadvisor (weder Fotos noch Suche noch Allowlist).
+  tripadvisor: {
+    enabled: process.env.TA_PHOTOS_ENABLED === 'true',
+    apiKey: process.env.TRIPADVISOR_API_KEY || null,
+    // Grenzen in abrechenbaren Einheiten (Foto-Abruf = 1, Suche = 1 je zurückgegebener Location ID)
+    monthlyLimit: int(process.env.TA_MONTHLY_LIMIT, 400),
+    dailyLimit: int(process.env.TA_DAILY_LIMIT, 20),
+    // Freikontingent einmalig je Konto, danach Preis je Einheit; Offset = außerhalb der App verbrauchte Einheiten
+    freeUnits: int(process.env.TA_FREE_UNITS, 1000),
+    unitPriceUsd: Number(process.env.TA_UNIT_PRICE_USD) > 0 ? Number(process.env.TA_UNIT_PRICE_USD) : 0.015,
+    unitsOffset: int(process.env.TA_UNITS_OFFSET, 0),
+    photoCount: Math.min(10, Math.max(1, int(process.env.TA_PHOTO_COUNT, 5))),
+    searchSize: Math.min(20, Math.max(1, int(process.env.TA_SEARCH_SIZE, 3))),
+    timeoutMs: int(process.env.TA_TIMEOUT_MS, 3000),
+    // Auswahl: höchstens so viele Objekte mit Tripadvisor-Fotos; Location IDs ab diesem Score suchen
+    maxHotels: int(process.env.TA_MAX_HOTELS, 10),
+    minScore: int(process.env.TA_MIN_SCORE, 70),
+    // Allowlist bei Tripadvisor pflegen (APPEND/DELETE); false nur, wenn das Paket keine Allowlist kennt
+    allowlist: process.env.TA_ALLOWLIST !== 'false',
+    viewLockMinutes: int(process.env.TA_VIEW_LOCK_MINUTES, 30),
+    // Bilder dürfen nur von diesen Hosts geladen werden (CSP der Fotoseite und Prüfung der gelieferten Adressen)
+    imageHosts: (process.env.TA_IMAGE_HOSTS || 'tripadvisor.com,tacdn.com').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
+    // Größenangabe für das Bild-CDN (z. B. "w=1200&h=-1&s=1"); leer = Adresse unverändert wie geliefert
+    photoParams: process.env.TA_PHOTO_PARAMS || '',
+    // Links zur Tripadvisor-Seite des Objekts und zu „alle Fotos“; {id} = Location ID
+    locationUrl: process.env.TA_LOCATION_URL || 'https://www.tripadvisor.de/Hotel_Review-d{id}',
+    photosUrl: process.env.TA_PHOTOS_URL || 'https://www.tripadvisor.de/Hotel_Review-d{id}#/media',
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || null,

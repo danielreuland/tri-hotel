@@ -1,0 +1,102 @@
+<%- include('../partials/admin-head') %>
+<h1>Tripadvisor-Fotos</h1>
+<p class="muted">Platzhalter für <%= adminNav.objectsLabel %> ohne eigene Fotos: bis zu <%= cfg.photoCount %> Bilder, die der Browser des Besuchers erst nach Klick direkt von Tripadvisor lädt – auf einer eigenen Fotoseite ohne Buchungslinks. Gespeichert wird nur die Location ID. Ohne Einfluss auf Score, Reihenfolge oder Faktenprüfung.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+
+<% if (!cfg.enabled) { %>
+  <div class="errors"><strong>Not-Aus aktiv:</strong> <code>TA_PHOTOS_ENABLED</code> ist nicht „true“. Es geht kein Aufruf an Tripadvisor – weder Fotos noch Suche noch Allowlist – und auf der Website erscheint nichts. Location IDs lassen sich von Hand eintragen und die Auswahl vorbereiten.</div>
+<% } else if (!cfg.hasKey) { %>
+  <div class="errors"><code>TRIPADVISOR_API_KEY</code> fehlt in der <code>.env</code> auf dem Server. Ohne Schlüssel geht kein Aufruf raus.</div>
+<% } %>
+
+<% var LV = { ok: 'good', warn: 'warn', full: 'bad' }; var usd = function (v) { return v.toFixed(2).replace('.', ',') + ' USD'; }; %>
+<section class="kpis" aria-label="Verbrauch">
+  <div class="kpi"><strong><%= usage.month %> / <%= usage.monthLimit %></strong><span>Einheiten diesen Monat</span><small><span class="badge <%= LV[usage.monthLevel] %>"><%= usage.monthLevel === 'ok' ? 'im Rahmen' : usage.monthLevel === 'warn' ? 'über 80 %' : 'Grenze erreicht' %></span></small></div>
+  <div class="kpi"><strong><%= usage.day %> / <%= usage.dayLimit %></strong><span>Einheiten heute</span><small><span class="badge <%= LV[usage.dayLevel] %>"><%= usage.dayLevel === 'ok' ? 'im Rahmen' : usage.dayLevel === 'warn' ? 'über 80 %' : 'Grenze erreicht' %></span></small></div>
+  <div class="kpi"><strong><%= usage.freeUsed %> / <%= usage.freeUnits %></strong><span>Freikontingent verbraucht</span><small><span class="badge <%= LV[usage.freeLevel] %>"><%= usage.freeLevel === 'ok' ? 'einmalig je Konto' : usage.freeLevel === 'warn' ? 'über 80 % verbraucht' : 'aufgebraucht' %></span></small></div>
+  <div class="kpi"><strong><%= usd(usage.costUsd) %></strong><span>Kosten diesen Monat (geschätzt)</span><small>höchstens <%= usd(usage.maxCostUsd) %> bei <%= usage.monthLimit %> Einheiten</small></div>
+</section>
+<p class="muted"><small>Gezählt werden abrechenbare Einheiten: Fotoabruf = 1, Suche = 1 je zurückgegebener Location ID (höchstens <%= cfg.searchSize %> je Suche), Fehlerantworten und Allowlist = 0. Die Zahlen stammen aus unserer eigenen Zählung; maßgeblich für die Abrechnung ist das Terra-Dashboard. Grenzen ändern: <code>TA_MONTHLY_LIMIT</code>, <code>TA_DAILY_LIMIT</code> in der <code>.env</code>.</small></p>
+
+<h2><%= adminNav.objectsLabel %></h2>
+<p class="muted">Gezeigt werden <%= adminNav.objectsLabel %> ab Score <%= cfg.minScore %> und alle mit Location ID. Ausgewählt: <strong><%= enabledCount %> von höchstens <%= cfg.maxHotels %></strong>. „Vorschlag“ markiert die besten nach Score mit Location ID und ohne eigene Fotos. Hat ein Objekt eigene, freigegebene Fotos, werden immer diese gezeigt.</p>
+
+<div class="filters">
+  <% if (open) { %>
+    <form method="post" action="/admin/tripadvisor/sammelsuche" data-confirm="Für bis zu <%= Math.min(open, batchSize) %> Objekte die Location ID suchen? Das kostet höchstens <%= Math.min(open, batchSize) * cfg.searchSize %> Einheiten und zählt ins Tages- und Monatsbudget.">
+      <button class="btn small" type="submit" <%= cfg.enabled && cfg.hasKey ? '' : 'disabled' %>>Location IDs suchen (<%= open %> offen, je Klick bis zu <%= batchSize %>)</button>
+    </form>
+  <% } %>
+  <% if (cfg.allowlist) { %>
+    <form method="post" action="/admin/tripadvisor/allowlist/abgleichen"><button class="btn small <%= pending ? '' : 'secondary' %>" type="submit" <%= cfg.enabled && cfg.hasKey ? '' : 'disabled' %>>Allowlist abgleichen<%= pending ? ' (' + pending + ' ausstehend)' : '' %></button></form>
+    <form method="post" action="/admin/tripadvisor/allowlist/pruefen"><button class="btn small secondary" type="submit" <%= cfg.enabled && cfg.hasKey ? '' : 'disabled' %>>Allowlist bei Tripadvisor prüfen</button></form>
+  <% } %>
+</div>
+
+<% var ST = { active: 'good', allowlist_pending: 'warn', own_photos: 'warn', off: 'bad', no_id: '', disabled: '' };
+   var SUG = { found: 'Vormerkung prüfen', unclear: 'unklar', none: 'kein Treffer', dismissed: 'verworfen' }; %>
+<form method="post" action="/admin/tripadvisor/auswahl" id="ta-auswahl"></form>
+<div class="table-scroll"><table>
+  <tr><th>Fotos</th><th><%= adminNav.objectsLabel %></th><th>Score</th><th>Status</th><th>Location ID</th><th>Einheiten Monat</th><th>Letzter Abruf</th><th></th></tr>
+  <% rows.forEach(function (e) { var s = e.ta_suggestion || {}; var ids = (s.ids || []).filter(function (id) { return Number.isInteger(id); }); %>
+    <tr id="e-<%= e.id %>">
+      <td>
+        <input type="hidden" name="shown" value="<%= e.id %>" form="ta-auswahl">
+        <input type="checkbox" name="enabled" value="<%= e.id %>" form="ta-auswahl" aria-label="Tripadvisor-Fotos für <%= e.name %>" <%= e.ta_photos_enabled ? 'checked' : '' %> <%= e.ta_location_id ? '' : 'disabled' %>>
+      </td>
+      <td><% if (e.sub_id) { %><a href="/admin/meldungen/<%= e.sub_id %>"><%= e.name %></a><% } else { %><%= e.name %><% } %>
+        <% if (e.suggested && !e.ta_photos_enabled) { %> <span class="badge">Vorschlag</span><% } %>
+        <br><small class="muted"><%= [e.city, e.country].filter(Boolean).join(', ') %><%= e.live ? '' : ' · nicht live' %><%= e.own_images ? ' · ' + e.own_images + ' eigene Fotos' : '' %><%= e.lat === null ? ' · ohne Koordinaten' : '' %></small></td>
+      <td><%= e.score === null ? '–' : e.score %></td>
+      <td><span class="badge <%= ST[e.status] %>"><%= STATUS_LABELS[e.status] %></span></td>
+      <td><small>
+        <% if (e.ta_location_id) { %>
+          <code><%= e.ta_location_id %></code> · <a href="<%= links(e.ta_location_id).page %>" target="_blank" rel="noopener">Tripadvisor ↗</a>
+        <% } else if (s.status === 'found' || s.status === 'unclear') { %>
+          <%= SUG[s.status] %>:
+          <% ids.forEach(function (id) { %>
+            <span style="white-space:nowrap"><code><%= id %></code> <a href="<%= links(id).page %>" target="_blank" rel="noopener">prüfen ↗</a>
+              <button class="btn small <%= s.id === id ? '' : 'secondary' %>" type="submit" form="ta-id-<%= e.id %>" name="location_id" value="<%= id %>">Übernehmen</button></span>
+          <% }) %>
+          <form method="post" action="/admin/tripadvisor/<%= e.id %>/id" id="ta-id-<%= e.id %>"><input type="hidden" name="via" value="suggestion"></form>
+        <% } else { %><%= SUG[s.status] || 'noch nicht gesucht' %><% } %>
+      </small></td>
+      <td><%= e.month_units %></td>
+      <td><small><%= e.last_fetch ? formatDate(e.last_fetch) : '–' %></small></td>
+      <td>
+        <details>
+          <summary><small>Bearbeiten</small></summary>
+          <% if (!e.ta_location_id) { %>
+            <form method="post" action="/admin/tripadvisor/<%= e.id %>/suchen" class="filters" style="margin:6px 0">
+              <select name="art" aria-label="Suchart"><% Object.keys(MODES).forEach(function (m) { %><option value="<%= m %>" <%= m === 'nearby' && e.lat === null ? 'disabled' : '' %>><%= MODES[m] %></option><% }) %></select>
+              <button class="btn small" type="submit" <%= cfg.enabled && cfg.hasKey ? '' : 'disabled' %> title="höchstens <%= cfg.searchSize %> Einheiten">Suchen</button>
+            </form>
+            <% if (s.status === 'found' || s.status === 'unclear') { %><form method="post" action="/admin/tripadvisor/<%= e.id %>/verwerfen" style="margin:6px 0"><button class="btn small secondary" type="submit">Vormerkung verwerfen</button></form><% } %>
+          <% } %>
+          <form method="post" action="/admin/tripadvisor/<%= e.id %>/id" class="filters" style="margin:6px 0">
+            <input type="text" name="location_id" inputmode="numeric" pattern="\d{1,10}" placeholder="Location ID" value="<%= e.ta_location_id || '' %>" style="width:9em" aria-label="Location ID" required>
+            <button class="btn small secondary" type="submit">Speichern</button>
+          </form>
+          <% if (e.ta_location_id) { %><form method="post" action="/admin/tripadvisor/<%= e.id %>/id-entfernen" data-confirm="Location ID von <%= e.name %> entfernen?" style="margin:6px 0"><button class="btn small secondary" type="submit">ID entfernen</button></form><% } %>
+        </details>
+      </td>
+    </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Keine <%= adminNav.objectsLabel %> ab Score <%= cfg.minScore %>.</td></tr><% } %>
+</table></div>
+<p><button class="btn" type="submit" form="ta-auswahl">Auswahl speichern</button> <small class="muted">Speichert die Häkchen und gleicht die Allowlist bei Tripadvisor ab (hinzufügen bzw. entfernen, nie überschreiben).</small></p>
+
+<h2>Letzte Fehler und Sperren</h2>
+<% var OUT = { error: 'Fehler', timeout: 'Zeitüberschreitung', month_limit: 'Monatsgrenze', day_limit: 'Tagesgrenze' }; %>
+<% if (!errors.length) { %><p class="muted">Keine.</p><% } else { %>
+<div class="table-scroll"><table>
+  <tr><th>Zeit</th><th>Objekt</th><th>Endpunkt</th><th>Ergebnis</th><th>Status</th><th>Dauer</th></tr>
+  <% errors.forEach(function (c) { %>
+    <tr><td><small><%= new Date(c.created_at).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'short', timeStyle: 'short' }) %></small></td>
+      <td><%= c.name || '–' %></td><td><code><%= c.endpoint %></code></td><td><%= OUT[c.outcome] || c.outcome %></td>
+      <td><%= c.http_status || '–' %></td><td><%= c.duration_ms === null ? '–' : c.duration_ms + ' ms' %></td></tr>
+  <% }) %>
+</table></div>
+<% } %>
+<%- include('../partials/admin-foot') %>

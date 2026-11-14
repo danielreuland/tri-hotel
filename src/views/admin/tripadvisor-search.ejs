@@ -1,0 +1,34 @@
+<%- include('../partials/admin-head') %>
+<p><a href="/admin/tripadvisor#e-<%= entity.id %>">← Tripadvisor-Fotos</a></p>
+<h1>Location ID: <%= entity.name %></h1>
+<p class="muted"><%= [entity.city, entity.country].filter(Boolean).join(', ') %> · Suche: <%= MODES[mode] %> · <%= result.units %> <%= result.units === 1 ? 'Einheit' : 'Einheiten' %> verbraucht · heute <%= usage.day %> / <%= usage.dayLimit %>, Monat <%= usage.month %> / <%= usage.monthLimit %></p>
+<p class="muted"><small>Die Treffer stehen nur in dieser Antwort – Namen und Adressen von Tripadvisor werden nicht gespeichert. Vorgemerkt sind allein die Location IDs. Ein erneutes Laden der Seite sucht noch einmal und kostet wieder Einheiten.</small></p>
+
+<% if (!result.candidates.length) { %>
+  <div class="errors">Kein Treffer. Eine leere Antwort kostet keine Einheit. Andere Suchart versuchen oder die Location ID von Hand eintragen (die Zahl hinter „-d“ in der Adresse der Tripadvisor-Seite).</div>
+<% } else { %>
+  <% if (entity.ta_location_id) { %><div class="flash">Dieses Objekt hat schon die Location ID <code><%= entity.ta_location_id %></code>. Ändern geht nur, solange die Tripadvisor-Fotos abgewählt sind.</div><% } %>
+  <div class="table-scroll"><table>
+    <tr><th>Treffer bei Tripadvisor</th><th>Entfernung</th><th>Name</th><th>Location ID</th><th></th></tr>
+    <% result.candidates.forEach(function (c) { var picked = result.pick && result.pick.id === c.id; %>
+      <tr>
+        <td><strong><%= c.name %></strong><% if (picked) { %> <span class="badge good">eindeutig</span><% } %><br><small class="muted"><%= c.address %></small></td>
+        <td><%= c.distanceM === null ? '–' : c.distanceM + ' m' %><% if (c.distanceM !== null && c.distanceM > MAX_DISTANCE_M) { %> <span class="badge warn">weit</span><% } %></td>
+        <td><%= c.match === 2 ? 'gleich' : c.match === 1 ? 'teilweise' : 'passt nicht' %></td>
+        <td><code><%= c.id %></code> · <a href="<%= c.url || links(c.id).page %>" target="_blank" rel="noopener">ansehen ↗</a></td>
+        <td><form method="post" action="/admin/tripadvisor/<%= entity.id %>/id">
+          <input type="hidden" name="location_id" value="<%= c.id %>"><input type="hidden" name="via" value="search">
+          <button class="btn small <%= picked ? '' : 'secondary' %>" type="submit">Übernehmen</button>
+        </form></td>
+      </tr>
+    <% }) %>
+  </table></div>
+<% } %>
+
+<h2>Anders suchen</h2>
+<div class="filters">
+  <% Object.keys(MODES).forEach(function (m) { if (m !== mode && !(m === 'nearby' && entity.lat === null)) { %>
+    <form method="post" action="/admin/tripadvisor/<%= entity.id %>/suchen"><input type="hidden" name="art" value="<%= m %>"><button class="btn small secondary" type="submit" title="höchstens <%= searchSize %> Einheiten"><%= MODES[m] %></button></form>
+  <% } }) %>
+</div>
+<%- include('../partials/admin-foot') %>

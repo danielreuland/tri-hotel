@@ -965,3 +965,19 @@ a.kpi:hover { border-color: var(--accent); }
   .hero-text { font-size: 1rem; }
   .hero-pick .hp-photo { aspect-ratio: 16 / 7; }
 }
+
+/* Tripadvisor-Fotos: Knopf auf der Objektseite, Fotoseite mit Quellenangabe (klar getrennt von eigenen Inhalten) */
+.ta-teaser { margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.ta-photos { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.ta-source { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 14px; font-size: .9rem; }
+.ta-brand { display: inline-flex; align-items: center; text-decoration: none; color: var(--heading); font-size: 1.1rem; }
+.ta-brand img { display: block; height: 28px; width: auto; }
+.ta-consent { padding: 24px 16px; text-align: center; background: var(--surface-2); border-radius: var(--radius); }
+.ta-consent p { max-width: 46em; margin: 0 auto 12px; }
+.ta-gallery { grid-auto-rows: 200px; }
+.ta-gallery a { display: block; height: 100%; }
+.ta-empty { margin: 0; padding: 20px 16px; text-align: center; background: var(--surface-2); border-radius: var(--radius); }
+@media (max-width: 700px) {
+  .ta-gallery { grid-template-columns: 1fr !important; grid-auto-rows: 220px; }
+  .ta-gallery figure { grid-row: auto !important; grid-column: auto !important; }
+}

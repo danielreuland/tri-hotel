@@ -23,6 +23,7 @@ const SECTIONS = [
       { href: '/admin/startseite', label: 'Startseite' },
       { href: '/admin/bilder', label: 'Objektbilder' },
       { href: '/admin/medien', label: 'Seitenbilder' },
+      { href: '/admin/tripadvisor', label: 'Tripadvisor-Fotos' },
       { href: '/admin/camps', label: 'Camps' },
       { href: '/admin/regionen', label: 'Regionen' },
       { href: '/admin/radreviere', label: 'Radreviere' },

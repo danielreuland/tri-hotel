@@ -100,6 +100,13 @@
 <%# Ohne eigene Bilder bleibt die Galerie (Gastfotos, Beispielbilder der Region) unter dem Steckbrief %>
 <% if (!images.length) { %><%- include('../partials/entity-gallery', { top: false }) %><% } %>
 
+<%# Tripadvisor-Fotos als Platzhalter (nur ausgewählte Objekte ohne eigene Bilder): Knopf zur Fotoseite, dort ohne Buchungslinks.
+    Der Klick zählt als Einwilligung, deshalb steht der Hinweis direkt am Knopf. %>
+<% if (locals.taPhotos) { %>
+  <p class="ta-teaser"><a class="btn small secondary" href="<%= taPhotos.path %>" rel="nofollow" data-ta-go="<%= entity.slug %>">Fotos ansehen (Tripadvisor)</a>
+    <small class="muted">Die Fotos lädt dein Browser direkt von Tripadvisor; dabei wird deine IP-Adresse dorthin übertragen. <a href="/datenschutz#tripadvisor">Datenschutz</a></small></p>
+<% } %>
+
 <% if (textBlocks.length) { %>
   <section class="entity-text" style="margin-top:20px">
     <h2 style="margin-top:0">Unsere Einschätzung</h2>
