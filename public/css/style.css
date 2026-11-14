@@ -350,6 +350,8 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 /* Eine Spalte, die nie breiter wird als die Liste: Ein langes Wort (z. B. ein Link in einer Mail) darf nicht alle Karten aufziehen */
 .task-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-height: 60px; border-radius: 8px; transition: background .15s; }
 .task-list.drop-target { background: var(--accent-soft); }
+/* Admin: Knöpfe über dem Beschreibungstext (Überschrift, Aufzählung, Fett, Link) */
+.md-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
 /* Admin: Ablagefläche für mehrere Bilder (Auswahl oder Drag & Drop) */
 .file-drop { border: 2px dashed var(--border); border-radius: 10px; padding: 14px; background: var(--surface-2); }
 .file-drop.drop-target { border-color: var(--accent); background: var(--accent-soft); }

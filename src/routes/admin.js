@@ -1456,6 +1456,13 @@ router.post('/meldungen/:id/text', wrap(async (req, res, next) => {
   const summary = describer.shorten(req.body.summary, describer.SUMMARY_MAX);
   const body = String(req.body.body || '').replace(/\r/g, '').trim().slice(0, 8000);
   const action = ['save', 'publish', 'unpublish'].includes(req.body.action) ? req.body.action : 'save';
+  // Links im Text: nur https oder interne Pfade; Buchungspartner gehören in „Buchen & Anfragen“ (als Anzeige gekennzeichnet)
+  const textLinks = require('../lib/richtext').links(body);
+  const partnerDomains = (await partners.programs()).flatMap((p) => p.domains || []).map((d) => String(d).toLowerCase());
+  const partnerHit = textLinks.valid.find((l) => l.host && partnerDomains.some((d) => l.host === d || l.host.endsWith(`.${d}`)));
+  const linkError = textLinks.invalid.length ? `Ungültiges Linkziel: ${textLinks.invalid[0]} – erlaubt sind https-Adressen und interne Pfade wie /region/mallorca.`
+    : partnerHit ? `Link zu ${partnerHit.host} im Text: Buchungspartner gehören in „Buchen & Anfragen“ (dort als Anzeige gekennzeichnet), nicht in den Redaktionstext.` : null;
+  if (linkError) return res.redirect(`${back}?fehler=${encodeURIComponent(linkError)}#text`);
   if (action === 'publish' && (!summary || !body)) return res.redirect(`${back}?fehler=${encodeURIComponent('Kurzbeschreibung und Text sind zum Freigeben nötig.')}#text`);
   const existing = await db.one('SELECT * FROM entity_texts WHERE entity_id = $1 AND ranking_id = $2', [sub.entity_id, sub.ranking_id]);
   const input = await describer.gather(sub.entity_id, sub.ranking_id);

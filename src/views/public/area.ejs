@@ -28,7 +28,7 @@
   <h1><%= heading %></h1>
   <% if (subline) { %><p class="area-subline"><%= subline %></p><% } %>
   <% if (textIntro.length) { %>
-    <% textIntro.forEach(function (b, i) { %><p class="<%= i === 0 ? 'lead' : 'area-intro-more' %>"><%= b.text || (b.items || []).join(' · ') %></p><% }) %>
+    <% textIntro.forEach(function (b, i) { %><p class="<%= i === 0 ? 'lead' : 'area-intro-more' %>"><%- richText(b.text || (b.items || []).join(' · '), locals.site && site.primary_domain) %></p><% }) %>
   <% } else if (area.intro) { %><p class="lead"><%= area.intro %></p><% } %>
   <div class="area-facts">
     <div><strong><%= d.count %></strong><span>geprüfte <%= ranking.entity_label_pl %></span></div>
@@ -92,8 +92,8 @@
   <h2><%= area.name %> im Überblick</h2>
   <% textRest.forEach(function (b) { %>
     <% if (b.type === 'h') { %><h3><%= b.text %></h3>
-    <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%= i %></li><% }) %></ul>
-    <% } else { %><p><%= b.text %></p><% } %>
+    <% } else if (b.type === 'ul') { %><ul><% b.items.forEach(function (i) { %><li><%- richText(i, locals.site && site.primary_domain) %></li><% }) %></ul>
+    <% } else { %><p><%- richText(b.text, locals.site && site.primary_domain) %></p><% } %>
   <% }) %>
   <p class="muted"><small>Redaktionstext, Stand <%= new Date(text.updated_at).toLocaleDateString('de-DE') %>.<%= area.type === 'region' ? ' Zahlen zu Klima, Wasser und Radrevier stammen aus den Daten unten.' : ' Angaben zu den Hotels stammen aus den geprüften Werten unten.' %></small></p>
 </section>

@@ -345,3 +345,51 @@ document.querySelectorAll('select[data-image-defaults]').forEach(function (selec
   select.addEventListener('change', apply);
   apply();
 });
+
+// Beschreibungstext: Knöpfe für Überschrift, Aufzählung, Fett und Link setzen die Zeichen in das Textfeld
+document.querySelectorAll('.md-tools[data-md-for]').forEach(function (bar) {
+  var area = document.getElementById(bar.dataset.mdFor);
+  if (!area) return;
+  var replace = function (start, end, text, selStart, selEnd) {
+    area.focus();
+    area.setRangeText(text, start, end, 'preserve');
+    area.setSelectionRange(selStart, selEnd);
+    area.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  // ganze Zeilen der Markierung
+  var lineRange = function () {
+    var v = area.value;
+    var a = v.lastIndexOf('\n', area.selectionStart - 1) + 1;
+    var b = v.indexOf('\n', area.selectionEnd);
+    return [a, b < 0 ? v.length : b];
+  };
+  bar.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-md]');
+    if (!btn) return;
+    var v = area.value;
+    var s = area.selectionStart;
+    var en = area.selectionEnd;
+    var sel = v.slice(s, en);
+    var kind = btn.dataset.md;
+    if (kind === 'bold') {
+      var t = sel || 'Text';
+      replace(s, en, '**' + t + '**', s + 2, s + 2 + t.length);
+    } else if (kind === 'link') {
+      var label = sel || 'Linktext';
+      var out = '[' + label + '](https://)';
+      // Cursor hinter „https://“, damit die Adresse gleich getippt oder eingefügt werden kann
+      replace(s, en, out, s + out.length - 1, s + out.length - 1);
+    } else {
+      var r = lineRange();
+      var lines = v.slice(r[0], r[1]).split('\n');
+      var prefix = kind === 'h' ? '## ' : '- ';
+      var all = lines.filter(function (l) { return l.trim(); }).every(function (l) { return l.indexOf(prefix) === 0; });
+      var next = lines.map(function (l) {
+        if (!l.trim()) return l;
+        if (all) return l.slice(prefix.length);
+        return prefix + l.replace(/^(## |- )/, '');
+      }).join('\n');
+      replace(r[0], r[1], next, r[0], r[0] + next.length);
+    }
+  });
+});

@@ -2,6 +2,7 @@
 // (Fakten, Klima, Leistungen, Region) – nie aus fremden Website-Texten. Öffentlich erst nach Admin-Freigabe.
 // Ablauf: gather (Daten mit IDs + Vergleich im Ranking) → generate (Entwurf, Fakten-IDs je Satz)
 // → checkText (Zahlen, verbotene Wörter, Sätze ohne Grundlage) + Gegenprüfung → Admin prüft und gibt frei.
+const richtext = require('../lib/richtext');
 const crypto = require('crypto');
 const db = require('../db');
 const rankings = require('./rankings');
@@ -444,8 +445,10 @@ function checkText({ summary, body }, input, { banned = BANNED, parsed = null } 
 
 // Nach dem Bearbeiten: maschinelle Prüfung neu, Befunde der Gegenprüfung nur behalten, solange der Satz noch im Text steht
 function recheck(text, input, style, previous = []) {
-  const kept = (previous || []).filter((w) => w.type === 'review' && w.sentence && `${text.summary}\n${text.body}`.includes(w.sentence));
-  return [...checkText(text, input, { banned: style.banned }), ...kept];
+  // Formatierung (Links, Fettdruck) vor der Prüfung entfernen: Zahlen in Linkadressen sind keine Aussagen
+  const bare = { ...text, body: richtext.plain(text.body) };
+  const kept = (previous || []).filter((w) => w.type === 'review' && w.sentence && `${bare.summary}\n${bare.body}`.includes(w.sentence));
+  return [...checkText(bare, input, { banned: style.banned }), ...kept];
 }
 
 // Prompt für den KI-Entwurf. Wird im Admin unter Inhalte → KI-Texte dokumentiert.

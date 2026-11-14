@@ -75,6 +75,8 @@ app.locals.plausibleSrc = config.plausibleSrc;
 // Cache-Busting: neue Kennung je Start (Deploy), damit Browser geänderte CSS/JS sofort laden
 app.locals.assetVersion = process.env.ASSET_VERSION || Date.now().toString(36);
 app.locals.ldJson = require('./lib/seo').ldJson;
+// Redaktionstexte: Links und Fettdruck sicher ausgeben (lib/richtext.js)
+app.locals.richText = (text, siteHost) => require('./lib/richtext').toHtml(text, { siteHost: siteHost || null });
 app.locals.fitTitle = require('./lib/seo').fitTitle;
 app.locals.fitDescription = require('./lib/seo').fitDescription;
 app.locals.googleMapsUrl = require('./lib/seo').googleMapsUrl;

@@ -557,8 +557,15 @@
         <% } %>
         <label for="t-summary">Kurzbeschreibung <small class="muted">ein Satz mit Ort, Ziel 150, max. <%= SUMMARY_MAX %> Zeichen</small></label>
         <input id="t-summary" name="summary" type="text" maxlength="<%= SUMMARY_MAX %>" value="<%= text ? text.summary : '' %>">
-        <label for="t-body">Text <small class="muted">Absätze durch Leerzeile trennen · „## “ = Zwischenüberschrift · „- “ = Aufzählung</small></label>
+        <label for="t-body">Text <small class="muted">Absätze durch Leerzeile trennen</small></label>
+        <div class="md-tools" data-md-for="t-body">
+          <button class="btn small secondary" type="button" data-md="h" title="Zeile als Zwischenüberschrift (## )">Überschrift</button>
+          <button class="btn small secondary" type="button" data-md="ul" title="Markierte Zeilen als Aufzählung (- )">• Aufzählung</button>
+          <button class="btn small secondary" type="button" data-md="bold" title="Markierten Text fett (**Text**)"><strong>Fett</strong></button>
+          <button class="btn small secondary" type="button" data-md="link" title="Markierten Text verlinken ([Text](https://…))">Link</button>
+        </div>
         <textarea id="t-body" name="body" rows="14"><%= text ? text.body : '' %></textarea>
+        <p class="muted" style="margin:4px 0 0"><small>„## “ = Zwischenüberschrift · „- “ am Zeilenanfang = Aufzählung · <code>**fett**</code> · <code>[Linktext](https://…)</code> oder intern <code>[Mallorca](/region/mallorca)</code>. Fremde Links öffnen in einem neuen Tab; Links zu Buchungspartnern sind im Text nicht erlaubt.</small></p>
         <% if (text && text.generated_body && (text.generated_body !== text.body || text.generated_summary !== text.summary)) { %>
           <details style="margin:6px 0 10px"><summary><small>Ursprünglichen KI-Entwurf ansehen (von dir überarbeitet)</small></summary>
             <pre class="json" style="white-space:pre-wrap;margin-top:6px"><%= text.generated_summary %>
