@@ -1623,6 +1623,33 @@ router.post('/kontakt/:id/erledigt', wrap(async (req, res) => {
 
 // ---------- Team: Admins freischalten (Login mit Google über die E-Mail-Adresse) ----------
 
+// KI-Budget: Monatslimit der App für KI-Aufrufe ansehen und ändern (ohne Server-Zugriff)
+const LLM_PURPOSES = { extraction: 'Website-Auswertung (Auto-Prüfung)', inquiry: 'Anfrage-Entwürfe', description: 'Beschreibungstexte', description_check: 'Gegenprüfung der Texte', website_search: 'Website-Suche', camp_check: 'Camp-Prüfung', compare: 'Modellvergleich' };
+router.get('/ki-budget', wrap(async (req, res) => {
+  const llm = require('../lib/llm');
+  const [month, byPurpose, lastMonths] = await Promise.all([
+    llm.monthSpend(),
+    db.many(`SELECT purpose, count(*)::int AS calls, sum(cost_usd)::float AS usd FROM llm_usage WHERE created_at >= date_trunc('month', now()) GROUP BY purpose ORDER BY usd DESC`),
+    db.many(`SELECT to_char(date_trunc('month', created_at), 'MM/YYYY') AS label, count(*)::int AS calls, sum(cost_usd)::float AS usd
+               FROM llm_usage WHERE created_at >= date_trunc('month', now()) - interval '5 months' GROUP BY date_trunc('month', created_at) ORDER BY date_trunc('month', created_at) DESC`),
+  ]);
+  res.render('admin/ai-budget', {
+    title: 'KI-Budget', month, byPurpose, lastMonths, PURPOSES: LLM_PURPOSES, envBudget: config.llm.monthlyBudgetUsd,
+    min: llm.BUDGET_MIN, max: llm.BUDGET_MAX, flash: req.query.ok || null, error: req.query.fehler || null,
+  });
+}));
+
+router.post('/ki-budget', wrap(async (req, res) => {
+  const llm = require('../lib/llm');
+  try {
+    const r = await llm.setBudget(req.body.budget, req.session.admin.id);
+    await logAction(req.session.admin.id, 'setting', req.session.admin.id, 'set_llm_budget', { old: r.before, new: r.usd });
+    res.redirect(`/admin/ki-budget?ok=${encodeURIComponent(`KI-Monatsbudget auf ${r.usd.toFixed(2).replace('.', ',')} $ gesetzt`)}`);
+  } catch (err) {
+    res.redirect(`/admin/ki-budget?fehler=${encodeURIComponent(err.message)}`);
+  }
+}));
+
 router.get('/team', wrap(async (req, res) => {
   const rows = await db.many(`SELECT id, email, google_sub IS NOT NULL AS linked, password_hash IS NOT NULL AS has_password, last_login_at, created_at FROM admin_users ORDER BY email`);
   res.render('admin/team', { title: 'Team', rows, me: req.session.admin.id, flash: req.query.ok || null, error: req.query.fehler || null });

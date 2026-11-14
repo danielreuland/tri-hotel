@@ -77,18 +77,61 @@ async function record({ purpose, model, usage, entityId = null, submissionId = n
   return c;
 }
 
+// KI-Monatsbudget in US-Dollar: Wert aus dem Admin (app_settings, Einstellungen → KI-Budget), sonst aus der .env
+// (LLM_MONTHLY_BUDGET_USD). null = kein Limit. Grenzen für die Eingabe im Admin: BUDGET_MIN bis BUDGET_MAX.
+const BUDGET_KEY = 'llm_monthly_budget_usd';
+const BUDGET_MIN = 1;
+const BUDGET_MAX = 500;
+
+// Eingabe aus dem Admin prüfen ("30", "30,5") -> Zahl mit zwei Nachkommastellen oder null (ungültig)
+function parseBudget(input) {
+  const n = Number(String(input === undefined || input === null ? '' : input).trim().replace(',', '.'));
+  if (!Number.isFinite(n) || n < BUDGET_MIN || n > BUDGET_MAX) return null;
+  return Math.round(n * 100) / 100;
+}
+
+// Gespeicherter Wert vor dem Wert aus der .env; ein unbrauchbarer gespeicherter Wert zählt nicht
+function resolveBudget(stored, envValue) {
+  const fromAdmin = parseBudget(stored);
+  return fromAdmin !== null ? { usd: fromAdmin, source: 'admin' } : { usd: envValue || null, source: 'env' };
+}
+
+async function budget() {
+  const db = require('../db');
+  let stored = null;
+  try {
+    const row = await db.one('SELECT value FROM app_settings WHERE key = $1', [BUDGET_KEY]);
+    stored = row ? row.value : null;
+  } catch (err) {
+    console.error('[llm] Budget-Einstellung nicht lesbar, nutze .env:', err.message);
+  }
+  return resolveBudget(stored, config.llm.monthlyBudgetUsd);
+}
+
+async function setBudget(input, adminId) {
+  const usd = parseBudget(input);
+  if (usd === null) throw new Error(`Bitte einen Betrag zwischen ${BUDGET_MIN} und ${BUDGET_MAX} $ angeben.`);
+  const db = require('../db');
+  const before = await budget();
+  await db.query(
+    `INSERT INTO app_settings (key, value, updated_by) VALUES ($1, $2::jsonb, $3)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now(), updated_by = EXCLUDED.updated_by`, [BUDGET_KEY, JSON.stringify(usd), adminId || null]);
+  return { usd, before: before.usd };
+}
+
 async function monthSpend() {
   const db = require('../db');
   const row = await db.one(`SELECT COALESCE(SUM(cost_usd), 0)::float AS usd, COUNT(*)::int AS calls FROM llm_usage WHERE created_at >= date_trunc('month', now())`);
-  return { usd: row.usd, calls: row.calls, budget: config.llm.monthlyBudgetUsd };
+  const b = await budget();
+  return { usd: row.usd, calls: row.calls, budget: b.usd, budgetSource: b.source };
 }
 
 class BudgetError extends Error {}
 
-// Vor jedem Aufruf: Monatsbudget (LLM_MONTHLY_BUDGET_USD) erreicht -> kein Aufruf
+// Vor jedem Aufruf: Monatsbudget erreicht -> kein Aufruf
 async function assertBudget() {
-  if (!config.llm.monthlyBudgetUsd) return;
   const s = await monthSpend();
+  if (!s.budget) return;
   if (s.usd >= s.budget) {
     throw new BudgetError(`KI-Monatsbudget erreicht (${s.usd.toFixed(2)} von ${s.budget.toFixed(2)} $) – Aufruf übersprungen.`);
   }
@@ -99,4 +142,4 @@ function formatTokens(c) {
   return `${k(c.input + c.cacheRead + c.cacheWrite)} Tokens ein, ${k(c.output)} aus, ca. ${c.usd.toFixed(2).replace('.', ',')} $`;
 }
 
-module.exports = { anthropic, modelFor, priceFor, costOf, record, monthSpend, assertBudget, BudgetError, formatTokens, DEFAULT_PRICES };
+module.exports = { anthropic, modelFor, priceFor, costOf, record, monthSpend, assertBudget, BudgetError, budget, setBudget, parseBudget, resolveBudget, BUDGET_MIN, BUDGET_MAX, formatTokens, DEFAULT_PRICES };

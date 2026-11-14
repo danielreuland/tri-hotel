@@ -38,6 +38,7 @@ const SECTIONS = [
       { href: '/admin/sites', label: 'Sites' },
       { href: '/admin/partner', label: 'Partnerprogramme' },
       { href: '/admin/emails', label: 'E-Mail-Vorlagen' },
+      { href: '/admin/ki-budget', label: 'KI-Budget' },
       { href: '/admin/team', label: 'Team' },
       { href: '/admin/log', label: 'Log' },
     ],

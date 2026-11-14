@@ -29,3 +29,14 @@ test('llm.costOf: Ein-/Ausgabe und Cache nach Preistabelle', () => {
 test('llm.formatTokens', () => {
   assert.equal(llm.formatTokens({ input: 38000, cacheRead: 0, cacheWrite: 0, output: 2500, usd: 0.2525 }), '38,0 Tsd. Tokens ein, 2,5 Tsd. aus, ca. 0,25 $');
 });
+
+test('KI-Budget: Eingabe aus dem Admin prüfen, gespeicherter Wert vor der .env', () => {
+  assert.equal(llm.parseBudget('30'), 30);
+  assert.equal(llm.parseBudget(' 30,5 '), 30.5);
+  assert.equal(llm.parseBudget(12.345), 12.35);
+  for (const bad of ['', null, undefined, 'abc', '0', '-5', '0,5', '501', 'Infinity']) assert.equal(llm.parseBudget(bad), null, String(bad));
+  assert.deepEqual(llm.resolveBudget(30, 20), { usd: 30, source: 'admin' });
+  assert.deepEqual(llm.resolveBudget(null, 20), { usd: 20, source: 'env' });
+  assert.deepEqual(llm.resolveBudget('kaputt', 20), { usd: 20, source: 'env' });
+  assert.deepEqual(llm.resolveBudget(null, null), { usd: null, source: 'env' }, 'ohne beides kein Limit');
+});

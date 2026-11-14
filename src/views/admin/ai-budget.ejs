@@ -1,0 +1,41 @@
+<%- include('../partials/admin-head') %>
+<% var usd = function (x) { return Number(x || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'; };
+   var pct = month.budget ? Math.round(month.usd / month.budget * 100) : null;
+   var over = month.budget && month.usd >= month.budget; %>
+<h1>KI-Budget</h1>
+<p class="muted">Die App zählt die Kosten jedes KI-Aufrufs mit (Website-Auswertung, Anfrage-Entwürfe, Texte) und überspringt weitere Aufrufe, sobald das Monatsbudget erreicht ist. Der Zähler beginnt am 1. jedes Monats neu.</p>
+
+<section class="card">
+  <h2 style="margin-top:0">Laufender Monat</h2>
+  <p style="font-size:1.2rem;margin:0 0 6px"><strong><%= usd(month.usd) %></strong><% if (month.budget) { %> von <%= usd(month.budget) %> <span class="badge <%= over ? 'bad' : pct >= 80 ? 'warn' : 'good' %>"><%= over ? 'aufgebraucht – KI-Aufrufe werden übersprungen' : pct + ' % verbraucht' %></span><% } else { %> <span class="badge warn">kein Limit gesetzt</span><% } %></p>
+  <p class="muted" style="margin:0"><small><%= month.calls %> Aufrufe · Limit <%= month.budgetSource === 'admin' ? 'hier im Admin gesetzt' : 'aus der Server-Konfiguration (.env)' %></small></p>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2 style="margin-top:0">Monatsbudget ändern</h2>
+  <form method="post" action="/admin/ki-budget">
+    <label for="budget">Monatsbudget in US-Dollar (<%= min %> bis <%= max %>)</label>
+    <input id="budget" name="budget" type="number" min="<%= min %>" max="<%= max %>" step="0.01" required value="<%= month.budget || '' %>" style="max-width:12em">
+    <p><button class="btn" type="submit">Speichern</button></p>
+  </form>
+  <p class="muted" style="margin-bottom:0"><small>Gilt sofort, auch für den laufenden Monat. Das ist nur das Limit dieser App: Bei Anthropic (Claude Console → Limits) gibt es ein eigenes Ausgabenlimit. Es muss mindestens so hoch sein, sonst lehnt Anthropic die Aufrufe vorher ab.<% if (envBudget) { %> Wert in der Server-Konfiguration: <%= usd(envBudget) %> (gilt nur, solange hier nichts gespeichert ist).<% } %></small></p>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2 style="margin-top:0">Wofür – laufender Monat</h2>
+  <% if (!byPurpose.length) { %><p class="muted">Noch keine KI-Aufrufe in diesem Monat.</p><% } else { %>
+  <div class="table-scroll"><table>
+    <tr><th>Zweck</th><th class="num">Aufrufe</th><th class="num">Kosten</th><th class="num">je Aufruf</th></tr>
+    <% byPurpose.forEach(function (p) { %>
+      <tr><td><%= PURPOSES[p.purpose] || p.purpose %></td><td class="num"><%= p.calls %></td><td class="num"><%= usd(p.usd) %></td><td class="num"><%= usd(p.calls ? p.usd / p.calls : 0) %></td></tr>
+    <% }) %>
+  </table></div>
+  <% } %>
+  <h3>Letzte Monate</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Monat</th><th class="num">Aufrufe</th><th class="num">Kosten</th></tr>
+    <% lastMonths.forEach(function (m) { %><tr><td><%= m.label %></td><td class="num"><%= m.calls %></td><td class="num"><%= usd(m.usd) %></td></tr><% }) %>
+  </table></div>
+  <p class="muted" style="margin-bottom:0"><small>Kosten nach Listenpreisen aus den Token-Zahlen jedes Aufrufs berechnet; die Abrechnung von Anthropic kann um wenige Cent abweichen.</small></p>
+</section>
+<%- include('../partials/admin-foot') %>
