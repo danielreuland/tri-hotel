@@ -223,16 +223,24 @@ async function resolve(entityType, slug, code, kind) {
 // Klicks nur als Anzahl je Tag (keine personenbezogenen Daten); Suchlinks je Programm
 // Herkunftsseite eines Klicks: Parameter ?von=<domain> am Link (z. B. von fitnessracing-hotel.de), sonst Host des Referers,
 // sonst „direkt“. Nur der Hostname wird gespeichert (ohne www), keine personenbezogenen Daten.
+function hostOf(v) {
+  const raw = String(v || '').trim().toLowerCase();
+  if (!raw) return null;
+  let h = raw;
+  try { h = new URL(/^[a-z][a-z0-9+.-]*:\/\//.test(raw) ? raw : `https://${raw}`).hostname; } catch { return null; }
+  h = h.replace(/^www\./, '');
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(h) && h.length <= 60 ? h : null;
+}
+
 function clickSource({ von, referer } = {}) {
-  const host = (v) => {
-    const raw = String(v || '').trim().toLowerCase();
-    if (!raw) return null;
-    let h = raw;
-    try { h = new URL(/^[a-z][a-z0-9+.-]*:\/\//.test(raw) ? raw : `https://${raw}`).hostname; } catch { return null; }
-    h = h.replace(/^www\./, '');
-    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(h) && h.length <= 60 ? h : null;
-  };
-  return host(von) || host(referer) || 'direkt';
+  return hostOf(von) || hostOf(referer) || 'direkt';
+}
+
+// Link von außen mit ?von=<domain>: Der Klick zählt nur, wenn der Browser als Herkunft genau diese Domain meldet (Referer).
+// Ein Mensch, der auf der Seite klickt, sendet sie mit; Crawler und Bot-Netze rufen den Link ohne Herkunft ab.
+function cameFrom({ von, referer } = {}) {
+  const want = hostOf(von);
+  return Boolean(want) && hostOf(referer) === want;
 }
 
 // Zählt dieser Aufruf als Klick eines Menschen? Bots und Vorschauen nicht, Aufrufe aus dem Admin nicht, und bei Browsern
@@ -314,4 +322,4 @@ async function stats(days = 30) {
   return { byProgram, top, bySource };
 }
 
-module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, countClick, countDirectClick, directStats, DIRECT_KIND, stats };
+module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, cameFrom, hostOf, countClick, countDirectClick, directStats, DIRECT_KIND, stats };

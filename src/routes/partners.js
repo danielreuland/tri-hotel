@@ -29,7 +29,9 @@ router.get('/go/:slug/:program/:kind?', wrap(async (req, res, next) => {
   if (!link) return next();
   // Klicks auf unseren Seiten zählt der Beacon (POST …/klick). Hier nur Links von außen mit ?von= (z. B. statische Seiten
   // ohne unser Skript); Bot-Netze rufen /go/ direkt ohne Seitenaufruf ab und zählen so nicht mit.
-  if (req.query.von && partners.countable(req, `${req.params.slug}/${req.params.program}/${kind}`)) {
+  // … und nur, wenn der Browser diese Seite auch als Herkunft meldet: Crawler rufen die Links ohne Referer ab
+  if (req.query.von && partners.cameFrom({ von: req.query.von, referer: req.get('referer') })
+    && partners.countable(req, `${req.params.slug}/${req.params.program}/${kind}`)) {
     await partners.countClick(link, partners.clickSource({ von: req.query.von, referer: req.get('referer') }));
   }
   res.set('X-Robots-Tag', 'noindex, nofollow');

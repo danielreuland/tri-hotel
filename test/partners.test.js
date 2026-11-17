@@ -194,3 +194,14 @@ test('firstClickToday: gleiche Adresse und gleiches Ziel zählen einmal am Tag',
   assert.equal(partners.firstClickToday('5.102.169.1', 'playitas/check24/booking', t), true, 'anderes Ziel');
   assert.equal(partners.firstClickToday('5.102.169.1', 'club/check24/booking', t + 86400000), true, 'nächster Tag');
 });
+
+test('Links von außen (?von=): Klick zählt nur mit passender Herkunft im Referer', () => {
+  const von = 'fitnessracing-hotel.de';
+  assert.equal(partners.cameFrom({ von, referer: 'https://fitnessracing-hotel.de/' }), true);
+  assert.equal(partners.cameFrom({ von, referer: 'https://www.fitnessracing-hotel.de/fitness-racing/' }), true);
+  assert.equal(partners.cameFrom({ von, referer: undefined }), false, 'Crawler ohne Referer');
+  assert.equal(partners.cameFrom({ von, referer: '' }), false);
+  assert.equal(partners.cameFrom({ von, referer: 'https://andere-seite.example/' }), false);
+  assert.equal(partners.cameFrom({ von: '', referer: 'https://fitnessracing-hotel.de/' }), false);
+  assert.equal(partners.clickSource({ von, referer: null }), 'fitnessracing-hotel.de');
+});
