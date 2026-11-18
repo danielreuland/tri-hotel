@@ -28,8 +28,9 @@ function flag(p, key) {
   return v === true ? true : v === false ? false : null;
 }
 
-// Suchmaschinen: Anbieter-Profile erst mit eigenem Kurzprofil ab MIN_PROFILE_WORDS Wörtern indexieren (sonst dünne Seite)
-const MIN_PROFILE_WORDS = 100;
+// Suchmaschinen: Anbieter-Profile erst mit eigenem Kurzprofil ab MIN_PROFILE_WORDS Wörtern indexieren (sonst dünne Seite);
+// Preisbeispiele sind keine Pflicht (Entscheidung Daniel, 18.11.2026, B-46)
+const MIN_PROFILE_WORDS = 50;
 function profileWords(p) {
   return (String((p && p.summary) || '').match(/[\p{L}\p{N}]+(?:[-'’][\p{L}\p{N}]+)*/gu) || []).length;
 }

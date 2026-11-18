@@ -29,8 +29,40 @@ function countryArea(code) {
 }
 
 function minEntities(ranking) {
-  const v = Number((ranking.formula || {}).region_min_entities);
-  return Number.isFinite(v) && v > 0 ? v : 2;
+  return indexRules(ranking).region;
+}
+
+// Indexierung (B-46): Schwellen aus rankings.formula. Region ab region_min_entities Objekten mit Score und mit
+// Einleitungstext (Redaktionstext oder Kurztext der Region), Land ab country_min_entities Objekten mit Score.
+// Unvollständige Profile zählen nicht mit. Darunter bleibt die Seite erreichbar, aber noindex und ohne Sitemap-Eintrag.
+function indexRules(ranking) {
+  const f = (ranking && ranking.formula) || {};
+  const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
+  const region = num(f.region_min_entities, 2);
+  return { region, country: num(f.country_min_entities, 3) };
+}
+
+function areaIndexable(type, { scored, hasText }, ranking) {
+  const rules = indexRules(ranking);
+  return type === 'region' ? scored >= rules.region && Boolean(hasText) : scored >= rules.country;
+}
+
+// Was einer Bereichsseite zur Indexierung fehlt (Admin, Bericht)
+function indexGaps(type, { scored, hasText }, ranking) {
+  const rules = indexRules(ranking);
+  const gaps = [];
+  const min = type === 'region' ? rules.region : rules.country;
+  if (scored < min) gaps.push(`${min - scored} ${min - scored === 1 ? 'Objekt' : 'Objekte'} mit Score`);
+  if (type === 'region' && !hasText) gaps.push('Einleitungstext');
+  return gaps;
+}
+
+// Regionen mit Einleitungstext (veröffentlichter Redaktionstext oder Kurztext der Region)
+async function regionTextIds(siteId) {
+  const rows = await db.many(
+    `SELECT r.id FROM regions r WHERE r.site_id = $1 AND (COALESCE(btrim(r.intro), '') <> ''
+        OR EXISTS (SELECT 1 FROM region_texts t WHERE t.region_id = r.id AND t.body <> ''))`, [siteId]);
+  return new Set(rows.map((r) => r.id));
 }
 
 // Alle Live-Objekte eines Rankings mit Platz im Gesamtranking
@@ -44,15 +76,19 @@ async function liveWithRank(ranking, month) {
 async function overview(ranking, siteId) {
   const { ranked, incomplete } = await liveWithRank(ranking, null);
   const all = [...ranked, ...incomplete];
-  const min = minEntities(ranking);
+  const withText = await regionTextIds(siteId);
   const regionList = (await regions(siteId)).map((r) => {
     const members = all.filter((e) => seo.inRegion(e, r));
-    return { ...regionArea(r), count: members.length, indexable: members.length >= min, lastmod: seo.latest(members.map((e) => e.updated_at)) };
+    const facts = { scored: ranked.filter((e) => seo.inRegion(e, r)).length, hasText: withText.has(r.id) };
+    return { ...regionArea(r), count: members.length, scored: facts.scored, hasText: facts.hasText,
+      indexable: areaIndexable('region', facts, ranking), gaps: indexGaps('region', facts, ranking), lastmod: seo.latest(members.map((e) => e.updated_at)) };
   });
   const codes = [...new Set(all.map((e) => e.country).filter(Boolean))].sort();
   const countryList = codes.map((c) => {
     const members = all.filter((e) => e.country === c);
-    return { ...countryArea(c), count: members.length, indexable: members.length >= min, lastmod: seo.latest(members.map((e) => e.updated_at)) };
+    const facts = { scored: ranked.filter((e) => e.country === c).length };
+    return { ...countryArea(c), count: members.length, scored: facts.scored,
+      indexable: areaIndexable('country', facts, ranking), gaps: indexGaps('country', facts, ranking), lastmod: seo.latest(members.map((e) => e.updated_at)) };
   });
   return { regions: regionList, countries: countryList };
 }
@@ -77,7 +113,9 @@ async function pageData(ranking, area, month) {
     ranked: inArea,
     incomplete: inAreaIncomplete,
     count: all.length,
-    indexable: all.length >= minEntities(ranking),
+    indexable: area.type === 'region'
+      ? areaIndexable('region', { scored: inArea.length, hasText: (await regionTextIds(area.region.site_id)).has(area.region.id) }, ranking)
+      : areaIndexable('country', { scored: inArea.length }, ranking),
     climate,
     bestMonths: seo.bestMonths(ranking.formula, climate),
     featureShares: seo.featureShares(all, featureMap),
@@ -94,4 +132,20 @@ async function regionsOf(siteId, entity) {
   return (await regions(siteId)).filter((r) => seo.inRegion(entity, r));
 }
 
-module.exports = { regions, region, regionArea, countryArea, minEntities, overview, pageData, regionsOf, liveWithRank };
+// „Weitere Objekte“ auf der Objektseite (interne Links, B-46): zuerst die Region nach Score, aufgefüllt mit den nächstgelegenen
+// Objekten im selben Land nach Entfernung – Partnerstatus spielt keine Rolle. Ohne Region nur das Land.
+function nearbyEntities(entity, ranked, region, { limit = 4 } = {}) {
+  const others = ranked.filter((e) => e.id !== entity.id);
+  const inRegion = region ? others.filter((e) => seo.inRegion(e, region)).slice(0, limit) : [];
+  const taken = new Set(inRegion.map((e) => e.id));
+  const hasGeo = (e) => e.lat !== null && e.lat !== undefined && e.lng !== null && e.lng !== undefined;
+  const fill = hasGeo(entity) && entity.country
+    ? others.filter((e) => !taken.has(e.id) && e.country === entity.country && hasGeo(e))
+      .map((e) => ({ ...e, distanceKm: seo.distanceKm({ lat: Number(entity.lat), lng: Number(entity.lng) }, { lat: Number(e.lat), lng: Number(e.lng) }) }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, limit - inRegion.length)
+    : [];
+  return { items: [...inRegion, ...fill], scope: region && !fill.length ? 'region' : (inRegion.length ? 'mixed' : 'country') };
+}
+
+module.exports = { nearbyEntities,  regions, region, regionArea, countryArea, minEntities, indexRules, areaIndexable, indexGaps, overview, pageData, regionsOf, liveWithRank };

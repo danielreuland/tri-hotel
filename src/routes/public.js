@@ -308,11 +308,10 @@ async function renderEntity(req, res, ranking, slug) {
   if (entity.country) crumbs.push({ name: seo.countryName(entity.country), url: `${siteUrl}${base}/land/${seo.countrySlug(entity.country)}` });
   if (region) crumbs.push({ name: region.name, url: `${siteUrl}${base}/region/${region.slug}` });
   crumbs.push({ name: entity.name, url: `${siteUrl}${entityPath(ranking, entity)}` });
-  let nearby = [];
-  if (region) {
-    const { ranked } = await areas.liveWithRank(ranking, null);
-    nearby = ranked.filter((e) => e.id !== entity.id && seo.inRegion(e, region)).slice(0, 4);
-  }
+  // Region nach Score, aufgefüllt mit den nächstgelegenen im selben Land (auch für Objekte außerhalb jeder Region)
+  const near = areas.nearbyEntities(entity, (await areas.liveWithRank(ranking, null)).ranked, region);
+  const nearby = near.items;
+  const nearbyScope = near.scope;
 
   const images = await db.many(
     `SELECT * FROM entity_images WHERE entity_id = $1 AND approved_at IS NOT NULL
@@ -356,6 +355,9 @@ async function renderEntity(req, res, ranking, slug) {
     crumbs,
     region,
     nearby,
+    nearbyScope,
+    countryIn: seo.countryIn,
+    countrySlug: seo.countrySlug,
     entityPath: (e) => entityPath(ranking, e),
     // Monatsansicht nicht indexieren (gleicher Inhalt mit anderem Score)
     noindex: Boolean(month),
@@ -702,7 +704,7 @@ async function renderArea(req, res, ranking, area) {
   res.render('public/area', {
     title: text && text.seo_title ? text.seo_title : (content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`),
     description: text && text.summary ? text.summary : (d.count
-      ? `${d.count} geprüfte ${ranking.entity_label_pl} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
+      ? `${d.count === 1 ? `1 ${ranking.entity_label_sg}` : `${d.count} geprüfte ${ranking.entity_label_pl}`} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
       + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Herkunft jedes Werts öffentlich.',
     canonical: `${siteUrl}${path}`,

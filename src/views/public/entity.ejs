@@ -271,15 +271,16 @@
   </section>
 <% } %>
 
-<% if (nearby.length) { %>
+<% if (nearby.length) { var nearCountry = entity.country ? countryIn(entity.country) : ''; %>
   <section>
-    <h2>Weitere <%= ranking.entity_label_pl %> <%= region.name_in %></h2>
+    <h2><%= nearbyScope === 'region' ? 'Weitere ' + ranking.entity_label_pl + ' ' + region.name_in : (nearbyScope === 'mixed' ? 'Weitere ' + ranking.entity_label_pl + ' ' + region.name_in + ' und in der Nähe' : 'Weitere ' + ranking.entity_label_pl + ' in der Nähe') %></h2>
     <ul class="rank-list">
       <% nearby.forEach(function (e) { %>
-        <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %> · <%= e.label %></small></span><span class="score"><%= e.score %></span></a></li>
+        <li><a class="rank-item" href="<%= entityPath(e) %>"><span class="pos"><%= e.rank %></span><span class="info"><span class="name"><%= e.name %></span><br><small><%= e.city %><% if (e.distanceKm !== undefined) { %> · <%= Math.round(e.distanceKm) %> km entfernt<% } %> · <%= e.label %></small></span><span class="score"><%= e.score %></span></a></li>
       <% }) %>
     </ul>
-    <p><a href="<%= base %>/region/<%= region.slug %>">Alle <%= ranking.entity_label_pl %> <%= region.name_in %> →</a></p>
+    <p><% if (region) { %><a href="<%= base %>/region/<%= region.slug %>">Alle <%= ranking.entity_label_pl %> <%= region.name_in %> →</a><% } %>
+      <% if (entity.country && nearbyScope !== 'region') { %><%= region ? ' · ' : '' %><a href="<%= base %>/land/<%= countrySlug(entity.country) %>">Alle <%= ranking.entity_label_pl %> <%= nearCountry %> →</a><% } %></p>
   </section>
 <% } %>
 

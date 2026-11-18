@@ -5,6 +5,21 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### B-46 Indexierung bereinigen (18.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+Grundlage: Search-Console-Drilldown 18.11. Viele der gemeldeten Regionen/Länder waren beim Abruf schon indexierbar (ältere Crawls).
+- **Regeln** (`services/areas.js` → `indexRules`/`areaIndexable`/`indexGaps`, Schwellen aus `rankings.formula`): Region ab
+  `region_min_entities` (2) Objekten **mit Score** und mit Einleitungstext (Redaktionstext oder `regions.intro`); Land ab
+  `country_min_entities` (Standard 3, kein Formel-Eintrag nötig – sonst zählte die Katalogversion hoch) Objekten mit Score.
+  Unvollständige Profile zählen nicht mehr mit. Camp-Anbieter ab 50 Wörtern Kurzprofil, Preisbeispiele keine Pflicht (Daniel 18.11.).
+  noindex-Seiten jetzt `noindex, follow` (Vorab-Sperre `NOINDEX=true` bleibt `nofollow`). Sitemap nutzt dieselben Regeln.
+- **Interne Links:** Objektseite zeigt „Weitere … in der Nähe“: Region nach Score, aufgefüllt mit den nächsten Objekten im Land
+  nach Entfernung (auch für Objekte ohne Region, z. B. Asturias, Toskana, Ratzeburg) – Partnerstatus spielt keine Rolle.
+- **Dubletten:** Zafiro Palace war schon mit Migration 080 zusammengeführt (301 + canonical ok). Migration 121: „Globals Janeiro“ →
+  „Globales Janeiro“, Slug `globales-janeiro-can-picafort`, alter Slug 301. Suche: `node scripts/find-duplicates.js` (nur Liste).
+- Tests: `test/indexing.test.js` (Regeln je Seitentyp, 301, Sitemap ohne noindex/Weiterleitung – DB-Teil mit `TEST_DATABASE_URL`).
+- Offen: noindex bleiben derzeit Region Zypern und Länder Zypern, Türkei, Thailand, Ägypten, Slowakei (je 1 Hotel) sowie alle
+  9 Camp-Anbieter (Kurzprofil 0–36 Wörter, Texte aus B-31). Dünne Hotelseiten: Texte für Garda Sporting Club und Sant Jordi fehlen (B-31).
+
 ### Klima: Wind und Regentage von Messstationen (03.11.2026, live – Migration 099)
 Vergleich Open-Meteo gegen 11 NOAA-Stationen 2023–2024 (Gando, Fuerteventura, Lanzarote, Teneriffa Süd, Palma, Alicante,
 Faro, Girona, Lübeck, Salzburg, Phuket): **Temperatur ok** (heutige Einstellung best_match im Mittel −0,8 °C, besser als
@@ -394,6 +409,11 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 - `geo-refresh` für live-Objekte: würde ungeprüfte Vorschläge sofort in den Score bringen.
 
 ## Zu erledigen (Daniel)
+- **Koordinaten Zafiro Alzinar Mar korrigieren** (B-46, 18.11.): stehen 130 m neben Zafiro Tropic in Port d'Alcúdia, laut OSM liegt das
+  Hotel in Can Picafort (Carrer de la Saladina, 39.76078, 3.15123). Im Admin unter Stammdaten ändern (zieht Klima und Umgebung nach);
+  danach die schon vorhandenen Geo-Werte (Strand, Becken, Bahn, Flughafen) prüfen – vorhandene Werte überschreibt der Nachlauf nicht.
+- **B-46 nach Deploy:** `node scripts/find-duplicates.js` auf dem Server laufen lassen, Liste prüfen; Sitemap in der Search Console neu
+  einreichen und die Indexierung der freigeschalteten URLs beantragen.
 - **KI-Schlüssel läuft am ca. 08.12.2026 ab** (am 08.11. mit 30 Tagen Laufzeit neu angelegt, der alte lief am 07.11. ab und legte Auto-Prüfung, Texte und KI-Mails still). Vorher neuen Schlüssel ohne Ablauf anlegen und setzen.
 - **Import vom 01.11. prüfen:** lief um 08:00 – 20 neue Meldungen aus dem Abgleich sports-hotels.com und 7 erneut gestartete
   Auto-Prüfungen geparkter Importe; Ergebnisse in der Warteschlange prüfen.
