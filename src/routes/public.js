@@ -22,6 +22,7 @@ const areaTopics = require('../services/area-topics');
 const { slugify } = require('../lib/util');
 const finder = require('../lib/finder');
 const tripadvisor = require('../services/tripadvisor');
+const methodStatus = require('../services/method-status');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -437,13 +438,18 @@ async function renderMethod(req, res, ranking) {
     .map((f) => ({ q: fillMethod(f.q, vars), a: fillMethod(f.a, vars) })).filter((f) => f.q && f.a);
   const canonical = `${res.locals.siteUrl}${ranking.is_default && req.hostRanking && req.hostRanking.id === ranking.id ? res.locals.scorePath : `/rankings/${ranking.slug}/methodik`}`;
   const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
+  const status = methodStatus.statusOf(ranking);
+  const title = content.method_title ? fillMethod(content.method_title, vars) : `So funktioniert der ${ranking.score_name}`;
   res.render('public/method', {
-    title: content.method_title ? fillMethod(content.method_title, vars) : `So funktioniert der ${ranking.score_name}`,
+    title,
     description: content.method_description ? fillMethod(content.method_description, vars)
       : `Formel, Gewichte und alle ${criteria.length} Kriterien des ${ranking.score_name}: offen und für alle ${ranking.entity_label_pl} gleich. Partner und Werbung ändern den Score nicht.`,
     canonical,
     ogImage: isHost ? `${res.locals.siteUrl}/og/methodik.png` : undefined,
-    jsonLd: faq.length ? [seo.faqLd(faq)] : [],
+    // dateModified = Stand der Methode (letzte Katalogänderung)
+    jsonLd: [methodStatus.pageLd({ name: title, url: canonical, site: res.locals.siteUrl, status }), ...(faq.length ? [seo.faqLd(faq)] : [])],
+    methodStatus: status,
+    catalogChanges: await methodStatus.recentChanges(ranking.id, 5),
     heading: content.method_h1 ? fillMethod(content.method_h1, vars) : `So funktioniert der ${ranking.score_name}`,
     intro, faq,
     example: await methodExample(ranking, categories, criteria.filter((c) => c.active !== false)),

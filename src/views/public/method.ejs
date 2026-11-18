@@ -14,6 +14,19 @@
 <% } else { %>
   <p class="lead">Der <%= ranking.score_name %> (0–100) setzt sich aus einem Fakten-Score und – sobald Bewertungen vorliegen – einem Athleten-Score zusammen. Formel und Kriterien sind vollständig öffentlich.</p>
 <% } %>
+<% if (locals.methodStatus) { var ms = methodStatus; %>
+<div class="method-status">
+  <p class="muted"><small>Stand der Methode: <% if (ms.changedLabel) { %><time datetime="<%= ms.changedIso %>"><%= ms.changedLabel %></time> · <% } %>Kriterienkatalog Version <%= ms.version %><% if (ms.computedLabel) { %> · Scores zuletzt berechnet am <%= ms.computedLabel %><% } %></small></p>
+  <% if (locals.catalogChanges && catalogChanges.length) { %>
+  <details class="method-history">
+    <summary><small>Änderungsverlauf</small></summary>
+    <ul>
+      <% catalogChanges.forEach(function (c) { %><li><small><time datetime="<%= c.iso %>"><%= c.date %></time> · Version <%= c.version %>: <%= c.text %></small></li><% }) %>
+    </ul>
+  </details>
+  <% } %>
+</div>
+<% } %>
 
 <h2>Die Formel</h2>
 

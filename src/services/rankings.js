@@ -1,6 +1,7 @@
 // Laden von Rankings, Kriterien, Fakten und Klima sowie Neuberechnung der Scores.
 const db = require('../db');
 const scoring = require('./scoring');
+const methodStatus = require('./method-status');
 
 async function getDefaultRanking(siteId) {
   return db.one(`SELECT * FROM rankings WHERE site_id = $1 AND is_default AND status = 'active'`, [siteId]);
@@ -129,6 +130,8 @@ async function recomputeRanking(rankingId) {
   clearShares();
   const rows = await db.many('SELECT entity_id FROM entity_rankings WHERE ranking_id = $1', [rankingId]);
   for (const r of rows) await recomputeEntity(r.entity_id, rankingId, db, { shared: false });
+  // „Scores zuletzt berechnet am …“ auf der Methodik-Seite
+  await methodStatus.markComputed(rankingId);
   return rows.length;
 }
 

@@ -274,6 +274,10 @@ pre.json { white-space: pre-wrap; font-size: .8rem; color: var(--muted); margin:
 .about-action img { width: 100%; height: auto; display: block; border-radius: var(--radius); }
 @media (max-width: 600px) { .about-person { flex-direction: column; gap: 12px; } .about-photo { flex-basis: auto; width: 240px; max-width: 100%; } }
 .method-about { margin-top: 20px; }
+.method-status { margin: -4px 0 20px; }
+.method-status p { margin: 0 0 4px; }
+.method-history summary { cursor: pointer; color: var(--muted); }
+.method-history ul { margin: 6px 0 0; padding-left: 1.2em; color: var(--muted); }
 
 /* Admin: Medienbibliothek */
 .media-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); margin-bottom: 24px; }

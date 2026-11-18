@@ -28,6 +28,7 @@ Ausführliches Konzept (Score-Formel, Kriterien, Prozesse, Phase 2): https://cla
 
 - `rankings`: Definition eines Rankings (Code, Slug, Scorename z. B. „TriScore“, Objekttyp, Beschriftungen, optionale Subdomain, `formula` mit Gewichten 0,6/0,4, Bayes-C/-m, Mindest-Vollständigkeit, Nachprüfintervall; `labels` mit Score-Stufen; Status draft/active/archived; genau ein `is_default`).
 - `ranking_categories`, `criteria`: Kategorien und Kriterien gehören zu einem Ranking. Die Summe `max_points` je Ranking ist frei (derzeit 106); der Score wird auf die erreichbaren Punkte normiert. Admin zeigt nur einen Hinweis bei Abweichung von 100.
+- **Stand der Methode** (Migration 120, `services/method-status.js`): `rankings.catalog_version`/`catalog_changed_at` zählen Trigger bei jeder Katalogänderung hoch (Kriterien, Kategorien, Formel, Stufen – eine Version je Transaktion, auch aus Migrationen), Verlauf in `catalog_changes` (`public_text` für einen festen Satz). `scores_computed_at` setzt `recomputeRanking`. Anzeige auf der Methodik-Seite.
 - Score-Labels (`rankings.labels`) sind Startwerte und werden nach den ersten bewerteten Hotels angepasst.
 - `entities`: bewertete Objekte (Hotel, Gym, Produkt …) mit `entity_type`. Ein Objekt kann in mehreren Rankings stehen.
 - `entity_rankings`: Status, Score, Vollständigkeit, K.O.-Grund **je Ranking**.
