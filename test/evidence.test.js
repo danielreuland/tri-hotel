@@ -9,9 +9,12 @@ test('Art des Belegs: Link vor Vermerk vor Einschätzung', () => {
   assert.strictEqual(evidence.kind({}), 'none');
 });
 
-test('Beleg fehlt nur bei Stufe 1 und 2 ohne Link, Vermerk oder Einschätzung', () => {
+test('Beleg fehlt nur bei Stufe 2 ohne Link, Vermerk oder Einschätzung', () => {
   assert.strictEqual(evidence.missing({ trust: 2 }), true);
-  assert.strictEqual(evidence.missing({ trust: '1' }), true);
+  assert.strictEqual(evidence.missing({ trust: '2', value: { bool: true } }), true);
+  // vom Betreiber bestätigt (z. B. per E-Mail): die Bestätigung ist die Quelle, kein Link nötig
+  assert.strictEqual(evidence.missing({ trust: 1 }), false);
+  assert.strictEqual(evidence.missing({ trust: '1', value: { bool: true } }), false);
   assert.strictEqual(evidence.missing({ trust: 2, url: 'https://x' }), false);
   assert.strictEqual(evidence.missing({ trust: 2, text: 'Satz von der Website' }), false);
   assert.strictEqual(evidence.missing({ trust: 2, assessment: true }), false);

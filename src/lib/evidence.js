@@ -1,5 +1,7 @@
 // Beleg eines Faktenwerts: Fundstelle (Link), Vermerk (Text, z. B. Textausschnitt oder „Telefonat 05.11.“) oder ausdrücklich
-// „Einschätzung der Redaktion“ ohne Beleg. Neue oder geänderte Werte der Stufen 1 und 2 brauchen eines davon (Admin, Migration 108).
+// „Einschätzung der Redaktion“ ohne Beleg. Neue oder geänderte Werte der Stufe 2 brauchen eines davon (Admin, Migration 108).
+// Stufe 1 („vom Betreiber bestätigt“) braucht keinen: Die Bestätigung des Betreibers ist selbst die Quelle, oft per E-Mail
+// ohne Link (Daniel, 19.11.). Ein Vermerk wie „E-Mail vom 18.11.“ bleibt möglich.
 
 // Art des Belegs: 'link' | 'note' | 'assessment' | 'none'
 function kind({ evidence_url: url, evidence_text: text, editorial_assessment: assessment } = {}) {
@@ -20,9 +22,9 @@ function needed(value, scoring) {
   return true;
 }
 
-// Fehlt der Beleg? Nur für Werte, die ein Mensch bestätigt (Stufe 1 vom Betreiber, Stufe 2 von uns); nie bei „nein“/0 Punkten
+// Fehlt der Beleg? Nur für Werte, die wir selbst prüfen (Stufe 2); nie bei „nein“/0 Punkten
 function missing({ trust, url, text, assessment, value, scoring }) {
-  return [1, 2].includes(Number(trust)) && needed(value, scoring) && !url && !text && !assessment;
+  return Number(trust) === 2 && needed(value, scoring) && !url && !text && !assessment;
 }
 
 module.exports = { kind, needed, missing };
