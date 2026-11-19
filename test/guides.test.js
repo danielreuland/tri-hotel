@@ -183,6 +183,9 @@ test('Ratgeberseite: jeder Partnerlink direkt mit rel sponsored, „(Werbung)“
   }
   assert.ok(html.indexOf('Diese Seite enthält Affiliate-Links') < html.indexOf('data-count="/go/ratgeber/'), 'kurzer Hinweis vor dem ersten Link');
   assert.match(html, /<footer class="card ad-note ratgeber-foot" id="transparenz">/, 'ausführlicher Text unten, Sprungziel des Hinweises');
+  // Quellenangaben samt Klammern klein, Partnerlinks nicht
+  assert.match(html, /<span class="src">\(<a href="https:\/\/www\.wahoofitness\.com\/blog\/\?p=6324" target="_blank" rel="nofollow noopener">Wahoo<\/a>\)<\/span>/);
+  assert.doesNotMatch(html, /<span class="src">(?:(?!<\/span>)[^])*data-count/);
   assert.match(html, /VRBO ist eine Marke oder eingetragene Marke von Expedia, Inc\./);
 });
 

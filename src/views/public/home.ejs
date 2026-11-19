@@ -105,6 +105,7 @@
       <h2>Die besten <%= ranking.entity_label_pl %></h2>
       <p>Sortiert nur nach <%= ranking.score_name %>. Im Ranking findest du alle <%= b.count %> geprüften <%= ranking.entity_label_pl %> mit Filtern nach Land, Reisemonat und Leistungen.</p>
       <p><a class="btn" href="<%= listHref %>">Alle <%= ranking.entity_label_pl %> im Ranking</a></p>
+      <% if (!bands.some(function (x) { return x.key === 'camps'; })) { (locals.homeGuides || []).forEach(function (g) { %><p class="home-guide-link">Lieber selbst organisieren? <a href="<%= g.href %>"><%= g.label %> →</a></p><% }); } %>
       <% if (b.top.length) { %>
         <ol class="home-mini-list">
           <% b.top.slice(0, 3).forEach(function (e) { %>
@@ -143,6 +144,7 @@
       <div class="chips">
         <% b.others.slice(0, 8).forEach(function (o) { %><a class="chip" href="/trainingscamp/anbieter/<%= o.slug %>"><%= o.name %></a><% }) %>
       </div>
+      <% (locals.homeGuides || []).forEach(function (g) { %><p class="home-guide-link">Lieber selbst organisieren? <a href="<%= g.href %>"><%= g.label %> →</a></p><% }) %>
       <p class="muted"><small>Du bietest Trainingscamps an? <a href="/trainingscamp/fuer-anbieter">Eintrag anfragen</a></small></p>
     </div>
     <div class="home-band-side">

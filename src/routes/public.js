@@ -175,11 +175,14 @@ async function renderList(req, res, ranking) {
 
 // Startseite: Bereiche (Über die Seite, Objekte, Camps, Regionen) in der Reihenfolge aus dem Admin
 async function renderHome(req, res, ranking) {
-  const [blocks, stats, found] = await Promise.all([
+  const [blocks, stats, found, guideList] = await Promise.all([
     home.load(req.site, ranking, { campGuide: res.locals.campGuide, regionGuide: res.locals.regionGuide }),
     home.stats(req.site, ranking),
     findList({ site: req.site, query: {} }, ranking),
+    require('../services/guides').activeForSite(req.site && req.site.id),
   ]);
+  // Ratgeber der Site als Link auf der Startseite (Beschriftung aus dem Admin: Hinweiskasten → Linktext, sonst H1)
+  const homeGuides = guideList.map((g) => ({ href: `/ratgeber/${g.slug}`, label: ((g.settings || {}).box || {}).guide_label || g.h1 }));
   // Hotel-Finder: Leistungen nach Gruppe (filterbare Katalog-Einträge), Länder der Objekte im Ranking
   const groups = [];
   for (const f of found.filterFeatures) {
@@ -196,6 +199,7 @@ async function renderHome(req, res, ranking) {
   const heroTop = home.heroSlides(found.allRanked);
   const top = ent ? [ent.featured && ent.featured.entity, ...ent.others].filter(Boolean) : [];
   res.render('public/home', {
+    homeGuides,
     title: content.meta_title || (content.hero_title ? `${ranking.name}: ${content.hero_title}` : ranking.name),
     description: content.meta_description
       || `${stats.entities} ${ranking.entity_label_pl} im neutralen Vergleich: ${ranking.score_name} 0–100 aus geprüften Fakten. Herkunft jedes Werts und Formel öffentlich.`,
