@@ -59,16 +59,20 @@ CREATE TABLE partner_slots (
 );
 
 -- FeWo-direkt über CJ (Vertragspartner Expedia, Inc.). Deeplinks über den Generator „Deep Link AID“: Ziel codiert in url=,
--- Sub-ID in sid=. Links direkt im href (kein /go/-Redirect, Ziff. 8.1/8.2), gezählt per Beacon. Status inactive – Daniel aktiviert.
+-- Sub-ID in sid=. Links direkt im href (kein /go/-Redirect, Ziff. 8.1/8.2), gezählt per Beacon. Aktiv ab Deploy (Daniel, 19.11.2026).
 INSERT INTO partner_programs (code, name, domains, label_booking, label_reviews, link_template, link_params, direct_link,
                               trademark_notice, status, sort_order, notes)
 VALUES ('fewo-direkt', 'FeWo-direkt', '{fewo-direkt.de,www.fewo-direkt.de}', 'Ferienwohnungen bei FeWo-direkt', 'Bewertungen bei FeWo-direkt',
         'https://www.jdoqocy.com/jt82gv30v2IKJKSJQSMJIKJSOJSLJ?sid={sid}&url={url_enc}', '{}', true,
-        'VRBO ist eine Marke oder eingetragene Marke von Expedia, Inc.', 'inactive', 50,
+        'VRBO ist eine Marke oder eingetragene Marke von Expedia, Inc.', 'active', 50,
         'FeWo-direkt über CJ (Expedia, Inc., Policies Fassung 14.06.2022). Nur Textlinks auf redaktionellen Seiten (Inhalte → Ratgeber, Link-Slots), nicht an Hotels. '
         || 'Kein /go/-Redirect, kein CJ-Pixel, keine Banner. Marken nicht in Title/Meta/OG. Keine Links in E-Mails/PDF bis Ziff. 5.1.22 geklärt. '
         || 'Offen: Ziff. 14.3 Special T&Cs, Provisionssatz, Markenhinweis für „FeWo-direkt“.')
 ON CONFLICT (code) DO NOTHING;
+-- falls das Programm schon im Admin angelegt war: aktivieren, Vorlage nur ergänzen, wenn sie fehlt
+UPDATE partner_programs SET status = 'active', direct_link = true,
+       link_template = COALESCE(link_template, 'https://www.jdoqocy.com/jt82gv30v2IKJKSJQSMJIKJSOJSLJ?sid={sid}&url={url_enc}'), updated_at = now()
+ WHERE code = 'fewo-direkt';
 
 -- Ratgeber auf tri-hotel.de (falls die Site existiert); Hinweiskasten: Kanaren → Kanaren-Link, Mallorca → Alcúdia-Link, sonst allgemein
 INSERT INTO guides (site_id, slug, view, status, title, description, h1, published_on, updated_on, research_on, list_criteria, settings)
