@@ -1,0 +1,10 @@
+<%# Hinweiskasten „Oder doch lieber in eine Ferienwohnung?“ (services/guides.box): fester Platz, als Anzeige gekennzeichnet,
+    verdrängt kein Objekt. Locals: rentalBox %>
+<% if (locals.rentalBox) { %>
+<aside class="card rental-box" aria-label="Anzeige">
+  <p class="ad-label-plain">Anzeige</p>
+  <p><strong><%= rentalBox.heading %></strong></p>
+  <p><%= rentalBox.text %> <a href="<%= rentalBox.guidePath %>"><%= rentalBox.guideLabel %></a></p>
+  <p><%- include('partner-link', { link: rentalBox.link }) %></p>
+</aside>
+<% } %>

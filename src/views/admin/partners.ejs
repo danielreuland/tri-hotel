@@ -6,8 +6,8 @@
 
 <h2>Klicks <small class="muted">letzte <%= days %> Tage · <% [7, 30, 90, 365].forEach(function (d) { %><a href="/admin/partner?tage=<%= d %>" class="<%= d === days ? 'on' : '' %>"><%= d %></a> <% }) %></small></h2>
 <div class="table-scroll"><table>
-  <tr><th>Programm</th><th>Eigene Links</th><th>Klicks eigene Links</th><th>Klicks Suchlinks</th></tr>
-  <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td><td><%= p.auto_search || p.search_clicks ? p.search_clicks : '–' %></td></tr><% }) %>
+  <tr><th>Programm</th><th>Eigene Links</th><th>Klicks eigene Links</th><th>Klicks Suchlinks</th><th>Klicks Ratgeber</th></tr>
+  <% stats.byProgram.forEach(function (p) { %><tr><td><%= p.name %></td><td><%= p.links %></td><td><strong><%= p.clicks %></strong></td><td><%= p.auto_search || p.search_clicks ? p.search_clicks : '–' %></td><td><%= p.guide_clicks ? p.guide_clicks : '–' %></td></tr><% }) %>
 </table></div>
 <% if (stats.bySource.length) { var srcNames = {}; stats.bySource.forEach(function (r) { srcNames[r.source] = (srcNames[r.source] || 0) + r.clicks; }); %>
   <h3 style="margin-bottom:4px">Nach Herkunftsseite</h3>
@@ -41,7 +41,7 @@
       </div>
       <div class="form-row">
         <div><label>Partnerkennung als Parameter <small class="muted">je Zeile name=wert, z. B. aid=1234567</small></label><textarea name="link_params" rows="2"><%= params %></textarea></div>
-        <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">{url_enc} = Zieladresse, {slug} = Objekt (z. B. CJ: https://www.tkqlhce.com/click-PID-AID?url={url_enc}&amp;sid={slug})</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
+        <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">{url_enc} = Zieladresse, {slug} = Objekt, {sid} = Objekt bzw. Ort des Links im Ratgeber (z. B. CJ: https://www.tkqlhce.com/click-PID-AID?url={url_enc}&amp;sid={slug})</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
       </div>
       <div class="form-row">
         <div><label>Beschriftung Preise</label><input name="label_booking" type="text" value="<%= p.label_booking %>"></div>

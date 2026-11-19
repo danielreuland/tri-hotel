@@ -127,7 +127,7 @@ async function load(site, ranking, periodKey, scopeKey) {
   // Partner-Klicks nach Herkunft, der Domain zugeordnet
   const clickRows = await db.many(
     `SELECT source, sum(clicks)::int AS n FROM outbound_clicks
-      WHERE kind IN ('entity_link', 'partner_search') AND day BETWEEN $1::date AND $2::date GROUP BY source`, [range.from, range.to]);
+      WHERE kind IN ('entity_link', 'partner_search', 'guide_link') AND day BETWEEN $1::date AND $2::date GROUP BY source`, [range.from, range.to]);
   const chosenSet = new Set(chosen.map((d) => d.domain));
   const partnerClicks = clickRows.filter((r) => chosenSet.has(clickDomain(r.source, all))).reduce((a, r) => a + r.n, 0);
 

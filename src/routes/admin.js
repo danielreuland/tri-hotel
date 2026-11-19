@@ -202,6 +202,7 @@ router.get('/objekte', wrap(async (req, res) => {
   const land = /^[A-Za-z]{2}$/.test(req.query.land || '') ? req.query.land.toUpperCase() : null;
   const allRegions = await db.many(`SELECT id, name, lat, lng, radius_km FROM regions WHERE status = 'active' ORDER BY name`);
   const region = allRegions.find((r) => r.id === req.query.region) || null;
+  const fewo = req.query.fewo === '1';
 
   const params = [rankingId];
   const where = ['($1::uuid IS NULL OR s.ranking_id = $1)'];
@@ -211,9 +212,10 @@ router.get('/objekte', wrap(async (req, res) => {
     where.push(`(${['s.entity_name', 'e.name', 'COALESCE(e.city, s.city)', 'COALESCE(e.website, s.website)'].map((c) => `${foldSql(c)} LIKE ${p}`).join(' OR ')})`);
   }
   // alle Meldungen zu Ranking + Suche; Status, Land und Region werden darauf angewendet (so stimmen alle Zahlen)
-  const base = await db.many(
+  const baseAll = await db.many(
     `SELECT s.*, e.name AS current_name, e.lat, e.lng, upper(COALESCE(e.country, s.country)) AS cc,
             r.name AS ranking_name, r.score_name, er.score, er.completeness, er.ko_reason, e.slug,
+            COALESCE(${require('../services/rental').sqlHas('e')}, false) AS vacation_rental,
             (SELECT name FROM entities d WHERE d.id = s.possible_duplicate_of) AS possible_duplicate_name,
             (SELECT email FROM admin_users u WHERE u.id = s.created_by) AS created_by_email,
             COALESCE((r.formula->>'min_completeness')::numeric, 70) AS min_completeness
@@ -225,6 +227,9 @@ router.get('/objekte', wrap(async (req, res) => {
   const byStatus = (r) => !status || r.status === status;
   const byLand = (r) => !land || r.cc === land;
   const byRegion = (r) => !region || inRegion(r, region);
+  // Merkmal „Ferienwohnung“ als zusätzlicher Filter (Anzahl am Kästchen mit den übrigen Filtern)
+  const base = fewo ? baseAll.filter((r) => r.vacation_rental) : baseAll;
+  const fewoCount = baseAll.filter((r) => r.vacation_rental && byStatus(r) && byLand(r) && byRegion(r)).length;
 
   const matching = base.filter((r) => byStatus(r) && byLand(r) && byRegion(r));
   const rows = matching.slice(0, QUEUE_LIMIT);
@@ -250,7 +255,7 @@ router.get('/objekte', wrap(async (req, res) => {
   const allRankings = await db.many(`SELECT id, name, status FROM rankings WHERE status <> 'archived' ORDER BY is_default DESC, name`);
   res.render('admin/queue', {
     title: 'Warteschlange', rows, total: matching.length, limit: QUEUE_LIMIT, status, rankingId, counts, allRankings,
-    q, land, regionId: region ? region.id : null, countries, regionOptions,
+    q, land, regionId: region ? region.id : null, countries, regionOptions, fewo, fewoCount,
     flash: req.query.ok || null, error: req.query.fehler || null, backUrl: req.originalUrl,
   });
 }));
@@ -392,6 +397,12 @@ router.get('/meldungen/:id', wrap(async (req, res, next) => {
     evidenceNeeded: evidence.needed,
     draft: factDraft.take(req.session, req.params.id),
     draftFields: factDraft.fields,
+    // abgelehnte Eingabe zum Merkmal „Ferienwohnung“ (einmalig)
+    rentalDraft: (() => {
+      const r = req.session.rentalDraft;
+      if (r) delete req.session.rentalDraft;
+      return r && d.entity && r.entity === d.entity.id ? r : null;
+    })(),
     SUMMARY_MAX: describer.SUMMARY_MAX,
     MAX_IMAGES: media.MAX_PER_ENTITY,
     // Urhebervermerk für eigene Fotos: Name des Gründers der Site (Persona „founder“, kein KI-Absender)
@@ -1171,6 +1182,24 @@ router.post('/objekte/:entityId/abmeldung', wrap(async (req, res, next) => {
   } catch (err) {
     res.redirect(withParam(back, 'fehler', err.message));
   }
+}));
+
+// Merkmal „Ferienwohnung“ (Stammdaten): Setzen nur mit Beleg, Entfernen ohne. Abgelehnte Eingabe bleibt einmal stehen.
+router.post('/objekte/:entityId/ferienwohnung', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId)) return next();
+  const sub = UUID_RE.test(req.body.submission_id || '') ? await db.one('SELECT id FROM submissions WHERE id = $1 AND entity_id = $2', [req.body.submission_id, req.params.entityId]) : null;
+  if (!sub) return next();
+  const rental = require('../services/rental');
+  const input = rental.readForm(req.body);
+  const r = await rental.save(req.params.entityId, input, req.session.admin.id);
+  const back = `/admin/meldungen/${sub.id}`;
+  if (!r.ok) {
+    req.session.rentalDraft = { entity: req.params.entityId, input, error: r.error };
+    return req.session.save(() => res.redirect(`${withParam(back, 'fehler', r.error)}#ferienwohnung`));
+  }
+  delete req.session.rentalDraft;
+  const msg = !r.changed ? 'Ferienwohnung: keine Änderung' : r.action.endsWith('.set') ? 'Merkmal „Ferienwohnung“ gespeichert' : 'Merkmal „Ferienwohnung“ entfernt';
+  res.redirect(`${withParam(back, 'ok', msg)}#ferienwohnung`);
 }));
 
 router.post('/anfragen/:inquiryId/erneut-senden', wrap(async (req, res) => {

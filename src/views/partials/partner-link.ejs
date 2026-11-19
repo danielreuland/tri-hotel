@@ -1,0 +1,3 @@
+<%# Partnerlink auf redaktionellen Seiten (services/guides.linkView): href unverändert vom Netzwerk bzw. aus der Deeplink-Vorlage,
+    kein /go/-Redirect, kein Pixel. Gezählt wird per Beacon (data-count). „(Werbung)“ in normaler Schriftgröße direkt am Link. %>
+<a href="<%= link.href %>" target="_blank" rel="sponsored nofollow noopener" data-count="<%= link.count %>" data-goal="Partnerlink" data-goal-prop-anbieter="<%= link.program %>"><%= locals.anchor || link.anchor %></a> <span class="ad-inline">(Werbung)</span>

@@ -142,7 +142,8 @@
       <div class="card"><p style="margin:0">Noch keine <%= ranking.entity_label_pl %> im Ranking. Die ersten Einträge werden gerade geprüft.</p></div>
     <% } else { %>
       <ol class="rank-list" data-compare-list data-compare-base="<%= base %>" data-compare-max="3">
-        <% ranked.forEach(function (e) { %>
+        <% ranked.forEach(function (e, i) { %>
+          <% if (locals.rentalBox && rentalBox.after && i === rentalBox.after && i < ranked.length) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
           <li>
             <label class="compare-pick" hidden><input type="checkbox" data-compare-pick value="<%= e.slug %>" data-name="<%= e.name %>"><span class="sr-only"><%= e.name %> zum Vergleich auswählen</span></label>
             <a class="rank-item" href="<%= entityPath(e) %>">
@@ -159,6 +160,7 @@
           </li>
         <% }) %>
       </ol>
+      <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
     <% } %>
 
     <% if (incomplete.length) { %>

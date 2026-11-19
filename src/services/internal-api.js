@@ -303,8 +303,8 @@ async function stats(now = new Date()) {
          FROM sites s ORDER BY s.is_default DESC, s.name`),
     db.one(
       `SELECT (SELECT count(*) FROM admin_tasks WHERE status <> 'done')::int AS tasks_open,
-              COALESCE(sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search') AND day > current_date - 7), 0)::int AS partner7,
-              COALESCE(sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search')), 0)::int AS partner30,
+              COALESCE(sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search', 'guide_link') AND day > current_date - 7), 0)::int AS partner7,
+              COALESCE(sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search', 'guide_link')), 0)::int AS partner30,
               COALESCE(sum(clicks) FILTER (WHERE kind = 'camp' AND day > current_date - 7), 0)::int AS camp7,
               COALESCE(sum(clicks) FILTER (WHERE kind = 'camp'), 0)::int AS camp30
          FROM outbound_clicks WHERE day > current_date - 30`),
