@@ -6,10 +6,10 @@
    var order = ['admin_review'].concat(Object.keys(STATUS_LABELS).filter(function (s) { return s !== 'admin_review' }));
    // Link mit allen aktuellen Filtern, einzelne Werte überschreibbar
    var link = function (over) {
-     var p = Object.assign({ status: status || 'alle', ranking: rankingId || '', q: q || '', land: land || '', region: regionId || '' }, over);
+     var p = Object.assign({ status: status || 'alle', ranking: rankingId || '', q: q || '', land: land || '', region: regionId || '', fewo: fewo ? '1' : '' }, over);
      return '/admin/objekte?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
    };
-   var filtered = Boolean(q || land || regionId || rankingId); %>
+   var filtered = Boolean(q || land || regionId || rankingId || fewo); %>
 <form class="filters queue-filters" method="get" action="/admin/objekte" role="search">
   <input type="hidden" name="status" value="<%= status || 'alle' %>">
   <label class="sr-only" for="qf-q">Name oder Ort</label>
@@ -29,8 +29,9 @@
     <option value="">alle Regionen</option>
     <% regionOptions.forEach(function (g) { %><option value="<%= g.id %>" <%= regionId === g.id ? 'selected' : '' %>><%= g.name %> (<%= g.n %>)</option><% }) %>
   </select>
+  <label class="inline" style="margin:0"><input type="checkbox" name="fewo" value="1" <%= fewo ? 'checked' : '' %> data-autosubmit> Ferienwohnung (<%= fewoCount %>)</label>
   <button class="btn small" type="submit">Suchen</button>
-  <% if (filtered) { %><a class="btn small secondary" href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %>
+  <% if (filtered) { %><a class="btn small secondary" href="<%= link({ q: '', land: '', region: '', ranking: '', fewo: '' }) %>">Filter zurücksetzen</a><% } %>
 </form>
 <div class="pill-row">
   <% order.forEach(function (s) { %>
@@ -60,7 +61,7 @@
     <tr>
       <td><% if (r.entity_id) { %><input type="checkbox" name="entity_ids" value="<%= r.entity_id %>" form="bulk-rankings" aria-label="<%= r.current_name || r.entity_name %> markieren"><% } %></td>
       <td><%= formatDate(r.created_at) %></td>
-      <td><a href="/admin/meldungen/<%= r.id %>"><%= r.current_name || r.entity_name %></a><br><small><% if (r.current_name && r.current_name !== r.entity_name) { %>gemeldet als „<%= r.entity_name %>“ · <% } %><%= r.city %>, <%= r.country %> · <%= r.created_by_admin ? 'angelegt von ' + (r.created_by_email || 'Admin') : (r.submitter_email ? 'eingereicht von ' + r.submitter_email : 'eingereicht') %></small></td>
+      <td><a href="/admin/meldungen/<%= r.id %>"><%= r.current_name || r.entity_name %></a><% if (r.vacation_rental) { %> <span class="badge" title="Als Ferienwohnung / Ferienhaus buchbar"><small>FeWo</small></span><% } %><br><small><% if (r.current_name && r.current_name !== r.entity_name) { %>gemeldet als „<%= r.entity_name %>“ · <% } %><%= r.city %>, <%= r.country %> · <%= r.created_by_admin ? 'angelegt von ' + (r.created_by_email || 'Admin') : (r.submitter_email ? 'eingereicht von ' + r.submitter_email : 'eingereicht') %></small></td>
       <td><small><%= r.ranking_name %></small><% (r.otherRankings || []).forEach(function (m) { %><br><span class="badge <%= m.status === 'live' ? 'good' : '' %>" title="Stand im Ranking <%= m.ranking %>"><small><%= m.ranking %>: <%= LISTING[m.status] || m.status %><%= m.score !== null && m.score !== undefined ? ' · ' + m.score : '' %></small></span><% }) %></td>
       <td><span class="badge"><%= STATUS_LABELS[r.status] %></span></td>
       <% var incomplete = r.completeness !== null && r.completeness !== undefined && Number(r.completeness) < (r.min_completeness || 70); %>
@@ -70,7 +71,7 @@
       <td><% if (r.possible_duplicate_name) { %><span class="badge warn">mögliche Dublette</span> <small><%= r.possible_duplicate_name %></small><% } %><% if (r.ko_reason) { %><span class="badge bad">K.O.</span> <small><%= r.ko_reason %></small><% } %><% if (r.admin_note) { %><small>📝 <%= r.admin_note %></small><% } %></td>
     </tr>
   <% }) %>
-  <% if (!rows.length) { %><tr><td colspan="9" class="muted"><%= filtered ? 'Keine ' + adminNav.objectsLabel + ' gefunden.' : 'Keine Meldungen in diesem Status.' %><% if (filtered) { %> <a href="<%= link({ q: '', land: '', region: '', ranking: '' }) %>">Filter zurücksetzen</a><% } %></td></tr><% } %>
+  <% if (!rows.length) { %><tr><td colspan="9" class="muted"><%= filtered ? 'Keine ' + adminNav.objectsLabel + ' gefunden.' : 'Keine Meldungen in diesem Status.' %><% if (filtered) { %> <a href="<%= link({ q: '', land: '', region: '', ranking: '', fewo: '' }) %>">Filter zurücksetzen</a><% } %></td></tr><% } %>
 </table>
 </div>
 <% locals.scripts = ['/static/js/site.js'] %>

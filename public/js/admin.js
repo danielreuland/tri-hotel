@@ -1,5 +1,5 @@
 // Admin: Live-Score-Vorschau beim Bearbeiten der Fakten, Autosubmit für Filter.
-document.querySelectorAll('select[data-autosubmit]').forEach(function (el) {
+document.querySelectorAll('select[data-autosubmit], input[type=checkbox][data-autosubmit]').forEach(function (el) {
   el.addEventListener('change', function () { el.form.submit(); });
 });
 

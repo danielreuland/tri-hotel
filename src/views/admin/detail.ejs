@@ -274,6 +274,23 @@
           </details>
         <% } %>
       </div>
+      <%# Merkmal „Ferienwohnung“: Faktenaussage mit Beleg wie Stufe 2 (lib/evidence.js); ändert weder Score noch Reihenfolge %>
+      <% var vr = (entity.attributes || {}).vacation_rental || null; var vrOn = Boolean(vr && vr.value === true);
+         var vrIn = rentalDraft ? rentalDraft.input : { value: vrOn, evidence_url: vrOn ? vr.evidence_url || '' : '', evidence_text: vrOn ? vr.evidence_text || '' : '', editorial_assessment: vrOn && vr.editorial_assessment }; %>
+      <div class="card" id="ferienwohnung" style="margin-top:14px;padding:12px 14px">
+        <form method="post" action="/admin/objekte/<%= entity.id %>/ferienwohnung">
+          <input type="hidden" name="submission_id" value="<%= sub.id %>">
+          <label class="inline" style="margin:0"><input type="checkbox" name="value" <%= vrIn.value ? 'checked' : '' %>> <strong>Als Ferienwohnung / Ferienhaus buchbar (Selbstversorger mit Küche)</strong></label>
+          <% if (vrOn && !rentalDraft) { %><br><small class="muted">gesetzt <%= formatDate(vr.set_at) %> · Beleg: <%= vr.evidence_url ? 'Fundstelle' : vr.evidence_text ? 'Vermerk' : 'Einschätzung der Redaktion' %><% if (vr.evidence_url) { %> · <a href="<%= vr.evidence_url %>" target="_blank" rel="noopener">öffnen ↗</a><% } %></small><% } %>
+          <input name="evidence_url" type="url" placeholder="Fundstelle (URL), z. B. Seite mit den Apartments" value="<%= vrIn.evidence_url %>" style="margin-top:6px">
+          <details style="margin-top:4px" <%= rentalDraft || vrIn.evidence_text ? 'open' : '' %>><summary><small>Textausschnitt oder Vermerk<%= vrIn.evidence_text ? ' ✓' : '' %></small></summary>
+            <textarea name="evidence_text" style="min-height:60px" placeholder="z. B. „Apartments mit Küche, Selbstversorgung möglich“ oder „Telefonat mit der Rezeption, 05.11.“"><%= vrIn.evidence_text %></textarea>
+          </details>
+          <label class="inline" style="margin:4px 0 0"><input type="checkbox" name="assessment" <%= vrIn.editorial_assessment ? 'checked' : '' %>> <small>Kein Beleg: als Einschätzung der Redaktion kennzeichnen</small></label>
+          <% if (rentalDraft) { %><br><small class="reject-hint" role="alert">Nicht gespeichert – <%= rentalDraft.error %></small><% } %>
+          <p style="margin:6px 0 0"><button class="btn small" type="submit">Ferienwohnung speichern</button> <small class="muted">Kästchen leer = Merkmal entfernen (ohne Beleg möglich). Wirkt nur auf die Auswahl im Ratgeber, nicht auf den Score.</small></p>
+        </form>
+      </div>
       <form id="contact-search" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-suche" data-busy="Suche läuft …"></form>
       <form id="contact-accept" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/uebernehmen"></form>
       <form id="contact-dismiss" method="post" action="/admin/meldungen/<%= sub.id %>/kontakt-vorschlag/verwerfen"></form>
