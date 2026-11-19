@@ -181,13 +181,14 @@ test('Ratgeberseite: jeder Partnerlink direkt mit rel sponsored, „(Werbung)“
     assert.match(a, /href="https:\/\/www\.(dpbolvw\.net|jdoqocy\.com)\//);
     assert.match(a, /target="_blank" rel="sponsored nofollow noopener"/);
   }
-  assert.ok(html.indexOf('Werbung / Affiliate-Links') < html.indexOf('data-count="/go/ratgeber/'), 'Hinweisbox vor dem ersten Link');
+  assert.ok(html.indexOf('Diese Seite enthält Affiliate-Links') < html.indexOf('data-count="/go/ratgeber/'), 'kurzer Hinweis vor dem ersten Link');
+  assert.match(html, /<footer class="card ad-note ratgeber-foot" id="transparenz">/, 'ausführlicher Text unten, Sprungziel des Hinweises');
   assert.match(html, /VRBO ist eine Marke oder eingetragene Marke von Expedia, Inc\./);
 });
 
 test('Ratgeberseite ohne Partnerlinks: kein Satz mit totem Link, kein Werbehinweis, Seite bleibt vollständig', async () => {
   const html = await renderGuide({ links: {} });
-  assert.doesNotMatch(html, /data-count="\/go\/ratgeber|\(Werbung\)|Werbung \/ Affiliate|Ob Räder erlaubt sind/);
+  assert.doesNotMatch(html, /data-count="\/go\/ratgeber|\(Werbung\)|Affiliate-Links|Ob Räder erlaubt sind/);
   for (const id of ['kurz', 'vergleich', 'planen', 'fewo-check', 'schwimmen', 'ernaehrung', 'logistik', 'kosten', 'beispielwoche', 'packliste', 'gruppe', 'fehler', 'faq', 'weiterlesen']) {
     assert.match(html, new RegExp(`<section id="${id}"`), id);
   }

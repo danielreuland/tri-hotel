@@ -31,12 +31,8 @@
 <article class="ratgeber">
 <h1><%= guide.h1 %></h1>
 <p class="muted ratgeber-meta"><small>Aktualisiert: <time datetime="<%= updatedIso %>"><%= updatedLabel %></time><% if (researchLabel) { %> · Stand der Recherche: <%= researchLabel %><% } %> · Alle Werte mit Quelle</small></p>
-
-<% if (hasAds) { %>
-<aside class="card ad-note" aria-label="Hinweis zu Werbung">
-  <p><strong>Werbung / Affiliate-Links:</strong> Links mit dem Hinweis „(Werbung)“ führen zu <%= adPrograms.join(', ') %>. Wenn du darüber buchst, erhält <%= site.name %> eine Provision. Für dich ändert sich der Preis nicht. Unsere Empfehlungen und Daten hängen davon nicht ab. Jeder Wert auf dieser Seite hat eine Quelle und ein Stand-Datum. <a href="<%= scorePath %>">Methodik und Neutralität</a></p>
-</aside>
-<% } %>
+<%# Werbehinweis vor dem ersten Link (Expedia Schedule 1 Ziff. 2.2–2.4, „vor dem Inhalt“) – kurz; der ausführliche Text steht unten %>
+<% if (hasAds) { %><p class="ratgeber-ad-line">Diese Seite enthält Affiliate-Links, gekennzeichnet mit „(Werbung)“ – <a href="#transparenz">mehr dazu unten</a>.</p><% } %>
 
 <section id="kurz" aria-labelledby="h-kurz">
   <h2 id="h-kurz">Kurz &amp; knapp – lohnt sich ein Trainingslager in der Ferienwohnung?</h2>
@@ -378,8 +374,8 @@
 </section>
 
 <% if (hasAds) { %>
-<footer class="card ad-note ratgeber-foot">
-  <p><strong>Transparenz:</strong> <%= site.name %> ist ein neutrales Vergleichsportal. Links mit „(Werbung)“ sind Affiliate-Links zu <%= adPrograms.join(', ') %>. Bei einer Buchung über diese Links erhalten wir eine Provision. Der Preis für dich bleibt gleich. Die Provision beeinflusst weder unsere Daten noch die Auswahl der Regionen. Alle Werte haben Quelle und Stand-Datum. Preise und Öffnungszeiten können sich ändern. Maßgeblich sind die Angaben des Anbieters zum Buchungszeitpunkt.</p>
+<footer class="card ad-note ratgeber-foot" id="transparenz">
+  <p><strong>Transparenz:</strong> <%= site.name %> ist ein neutrales Vergleichsportal. Links mit „(Werbung)“ sind Affiliate-Links zu <%= adPrograms.join(', ') %>. Bei einer Buchung über diese Links erhalten wir eine Provision. Der Preis für dich bleibt gleich. Die Provision beeinflusst weder unsere Daten noch die Auswahl der Regionen. Alle Werte haben Quelle und Stand-Datum. Preise und Öffnungszeiten können sich ändern. Maßgeblich sind die Angaben des Anbieters zum Buchungszeitpunkt. <a href="<%= scorePath %>">Methodik und Neutralität</a></p>
   <% trademarks.forEach(function (t) { %><p><small><%= t %></small></p><% }) %>
 </footer>
 <% } %>

@@ -1011,3 +1011,4 @@ a.kpi:hover { border-color: var(--accent); }
 .rental-box p { margin: 0 0 6px; }
 .rental-box .ad-label-plain { font-size: 1em; font-weight: 700; color: var(--muted); }
 .rank-list > li.rental-box-li { display: block; }
+.ratgeber-ad-line { margin: 4px 0 16px; font-size: .95rem; color: var(--muted); }
