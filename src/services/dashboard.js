@@ -88,20 +88,24 @@ async function load(site) {
               (SELECT count(*) FROM entity_link_absences a JOIN live USING (entity_id) WHERE a.program_id = p.id
                   AND NOT EXISTS (SELECT 1 FROM entity_links o WHERE o.entity_id = a.entity_id AND o.program_id = p.id AND o.kind = 'booking'))::int AS absent,
               -- Klicks auf eigene Links und auf Suchlinks des Programms (wie die Summe oben im Dashboard)
+              -- dazu Partnerlinks auf redaktionellen Seiten (Ratgeber, Hinweiskasten: kind guide_link, Ziel = Link-Slot)
               (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c LEFT JOIN entity_links l ON c.kind = 'entity_link' AND l.id = c.target_id
-                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id))
+                 LEFT JOIN partner_slots ps ON c.kind = 'guide_link' AND ps.id = c.target_id
+                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id) OR (c.kind = 'guide_link' AND ps.program_id = p.id))
                   AND c.day > current_date - 7)::int AS clicks7,
               (SELECT COALESCE(sum(c.clicks), 0) FROM outbound_clicks c LEFT JOIN entity_links l ON c.kind = 'entity_link' AND l.id = c.target_id
-                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id))
+                 LEFT JOIN partner_slots ps ON c.kind = 'guide_link' AND ps.id = c.target_id
+                WHERE ((c.kind = 'entity_link' AND l.program_id = p.id) OR (c.kind = 'partner_search' AND c.target_id = p.id) OR (c.kind = 'guide_link' AND ps.program_id = p.id))
                   AND c.day > current_date - 30)::int AS clicks30
          FROM partner_programs p WHERE p.status = 'active' ORDER BY p.sort_order, lower(p.name)`, [R]),
     db.many(
-      `SELECT day, sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search'))::int AS partner,
+      `SELECT day, sum(clicks) FILTER (WHERE kind IN ('entity_link', 'partner_search', 'guide_link'))::int AS partner,
               sum(clicks) FILTER (WHERE kind = 'camp')::int AS camp,
               sum(clicks) FILTER (WHERE kind = '${partners.DIRECT_KIND}')::int AS direct
          FROM outbound_clicks WHERE day > current_date - 30 GROUP BY day`),
     // Suchlinks (z. B. Bewertungen auf Tripadvisor) sind keinem Hotel zugeordnet: je Programm eine Zeile
-    partners.stats(30).then((s) => [...s.top, ...s.byProgram.filter((p) => p.search_clicks).map((p) => ({ name: 'Suchlink', program: p.name, clicks: p.search_clicks, search: true }))]
+    partners.stats(30).then((s) => [...s.top, ...s.byProgram.filter((p) => p.search_clicks).map((p) => ({ name: 'Suchlink', program: p.name, clicks: p.search_clicks, search: true })),
+      ...s.byProgram.filter((p) => p.guide_clicks).map((p) => ({ name: 'Ratgeber', program: p.name, clicks: p.guide_clicks, search: true }))]
       .sort((a, b) => b.clicks - a.clicks).slice(0, 5)),
     db.one(
       `SELECT COALESCE(sum(cost_usd) FILTER (WHERE created_at > now() - interval '7 days'), 0)::float AS week,

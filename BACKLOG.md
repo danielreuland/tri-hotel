@@ -84,14 +84,23 @@ unverändert; nach den Stationsregentagen gelten 15 von 20 als veraltet (Regenta
   Logos aus den Werbemitteln (trivago brand toolbox, CJ, CHECK24, Awin). Logos nur im Buchungskasten, keine Partner-Logoleiste
   (trivago verbietet Logo-Nutzung für eigene Werbung ohne Zustimmung).
 
-### Ratgeber „Trainingslager in der Ferienwohnung“ + Merkmal Ferienwohnung (Auftrag Daniel 19.11.2026, bereit zur Umsetzung)
+### Ratgeber „Trainingslager in der Ferienwohnung“ + Merkmal Ferienwohnung (Auftrag Daniel 19.11.2026, umgesetzt auf Branch `fewo-ratgeber`, wartet auf „veröffentlichen“)
 - Umsetzung: `docs/fewo-ratgeber-umsetzung.md` (US1–US6, Abnahme), Inhalt: `docs/ratgeber-trainingslager-ferienwohnung-vorlage.md`.
 - Kern: Merkmal `attributes.vacation_rental` mit Beleg im Admin (erstes Objekt Villa Vista Mar), Ratgeberseite
   `/ratgeber/trainingslager-ferienwohnung` mit Top-Liste nach Score, FeWo-direkt über CJ-Deeplinks (`link_template`),
   **FeWo-Links ohne `/go/`-Redirect** (Expedia Ziff. 8.1), Zählung per Beacon, keine CJ-Pixel/Banner, keine Marken in Meta-Tags.
 - Schließt den Eintrag „FeWo-direkt – Hinweis“ darunter mit ein (US5).
+- **Umgesetzt (19.11.):** Migration 122 (`guides`, `guide_cards`, `partner_slots`, Programm `fewo-direkt` inaktiv), Admin
+  Inhalte → Ratgeber (Stand-Daten, Bad-Karten, Link-Slots, Hinweiskasten), Merkmal in Stammdaten + Filter „Ferienwohnung“,
+  Beacon `/go/ratgeber/:programm/:slot/klick` (`outbound_clicks.kind = 'guide_link'`), `{sid}` in `link_template`,
+  Markenprüfung `lib/brands.js` + `scripts/check-meta-brands.js`, Datenschutz-Absatz. Live nur Bad-Karte Lanzarote; die übrigen
+  Karten stehen mit „[PRÜFEN …]“ ausgeblendet im Admin.
+- **Offen (Daniel):** Programm `fewo-direkt` aktivieren; Ziel-URLs je Ort (Palma, Port de Pollença, Girona, Maspalomas …) in die
+  Link-Slots; Bad-Karten prüfen und aktivieren; Merkmal bei Villa Vista Mar mit Beleg setzen; CJ: Ziff. 14.3, E-Mail/PDF,
+  Markenhinweis „FeWo-direkt“, Provisionssatz; Banner (Empfehlung: weglassen). Optional später: Filter „Ferienwohnung“ in
+  `/hotels` und im Hotel-Finder, Liste auch auf Regionsseiten (Partial `rental-list` kann nach Region filtern).
 
-### Partner: FeWo-direkt – Hinweis „Oder doch lieber in eine Ferienwohnung?“ (Wunsch 03.11.2026)
+### Partner: FeWo-direkt – Hinweis „Oder doch lieber in eine Ferienwohnung?“ (Wunsch 03.11.2026, umgesetzt mit dem Ratgeber, US5)
 - **Programm:** HomeAway FeWo-direkt über CJ, freigeschaltet 03.11.2026. Vertragspartner für alle Standorte ist Expedia, Inc.
   (Sonderklausel 20.1 angepasst, Asien-Pazifik-Gesellschaft gestrichen). Vergütung pro Lead und pro Buchung, 7 Tage Cookie,
   Werbemittel im CJ-Account, XML-Feed; API nur auf Anfrage beim Programm-Team (Kontakt in der CJ-Willkommensmail).

@@ -60,7 +60,8 @@
   <% } else { %>
     <p class="muted">Sortiert nur nach <%= ranking.score_name %>; die Zahl links ist der Platz im Gesamtranking.</p>
     <ol class="rank-list">
-      <% d.ranked.forEach(function (e) { %>
+      <% d.ranked.forEach(function (e, i) { %>
+        <% if (locals.rentalBox && rentalBox.after && i === rentalBox.after && i < d.ranked.length) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
         <li>
           <a class="rank-item" href="<%= entityPath(e) %>">
             <span class="pos"><%= e.rank %></span>
@@ -76,6 +77,7 @@
         </li>
       <% }) %>
     </ol>
+    <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= d.ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
   <% } %>
   <% if (d.incomplete.length) { %>
     <h3>Profil unvollständig</h3>

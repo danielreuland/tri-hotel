@@ -1,0 +1,24 @@
+<%# Liste „Unterkünfte im Ranking, die als Ferienwohnung buchbar sind“ (services/guides.rentalList). Reihenfolge nur nach Score,
+    keine Buchungslinks auf den Karten. Ohne Treffer bleibt der Abschnitt weg. Locals: rentals, ranking, entityPath, heading, headingId %>
+<% if (rentals && rentals.length) { %>
+<section class="rental-list" aria-labelledby="<%= locals.headingId || 'ferienwohnungen' %>">
+  <h2 id="<%= locals.headingId || 'ferienwohnungen' %>"><%= locals.heading || (ranking.entity_label_pl + ' im Ranking, die als Ferienwohnung buchbar sind') %></h2>
+  <p class="muted">Sortiert nach <%= ranking.score_name %>. Partnerschaften oder Buchungslinks haben keinen Einfluss auf Auswahl und Reihenfolge.</p>
+  <ul class="rental-cards">
+    <% rentals.forEach(function (e) { %>
+      <li class="card rental-card">
+        <h3><a href="<%= entityPath(e) %>"><%= e.name %></a></h3>
+        <p class="muted"><%= [e.city, countryName ? countryName(e.country) : e.country].filter(Boolean).join(', ') %></p>
+        <% if (e.score !== null && e.score !== undefined) { %><p><strong class="score-inline"><%= ranking.score_name %> <%= e.score %></strong><% if (e.label) { %> · <%= e.label %><% } %></p><% } %>
+        <ul class="rental-facts">
+          <li>Als Ferienwohnung / Ferienhaus mit Küche buchbar</li>
+          <% e.facts.forEach(function (f) { %>
+            <li><%= f.label %>: <%= f.text %> <small class="muted">(<%= f.origin %><% if (f.evidence_url) { %> · <a href="<%= f.evidence_url %>" target="_blank" rel="nofollow noopener">Fundstelle</a><% } %>)</small></li>
+          <% }) %>
+        </ul>
+        <p><a href="<%= entityPath(e) %>">Alle Fakten und Herkunft ansehen →</a></p>
+      </li>
+    <% }) %>
+  </ul>
+</section>
+<% } %>

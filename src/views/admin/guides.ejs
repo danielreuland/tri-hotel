@@ -1,0 +1,121 @@
+<%- include('../partials/admin-head') %>
+<h1>Ratgeber</h1>
+<p class="muted">Redaktionelle Seiten unter <code>/ratgeber/…</code>. Der Fließtext steht in der Vorlage (Deploy); hier pflegst du Stand-Daten, Karten (z. B. Bäder je Reiseziel) und die Partnerlinks. Öffentlich erscheinen nur aktive Karten ohne „[PRÜFEN …]“. Marken von Partnern (FeWo-direkt, Vrbo, Expedia) sind in Title, Meta und H1 gesperrt.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+
+<% list.forEach(function (g) { var box = (g.settings || {}).box || {}; var siteSlots = slotRows.filter(function (s) { return s.site_id === g.site_id; }); var siteRegions = regions.filter(function (r) { return r.site_id === g.site_id; }); %>
+<section class="card" id="g-<%= g.id %>" style="margin-top:16px">
+  <h2 style="margin-top:0"><a href="/ratgeber/<%= g.slug %>" target="_blank" rel="noopener">/ratgeber/<%= g.slug %> ↗</a> <small class="muted"><%= g.site_name %></small> <span class="badge <%= g.status === 'active' ? 'good' : 'warn' %>"><%= g.status === 'active' ? 'online' : 'Entwurf' %></span></h2>
+  <form method="post" action="/admin/ratgeber/<%= g.id %>">
+    <div class="form-row">
+      <div><label>Status</label><select name="status"><option value="active" <%= g.status === 'active' ? 'selected' : '' %>>online</option><option value="draft" <%= g.status === 'draft' ? 'selected' : '' %>>Entwurf (404)</option></select></div>
+      <div><label>Aktualisiert *</label><input name="updated_on" type="date" value="<%= g.updated_on ? formatIso(g.updated_on) : '' %>"></div>
+      <div><label>Stand der Recherche</label><input name="research_on" type="date" value="<%= g.research_on ? formatIso(g.research_on) : '' %>"></div>
+      <div><label>Veröffentlicht</label><input name="published_on" type="date" value="<%= g.published_on ? formatIso(g.published_on) : '' %>"></div>
+    </div>
+    <label>Title (≤ 70 Zeichen)</label><input name="title" type="text" maxlength="200" value="<%= g.title %>">
+    <label>Meta-Description (≤ 170 Zeichen)</label><input name="description" type="text" maxlength="400" value="<%= g.description %>">
+    <label>H1</label><input name="h1" type="text" maxlength="300" value="<%= g.h1 %>">
+    <label>Kernfakten der Liste „Unterkünfte mit Ferienwohnung“ <small class="muted">Kriterien-Codes des Standard-Rankings, höchstens 3 werden gezeigt</small></label>
+    <input name="list_criteria" type="text" value="<%= (g.list_criteria || []).join(', ') %>" placeholder="swim_pool, bike_storage">
+    <p style="margin:8px 0 0"><button class="btn small" type="submit">Ratgeber speichern</button> <small class="muted">Sitemap-Datum ändert sich nur bei Text- oder Datumsänderung.</small></p>
+  </form>
+
+  <h3 id="karten-<%= g.id %>">Karten</h3>
+  <% g.cards.forEach(function (c) { %>
+    <details class="card" id="karte-<%= c.id %>" style="margin-top:8px;padding:10px 14px">
+      <summary><strong><%= c.title %></strong> <span class="badge <%= c.public ? 'good' : (c.unverified ? 'warn' : '') %>"><%= c.public ? 'online' : (c.unverified ? 'offene Prüfpunkte' : 'ausgeblendet') %></span> <small class="muted"><%= c.section %> · <%= c.sort_order %><%= c.checked_on ? ' · Stand ' + formatDate(c.checked_on) : '' %><%= c.link_slot ? ' · Link: ' + c.link_slot : '' %></small></summary>
+      <form method="post" action="/admin/ratgeber/karten/<%= c.id %>" style="margin-top:8px">
+        <div class="form-row">
+          <div><label>Titel</label><input name="title" type="text" value="<%= c.title %>"></div>
+          <div><label>Status</label><select name="status"><option value="hidden" <%= c.status === 'hidden' ? 'selected' : '' %>>ausgeblendet</option><option value="active" <%= c.status === 'active' ? 'selected' : '' %>>aktiv</option></select></div>
+          <div><label>Stand der Prüfung</label><input name="checked_on" type="date" value="<%= c.checked_on ? formatIso(c.checked_on) : '' %>"></div>
+          <div><label>Reihenfolge</label><input name="sort_order" type="number" value="<%= c.sort_order %>"></div>
+        </div>
+        <label>Text <small class="muted">Absätze durch Leerzeile, „- “ für Aufzählung, [Text](https://quelle) für Quellen, **fett**. „[PRÜFEN …]“ markiert offene Punkte – die Karte lässt sich erst ohne Marker aktivieren.</small></label>
+        <textarea name="body" style="min-height:160px"><%= c.body %></textarea>
+        <div class="form-row">
+          <div><label>Partnerlink (Slot)</label><select name="link_slot"><option value="">– kein Link –</option><% siteSlots.forEach(function (s) { %><option value="<%= s.key %>" <%= c.link_slot === s.key ? 'selected' : '' %>><%= s.key %><%= s.live ? '' : ' (inaktiv)' %></option><% }) %></select><small class="muted">nur bei verifiziertem Bad</small></div>
+          <div><label>Regionsseite</label><select name="region_slug"><option value="">–</option><% siteRegions.forEach(function (r) { %><option value="<%= r.slug %>" <%= c.region_slug === r.slug ? 'selected' : '' %>><%= r.name %></option><% }) %></select></div>
+          <div><label>Objektseiten (Slugs)</label><input name="entity_slugs" type="text" value="<%= (c.entity_slugs || []).join(', ') %>"><small class="muted">verlinkt nur, wenn live</small></div>
+          <input type="hidden" name="section" value="<%= c.section %>">
+        </div>
+        <p style="margin:6px 0 0"><button class="btn small" type="submit">Karte speichern</button>
+          <button class="btn small danger" type="submit" name="action" value="delete" data-confirm="Karte „<%= c.title %>“ löschen?">Löschen</button></p>
+      </form>
+    </details>
+  <% }) %>
+  <details style="margin-top:8px"><summary>Neue Karte</summary>
+    <form method="post" action="/admin/ratgeber/<%= g.id %>/karten" class="card" style="margin-top:8px">
+      <div class="form-row">
+        <div><label>Titel *</label><input name="title" type="text" required></div>
+        <div><label>Stand der Prüfung</label><input name="checked_on" type="date"></div>
+        <div><label>Reihenfolge</label><input name="sort_order" type="number" value="100"></div>
+        <input type="hidden" name="section" value="baeder"><input type="hidden" name="status" value="hidden">
+      </div>
+      <label>Text *</label><textarea name="body" style="min-height:120px" required></textarea>
+      <p style="margin:6px 0 0"><button class="btn small" type="submit">Anlegen (ausgeblendet)</button></p>
+    </form>
+  </details>
+
+  <h3 id="kasten-<%= g.id %>">Hinweiskasten in Liste und Regionsseiten</h3>
+  <p class="muted"><small>Als „Anzeige“ gekennzeichnet, fester Platz nach dem gewählten Listenplatz (leer = Listenende), verdrängt kein <%= 'Objekt' %>. Verlinkt zusätzlich auf diesen Ratgeber. Erscheint nur mit aktivem Ratgeber und nutzbarem Link.</small></p>
+  <form method="post" action="/admin/ratgeber/<%= g.id %>/kasten">
+    <div class="form-row">
+      <div><label class="inline"><input type="checkbox" name="active" <%= box.active ? 'checked' : '' %>> aktiv</label></div>
+      <div><label>nach Platz</label><input name="after" type="number" min="0" max="50" value="<%= box.after || '' %>" placeholder="Listenende"></div>
+      <div><label>Standard-Link</label><select name="default_slot"><option value="">–</option><% siteSlots.forEach(function (s) { %><option value="<%= s.key %>" <%= box.default_slot === s.key ? 'selected' : '' %>><%= s.key %><%= s.live ? '' : ' (inaktiv)' %></option><% }) %></select></div>
+    </div>
+    <label>Überschrift</label><input name="heading" type="text" value="<%= box.heading || '' %>">
+    <label>Text</label><input name="text" type="text" value="<%= box.text || '' %>">
+    <label>Linktext zum Ratgeber</label><input name="guide_label" type="text" value="<%= box.guide_label || '' %>" placeholder="Ratgeber lesen">
+    <details style="margin-top:6px"><summary><small>Link je Region (sonst Standard-Link)</small></summary>
+      <div class="form-row" style="flex-wrap:wrap">
+        <% siteRegions.forEach(function (r) { var cur = (box.regions || {})[r.slug] || ''; %>
+          <div style="min-width:180px"><label><%= r.name %></label><select name="regions[<%= r.slug %>]"><option value="">Standard</option><% siteSlots.forEach(function (s) { %><option value="<%= s.key %>" <%= cur === s.key ? 'selected' : '' %>><%= s.key %></option><% }) %></select></div>
+        <% }) %>
+      </div>
+    </details>
+    <p style="margin:8px 0 0"><button class="btn small" type="submit">Hinweiskasten speichern</button></p>
+  </form>
+</section>
+<% }) %>
+
+<h2 id="slots">Link-Slots (Partnerlinks auf redaktionellen Seiten)</h2>
+<p class="muted">Entweder <strong>Zieladresse</strong> beim Anbieter (z. B. fewo-direkt.de mit Ort und Filtern, ohne Reisedaten, ohne utm_…) – daraus baut die Deeplink-Vorlage des Programms den Link, <code>sid</code> = Seite und Slot – oder ein <strong>fester Netzwerk-Link</strong> (unverändert, ohne Pixel-Code). Der Link steht direkt im <code>href</code>, gezählt wird per Beacon. Fehlt ein Link, entfällt der Satz auf der Seite.</p>
+<div class="table-scroll">
+<table>
+  <tr><th>Slot</th><th>Programm</th><th>Ziel / fester Link</th><th>Ankertext</th><th>Aktiv</th><th class="num">Klicks 30 T.</th><th></th></tr>
+  <% slotRows.forEach(function (s) { var fid = 'slot-' + s.id; %>
+    <tr>
+      <td><strong><%= s.key %></strong><br><small class="muted"><%= s.label %></small></td>
+      <td><select name="program_id" form="<%= fid %>"><option value="">–</option><% programs.forEach(function (p) { %><option value="<%= p.id %>" <%= s.program_id === p.id ? 'selected' : '' %>><%= p.name %><%= p.status === 'active' ? '' : ' (inaktiv)' %></option><% }) %></select></td>
+      <td style="min-width:260px"><input name="target_url" form="<%= fid %>" type="url" value="<%= s.target_url || '' %>" placeholder="Zieladresse https://www.fewo-direkt.de/…">
+        <input name="fixed_href" form="<%= fid %>" type="url" value="<%= s.fixed_href || '' %>" placeholder="oder fester Netzwerk-Link" style="margin-top:4px">
+        <% if (s.preview) { %><small class="muted" style="word-break:break-all">href: <%= s.preview %></small><% } %></td>
+      <td><input name="anchor" form="<%= fid %>" type="text" value="<%= s.anchor %>"></td>
+      <td><input type="checkbox" name="active" form="<%= fid %>" <%= s.active ? 'checked' : '' %>><br><small class="<%= s.live ? '' : 'muted' %>"><%= s.live ? 'auf der Seite' : (s.active && s.p_status !== 'active' ? 'Programm inaktiv' : 'nicht sichtbar') %></small></td>
+      <td class="num"><%= s.clicks30 %></td>
+      <td><form id="<%= fid %>" method="post" action="/admin/ratgeber/slots/<%= s.id %>"><input type="hidden" name="sort_order" value="<%= s.sort_order %>"><button class="btn small" type="submit">Speichern</button></form></td>
+    </tr>
+  <% }) %>
+</table>
+</div>
+<details style="margin-top:10px"><summary>Neuer Link-Slot</summary>
+  <form method="post" action="/admin/ratgeber/slots" class="card" style="margin-top:8px">
+    <div class="form-row">
+      <div><label>Site</label><select name="site_id"><% list.forEach(function (g) { %><option value="<%= g.site_id %>"><%= g.site_name %></option><% }) %></select></div>
+      <div><label>Schlüssel *</label><input name="key" type="text" required pattern="[a-z0-9-]{2,40}" placeholder="z. B. maspalomas"></div>
+      <div><label>Zweck</label><input name="label" type="text"></div>
+      <div><label>Programm</label><select name="program_id"><option value="">–</option><% programs.forEach(function (p) { %><option value="<%= p.id %>"><%= p.name %></option><% }) %></select></div>
+    </div>
+    <div class="form-row">
+      <div><label>Zieladresse</label><input name="target_url" type="url"></div>
+      <div><label>oder fester Link</label><input name="fixed_href" type="url"></div>
+      <div><label>Ankertext *</label><input name="anchor" type="text" required></div>
+    </div>
+    <p style="margin:6px 0 0"><button class="btn small" type="submit">Anlegen (inaktiv)</button></p>
+  </form>
+</details>
+<%- include('../partials/admin-foot') %>

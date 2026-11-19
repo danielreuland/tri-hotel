@@ -133,7 +133,10 @@ async function renderList(req, res, ranking) {
   const listDesc = isHost
     ? (content.list_description ? fillMethod(content.list_description, listVars) : defaultDesc)
     : (content.meta_description || defaultDesc);
+  // Hinweiskasten „Oder doch lieber in eine Ferienwohnung?“ (Anzeige, fester Platz, nur Host-Ranking der Site)
+  const rentalBox = isHost ? await require('../services/guides').box(req.site) : null;
   res.render('public/ranking', {
+    rentalBox,
     title: listTitle,
     description: listDesc,
     listH1: content.list_h1 ? fillMethod(content.list_h1, listVars) : `${ranking.entity_label_pl} im Ranking`,
@@ -211,20 +214,8 @@ async function renderHome(req, res, ranking) {
 // Suchparameter der alten Startseite (Ranking auf „/“) gehören zur Liste
 const LIST_PARAMS = ['q', 'land', 'monat', 'min', 'l', 'wetter', 'regen'];
 
-// Herkunft eines Werts für die Hotelseite (Fundstelle als Link folgt dahinter, siehe entity.ejs)
-function trustText(fact, ranking) {
-  switch (fact.trust_level) {
-    case 1: return `vom ${ranking.entity_label_sg} bestätigt`;
-    case 2: {
-      const day = new Date(fact.checked_at).toLocaleDateString('de-DE');
-      // ohne Beleg ausdrücklich als Urteil kennzeichnen; ein Vermerk (z. B. Telefonat) wird nicht veröffentlicht
-      if (fact.editorial_assessment && !fact.evidence_url && !fact.evidence_text) return `Einschätzung der Redaktion, Stand ${day}`;
-      return `geprüft am ${day}${!fact.evidence_url && fact.evidence_text ? ' · Beleg liegt uns vor' : ''}`;
-    }
-    case 3: return 'von Nutzern bestätigt';
-    default: return 'automatisch ermittelt';
-  }
-}
+// Herkunft eines Werts für die Hotelseite (Fundstelle als Link folgt dahinter, siehe entity.ejs) – auch im Ratgeber
+const { trustText } = require('../lib/provenance');
 
 async function renderEntity(req, res, ranking, slug) {
   const entity = await db.one(`SELECT * FROM entities WHERE entity_type = $1 AND slug = $2`, [ranking.entity_type, slug]);
@@ -701,7 +692,10 @@ async function renderArea(req, res, ranking, area) {
   const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
+  const rentalBox = req.hostRanking && ranking.id === req.hostRanking.id
+    ? await require('../services/guides').box(req.site, { regionSlug: area.type === 'region' ? area.slug : null }) : null;
   res.render('public/area', {
+    rentalBox,
     title: text && text.seo_title ? text.seo_title : (content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`),
     description: text && text.summary ? text.summary : (d.count
       ? `${d.count === 1 ? `1 ${ranking.entity_label_sg}` : `${d.count} geprüfte ${ranking.entity_label_pl}`} ${area.nameIn}, sortiert nach ${ranking.score_name}.`

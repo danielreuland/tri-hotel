@@ -126,6 +126,7 @@ app.use('/admin/partner', require('./routes/admin-partners'));
 app.use('/admin/camp-anfragen', require('./routes/admin-leads'));
 app.use('/admin/postfach', require('./routes/admin-mail'));
 app.use('/admin/tripadvisor', require('./routes/admin-tripadvisor'));
+app.use('/admin/ratgeber', require('./routes/admin-guides'));
 app.use('/', require('./routes/submit'));
 app.use('/', require('./routes/contact'));
 app.use('/', require('./routes/camp-requests'));
@@ -136,6 +137,7 @@ app.use('/', require('./routes/reviews'));
 app.use('/', require('./routes/ta-photos'));
 app.use('/', require('./routes/inquiry'));
 app.use('/', require('./routes/about'));
+app.use('/', require('./routes/guides'));
 app.use('/', require('./routes/seo'));
 app.use('/', require('./routes/public'));
 

@@ -8,7 +8,7 @@ const mailer = require('./mailer');
 const sites = require('./sites');
 
 const TZ = 'Europe/Berlin';
-const PARTNER_KINDS = new Set(['entity_link', 'partner_search']);
+const PARTNER_KINDS = new Set(['entity_link', 'partner_search', 'guide_link']);
 
 // Vortag als YYYY-MM-DD nach Berliner Zeit, auch rund um die Zeitumstellung
 function previousDay(now = new Date()) {

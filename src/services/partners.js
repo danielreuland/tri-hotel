@@ -68,10 +68,11 @@ const monetized = (program) => Boolean(program.link_template || Object.keys(prog
 
 // Ausgehende Adresse: Netzwerk-Vorlage ({url}, {url_enc}) oder Parameter anhängen (vorhandene bleiben)
 // {slug} = Objekt-Slug, z. B. als Unterkennung (CJ: sid), damit im Netzwerk sichtbar ist, welches Objekt die Buchung brachte
-function buildUrl(program, url, { slug = '' } = {}) {
+// {sid} = Unterkennung für Links ohne Objekt (Ratgeber, Hinweiskasten: Seite und Slot, z. B. ratgeber-palma); ohne Angabe der Slug
+function buildUrl(program, url, { slug = '', sid = null } = {}) {
   if (program.link_template) {
     return program.link_template.replace(/\{url_enc\}/g, encodeURIComponent(url)).replace(/\{url\}/g, url)
-      .replace(/\{slug\}/g, encodeURIComponent(slug));
+      .replace(/\{slug\}/g, encodeURIComponent(slug)).replace(/\{sid\}/g, encodeURIComponent(sid === null ? slug : sid));
   }
   const u = new URL(url);
   for (const [k, v] of Object.entries(program.link_params || {})) if (!u.searchParams.has(k)) u.searchParams.set(k, String(v));
@@ -303,7 +304,10 @@ async function stats(days = 30) {
   const byProgram = await db.many(
     `SELECT p.id, p.name, p.auto_search, count(DISTINCT l.id)::int AS links, COALESCE(sum(c.clicks), 0)::int AS clicks,
             (SELECT COALESCE(sum(s.clicks), 0)::int FROM outbound_clicks s WHERE s.kind = 'partner_search' AND s.target_id = p.id
-              AND s.day > current_date - $1::int) AS search_clicks
+              AND s.day > current_date - $1::int) AS search_clicks,
+            -- Partnerlinks auf redaktionellen Seiten (Ratgeber, Hinweiskasten)
+            (SELECT COALESCE(sum(g.clicks), 0)::int FROM outbound_clicks g JOIN partner_slots ps ON ps.id = g.target_id
+              WHERE g.kind = 'guide_link' AND ps.program_id = p.id AND g.day > current_date - $1::int) AS guide_clicks
        FROM partner_programs p LEFT JOIN entity_links l ON l.program_id = p.id
        LEFT JOIN outbound_clicks c ON c.kind = 'entity_link' AND c.target_id = l.id AND c.day > current_date - $1::int
       GROUP BY p.id, p.name ORDER BY p.sort_order, lower(p.name)`, [days]);
@@ -316,8 +320,10 @@ async function stats(days = 30) {
   const bySource = await db.many(
     `SELECT c.source, p.name AS program, sum(c.clicks)::int AS clicks
        FROM outbound_clicks c
-       JOIN partner_programs p ON p.id = CASE WHEN c.kind = 'partner_search' THEN c.target_id ELSE (SELECT program_id FROM entity_links WHERE id = c.target_id) END
-      WHERE c.kind IN ('entity_link', 'partner_search') AND c.day > current_date - $1::int
+       JOIN partner_programs p ON p.id = CASE WHEN c.kind = 'partner_search' THEN c.target_id
+                                              WHEN c.kind = 'guide_link' THEN (SELECT program_id FROM partner_slots WHERE id = c.target_id)
+                                              ELSE (SELECT program_id FROM entity_links WHERE id = c.target_id) END
+      WHERE c.kind IN ('entity_link', 'partner_search', 'guide_link') AND c.day > current_date - $1::int
       GROUP BY c.source, p.name ORDER BY c.source = '', sum(c.clicks) DESC`, [days]);
   return { byProgram, top, bySource };
 }
