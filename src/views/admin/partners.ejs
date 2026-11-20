@@ -44,6 +44,10 @@
         <div><label>oder Deeplink-Vorlage eines Netzwerks <small class="muted">{url_enc} = Zieladresse, {slug} = Objekt, {sid} = Objekt bzw. Ort des Links im Ratgeber (z. B. CJ: https://www.tkqlhce.com/click-PID-AID?url={url_enc}&amp;sid={slug})</small></label><input name="link_template" type="text" value="<%= p.link_template || '' %>"></div>
       </div>
       <div class="form-row">
+        <div><label>Nur für Objekte mit Merkmal</label><select name="requires_attribute"><option value="">– alle Objekte –</option><option value="vacation_rental" <%= p.requires_attribute === 'vacation_rental' ? 'selected' : '' %>>Ferienwohnung</option></select>
+          <small class="muted">Aufgabe „Partnerlink prüfen“ und das Linkfeld am Objekt nur bei passenden Objekten</small></div>
+      </div>
+      <div class="form-row">
         <div><label>Beschriftung Preise</label><input name="label_booking" type="text" value="<%= p.label_booking %>"></div>
         <div><label>Beschriftung Bewertungen</label><input name="label_reviews" type="text" value="<%= p.label_reviews %>"></div>
       </div>

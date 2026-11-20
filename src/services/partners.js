@@ -63,6 +63,15 @@ function allowedUrl(program, raw) {
   return u.toString();
 }
 
+// Passt das Programm zum Objekt? Programme mit requires_attribute (z. B. FeWo-direkt → vacation_rental) nur für Objekte,
+// bei denen dieses Merkmal gesetzt ist (attributes.<name>.value = true); alle anderen Programme passen immer.
+function appliesTo(program, entity) {
+  const key = program && program.requires_attribute;
+  if (!key) return true;
+  const a = (entity && entity.attributes) || {};
+  return Boolean(a[key] && a[key].value === true);
+}
+
 // Verdient das Programm an Klicks? (Partnerkennung oder Netzwerk-Vorlage eingetragen)
 const monetized = (program) => Boolean(program.link_template || Object.keys(program.link_params || {}).length);
 
@@ -328,4 +337,4 @@ async function stats(days = 30) {
   return { byProgram, top, bySource };
 }
 
-module.exports = { isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, cameFrom, hostOf, countClick, countDirectClick, directStats, DIRECT_KIND, stats };
+module.exports = { appliesTo, isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, cameFrom, hostOf, countClick, countDirectClick, directStats, DIRECT_KIND, stats };

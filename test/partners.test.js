@@ -205,3 +205,12 @@ test('Links von außen (?von=): Klick zählt nur mit passender Herkunft im Refer
   assert.equal(partners.cameFrom({ von: '', referer: 'https://fitnessracing-hotel.de/' }), false);
   assert.equal(partners.clickSource({ von, referer: null }), 'fitnessracing-hotel.de');
 });
+
+test('Programm nur für passende Objekte (requires_attribute, z. B. FeWo-direkt nur bei Merkmal „Ferienwohnung“)', () => {
+  const fewo = { code: 'fewo-direkt', requires_attribute: 'vacation_rental' };
+  assert.equal(partners.appliesTo(fewo, { attributes: { vacation_rental: { value: true, evidence_url: 'https://x.example' } } }), true);
+  assert.equal(partners.appliesTo(fewo, { attributes: {} }), false);
+  assert.equal(partners.appliesTo(fewo, { attributes: { vacation_rental: { value: false } } }), false);
+  assert.equal(partners.appliesTo(fewo, { attributes: null }), false);
+  assert.equal(partners.appliesTo({ code: 'booking', requires_attribute: null }, { attributes: {} }), true, 'ohne Regel: alle Objekte');
+});

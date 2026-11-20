@@ -110,14 +110,14 @@ async function collect() {
       push({ source: 'stuck', source_key: `stuck:${s.id}`, title: s.entity_name, detail: [{ level: 'block', text: 'Auto-Prüfung seit über einer Stunde ohne Ergebnis – erneut starten' }], link: detailLink(s.id), entity_id: null });
     }
   }
-  // Partnerlink prüfen / generieren: live, aber ohne Preis-Link bei einem aktiven Programm mit Provision
+  // Partnerlink prüfen / generieren: live, aber ohne Preis-Link bei einem aktiven Programm mit Provision, das zum Objekt passt
   //   (Fingerabdruck = fehlende Programme: erledigt bleibt erledigt, bis ein weiteres Programm dazukommt)
   const partnerSvc = require('./partners');
   const paying = (await db.many(`SELECT * FROM partner_programs WHERE status = 'active' ORDER BY sort_order, name`)).filter(partnerSvc.monetized);
   const allPrograms = await db.many('SELECT id, code FROM partner_programs');
   if (paying.length) {
     for (const r of await db.many(
-      `SELECT e.id AS entity_id, e.name, ${latestSub} AS sub_id,
+      `SELECT e.id AS entity_id, e.name, e.attributes, ${latestSub} AS sub_id,
               COALESCE(array_agg(DISTINCT l.program_id) FILTER (WHERE l.kind = 'booking'), '{}')
                 || COALESCE((SELECT array_agg(a.program_id) FROM entity_link_absences a WHERE a.entity_id = e.id), '{}') AS have
          FROM entities e JOIN entity_rankings er ON er.entity_id = e.id AND er.status = 'live'
@@ -129,7 +129,8 @@ async function collect() {
         const src = allPrograms.find((x) => x.code === p.id_from);
         return Boolean(src && r.have.includes(src.id));
       };
-      const missing = paying.filter((p) => !p.auto_search && !r.have.includes(p.id) && !covered(p));
+      // Programme nur für passende Objekte (z. B. FeWo-direkt nur bei Merkmal „Ferienwohnung“)
+      const missing = paying.filter((p) => partnerSvc.appliesTo(p, r) && !p.auto_search && !r.have.includes(p.id) && !covered(p));
       if (!missing.length) continue;
       push({ source: 'partner_link', source_key: `partner-link:${r.entity_id}`, title: `${r.name} – Partnerlink prüfen / generieren`,
         detail: [{ level: 'todo', text: `${missing.map((p) => p.name).join(', ')}: Link fehlt – Seite des Hotels suchen und eintragen; gibt es keine: beim Hotel „nicht vorhanden“ anhaken` }],

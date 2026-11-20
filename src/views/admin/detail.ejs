@@ -383,6 +383,7 @@
               : srcLink ? ['good', 'Nummer von ' + srcProg.name]
               : partnerAbsent.indexOf(p.id) >= 0 ? ['', 'nicht vorhanden']
               : p.status !== 'active' ? ['', 'inaktiv – wird nicht angezeigt']
+              : p.requires_attribute && !(((entity.attributes || {})[p.requires_attribute] || {}).value === true) ? ['', 'nicht nötig – nur für ' + ({ vacation_rental: 'Ferienwohnungen' }[p.requires_attribute] || p.requires_attribute)]
               : ['warn', 'fehlt'];
           %>
           <details class="link-prog">
