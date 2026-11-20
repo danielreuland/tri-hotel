@@ -86,7 +86,7 @@ test('Abmeldungen gelten nicht für den Bericht', () => {
 });
 
 const render = (sites) => ejs.renderFile(path.join(__dirname, '..', 'src', 'views', 'emails', 'daily-report.ejs'), {
-  site: { name: 'tri-hotel.de', logo_text: 'TRI-HOTEL' }, baseUrl: 'https://example.test', ranking: { entity_label_pl: 'Gyms' }, dayLabel: 'Do., 05.11.2026', sites,
+  site: { name: 'tri-hotel.de', logo_text: 'TRI-HOTEL' }, baseUrl: 'https://example.test', ranking: { entity_label_pl: 'Gyms', entity_label_sg: 'Gym' }, dayLabel: 'Do., 05.11.2026', sites,
 });
 
 test('Mailvorlage: alle Kennzahlen je Seite, Beschriftung aus dem Ranking, lesbare Textfassung', async () => {
@@ -97,7 +97,7 @@ test('Mailvorlage: alle Kennzahlen je Seite, Beschriftung aus dem Ranking, lesba
   const text = mailer.htmlToText(html);
   assert.match(text, /Unique Visitors: 1\.234/);
   assert.match(text, /Seitenaufrufe: 2\.000/);
-  assert.match(text, /Klicks auf Gyms: 30/);
+  assert.match(text, /Aufrufe von Gymseiten: 30/);
   assert.match(text, /Antworten von Betreibern: 3 \(Formular 2, Mail 1\)/);
   assert.match(text, /Partnerklicks: 3/);
   assert.match(text, /Camp-Klicks: 1/);

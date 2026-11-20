@@ -7,7 +7,7 @@
   <ul style="list-style:none;margin:0;padding:0">
     <li>Unique Visitors: <strong><%= num(s.visitors) %></strong></li>
     <li>Seitenaufrufe: <strong><%= num(s.pageviews) %></strong></li>
-    <li>Klicks auf <%= ranking.entity_label_pl %>: <strong><%= num(s.hotelClicks) %></strong></li>
+    <li>Aufrufe von <%= ranking.entity_label_sg %>seiten: <strong><%= num(s.hotelClicks) %></strong></li>
     <li>Antworten von Betreibern: <strong><%= num(s.answersForm + s.answersMail) %></strong><% if (s.answersForm + s.answersMail) { %> (Formular <%= num(s.answersForm) %>, Mail <%= num(s.answersMail) %>)<% } %></li>
     <li>Partnerklicks: <strong><%= num(s.partnerClicks) %></strong></li>
     <li>Camp-Klicks: <strong><%= num(s.campClicks) %></strong></li>
@@ -22,5 +22,5 @@
   </ul>
   <p style="color:#57606a;font-size:13px;margin:4px 0">An diese Betriebe gehen keine Anfragen und Erinnerungen mehr. Liste im Admin: Kommunikation → Anfragen → „abgemeldet“.</p>
 <% } %>
-<p style="color:#57606a;font-size:13px;margin-top:20px">Klicks auf <%= ranking.entity_label_pl %> sind Aufrufe der Objektseiten. Bei Seiten ohne eigene Objektseiten sind es Aufrufe auf <%= sites[0] ? sites[0].label : '' %> von Besuchern, die von dieser Seite kamen; bei <%= sites[0] ? sites[0].label : '' %> sind sie mitgezählt.</p>
+<p style="color:#57606a;font-size:13px;margin-top:20px">Aufrufe von <%= ranking.entity_label_sg %>seiten zählt Plausible (keine Partnerklicks). Bei Seiten ohne eigene Objektseiten sind es Aufrufe auf <%= sites[0] ? sites[0].label : '' %> von Besuchern, die von dieser Seite kamen; bei <%= sites[0] ? sites[0].label : '' %> sind sie mitgezählt.</p>
 <%- include('_layout_bottom') %>
