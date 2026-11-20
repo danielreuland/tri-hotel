@@ -994,10 +994,16 @@ a.kpi:hover { border-color: var(--accent); }
 .ratgeber h2 { margin-top: 2rem; }
 .ratgeber .fact-box ul, .ratgeber .rental-facts { padding-left: 20px; margin: 0; display: grid; gap: 6px; }
 .ratgeber .jump-links { margin-top: 8px; }
-.ratgeber-table { min-width: 560px; width: 100%; border-collapse: collapse; }
-.ratgeber-table th, .ratgeber-table td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-.ratgeber-table thead th { font-weight: 700; }
-.ratgeber-table.checklist td:first-child { width: 2em; }
+/* Tabellen im Ratgeber: eigener Rahmen mit Kopfzeile, Zeilenstreifen und fetter erster Spalte – heben sich vom Fließtext ab */
+.ratgeber .table-scroll { margin: 16px 0 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: 0 1px 3px rgba(15, 26, 36, .06); }
+.ratgeber-table { min-width: 560px; width: 100%; border-collapse: collapse; font-size: .95rem; }
+.ratgeber-table th, .ratgeber-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); font-size: inherit; }
+.ratgeber-table tr > * + * { border-left: 1px solid var(--border); }
+.ratgeber-table thead th { background: var(--accent-soft); color: var(--heading); font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid var(--accent); }
+.ratgeber-table tbody tr:nth-child(even) > * { background: var(--surface-2); }
+.ratgeber-table tbody th { font-weight: 700; color: var(--heading); }
+.ratgeber-table tbody tr:last-child > * { border-bottom: 0; }
+.ratgeber-table.checklist td:first-child { width: 2.5em; text-align: center; font-size: 1.1rem; }
 .ad-inline { font-size: 1em; font-weight: 600; color: var(--text); }
 .ad-note { margin: 12px 0 18px; }
 .ad-note p { margin: 0; }
