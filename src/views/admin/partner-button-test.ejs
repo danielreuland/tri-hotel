@@ -1,0 +1,67 @@
+<%- include('../partials/admin-head') %>
+<% var pc = function (x) { return x === null || x === undefined ? '–' : String(x).replace('.', ',') ; };
+   var V = [{ k: 'A', label: 'A · ohne Button' }, { k: 'B', label: 'B · mit Button' }, { k: 'on', label: 'immer an' }];
+   var R = report || {}; %>
+<div class="page-head"><h1>Partner-Button-Test</h1><p class="muted page-actions"><a href="/admin/partner">← Partnerprogramme</a></p></div>
+<p class="muted">Button „Preise prüfen“ in der Rangliste (gesamt, Regionen, Länder). Zuteilung nach Kalendertag in Berlin:
+  gerade Tage <strong>A</strong> (ohne Button), ungerade Tage <strong>B</strong> (mit Button) – ohne Cookie, für alle Besucher gleich.
+  Ziel ist das aktive Programm mit Partnerkennung, das unter <a href="/admin/partner">Partnerprogramme</a> in der Reihenfolge am weitesten vorn steht und für das Hotel einen Link hat.
+  Score und Reihenfolge der Hotels bleiben unberührt.</p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+
+<section class="card">
+  <form method="post" action="/admin/partner/button-test" class="inline-form" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+    <strong>Schalter:</strong>
+    <% Object.keys(MODES).forEach(function (m) { %>
+      <label style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="mode" value="<%= m %>" <%= mode === m ? 'checked' : '' %>> <%= MODES[m] %></label>
+    <% }) %>
+    <button class="btn small" type="submit">Speichern</button>
+  </form>
+  <p class="muted" style="margin:8px 0 0"><small>Heute (<%= today %>) wäre im Test Variante <strong><%= todayVariant %></strong>.
+    Stellung jetzt: <strong><%= MODES[mode] %></strong>. Wechsel gilt nach spätestens 30 Sekunden.</small></p>
+  <p class="muted" style="margin:6px 0 0"><small>Mögliche Ziele in dieser Reihenfolge: <%= programs.length ? programs.map(function (p) { return p.name + ' (' + p.sort_order + ')'; }).join(' · ') : 'kein aktives Programm mit Partnerkennung' %></small></p>
+</section>
+
+<form method="get" action="/admin/partner/button-test" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:18px 0 8px">
+  <% if (rankings.length > 1) { %><div><label>Ranking</label><select name="r"><% rankings.forEach(function (r) { %><option value="<%= r.slug %>" <%= ranking && r.id === ranking.id ? 'selected' : '' %>><%= r.name %></option><% }) %></select></div><% } %>
+  <div><label>von</label><input type="date" name="von" value="<%= range.from %>"></div>
+  <div><label>bis</label><input type="date" name="bis" value="<%= range.to %>"></div>
+  <div><button class="btn small" type="submit">Anzeigen</button></div>
+</form>
+
+<% if (!report) { %><p class="muted">Kein aktives Ranking.</p><% } else { %>
+<section class="kpis" aria-label="Aufrufe je Variante">
+  <% V.forEach(function (v) { var r = R[v.k]; %>
+    <div class="kpi"><strong><%= r.views.toLocaleString('de-DE') %></strong><span>Aufrufe <%= v.label %></span><small><%= r.days %> Tag<%= r.days === 1 ? '' : 'e' %><%= r.views < 1000 && v.k !== 'on' ? ' · noch wenig Daten' : '' %></small></div>
+  <% }) %>
+</section>
+<p class="muted" style="margin-top:-10px"><small>Aufrufe = Besucher, deren Browser die Liste geladen hat (je Adresse, Liste und Tag einmal; Bots und Admin zählen nicht).
+  Als Faustregel reichen erst einige tausend Aufrufe je Variante für eine belastbare Aussage.</small></p>
+
+<div class="table-scroll"><table>
+  <tr><th>Kennzahl</th><% V.forEach(function (v) { %><th class="num"><%= v.label %></th><% }) %></tr>
+  <tr><td>Partnerklicks aus der Rangliste</td><% V.forEach(function (v) { %><td class="num"><%= R[v.k].partner %></td><% }) %></tr>
+  <tr><td><strong>Partnerklicks je 100 Aufrufe</strong></td><% V.forEach(function (v) { %><td class="num"><strong><%= pc(R[v.k].partnerPer100) %></strong></td><% }) %></tr>
+  <tr><td>Klicks auf Hotelseiten aus der Rangliste</td><% V.forEach(function (v) { %><td class="num"><%= R[v.k].detail %></td><% }) %></tr>
+  <tr><td><strong>Klicks auf Hotelseiten je 100 Aufrufe</strong></td><% V.forEach(function (v) { %><td class="num"><strong><%= pc(R[v.k].detailPer100) %></strong></td><% }) %></tr>
+  <tr><td>Partnerklicks gesamt (alle Quellen) an Tagen der Variante</td><% V.forEach(function (v) { %><td class="num"><%= R[v.k].allClicks %></td><% }) %></tr>
+  <tr><td><strong>… je Tag</strong></td><% V.forEach(function (v) { %><td class="num"><strong><%= pc(R[v.k].allPerDay) %></strong></td><% }) %></tr>
+</table></div>
+<p class="muted"><small>In Variante A gibt es keinen Button, Partnerklicks aus der Rangliste sind dort 0. Entscheidend sind „Partnerklicks gesamt je Tag“ (wandern Klicks nur von der Hotelseite in die Liste?) und die Klicks auf Hotelseiten (nimmt der Button ihnen etwas weg?).</small></p>
+
+<h2>Partnerklicks nach Rangplatz</h2>
+<div class="table-scroll"><table>
+  <tr><th>Platz in der Liste</th><% V.forEach(function (v) { %><th class="num"><%= v.label %></th><% }) %></tr>
+  <% ['1–3', '4–10', '11+'].forEach(function (b) { %><tr><td><%= b %></td><% V.forEach(function (v) { %><td class="num"><%= R[v.k].buckets[b] %></td><% }) %></tr><% }) %>
+</table></div>
+
+<h2>Partnerklicks je Anbieter</h2>
+<% var names = []; V.forEach(function (v) { R[v.k].programs.forEach(function (p) { if (names.indexOf(p.program) < 0) names.push(p.program); }); }); %>
+<% if (!names.length) { %><p class="muted">Noch keine Klicks im Zeitraum.</p><% } else { %>
+<div class="table-scroll"><table>
+  <tr><th>Anbieter</th><% V.forEach(function (v) { %><th class="num"><%= v.label %></th><% }) %></tr>
+  <% names.forEach(function (nm) { %><tr><td><%= nm %></td><% V.forEach(function (v) { var hit = R[v.k].programs.find(function (p) { return p.program === nm; }); %><td class="num"><%= hit ? hit.n : 0 %></td><% }) %></tr><% }) %>
+</table></div>
+<% } %>
+<% } %>
+<%- include('../partials/admin-foot') %>

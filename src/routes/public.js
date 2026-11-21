@@ -23,6 +23,7 @@ const { slugify } = require('../lib/util');
 const finder = require('../lib/finder');
 const tripadvisor = require('../services/tripadvisor');
 const methodStatus = require('../services/method-status');
+const partnerButton = require('../lib/partner-button');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -101,6 +102,30 @@ function relaxHints(found, listHref) {
     .slice(0, 4);
 }
 
+// Partner-Button-Test für eine Rangliste: Variante des Tages (serverseitig, ohne Cookie) und je Objekt der Button.
+// list: 'gesamt' | <regions-slug> | land-<slug>; placement: 'ranking' | 'region'.
+// Die Liste ist zu diesem Zeitpunkt schon fertig sortiert – Partnerlinks werden erst danach und nur für den Button gelesen.
+async function partnerButtonTest(req, res, ranking, { list, placement, entities }) {
+  const variant = partnerButton.variantFor(await partnerButton.mode());
+  const slot = partnerButton.showsButton(variant);
+  const isHost = req.hostRanking && req.hostRanking.id === ranking.id;
+  const pbt = {
+    variant, slot, list, placement, rankingSlug: ranking.slug, buttons: new Map(),
+    siteName: req.site ? req.site.name : '', scoreName: ranking.score_name,
+    methodHref: isHost ? res.locals.scorePath : `/rankings/${ranking.slug}/methodik`,
+  };
+  if (slot) {
+    const best = await partners.bestLinks(entities);
+    entities.forEach((e, i) => {
+      const b = best.get(e.id);
+      if (b) pbt.buttons.set(e.id, partners.buttonLink(b, e.slug, { placement, position: i + 1, variant, list }));
+    });
+  }
+  // Die Variante wechselt um Mitternacht (Berlin): Seite darf zwischengespeichert, muss aber immer neu geprüft werden
+  res.set('Cache-Control', 'no-cache');
+  return pbt;
+}
+
 async function renderList(req, res, ranking) {
   const [found, categories, criteria] = await Promise.all([findList(req, ranking), rankings.getCategories(ranking.id), rankings.getCriteria(ranking.id)]);
   const { allRanked, countries, filterFeatures, search, trip, ranked, incomplete } = found;
@@ -135,7 +160,9 @@ async function renderList(req, res, ranking) {
     : (content.meta_description || defaultDesc);
   // Hinweiskasten „Oder doch lieber in eine Ferienwohnung?“ (Anzeige, fester Platz, nur Host-Ranking der Site)
   const rentalBox = isHost ? await require('../services/guides').box(req.site) : null;
+  const pbt = await partnerButtonTest(req, res, ranking, { list: 'gesamt', placement: 'ranking', entities: ranked });
   res.render('public/ranking', {
+    pbt,
     rentalBox,
     title: listTitle,
     description: listDesc,
@@ -317,7 +344,7 @@ async function renderEntity(req, res, ranking, slug) {
   // Redaktioneller Text (nur freigegeben); Kurzbeschreibung = Meta-Beschreibung
   const campProviders = res.locals.campGuide ? await camps.forEntity(entity.id) : [];
   // Partnerlinks je Anbieter gruppiert (alphabetisch, ohne Einfluss auf Score/Reihenfolge)
-  const partnerGroups = partners.groupLinks(await partners.linksFor(entity), entity.slug);
+  const partnerGroups = partners.groupLinks(await partners.linksFor(entity), entity.slug, { placement: 'hotelseite' });
   const reviewCfg = reviewsService.config(ranking);
   const reviewList = reviewCfg.enabled ? await reviewsService.published(entity.id, ranking.id) : [];
   // Galerie: eigene/freigegebene Objektbilder, dann Gästefotos aus Bewertungen; ohne beides Beispielbilder der Region (mit Hinweis)
@@ -698,7 +725,10 @@ async function renderArea(req, res, ranking, area) {
   crumbs.push({ name: area.name, url: `${siteUrl}${path}` });
   const rentalBox = req.hostRanking && ranking.id === req.hostRanking.id
     ? await require('../services/guides').box(req.site, { regionSlug: area.type === 'region' ? area.slug : null }) : null;
+  const pbt = await partnerButtonTest(req, res, ranking, {
+    list: area.type === 'region' ? area.slug : `land-${area.slug}`, placement: 'region', entities: d.ranked });
   res.render('public/area', {
+    pbt,
     rentalBox,
     title: text && text.seo_title ? text.seo_title : (content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`),
     description: text && text.summary ? text.summary : (d.count

@@ -63,20 +63,11 @@
       <% d.ranked.forEach(function (e, i) { %>
         <% if (locals.rentalBox && rentalBox.after && i === rentalBox.after && i < d.ranked.length) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
         <li>
-          <a class="rank-item" href="<%= entityPath(e) %>">
-            <span class="pos"><%= e.rank %></span>
-            <%- include('../partials/rank-thumb', { e: e }) %>
-            <span class="info">
-              <span class="name"><%= e.name %></span><br>
-              <small><%= e.city %> · <%= e.label %></small>
-              <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
-              <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
-            </span>
-            <span class="score"><%= e.score %></span>
-          </a>
+          <%- include('../partials/rank-row', { e: e, pos: i + 1, href: entityPath(e), pbt: locals.pbt, place: (e.city || '') + ' · ' + e.label }) %>
         </li>
       <% }) %>
     </ol>
+    <%- include('../partials/pbt-note') %>
     <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= d.ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
   <% } %>
   <% if (d.incomplete.length) { %>

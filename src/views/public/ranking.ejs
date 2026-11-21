@@ -146,20 +146,12 @@
           <% if (locals.rentalBox && rentalBox.after && i === rentalBox.after && i < ranked.length) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
           <li>
             <label class="compare-pick" hidden><input type="checkbox" data-compare-pick value="<%= e.slug %>" data-name="<%= e.name %>"><span class="sr-only"><%= e.name %> zum Vergleich auswählen</span></label>
-            <a class="rank-item" href="<%= entityPath(e) %>">
-              <span class="pos"><%= e.rank %></span>
-              <%- include('../partials/rank-thumb', { e: e }) %>
-              <span class="info">
-                <span class="name"><%= e.name %></span><br>
-                <small><%= e.city %><%= e.country ? ', ' + e.country : '' %> · <%= e.label %><% if (e.bestMonths && e.bestMonths.length) { %> · beste Reisezeit <%= monthRanges(e.bestMonths, MONTHS) %><% } %></small>
-                <% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %>
-                <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
-              </span>
-              <span class="score"><%= e.score %></span>
-            </a>
+            <%- include('../partials/rank-row', { e: e, pos: i + 1, href: entityPath(e), pbt: locals.pbt,
+                  place: (e.city || '') + (e.country ? ', ' + e.country : '') + ' · ' + e.label + (e.bestMonths && e.bestMonths.length ? ' · beste Reisezeit ' + monthRanges(e.bestMonths, MONTHS) : '') }) %>
           </li>
         <% }) %>
       </ol>
+      <%- include('../partials/pbt-note') %>
       <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
     <% } %>
 

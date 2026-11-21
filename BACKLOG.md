@@ -5,6 +5,35 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+Button „Preise prüfen“ (mobil „Preise“) je Hotel in der Rangliste (gesamt, Regionen, Länder), Erklärung „*Werbelink“ einmal unter
+der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Button darüber, kein Link im Link.
+- **Schalter:** Admin → Partnerprogramme → „Partner-Button-Test“ (`/admin/partner/button-test`): aus (Standard) · Test · immer an.
+  Test: gerade Kalendertage A (ohne Button), ungerade B (mit Button), Europe/Berlin, serverseitig, ohne Cookie (`src/lib/partner-button.js`).
+- **Ziel je Hotel:** aktives Programm mit Partnerkennung, das in der vorhandenen **Reihenfolge** (`sort_order`) am weitesten vorn steht
+  und einen Link hat; abgeleitete Links (Hotels.com aus Expedia-Nummer) zählen, Suchseiten nicht (`partners.bestLinks`, eine Abfrage je Liste).
+  Kein eigenes Prioritätsfeld (Daniel 21.11.): Reihenfolge gilt damit auch für die Hotelseite.
+- **Direktlink-Programme** (Expedia, Hotels.com, CHECK24: Bedingungen verbieten eigene Weiterleitung, Migration 058) zeigen direkt zum
+  Partner, alle anderen über `/go/`. Gezählt wird immer per Beacon `/go/…/klick?src=&pos=&v=&liste=`.
+- **Sub-ID:** keine neue; die Vorlagen hängen wie bisher den Hotel-Slug an (CJ `sid`, Awin `clickref`, CHECK24 `tid`) – Daniel 21.11.
+- **Messung:** Migration 124 (Rückgängig: `db/migrations/down/124_partner_button_test.sql`): `outbound_clicks` + `placement`, `position`,
+  `variant`, `list` (geprüft: Whitelist, 1–500, Liste muss existieren); `ranking_list_stats` = Aufrufe und Hotelseiten-Klicks je Tag,
+  Liste, Variante (Beacon `/rangliste/aufruf|detailklick`, Bot-Regeln wie Partnerklicks, je Adresse/Liste/Tag einmal).
+  Hotelseite: Partnerlinks mit `src=hotelseite`; Ratgeber-Klicks mit Platzierung `ratgeber`.
+- **Plausible:** Ereignisse „Partnerklick“ (anbieter, quelle, position, variante), „Ranglisten-Detailklick“ (position, variante),
+  „Rangliste-Aufruf“ (variante, liste). Hotelseite weiter „Partnerlink“, jetzt mit Eigenschaft `quelle=hotelseite`.
+- **Caching:** kein Seiten-Cache/CDN (nginx nur Proxy); Ranglisten senden `Cache-Control: no-cache`.
+- **Mobil für alle Varianten:** Score links, kein Vorschaubild, keine Leistungszeile, Name/Ort einzeilig mit „…“, Pfeil rechts.
+- Tests: `test/partner-button.test.js` (bester Link, Variante/Zeitzone, Parameter, Neutralität der Sortierung).
+- **Offen vor dem Start (Daniel):**
+  - [ ] Reihenfolge unter Partnerprogramme prüfen: Ziel soll Expedia → CHECK24 → Hotels.com sein. In der Migrationsfassung steht
+        Hotels.com (6) vor CHECK24/trivago (7) vor Expedia (20); trivago und hotel.de wären als aktive Programme mit Kennung ebenfalls Ziele.
+  - [ ] Expedia/Hotels.com/CHECK24 aktiv? (Migrationen legen sie inaktiv an.)
+  - [ ] Links der Top-20-Hotels eintragen (sonst kein Button).
+  - [ ] In Plausible die Ziele „Partnerklick“, „Ranglisten-Detailklick“, „Rangliste-Aufruf“ mit den Eigenschaften anlegen.
+  - [ ] Nach Deploy: `npm run migrate`, Admin-Seite mit Test-Sitzung prüfen, dann Schalter auf „Test“.
+  - [ ] Auswertung nach einigen tausend Aufrufen je Variante; danach entscheiden (immer an / aus) und Code für „Test“ ggf. entfernen.
+
 ### B-46 Indexierung bereinigen (18.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
 Grundlage: Search-Console-Drilldown 18.11. Viele der gemeldeten Regionen/Länder waren beim Abruf schon indexierbar (ältere Crawls).
 - **Regeln** (`services/areas.js` → `indexRules`/`areaIndexable`/`indexGaps`, Schwellen aus `rankings.formula`): Region ab

@@ -248,6 +248,12 @@ document.addEventListener('click', function (e) {
   try { navigator.sendBeacon(a.getAttribute('data-count')); } catch (err) { /* Zählung ist optional */ }
 }, true);
 
+// Partner-Button-Test: Aufruf der Rangliste zählen (eigene Zählung je Tag, Liste und Variante; nur während des Tests)
+document.querySelectorAll('[data-list-view]').forEach(function (el) {
+  if (!navigator.sendBeacon) return;
+  try { navigator.sendBeacon(el.getAttribute('data-list-view')); } catch (err) { /* Zählung ist optional */ }
+});
+
 // Handy: Menü in der Kopfzeile auf- und zuklappen (ohne JavaScript bleibt die Navigation sichtbar)
 (function () {
   var header = document.querySelector('.site-header');

@@ -1,0 +1,27 @@
+<%# Zeile der Rangliste (Gesamtliste und Regions-/Länderseiten).
+    Die ganze Zeile führt zur Objektseite: Der Namenslink überspannt sie per Overlay (::after), der Partner-Button liegt
+    darüber (z-index) – kein Link im Link. Tastatur: erst Objektlink, dann Button.
+    Parameter: e, pos (Platz in der angezeigten Liste), href, place (Ort/Label-Zeile), pbt (Partner-Button-Test der Seite:
+    { variant, list, placement, rankingSlug, slot, buttons: Map }), thumb (Vorschaubild zeigen, Standard ja) %>
+<% var t = locals.pbt || {}; var btn = t.slot && t.buttons ? t.buttons.get(e.id) : null; %>
+<div class="rank-item rank-row<%= t.slot ? ' has-slot' : '' %>">
+  <span class="pos"><%= e.rank %></span>
+  <%- include('rank-thumb', { e: e }) %>
+  <span class="info">
+    <a class="rank-link" href="<%= href %>"<% if (t.variant) { %> data-count="/rangliste/detailklick?r=<%= t.rankingSlug %>&amp;liste=<%= t.list %>&amp;v=<%= t.variant %>&amp;pos=<%= pos %>" data-goal="Ranglisten-Detailklick" data-goal-prop-position="<%= pos %>" data-goal-prop-variante="<%= t.variant %>"<% } %>><span class="name"><%= e.name %></span></a>
+    <span class="sub"><small class="place"><%= place %></small><% if (e.is_provisional) { %><span class="badge warn">vorläufig</span><% } %></span>
+    <% if (e.features && e.features.length) { %><span class="feature-line"><%= e.features.map(function (f) { return f.label }).join(' · ') %></span><% } %>
+  </span>
+  <% if (t.slot) { %>
+    <span class="partner-slot">
+      <% if (btn) { %>
+        <a class="partner-btn" href="<%= btn.href %>" data-count="<%= btn.count %>" target="_blank" rel="sponsored nofollow noopener"
+          data-goal="Partnerklick" data-goal-prop-anbieter="<%= btn.program %>" data-goal-prop-quelle="<%= t.placement %>" data-goal-prop-position="<%= pos %>" data-goal-prop-variante="<%= t.variant %>"
+          aria-label="Preise prüfen für <%= e.name %> (Werbelink, öffnet neues Fenster)"><span class="pb-long">Preise prüfen</span><span class="pb-short">Preise</span> <span class="pb-ext" aria-hidden="true">↗</span></a>
+        <small class="ad-mark" aria-hidden="true">Werbelink*</small>
+      <% } %>
+    </span>
+  <% } %>
+  <span class="score"><%= e.score %></span>
+  <span class="chev" aria-hidden="true">›</span>
+</div>

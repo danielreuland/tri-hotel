@@ -137,8 +137,8 @@ async function slotForClick(siteId, programCode, key) {
 
 async function countClick(slotId, source = '') {
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 1)
-     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [CLICK_KIND, slotId, String(source || '').slice(0, 60)]);
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, placement, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 'ratgeber', 1)
+     ON CONFLICT (kind, target_id, day, source, placement, position, variant, list) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [CLICK_KIND, slotId, String(source || '').slice(0, 60)]);
 }
 
 // ---------- Liste „Unterkünfte mit Ferienwohnung“ (US3) ----------

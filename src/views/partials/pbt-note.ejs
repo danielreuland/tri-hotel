@@ -1,0 +1,7 @@
+<%# Partner-Button-Test: Erklärung „Werbelink“ einmal unter der Liste (nur wenn mindestens ein Button zu sehen ist),
+    Messpunkte für den Aufruf (eigene Zählung per Beacon und Plausible-Ereignis mit Variante) %>
+<% var t = locals.pbt || {}; %>
+<% if (t.variant) { %><span hidden data-list-view="/rangliste/aufruf?r=<%= t.rankingSlug %>&amp;liste=<%= t.list %>&amp;v=<%= t.variant %>" data-goal="Rangliste-Aufruf" data-goal-prop-variante="<%= t.variant %>" data-goal-prop-liste="<%= t.list %>"></span><% } %>
+<% if (t.slot && t.buttons && t.buttons.size) { %>
+  <p class="ad-note"><small>*Werbelink: Buchst du über diesen Link, erhält <%= t.siteName %> eine Provision. Für dich ändert sich der Preis nicht. Provisionen haben keinen Einfluss auf <%= t.scoreName %> und Reihenfolge. <a href="<%= t.methodHref %>">So entsteht das Ranking</a></small></p>
+<% } %>

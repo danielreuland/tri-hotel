@@ -228,7 +228,7 @@ function outboundUrl(p, siteHost) {
 async function countClick(providerId, source = '') {
   await db.query(
     `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ('camp', $1, (now() AT TIME ZONE 'Europe/Berlin')::date, $2, 1)
-     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`,
+     ON CONFLICT (kind, target_id, day, source, placement, position, variant, list) DO UPDATE SET clicks = outbound_clicks.clicks + 1`,
     [providerId, String(source || '').slice(0, 60)]
   );
 }

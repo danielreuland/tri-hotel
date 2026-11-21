@@ -33,6 +33,34 @@ router.get('/', wrap(async (req, res) => {
   });
 }));
 
+// ---------- Partner-Button-Test (Rangliste) ----------
+// Schalter (aus / Test / immer an) und Auswertung je Variante. Neutralität: nur Anzeige, ändert weder Score noch Reihenfolge.
+const pb = require('../lib/partner-button');
+const listStats = require('../services/list-stats');
+const rankingsSvc = require('../services/rankings');
+
+router.get('/button-test', wrap(async (req, res) => {
+  const all = await db.many(`SELECT id, slug, name FROM rankings WHERE status = 'active' ORDER BY is_default DESC, name`);
+  const ranking = all.find((r) => r.slug === req.query.r) || (req.site && (await rankingsSvc.getDefaultRanking(req.site.id))) || all[0] || null;
+  const range = listStats.period(req.query);
+  const mode = await pb.mode();
+  const progs = (await partners.programs({ activeOnly: true })).filter((p) => partners.monetized(p));
+  res.render('admin/partner-button-test', {
+    title: 'Partner-Button-Test', rankings: all, ranking, range, mode, MODES: pb.MODES,
+    today: pb.berlinDay(), todayVariant: pb.variantFor('test'), programs: progs,
+    report: ranking ? await listStats.report(ranking.id, range) : null,
+    flash: req.query.ok || null,
+  });
+}));
+
+router.post('/button-test', wrap(async (req, res) => {
+  const m = String(req.body.mode || '');
+  if (!pb.MODES[m]) return res.redirect('/admin/partner/button-test');
+  const { before, after } = await pb.setMode(m, req.session.admin.id);
+  await logAction(req.session.admin.id, 'setting', req.session.admin.id, 'set_partner_button', { old: before, new: after });
+  res.redirect(`/admin/partner/button-test?ok=${encodeURIComponent(`Partner-Button: ${pb.MODES[after]}`)}`);
+}));
+
 // Ziel-Domains „expedia.de, hotels.com“ -> ['expedia.de', 'hotels.com']
 const parseDomains = (text) => [...new Set(String(text || '').toLowerCase().split(/[\s,;]+/).map((d) => d.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '')).filter((d) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)))].slice(0, 10);
 

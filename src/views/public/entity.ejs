@@ -69,7 +69,7 @@
     <% if (bookGroups.length) { %>
       <ul class="book-list">
         <% bookGroups.forEach(function (g) { %>
-          <li><a class="book-row" href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise">
+          <li><a class="book-row" href="<%= g.href.booking %>"<% if (g.count.booking) { %> data-count="<%= g.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= g.name %>" data-goal-prop-art="Preise" data-goal-prop-quelle="hotelseite">
             <span class="book-logo"><% if (g.logo) { %><img src="<%= g.logo %>" alt="<%= g.name %>" width="120" height="28" loading="lazy"><% } else { %><strong><%= g.name %></strong><% } %></span>
             <% var w = String(g.short_booking).split(" "), last = w.pop(); %><span class="book-go"><%= w.length ? w.join(" ") + " " : "" %><span class="nowrap"><%= last %><span class="arr" aria-hidden="true">↗</span></span></span>
           </a></li>
@@ -90,7 +90,7 @@
 <% if (hasBook) { %>
   <% if (primary || hotelInquiryUrl) { %>
     <nav class="book-bar" aria-label="Buchen und Anfragen">
-      <% if (primary) { %><a class="btn cta" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise">Preise prüfen</a><% } %>
+      <% if (primary) { %><a class="btn cta" href="<%= primary.href.booking %>"<% if (primary.count.booking) { %> data-count="<%= primary.count.booking %>"<% } %> rel="sponsored nofollow noopener" target="_blank" data-goal="Partnerlink" data-goal-prop-anbieter="<%= primary.name %>" data-goal-prop-art="Preise" data-goal-prop-quelle="hotelseite">Preise prüfen</a><% } %>
       <% if (hotelInquiryUrl) { %><a class="btn secondary" href="<%= hotelInquiryUrl %>" data-goal="Hotel-Anfrage-Start">Anfragen</a><% } %>
       <% if (bookAd) { %><span class="ad-label">Anzeige</span><% } %>
     </nav>

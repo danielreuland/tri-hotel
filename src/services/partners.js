@@ -145,7 +145,9 @@ async function linksFor(entityOrId) {
 }
 
 // Links je Anbieter gruppieren (Hotelseite, Vergleich): href je Art – über /go oder direkt (direct_link, Zählung per Beacon)
-function groupLinks(links, slug) {
+// meta (z. B. { placement: 'hotelseite' }) hängt die Messparameter an /go/ und den Beacon (lib/partner-button.metaQuery)
+function groupLinks(links, slug, meta = null) {
+  const q = meta ? require('../lib/partner-button').metaQuery(meta) : '';
   const groups = [];
   for (const l of links) {
     let g = groups.find((x) => x.code === l.code);
@@ -156,11 +158,64 @@ function groupLinks(links, slug) {
     }
     g.kinds.push(l.kind);
     const go = `/go/${slug}/${l.code}${l.kind === 'reviews' ? '/bewertungen' : ''}`;
-    g.href[l.kind] = l.direct_link ? buildUrl(l, l.url, { slug }) : go;
+    g.href[l.kind] = l.direct_link ? buildUrl(l, l.url, { slug }) : `${go}${q}`;
     // Gezählt wird der Klick per Beacon aus der Seite (Bots, die Links nur abrufen, lösen ihn nicht aus)
-    g.count[l.kind] = `${go}/klick`;
+    g.count[l.kind] = `${go}/klick${q}`;
   }
   return groups;
+}
+
+// Partner-Button der Rangliste: je Objekt der beste Preis-Link – das aktive, monetarisierte Programm, das in der
+// Admin-Reihenfolge (sort_order) am weitesten vorn steht und für das Objekt einen Link hat (eigener Link oder aus der
+// Nummer eines anderen Programms abgeleitet, id_from). Suchseiten (auto_search) zählen nicht: kein Link zu genau diesem Objekt.
+// Programme mit requires_attribute nur für passende Objekte. Eine Abfrage für die ganze Liste.
+// Ergebnis: Map entityId -> { code, name, url, direct_link, link_template, link_params, derived }
+// Neutralität: Das Ergebnis bestimmt nur, ob und wohin der Button zeigt – nie Score oder Reihenfolge.
+function pickBest(progs, entities, linkRows) {
+  const byEntity = new Map();
+  for (const r of linkRows) {
+    if (!byEntity.has(r.entity_id)) byEntity.set(r.entity_id, new Map());
+    byEntity.get(r.entity_id).set(r.code, r.url);
+  }
+  const all = new Map(progs.map((p) => [p.code, p]));
+  const candidates = progs.filter((p) => p.status === 'active' && monetized(p))
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'de'));
+  const out = new Map();
+  for (const e of entities) {
+    const links = byEntity.get(e.id) || new Map();
+    for (const p of candidates) {
+      if (!appliesTo(p, e)) continue;
+      let url = links.get(p.code) || null;
+      let derived = false;
+      if (!url && p.id_from && p.id_url && links.has(p.id_from)) {
+        url = derivedUrl(p, all.get(p.id_from) || {}, links.get(p.id_from));
+        derived = Boolean(url);
+      }
+      if (!url) continue;
+      out.set(e.id, { code: p.code, name: p.name, url, direct_link: p.direct_link, link_template: p.link_template, link_params: p.link_params, derived });
+      break;
+    }
+  }
+  return out;
+}
+
+async function bestLinks(entities) {
+  if (!entities.length) return new Map();
+  const [progs, rows] = await Promise.all([
+    db.many('SELECT * FROM partner_programs'),
+    db.many(
+      `SELECT l.entity_id, p.code, l.url FROM entity_links l JOIN partner_programs p ON p.id = l.program_id
+        WHERE l.kind = 'booking' AND l.entity_id = ANY($1::uuid[])`, [entities.map((e) => e.id)]),
+  ]);
+  return pickBest(progs, entities, rows);
+}
+
+// Button-Ziel: Direktlink-Programme (Expedia, Hotels.com, CHECK24 – Bedingungen: keine eigene Weiterleitung) direkt zum
+// Partner, sonst über /go/. Gezählt wird immer per Beacon an /go/…/klick mit den Messparametern.
+function buttonLink(best, slug, meta) {
+  const q = require('../lib/partner-button').metaQuery(meta);
+  const go = `/go/${slug}/${best.code}`;
+  return { href: best.direct_link ? buildUrl(best, best.url, { slug }) : `${go}${q}`, count: `${go}/klick${q}`, program: best.name };
 }
 
 // Admin: Links eines Objekts speichern (leer = löschen). input: { [programId]: { booking, reviews, absent } }
@@ -282,19 +337,25 @@ function countable(req, key) {
   }) && firstClickToday(req.ip, key);
 }
 
-async function countClick(link, source = '') {
-  const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
+// meta: geprüfte Messparameter (lib/partner-button.parseMeta): Platzierung, Rangplatz, Variante, Liste
+async function insertClick(kind, target, source, meta = {}) {
+  const m = { placement: '', position: 0, variant: '', list: '', ...meta };
   await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 1)
-     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [kind, target, String(source || '').slice(0, 60)]);
+    `INSERT INTO outbound_clicks (kind, target_id, day, source, placement, position, variant, list, clicks)
+     VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, $4, $5, $6, $7, 1)
+     ON CONFLICT (kind, target_id, day, source, placement, position, variant, list) DO UPDATE SET clicks = outbound_clicks.clicks + 1`,
+    [kind, target, String(source || '').slice(0, 60), m.placement, m.position, m.variant, m.list]);
+}
+
+async function countClick(link, source = '', meta = {}) {
+  const [kind, target] = typeof link === 'object' && !link.id ? ['partner_search', link.program_id] : ['entity_link', typeof link === 'object' ? link.id : link];
+  await insertClick(kind, target, source, meta);
 }
 
 // Klick auf „Direkt beim <Objekt>“ (eigene Website des Objekts, kein Partnerprogramm): Anzahl je Objekt, Tag und Herkunft
 const DIRECT_KIND = 'entity_website';
 async function countDirectClick(entityId, source = '') {
-  await db.query(
-    `INSERT INTO outbound_clicks (kind, target_id, day, source, clicks) VALUES ($1, $2, (now() AT TIME ZONE 'Europe/Berlin')::date, $3, 1)
-     ON CONFLICT (kind, target_id, day, source) DO UPDATE SET clicks = outbound_clicks.clicks + 1`, [DIRECT_KIND, entityId, String(source || '').slice(0, 60)]);
+  await insertClick(DIRECT_KIND, entityId, source);
 }
 
 // Dashboard: Klicks „Direkt beim <Objekt>“ für die Objekte eines Rankings – Summen und meistgeklickte Objekte
@@ -337,4 +398,4 @@ async function stats(days = 30) {
   return { byProgram, top, bySource };
 }
 
-module.exports = { appliesTo, isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, cameFrom, hostOf, countClick, countDirectClick, directStats, DIRECT_KIND, stats };
+module.exports = { pickBest, bestLinks, buttonLink, insertClick, appliesTo, isCountableClick, firstClickToday, countable, KINDS, fromId, idOf, derivedUrl, allowedUrl, monetized, buildUrl, searchUrl, logoUrl, shortLabel, programs, linksFor, groupLinks, saveLinks, resolve, clickSource, cameFrom, hostOf, countClick, countDirectClick, directStats, DIRECT_KIND, stats };

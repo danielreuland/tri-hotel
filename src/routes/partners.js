@@ -5,6 +5,11 @@ const express = require('express');
 const config = require('../config');
 const partners = require('../services/partners');
 const db = require('../db');
+const pb = require('../lib/partner-button');
+const listStats = require('../services/list-stats');
+const areas = require('../services/areas');
+const seo = require('../lib/seo');
+const rankings = require('../services/rankings');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -53,15 +58,40 @@ router.post('/go/:slug/direkt/klick', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
+// Messparameter (?src=&pos=&v=&liste=) prüfen: feste Werte, Zahlenbereich, Liste muss es geben – sonst leer
+async function clickMeta(req) {
+  const m = pb.parseMeta(req.query);
+  m.list = await pb.validList(m.list, {
+    regionExists: async (slug) => Boolean(req.site && (await areas.region(req.site.id, slug))),
+    countryExists: (slug) => Boolean(seo.countryFromSlug(slug)),
+  });
+  return m;
+}
+
 // Zählung per Beacon beim Klick auf unseren Seiten (alle Partnerlinks; Direktlinks gehen ohne Zwischenadresse zum Anbieter)
 router.post(['/go/:slug/:program/klick', '/go/:slug/:program/bewertungen/klick'], wrap(async (req, res) => {
   const r = req.hostRanking;
   const kind = req.path.endsWith('/bewertungen/klick') ? 'reviews' : 'booking';
   if (r && /^[a-z0-9-]+$/.test(req.params.slug) && /^[a-z0-9_-]+$/.test(req.params.program) && partners.countable(req, `${req.params.slug}/${req.params.program}/${kind}`)) {
     const link = await partners.resolve(r.entity_type, req.params.slug, req.params.program, kind);
-    if (link) await partners.countClick(link, partners.clickSource({ von: req.query.von, referer: req.get('referer') }));
+    if (link) await partners.countClick(link, partners.clickSource({ von: req.query.von, referer: req.get('referer') }), await clickMeta(req));
   }
   res.set('Cache-Control', 'no-store');
+  res.status(204).end();
+}));
+
+// Partner-Button-Test: Aufruf der Rangliste bzw. Klick auf eine Hotelzeile (Beacon aus public/js/site.js).
+// Gezählt wird nur, solange der Test läuft (Variante A/B/on) und nach denselben Bot-Regeln wie Partnerklicks.
+router.post('/rangliste/:event(aufruf|detailklick)', wrap(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const event = req.params.event === 'aufruf' ? 'view' : 'detail';
+  const m = await clickMeta(req);
+  const slug = String(req.query.r || '');
+  const ranking = /^[a-z0-9-]{1,80}$/.test(slug) && req.site ? await rankings.getRankingBySlug(slug, req.site.id) : null;
+  if (ranking && m.variant && m.list && (event === 'view' || m.position)
+    && partners.countable(req, `rangliste/${ranking.id}/${m.list}/${event}${event === 'detail' ? `/${m.position}` : ''}`)) {
+    await listStats.countEvent({ rankingId: ranking.id, list: m.list, variant: m.variant, event, position: m.position });
+  }
   res.status(204).end();
 }));
 
