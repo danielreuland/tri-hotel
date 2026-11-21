@@ -5,7 +5,10 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, umgesetzt, auf GitHub `main` seit 9bfc65b, noch nicht deployt – Deploy nach „veröffentlichen“, Schalter danach auf „Test“)
+Stand 21.11.: lokal geprüft (380 px, Desktop, Tastatur-Reihenfolge, Tippfläche 44 px, Beacon-Zählung, Bot-Filter, `/go/` per HEAD = 302,
+Schalter mit Audit-Log, Migration 124 hoch/runter/hoch). Auf dem Server noch nicht geprüft: Migration, Admin-Seite mit Test-Sitzung,
+eventuelles Caching außerhalb der nginx-Vorlage.
 Button „Preise prüfen“ (mobil „Preise“) je Hotel in der Rangliste (gesamt, Regionen, Länder), Erklärung „*Werbelink“ einmal unter
 der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Button darüber, kein Link im Link.
 - **Schalter:** Admin → Partnerprogramme → „Partner-Button-Test“ (`/admin/partner/button-test`): aus (Standard) · Test · immer an.
