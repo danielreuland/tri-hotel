@@ -5,7 +5,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, live seit 21.11.2026, Schalter steht noch auf „aus“)
+### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, live; Test läuft seit 21.11.2026, erster Tag Variante B)
 Button „Preise prüfen“ (mobil „Preise“) je Hotel in der Rangliste (gesamt, Regionen, Länder), Erklärung „*Werbelink“ einmal unter
 der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Button darüber, kein Link im Link.
 - **Deploy 21.11.:** Migration 124 eingespielt, Tests auf dem Server 450/450 (2 ohne DB übersprungen), `pm2 reload`, `/healthz` 200.
@@ -38,7 +38,9 @@ der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Bu
   - [x] Links der Top-20-Hotels eintragen (sonst kein Button).
   - [x] In Plausible die Ziele „Partnerklick“, „Ranglisten-Detailklick“, „Rangliste-Aufruf“ mit den Eigenschaften anlegen.
   - [x] Nach Deploy: `npm run migrate`, Admin-Seite mit Test-Sitzung prüfen (21.11.)
-  - [ ] Schalter auf „Test“ (Admin → Partnerprogramme → Partner-Button-Test)
+  - [x] Schalter auf „Test“ (21.11., auf Daniels Anweisung, Log `set_partner_button`). Live geprüft: `/hotels` 99 von 104 Zeilen mit
+        Button (84 Expedia, 7 trivago, 6 CHECK24, je 1 hotel.de/FeWo-direkt), `/region/mallorca` 20/20, `/land/spanien` 50/51,
+        Werbelink-Hinweis und Messpunkt je Liste vorhanden, `rel="sponsored nofollow noopener"`, `target="_blank"`.
   - [ ] Auswertung nach einigen tausend Aufrufen je Variante; danach entscheiden (immer an / aus) und Code für „Test“ ggf. entfernen.
 
 ### B-46 Indexierung bereinigen (18.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
