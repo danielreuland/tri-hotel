@@ -1194,7 +1194,7 @@ router.post('/objekte/:entityId/rankings/:rankingId/seo', wrap(async (req, res, 
   const v = require('../services/page-seo').clean({ title: req.body.seo_title, h1: req.body.seo_h1, description: req.body.seo_description });
   const problems = require('../lib/brands').metaProblems([v.title, v.description].filter(Boolean).join(' '));
   if (problems.length) return res.redirect(`${withParam(back, 'fehler', `Nicht gespeichert: ${problems.join(', ')} in Title/Beschreibung`)}#seo`);
-  await db.query('UPDATE entity_rankings SET seo_title = $3, seo_h1 = $4, seo_description = $5 WHERE entity_id = $1 AND ranking_id = $2',
+  await db.query('UPDATE entity_rankings SET seo_title = $3, seo_h1 = $4, seo_description = $5, updated_at = now() WHERE entity_id = $1 AND ranking_id = $2',
     [req.params.entityId, req.params.rankingId, v.title, v.h1, v.description]);
   await logAction(req.session.admin.id, 'entity', req.params.entityId, 'seo.set', {
     ranking_id: req.params.rankingId, before: { title: er.seo_title, h1: er.seo_h1, description: er.seo_description }, after: v });

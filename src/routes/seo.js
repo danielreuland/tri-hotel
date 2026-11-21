@@ -1,5 +1,7 @@
 // robots.txt, sitemap.xml und Vorschaubilder (Open Graph) – je Site über den Host.
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const config = require('../config');
 const rankings = require('../services/rankings');
@@ -35,6 +37,29 @@ function entityPath(ranking, slug) {
   return ranking.is_default ? `/${ranking.entity_type}/${slug}` : `/rankings/${ranking.slug}/${slug}`;
 }
 
+// Jüngste Text-Änderung je Regions-/Länderseite: Map('region:<slug>' | 'land:<slug>' -> Datum)
+async function areaTextDates(ranking, siteId) {
+  const rows = await db.many(
+    `SELECT 'region' AS type, g.slug, GREATEST(g.updated_at, t.updated_at) AS d FROM regions g LEFT JOIN region_texts t ON t.region_id = g.id WHERE g.site_id = $2
+     UNION ALL SELECT page_type, slug, updated_at FROM page_seo WHERE ranking_id = $1
+     UNION ALL SELECT 'land', country, updated_at FROM country_texts WHERE ranking_id = $1`, [ranking.id, siteId]);
+  const map = new Map();
+  for (const r of rows) {
+    const slug = r.type === 'land' && /^[A-Z]{2}$/.test(r.slug) ? seo.countrySlug(r.slug) : r.slug;
+    const key = `${r.type}:${slug}`;
+    map.set(key, seo.latest([map.get(key), r.d]));
+  }
+  return map;
+}
+
+// Stand der Trainingscamp-Vorlage einer Site (Änderungszeit der Dateien, z. B. nach einem Deploy mit neuem Title)
+function campGuideDates(site) {
+  const dir = path.join(__dirname, '..', 'views', 'sites', site.code);
+  return ['trainingscamp.json', 'trainingscamp.ejs'].map((f) => {
+    try { return fs.statSync(path.join(dir, f)).mtime; } catch { return null; }
+  });
+}
+
 router.get('/sitemap.xml', wrap(async (req, res) => {
   const site = req.site;
   const base = res.locals.siteUrl;
@@ -52,10 +77,14 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
     urls.push({ loc: `${base}${bp || '/'}`, lastmod: listMod, priority: '1.0' });
     if (ranking.is_default) urls.push({ loc: `${base}${seo.listPath(ranking)}`, lastmod: listMod, priority: '0.9' });
     urls.push({ loc: `${base}${ranking.is_default ? res.locals.scorePath : `${bp}/methodik`}`, lastmod: seo.latest([ranking.updated_at]), priority: '0.5' });
-    for (const e of live) urls.push({ loc: `${base}${entityPath(ranking, e.slug)}`, lastmod: e.lastmod, priority: '0.8' });
-    // Regionen und Länder nur, wenn genug Einträge (keine dünnen Seiten)
+    // Objektseiten: Daten, eigene Texte (entity_rankings) und Muster des Rankings (rankings.content → ranking.updated_at)
+    for (const e of live) urls.push({ loc: `${base}${entityPath(ranking, e.slug)}`, lastmod: seo.latest([e.lastmod, ranking.updated_at]), priority: '0.8' });
+    // Regionen und Länder nur, wenn genug Einträge (keine dünnen Seiten). Änderungsdatum auch bei Text-Änderungen:
+    // Muster des Rankings, eigene Title/H1 (page_seo), Region selbst („auf/in …“, Einleitung), Redaktionstext
     const ov = await areas.overview(ranking, site.id);
-    for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, lastmod: r.lastmod, priority: '0.9' });
+    const textMods = await areaTextDates(ranking, site.id);
+    const areaMod = (type, a) => seo.latest([a.lastmod, ranking.updated_at, textMods.get(`${type}:${a.slug}`)]);
+    for (const r of ov.regions.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/region/${r.slug}`, lastmod: areaMod('region', r), priority: '0.9' });
     // Themenseiten der Regionen (nur mit genug Treffern, sonst noindex)
     if (ranking.is_default) {
       for (const r of ov.regions) {
@@ -68,7 +97,7 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
         }
       }
     }
-    for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, lastmod: c.lastmod, priority: '0.7' });
+    for (const c of ov.countries.filter((x) => x.indexable)) urls.push({ loc: `${base}${bp}/land/${c.slug}`, lastmod: areaMod('land', c), priority: '0.7' });
   }
   // Übersicht der Trainingsregionen; Vergleiche nur mit Redaktionstext (alle anderen sind noindex)
   if (res.locals.regionGuide) {
@@ -85,10 +114,11 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
   if (res.locals.aboutPath) urls.push({ loc: `${base}${res.locals.aboutPath}`, priority: '0.5' });
   // Trainingscamps (falls die Site die Seite hat)
   if (res.locals.campGuide) {
-    urls.push({ loc: `${base}/trainingscamp`, priority: '0.9' });
     // nur Profile mit ausreichend eigenem Text (die übrigen sind noindex)
-    const cps = (await db.many(`SELECT slug, summary, updated_at FROM camp_providers WHERE site_id = $1 AND status = 'active' ORDER BY slug`, [site.id]))
-      .filter(camps.indexable);
+    const cpAll = await db.many(`SELECT slug, summary, updated_at FROM camp_providers WHERE site_id = $1 AND status = 'active' ORDER BY slug`, [site.id]);
+    const cps = cpAll.filter(camps.indexable);
+    // Übersicht: Vorlage der Site (Title/H1/Texte, Stand der Dateien) und die gelisteten Anbieter
+    urls.push({ loc: `${base}/trainingscamp`, lastmod: seo.latest([...campGuideDates(site), ...cpAll.map((c) => c.updated_at)]), priority: '0.9' });
     for (const c of cps) urls.push({ loc: `${base}/trainingscamp/anbieter/${c.slug}`, lastmod: c.updated_at, priority: '0.6' });
   }
   const body = urls.map((u) => `  <url><loc>${xmlEsc(u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}<priority>${u.priority}</priority></url>`).join('\n');
