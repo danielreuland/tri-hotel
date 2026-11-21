@@ -5,7 +5,11 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### B-90 Hinweis „Ferienwohnung?“ in der Rangliste als Zeile in Hotelhöhe (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+### B-90 Hinweis „Ferienwohnung?“ in der Rangliste als Zeile in Hotelhöhe (21.11.2026, live seit 21.11.2026)
+Deploy 21.11.: Tests auf dem Server 451/451, `pm2 reload`, `/healthz` 200. Live: `/hotels`, `/region/mallorca`, `/land/spanien` zeigen den
+Kasten als Zeile (alter Kasten weg), Ratgeber-Link und Partner-Button direkt zum Netzwerk. Admin mit Test-Sitzung: `/admin/ratgeber`
+(neue Felder), `/admin/medien` (neuer Platz), Partner-Button-Test, Dashboard, Aufgaben, Prüfansicht – alle 200.
+Bis die Kurztexte eingetragen sind, steht der lange Text in der Zeile (mit „…“ gekürzt).
 Wunsch Daniel: Kasten grafischer, mit Bild, gleiche Höhe wie ein Hotel. Umsetzung (Mockup freigegeben 21.11.):
 - `partials/rental-box.ejs` nutzt die Zeilenvorlage der Hotels (`rank-row`): Desktop Bild in Größe des Vorschaubilds (112 × 80) mit
   Urhebervermerk, Überschrift, „Anzeige“ + Kurztext, Ratgeber-Link, rechts Button zum Partner „(Werbung)“, leerer Score-Platz;
@@ -18,7 +22,7 @@ Wunsch Daniel: Kasten grafischer, mit Bild, gleiche Höhe wie ein Hotel. Umsetzu
   Button mobil (leer = „Suchen“). Der lange Text erscheint nicht mehr im Kasten.
 - Test: `test/guides.test.js` (Anzeige, Direktlink ohne /go/, Bild ohne Link, Urhebervermerk, Rückfall ohne Bild).
 - **Offen (Daniel):**
-  - [ ] Nach Deploy Kurztexte im Admin eintragen (Vorschlag: „Lieber eine Ferienwohnung?“ ist am Handy schon zu lang, etwa 18 Zeichen passen).
+  - [ ] Kurztexte im Admin eintragen (Ratgeber → Hinweiskasten) (Vorschlag: „Lieber eine Ferienwohnung?“ ist am Handy schon zu lang, etwa 18 Zeichen passen).
   - [ ] Stimmungsbild mit Rechtenachweis unter Seitenbilder → Platz „Rangliste – Hinweis Ferienwohnung“ hochladen (keine Fotos vom Partner).
 
 ### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, live; Test läuft seit 21.11.2026, erster Tag Variante B)
