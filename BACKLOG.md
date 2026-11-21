@@ -455,6 +455,13 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 - **Themenseite** `/region/mallorca/hotels-mit-25-m-becken` (Tabelle `area_topics`: Kriterium + Ausprägungen, `min_count` 5, sonst noindex und nicht in der Sitemap), verlinkt unter „Gezielt suchen“ auf der Regionsseite.
 - **Zusatzfragen** (`region_texts.faq_months`, `faq_event`): „Wie warm ist es … im Januar, Februar und März?“ für Lanzarote, Fuerteventura, Gran Canaria, Teneriffa, Mallorca, Zypern; Mallorca zusätzlich „nah am IRONMAN 70.3 Mallorca (8. Mai 2027, Alcúdia)“ mit den 5 nächsten Hotels nach Luftlinie. Startkoordinaten ungefähr (Hafen Alcúdia), Datum laut Planung, beides vor dem Saisonstart prüfen.
 - **Offen:** Muster für alle Hotelseiten (Vorschlag: Vorlage `entity_title` „{name} {ort}: Trainingsbedingungen & {score}“, H1 „{name}: Trainingshotel {in}“, je Objekt überschreibbar), Bearbeitung im Admin, Name „Barcelo“ in den Stammdaten ohne Akzent (Titel/H1 nutzen „Barceló“), Kurztext des Barceló nennt eine „Wettergarantie“, die nicht als geprüfter Wert erfasst ist.
+- **Runde 2 (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“, Migration 125):** Muster je Seitentyp in `rankings.content`
+  (`entity_title`/`entity_h1`, `area_title`/`area_h1`, `country_title`/`country_h1`, `meta_title`/`hero_title`/`hero_text`), Marke als
+  „| tri-hotel.de“ nur, wenn ≤ 60 Zeichen (`seo.fitTitle`). Meta-Beschreibung der Hotelseiten aus Daten (`seo.entityDescription`: Score + Stufe
+  nur im Ranking, Kernfakten nach `highlight_order` – erster mit Punkten, weitere ≥ 75 %, Zahl geprüfter Werte Stufe 1–3 ohne reine Einschätzung).
+  Overrides im Admin: Hotel → Stammdaten „Suchmaschinen“ (`entity_rankings.seo_*`), Regionen/Länder → Regionen → „Title & H1“ (Tabelle `page_seo`,
+  ersetzt `region_texts.seo_*`). Overrides Club La Santa/Barceló/Mallorca entfernt, Lanzarote nur Title. Name „Barceló“ mit Akzent.
+  „Erfahrungen“ nur mit Bewertungen. `/trainingscamp` Title/H1 in `trainingscamp.json` (Jahr per `{saison}`: ab Oktober das nächste, `seo.seasonYear`).
 
 ## Kleinere offene Punkte
 - **Über-Seite, SEO-Feinschliff (live seit 10.11., an der Live-Seite geprüft):** Titel auf 57 Zeichen gekürzt, Gründer in den strukturierten Daten mit Rolle und Porträt, „Stand“ sichtbar und als `dateModified` (`ueber.json` → `updated`, bei Textänderungen von Hand hochsetzen). `sameAs`: LinkedIn, Instagram und Strava eingetragen; seit 10.11. auch sichtbar als „Daniel auf LinkedIn · Instagram · Strava“ unter dem Abschnitt „Wer hinter tri-hotel.de steht“ (live, geprüft).

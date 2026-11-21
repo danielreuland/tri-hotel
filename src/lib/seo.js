@@ -288,10 +288,42 @@ function withoutTrailingSlash(url) {
   return stripped && !stripped.startsWith('//') ? stripped + (i < 0 ? '' : url.slice(i)) : null;
 }
 
+// Marke als Zusatz „| tri-hotel.de“, nur wenn der Titel dann noch in TITLE_MAX passt (sonst entfällt sie, statt abzuschneiden);
+// steht die Marke schon im Titel (z. B. in einem Override), nicht doppelt anhängen
 function fitTitle(title, brand) {
   const t = String(title || '').trim();
-  const withBrand = brand ? `${t} · ${brand}` : t;
-  return withBrand.length <= TITLE_MAX || !brand ? withBrand : t;
+  if (!brand || t.toLowerCase().includes(String(brand).toLowerCase())) return t;
+  const withBrand = `${t} | ${brand}`;
+  return withBrand.length <= TITLE_MAX ? withBrand : t;
+}
+
+// Saisonjahr für Titel wie „Triathlon-Camps 2027“: ab dem Wechselmonat (Standard Oktober, Zeitzone Europe/Berlin) das nächste Jahr,
+// weil dann schon für die kommende Saison gebucht wird; davor das laufende
+function seasonYear(date = new Date(), fromMonth = 10) {
+  const [y, m] = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit' })
+    .format(date).split('-').map(Number);
+  return m >= fromMonth ? y + 1 : y;
+}
+
+// Platzhalter {key} aus vars füllen; unbekannte oder leere Platzhalter entfallen samt doppelter Leerzeichen
+function fillTemplate(tpl, vars) {
+  return String(tpl || '')
+    .replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : ''))
+    .replace(/\s{2,}/g, ' ').replace(/\s+([:,.])/g, '$1').trim();
+}
+
+// Meta-Beschreibung der Objektseite nur aus vorhandenen Daten: Score mit Stufe (nur wenn im Ranking), Kernfakten
+// (erster = Leitfakt, z. B. Becken, dann starke Fakten; Auswahl und Reihenfolge aus criteria.highlight_order), Anzahl geprüfter Werte.
+// Fehlende Teile entfallen; Fakten werden von hinten weggelassen, bis alles in DESC_MAX passt.
+function entityDescription({ name, place, scoreName, score, label, facts, checked }) {
+  const who = `${name}${place && !String(name).includes(place) ? ` (${place})` : ''}`;
+  const scorePart = score !== null && score !== undefined ? `${scoreName} ${score}${label ? ` – ${label}` : ''}` : null;
+  const head = scorePart ? `${who}: ${scorePart}.` : `${who}:`;
+  const tail = checked > 0 ? `${checked} geprüfte ${checked === 1 ? 'Wert' : 'Werte'}, Herkunft je Wert.` : 'Herkunft je Wert öffentlich.';
+  const list = (facts || []).filter(Boolean).slice(0, 3);
+  const out = descriptionWithList(head, list, tail);
+  // Ohne Score und ohne Fakten bliebe nur „Name: …“ – dann Kurzform ohne Doppelpunkt
+  return list.length || scorePart ? out : `${who}. ${tail}`;
 }
 
 function fitDescription(text) {
@@ -316,6 +348,9 @@ function descriptionWithList(head, items, tail) {
 
 module.exports = {
   fitTitle,
+  fillTemplate,
+  seasonYear,
+  entityDescription,
   entityTitle,
   entityTitleFromTemplates,
   fitDescription,

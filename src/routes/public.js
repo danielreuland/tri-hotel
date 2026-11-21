@@ -17,6 +17,7 @@ const camps = require('../services/camps');
 const reviewsService = require('../services/reviews');
 const home = require('../services/home');
 const regionGuide = require('../services/region-guide');
+const pageSeo = require('../services/page-seo');
 const regionText = require('../services/region-text');
 const areaTopics = require('../services/area-topics');
 const { slugify } = require('../lib/util');
@@ -308,16 +309,23 @@ async function renderEntity(req, res, ranking, slug) {
     return { label: cat.label, items, points: known.reduce((s, i) => s + i.points, 0), max: items.reduce((s, i) => s + i.max, 0) };
   });
   // Steckbrief (Hotelseite Variante A): Kernfakten aus Kriterien mit highlight_order – Auswahl und Kurznamen je Ranking im Admin
-  const highlights = criteria.filter((c) => c.highlight_order)
+  const highlightRows = criteria.filter((c) => c.highlight_order)
     .sort((a, b) => a.highlight_order - b.highlight_order)
     .map((c) => {
       const fact = factByCrit.get(c.id);
       const isClimate = c.scoring.type === 'climate';
       if (!fact && !(isClimate && climateRow)) return null;
       const v = scoring.describeValue(c, fact && fact.value, climateRow);
-      return v ? (c.highlight_label ? `${c.highlight_label}: ${v}` : v) : null;
+      return v ? { text: c.highlight_label ? `${c.highlight_label}: ${v}` : v, detail: detailByCrit.get(c.id) } : null;
     })
     .filter(Boolean);
+  const highlights = highlightRows.map((h) => h.text);
+  // Meta-Beschreibung: erster Kernfakt (Leitfakt), wenn er Punkte bringt, dann starke Kernfakten (≥ 75 % der Punkte); nichts mit 0 Punkten
+  const descFacts = highlightRows.filter((h, i) => h.detail && h.detail.known && h.detail.points > 0
+    && (i === 0 || h.detail.points >= 0.75 * h.detail.max)).map((h) => h.text);
+  // Geprüfte Werte: vom Objekt bestätigt, von uns mit Beleg geprüft oder von Nutzern bestätigt (ohne automatisch ermittelte und reine Einschätzungen)
+  const checkedCount = facts.filter((f) => f.value !== null && f.value !== undefined && f.trust_level >= 1 && f.trust_level <= 3
+    && !(f.trust_level === 2 && f.editorial_assessment && !f.evidence_url && !f.evidence_text)).length;
 
   const entityFeatureList = await features.forEntity(ranking.entity_type, entity.id);
   const featureGroups = featureLib.groupFeatures(entityFeatureList);
@@ -359,17 +367,20 @@ async function renderEntity(req, res, ranking, slug) {
   const topFeatures = entityFeatureList.filter((f) => f.filterable).slice(0, 3).map((f) => f.label);
   const ogImage = `${siteUrl}/og/${ranking.entity_type}/${entity.slug}.png`;
   res.render('public/entity', {
-    // Titel nach Suchbegriffen aus rankings.content.entity_title (z. B. „{name} {ort}: … im Check“), Ort = Region, sonst Ort/Land
-    // Eigener Titel je Objekt und Ranking (entity_rankings.seo_title) vor der Vorlage des Rankings
+    // Titel, H1 und Beschreibung: eigener Text je Objekt und Ranking (entity_rankings.seo_*, Admin) vor dem Muster des Rankings
+    // (rankings.content.entity_title / entity_h1); Beschreibung aus den vorhandenen Daten (seo.entityDescription)
     title: er.seo_title || seo.entityTitleFromTemplates((ranking.content || {}).entity_title, {
       name: entity.name, ort: region ? region.name : (entity.city || seo.countryName(entity.country)),
       score: result.eligible ? result.score : null, scorename: ranking.score_name,
     }) || seo.entityTitle(entity.name, entity.city || seo.countryName(entity.country), `${ranking.score_name}${result.eligible ? ` ${result.score}` : ''}`),
-    description: er.seo_description || (text && text.summary) || seo.descriptionWithList(result.eligible
-      ? `${entity.name}${entity.city ? ` (${entity.city})` : ''}: ${ranking.score_name} ${result.score} – ${result.label}.`
-      : `${entity.name}${entity.city ? ` (${entity.city})` : ''} im ${ranking.name}-Vergleich.`, topFeatures, 'Geprüfte Fakten, Herkunft je Wert.'),
+    description: er.seo_description || seo.entityDescription({
+      name: entity.name, place: entity.city, scoreName: ranking.score_name,
+      score: result.eligible ? result.score : null, label: result.eligible ? result.label : null,
+      facts: descFacts.length ? descFacts : topFeatures, checked: checkedCount,
+    }),
     canonical,
-    seoH1: er.seo_h1 || null,
+    seoH1: er.seo_h1 || ((ranking.content || {}).entity_h1 ? seo.fillTemplate(ranking.content.entity_h1, {
+      name: entity.name, scorename: ranking.score_name, ort: region ? region.name : (entity.city || null) }) : null),
     ogImage,
     ogType: 'article',
     jsonLd: [seo.entityLd({ entity, ranking, site: req.site, url: canonical, result, image: ogImage, description: text && text.summary, features: entityFeatureList,
@@ -717,8 +728,10 @@ async function renderArea(req, res, ranking, area) {
   const path = `${base}/${area.type === 'region' ? 'region' : 'land'}/${area.slug}`;
   const ov = await areas.overview(ranking, req.site.id);
   const best = seo.bestTimeText(d.bestMonths, MONTHS_DE);
-  // Eigene Überschrift oder eigener Titel je Region (region_texts.seo_h1/seo_title) vor der Vorlage des Rankings
-  const heading = text && text.seo_h1 ? text.seo_h1 : (content.area_h1 ? fill(content.area_h1) : `${ranking.name} ${area.nameIn}`);
+  // Eigene Texte je Seite (page_seo, Admin) vor dem Muster des Rankings (area_* bzw. country_* in rankings.content)
+  const override = await pageSeo.get(ranking.id, area.type === 'region' ? 'region' : 'land', area.slug);
+  const seoTexts = pageSeo.areaTexts({ content, area, ranking, override, fill });
+  const heading = seoTexts.h1;
   const subline = content.area_subline ? fill(content.area_subline) : null;
   const crumbs = [{ name: ranking.name, url: `${siteUrl}${seo.listPath(ranking)}` }];
   if (area.type === 'region') crumbs.push({ name: seo.countryName(area.country), url: `${siteUrl}${base}/land/${seo.countrySlug(area.country)}` });
@@ -730,11 +743,11 @@ async function renderArea(req, res, ranking, area) {
   res.render('public/area', {
     pbt,
     rentalBox,
-    title: text && text.seo_title ? text.seo_title : (content.area_title ? fill(content.area_title) : `${heading} – Ranking nach ${ranking.score_name}`),
-    description: text && text.summary ? text.summary : (d.count
+    title: seoTexts.title,
+    description: seoTexts.description || (text && text.summary ? text.summary : (d.count
       ? `${d.count === 1 ? `1 ${ranking.entity_label_sg}` : `${d.count} geprüfte ${ranking.entity_label_pl}`} ${area.nameIn}, sortiert nach ${ranking.score_name}.`
       : `${ranking.entity_label_pl} ${area.nameIn}: Ranking nach ${ranking.score_name}.`)
-      + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Herkunft jedes Werts öffentlich.',
+      + (best ? ` Beste Reisezeit: ${best}.` : '') + ' Herkunft jedes Werts öffentlich.'),
     canonical: `${siteUrl}${path}`,
     ogImage: `${siteUrl}/og/${area.type === 'region' ? 'region' : 'land'}/${area.slug}.png`,
     // Seiten mit zu wenigen Einträgen und Monatsansichten nicht indexieren

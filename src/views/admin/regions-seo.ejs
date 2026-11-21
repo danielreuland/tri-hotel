@@ -1,0 +1,27 @@
+<%- include('../partials/admin-head') %>
+<h1>Regionen und Länder: Title &amp; H1</h1>
+<p class="muted">Title, H1 und Meta-Beschreibung der Seiten /region/… und /land/…. Leere Felder folgen dem Muster des Rankings (Einstellungen → Rankings → Texte: area_title, area_h1, country_title, country_h1; Präposition „in/auf“ aus dem Feld „auf/am …“ der Region). Die Beschreibung kommt sonst aus dem Redaktionstext der Region. „| <%= groups.length ? groups[0].site.name : '' %>“ hängt die Seite nur an, wenn der Title dann noch in <%= TITLE_MAX %> Zeichen passt. <a href="/admin/regionen">← Regionen</a></p>
+<% if (flash) { %><div class="flash" style="border-color:var(--ok)"><%= flash %></div><% } %>
+<% if (error) { %><div class="errors"><%= error %></div><% } %>
+<% groups.forEach(function (g) { %>
+  <h2><%= g.site.name %> · <%= g.ranking.name %></h2>
+  <div class="table-scroll"><table>
+    <tr><th>Seite</th><th>Muster</th><th>Eigene Texte (leer = Muster)</th></tr>
+    <% g.rows.forEach(function (r) { var o = r.override || {}; %>
+      <tr id="seo-<%= r.type %>-<%= r.slug %>">
+        <td><a href="/<%= r.type %>/<%= r.slug %>" target="_blank" rel="noopener"><%= r.name %></a><br><small class="muted">/<%= r.type %>/<%= r.slug %><%= r.indexable ? '' : ' · noindex' %></small></td>
+        <td><small>Title: <%= r.pattern.title %><br>H1: <%= r.pattern.h1 %><br><span class="muted">wird zu: <%= r.shownTitle %> (<%= r.shownTitle.length %> Z.)</span></small></td>
+        <td>
+          <form method="post" action="/admin/regionen/seo">
+            <input type="hidden" name="ranking_id" value="<%= g.ranking.id %>"><input type="hidden" name="page_type" value="<%= r.type %>"><input type="hidden" name="slug" value="<%= r.slug %>">
+            <input name="title" type="text" maxlength="120" value="<%= o.title || '' %>" placeholder="Title" aria-label="Title <%= r.name %>">
+            <input name="h1" type="text" maxlength="120" value="<%= o.h1 || '' %>" placeholder="H1" aria-label="H1 <%= r.name %>" style="margin-top:4px">
+            <textarea name="description" rows="2" maxlength="300" placeholder="Meta-Beschreibung" aria-label="Beschreibung <%= r.name %>" style="margin-top:4px"><%= o.description || '' %></textarea>
+            <button class="btn small" type="submit" style="margin-top:4px">Speichern</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </table></div>
+<% }) %>
+<%- include('../partials/admin-foot') %>

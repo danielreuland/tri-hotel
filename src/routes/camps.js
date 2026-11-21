@@ -40,9 +40,11 @@ router.get('/trainingscamp', wrap(async (req, res, next) => {
     filters.active ? camps.list(req.site.id, {}) : null]);
   const siteUrl = res.locals.siteUrl;
   const m = guide.meta;
-  const fill = (t) => String(t || '').replace(/\{anbieter\}/g, String((all || providers).length));
+  // {anbieter} = Zahl der Anbieter, {saison} = Saisonjahr (ab season_from_month, Standard Oktober, das nächste Jahr)
+  const saison = String(seo.seasonYear(new Date(), Number(m.season_from_month) || 10));
+  const fill = (t) => String(t || '').replace(/\{anbieter\}/g, String((all || providers).length)).replace(/\{saison\}/g, saison);
   res.render(guide.view, {
-    title: fill(m.title) || 'Trainingscamp', description: fill(m.description), canonical: `${siteUrl}/trainingscamp`,
+    title: fill(m.title) || 'Trainingscamp', heading: fill(m.h1) || fill(m.title) || 'Trainingscamp', description: fill(m.description), canonical: `${siteUrl}/trainingscamp`,
     ogImage: m.og ? `${siteUrl}/og/trainingscamp.png` : undefined,
     noindex: filters.active, // gefilterte Ansichten nicht indexieren
     jsonLd: [

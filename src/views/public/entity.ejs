@@ -244,16 +244,19 @@
   </section>
 </div>
 
-<% if (reviewCfg.enabled) { var starStr = function (v) { var n = Math.round(v || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }; %>
+<%# Abschnitt „Erfahrungen“ nur mit veröffentlichten Bewertungen (B-45); ohne Bewertungen nur der Aufruf zum Bewerten, ohne eigene Überschrift %>
+<% if (reviewCfg.enabled && !reviewList.length) { %>
+  <section id="bewertungen" style="margin-top:24px">
+    <p class="muted">Warst du zum Training hier? <a href="/<%= ranking.entity_type %>/<%= entity.slug %>/bewerten">Bewertung schreiben</a> – bis dahin zeigen die <a href="#fakten">geprüften Fakten</a>, was das <%= ranking.entity_label_sg %> fürs Training bietet.</p>
+  </section>
+<% } %>
+<% if (reviewCfg.enabled && reviewList.length) { var starStr = function (v) { var n = Math.round(v || 0); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }; %>
   <section id="bewertungen" style="margin-top:24px">
     <span id="erfahrungen"></span>
     <div class="facts-head">
-      <h2>Erfahrungen mit <%= entity.name %>: Athleten-Bewertungen<% if (reviewList.length) { %> <small class="muted">· <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> von 5 aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></small><% } %></h2>
+      <h2>Erfahrungen mit <%= entity.name %>: Athleten-Bewertungen <small class="muted">· <%= String(reviewAvg === null ? '' : reviewAvg.toFixed(1)).replace('.', ',') %> von 5 aus <%= reviewList.length %> <%= reviewList.length === 1 ? 'Bewertung' : 'Bewertungen' %></small></h2>
       <a class="btn small cta" href="/<%= ranking.entity_type %>/<%= entity.slug %>/bewerten">Bewertung schreiben</a>
     </div>
-    <% if (!reviewList.length) { %>
-      <p class="muted">Noch keine Bewertungen. Warst du zum Training hier? Erzähl anderen, wie es war. Bis dahin zeigen die <a href="#fakten">geprüften Fakten</a>, was das <%= ranking.entity_label_sg %> fürs Training bietet.</p>
-    <% } else { %>
       <div class="review-summary">
         <% reviewDims.filter(function (d) { return d.avg !== null }).forEach(function (d) { %><div><span><%= d.label %></span><span><span class="star-line" aria-hidden="true"><%= starStr(d.avg) %></span> <%= String(d.avg).replace('.', ',') %></span></div><% }) %>
       </div>
@@ -266,7 +269,6 @@
           <% if (r.hotel_reply) { %><div class="reply"><strong>Antwort des <%= ranking.entity_label_sg %>s:</strong> <%= r.hotel_reply %></div><% } %>
         </article>
       <% }) %>
-    <% } %>
     <p class="muted"><small>So prüfen wir Bewertungen: Jede Bewertung braucht eine bestätigte E-Mail-Adresse und den Monat des Aufenthalts; wir lesen jede Bewertung vor der Freigabe und veröffentlichen nur Erfahrungen, die von Gästen stammen. Bewertungen gegen Gegenleistung oder von Mitarbeitenden sind ausgeschlossen. <% if (athleteEnabled) { %>Ab <%= minReviews %> Bewertungen fließen sie mit <%= Math.round(athleteWeight * 100) %> % in den <%= ranking.score_name %> ein<%= athleteUsed ? ' – hier bereits der Fall' : '' %>.<% } else { %>Bewertungen fließen derzeit nicht in den <%= ranking.score_name %> ein.<% } %> <a href="<%= scorePath %>">Methodik</a></small></p>
   </section>
 <% } %>

@@ -92,7 +92,7 @@ test('seo.googleMapsEmbedUrl: nur mit Schlüssel, Place ID bevorzugt', () => {
 
 test('seo.fitTitle / fitDescription: Längen für Suchergebnisse', () => {
   const seo = require('../src/lib/seo');
-  assert.equal(seo.fitTitle('Kontakt', 'tri-hotel.de'), 'Kontakt · tri-hotel.de');
+  assert.equal(seo.fitTitle('Kontakt', 'tri-hotel.de'), 'Kontakt | tri-hotel.de');
   const long = 'Triathlon-Trainingscamp: Ratgeber und Anbieter im Vergleich';
   assert.equal(seo.fitTitle(long, 'tri-hotel.de'), long, 'Marke entfällt, wenn sie nicht mehr passt');
   const d = seo.fitDescription('Wort '.repeat(50));

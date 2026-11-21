@@ -6,6 +6,7 @@ const { logAction } = require('../lib/audit');
 const { slugify } = require('../lib/util');
 const regionData = require('../services/region-data');
 const regionText = require('../services/region-text');
+const pageSeo = require('../services/page-seo');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -57,6 +58,47 @@ async function render(res, extra = {}) {
 }
 
 router.get('/', wrap(async (req, res) => render(res, { flash: req.query.ok || null })));
+
+// Title/H1/Beschreibung der Regions- und Länderseiten je Standard-Ranking einer Site (B-45). Leer = Muster aus rankings.content.
+async function seoRows() {
+  const rankingsSvc = require('../services/rankings');
+  const areas = require('../services/areas');
+  const seo = require('../lib/seo');
+  const out = [];
+  for (const site of await db.many('SELECT id, name FROM sites ORDER BY is_default DESC, name')) {
+    const ranking = await rankingsSvc.getDefaultRanking(site.id);
+    if (!ranking) continue;
+    const ov = await areas.overview(ranking, site.id);
+    const saved = new Map((await pageSeo.list(ranking.id)).map((r) => [`${r.page_type}:${r.slug}`, r]));
+    const rows = [...ov.regions, ...ov.countries].map((area) => {
+      const type = area.type === 'region' ? 'region' : 'land';
+      const override = saved.get(`${type}:${area.slug}`) || null;
+      const fill = (t) => seo.fillTemplate(t, { in: area.nameIn, name: area.name, score: ranking.score_name, objekte: ranking.entity_label_pl, objekt: ranking.entity_label_sg });
+      const pattern = pageSeo.areaTexts({ content: ranking.content, area, ranking, override: null, fill });
+      return { type, slug: area.slug, name: area.name, indexable: area.indexable, override, pattern, shownTitle: seo.fitTitle((override && override.title) || pattern.title, site.name) };
+    });
+    out.push({ site, ranking, rows });
+  }
+  return out;
+}
+
+router.get('/seo', wrap(async (req, res) => {
+  res.render('admin/regions-seo', { title: 'Regionen: Title & H1', groups: await seoRows(), flash: req.query.ok || null, error: req.query.fehler || null, TITLE_MAX: require('../lib/seo').TITLE_MAX });
+}));
+
+router.post('/seo', wrap(async (req, res) => {
+  const b = req.body;
+  const ranking = UUID_RE.test(b.ranking_id || '') ? await db.one('SELECT id FROM rankings WHERE id = $1', [b.ranking_id]) : null;
+  if (!ranking || !pageSeo.TYPES.includes(b.page_type) || !/^[a-z0-9-]+$/.test(b.slug || '')) return res.redirect('/admin/regionen/seo');
+  const v = pageSeo.clean(b);
+  const problems = require('../lib/brands').metaProblems([v.title, v.description].filter(Boolean).join(' '));
+  const anchor = `#seo-${b.page_type}-${b.slug}`;
+  if (problems.length) return res.redirect(`/admin/regionen/seo?fehler=${encodeURIComponent(`${b.slug}: ${problems.join(', ')} – nicht gespeichert`)}${anchor}`);
+  const before = await pageSeo.get(ranking.id, b.page_type, b.slug);
+  await pageSeo.set(ranking.id, b.page_type, b.slug, v);
+  await logAction(req.session.admin.id, 'ranking', ranking.id, 'page_seo.set', { page: `${b.page_type}/${b.slug}`, before, after: v });
+  res.redirect(`/admin/regionen/seo?ok=${encodeURIComponent(`/${b.page_type}/${b.slug} gespeichert`)}${anchor}`);
+}));
 
 // Vergleichsseite eines Regionspaars indexieren ja/nein (wirkt nur mit Redaktionstext)
 router.post('/vergleich', wrap(async (req, res) => {

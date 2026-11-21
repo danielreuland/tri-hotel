@@ -1184,6 +1184,23 @@ router.post('/objekte/:entityId/abmeldung', wrap(async (req, res, next) => {
   }
 }));
 
+// Title, H1 und Meta-Beschreibung der Objektseite je Ranking (B-45): leere Felder = Muster des Rankings; Partnermarken gesperrt
+router.post('/objekte/:entityId/rankings/:rankingId/seo', wrap(async (req, res, next) => {
+  if (!UUID_RE.test(req.params.entityId) || !UUID_RE.test(req.params.rankingId)) return next();
+  const sub = UUID_RE.test(req.body.back || '') ? await db.one('SELECT id FROM submissions WHERE id = $1 AND entity_id = $2', [req.body.back, req.params.entityId]) : null;
+  const er = await db.one('SELECT seo_title, seo_h1, seo_description FROM entity_rankings WHERE entity_id = $1 AND ranking_id = $2', [req.params.entityId, req.params.rankingId]);
+  if (!sub || !er) return next();
+  const back = `/admin/meldungen/${sub.id}`;
+  const v = require('../services/page-seo').clean({ title: req.body.seo_title, h1: req.body.seo_h1, description: req.body.seo_description });
+  const problems = require('../lib/brands').metaProblems([v.title, v.description].filter(Boolean).join(' '));
+  if (problems.length) return res.redirect(`${withParam(back, 'fehler', `Nicht gespeichert: ${problems.join(', ')} in Title/Beschreibung`)}#seo`);
+  await db.query('UPDATE entity_rankings SET seo_title = $3, seo_h1 = $4, seo_description = $5 WHERE entity_id = $1 AND ranking_id = $2',
+    [req.params.entityId, req.params.rankingId, v.title, v.h1, v.description]);
+  await logAction(req.session.admin.id, 'entity', req.params.entityId, 'seo.set', {
+    ranking_id: req.params.rankingId, before: { title: er.seo_title, h1: er.seo_h1, description: er.seo_description }, after: v });
+  res.redirect(`${withParam(back, 'ok', 'Title/H1/Beschreibung gespeichert')}#seo`);
+}));
+
 // Merkmal „Ferienwohnung“ (Stammdaten): Setzen nur mit Beleg, Entfernen ohne. Abgelehnte Eingabe bleibt einmal stehen.
 router.post('/objekte/:entityId/ferienwohnung', wrap(async (req, res, next) => {
   if (!UUID_RE.test(req.params.entityId)) return next();

@@ -1,0 +1,18 @@
+<%# Title, H1 und Meta-Beschreibung der öffentlichen Objektseite in diesem Ranking (entity_rankings.seo_*); leer = Muster des Rankings %>
+<% if (entity && er) { var eSeo = { title: er.seo_title || '', h1: er.seo_h1 || '', description: er.seo_description || '' }; %>
+  <section class="card" style="margin-top:16px" id="seo" data-tab="stammdaten">
+    <h2 style="margin-top:0">Suchmaschinen: Title, H1, Beschreibung</h2>
+    <p class="muted" style="margin-top:0"><small>Nur ausfüllen, wenn diese Seite vom Muster abweichen soll – leere Felder folgen dem Muster des Rankings (Einstellungen → Rankings → Texte: entity_title, entity_h1; Beschreibung aus Score, Kernfakten und Zahl der geprüften Werte). Title bis 60 Zeichen, Beschreibung bis 155. Keine Partnermarken.</small></p>
+    <form method="post" action="/admin/objekte/<%= entity.id %>/rankings/<%= ranking.id %>/seo">
+      <input type="hidden" name="back" value="<%= sub.id %>">
+      <label for="seo-title">Title</label>
+      <input id="seo-title" name="seo_title" type="text" maxlength="120" value="<%= eSeo.title %>" placeholder="leer = Muster">
+      <label for="seo-h1">H1</label>
+      <input id="seo-h1" name="seo_h1" type="text" maxlength="120" value="<%= eSeo.h1 %>" placeholder="leer = Muster">
+      <label for="seo-description">Meta-Beschreibung</label>
+      <textarea id="seo-description" name="seo_description" rows="2" maxlength="300" placeholder="leer = aus den Daten"><%= eSeo.description %></textarea>
+      <p style="margin-bottom:0"><button class="btn small" type="submit">Speichern</button>
+        <% if (er.status === 'live') { %><a class="btn small secondary" href="<%= ranking.is_default ? '/' + ranking.entity_type + '/' + entity.slug : '/rankings/' + ranking.slug + '/' + entity.slug %>" target="_blank" rel="noopener">Seite ansehen ↗</a><% } %></p>
+    </form>
+  </section>
+<% } %>
