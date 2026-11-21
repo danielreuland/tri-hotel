@@ -70,6 +70,16 @@
     <label>Überschrift</label><input name="heading" type="text" value="<%= box.heading || '' %>">
     <label>Text</label><input name="text" type="text" value="<%= box.text || '' %>">
     <label>Linktext zum Ratgeber</label><input name="guide_label" type="text" value="<%= box.guide_label || '' %>" placeholder="Ratgeber lesen">
+    <p class="muted" style="margin:10px 0 4px"><small>Der Kasten steht in der Liste als Zeile in Hotelhöhe: Überschrift, „Anzeige“ + Kurztext, Ratgeber-Link, rechts der Button.
+      Zu lange Texte werden mit „…“ gekürzt. Bild: Inhalte → Seitenbilder, Platz „Rangliste – Hinweis Ferienwohnung“ (mobil ohne Bild).</small></p>
+    <div class="form-row">
+      <div><label>Überschrift mobil <small class="muted">am Handy sind etwa 18 Zeichen ganz zu sehen, sonst „…“; leer = Überschrift</small></label><input name="heading_short" type="text" maxlength="40" value="<%= box.heading_short || '' %>" placeholder="Lieber eine Ferienwohnung?"></div>
+      <div><label>Kurztext Desktop <small class="muted">eine Zeile, sonst Text</small></label><input name="short_text" type="text" maxlength="120" value="<%= box.short_text || '' %>" placeholder="Für Gruppen und Selbstversorger – erst das Schwimmbad klären"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Button Desktop <small class="muted">max. 40, sonst „&lt;Programm&gt; suchen“</small></label><input name="button_label" type="text" maxlength="40" value="<%= box.button_label || '' %>" placeholder="FeWo-direkt suchen"></div>
+      <div><label>Button mobil <small class="muted">max. 14</small></label><input name="button_label_short" type="text" maxlength="14" value="<%= box.button_label_short || '' %>" placeholder="Suchen"></div>
+    </div>
     <details style="margin-top:6px"><summary><small>Link je Region (sonst Standard-Link)</small></summary>
       <div class="form-row" style="flex-wrap:wrap">
         <% siteRegions.forEach(function (r) { var cur = (box.regions || {})[r.slug] || ''; %>

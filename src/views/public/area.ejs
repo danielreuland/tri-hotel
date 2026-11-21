@@ -66,9 +66,9 @@
           <%- include('../partials/rank-row', { e: e, pos: i + 1, href: entityPath(e), pbt: locals.pbt, place: (e.city || '') + ' · ' + e.label }) %>
         </li>
       <% }) %>
+      <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= d.ranked.length)) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
     </ol>
     <%- include('../partials/pbt-note') %>
-    <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= d.ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
   <% } %>
   <% if (d.incomplete.length) { %>
     <h3>Profil unvollständig</h3>

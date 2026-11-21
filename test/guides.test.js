@@ -244,3 +244,28 @@ test('Beacon: POST /go/ratgeber/:programm/:slot/klick zählt nur bekannte Slots,
     Object.assign(guides, orig);
   }
 });
+
+// Hinweis Ferienwohnung als Zeile der Rangliste (gleiche Vorlage und Höhe wie ein Hotel)
+test('Hinweis Ferienwohnung: Zeile mit Anzeige, Direktlink ohne /go/, Bild nur als Dekoration, kurze Texte mit Rückfall', async () => {
+  const ejs = require('ejs');
+  const path = require('path');
+  const file = path.join(__dirname, '../src/views/partials/rental-box.ejs');
+  const rentalBox = {
+    heading: 'Oder doch lieber in eine Ferienwohnung?', headingShort: 'Lieber eine Ferienwohnung?', shortText: 'Kurz', guidePath: '/ratgeber/x', guideLabel: 'Ratgeber lesen',
+    buttonLabel: 'FeWo-direkt suchen', buttonLabelShort: 'Suchen',
+    link: { href: 'https://www.anrdoezrs.net/click-1-2?url=x&sid=liste', count: '/go/ratgeber/fewo-direkt/allgemein/klick', program: 'FeWo-direkt' },
+  };
+  const img = { id: 'abc', variants: [320, 640], width: 640, height: 420, credit: 'Foto: Beispiel', focal: '50% 50%' };
+  const html = await ejs.renderFile(file, { rentalBox, siteMedia: { slots: { rental_box: img } } });
+  assert.match(html, /class="rank-item rank-row rental-row"/);
+  assert.match(html, />Anzeige</);
+  assert.match(html, /href="https:\/\/www\.anrdoezrs\.net\/click-1-2\?url=x&amp;sid=liste"/);
+  assert.doesNotMatch(html, /href="\/go\//);
+  assert.match(html, /rel="sponsored nofollow noopener"/);
+  assert.match(html, /<a class="rank-link" href="\/ratgeber\/x">/);
+  assert.match(html, /Foto: Beispiel/, 'Urhebervermerk sichtbar');
+  assert.doesNotMatch(html.slice(html.indexOf('<img'), html.indexOf('>', html.indexOf('<img'))), /href/, 'Bild ist kein Link');
+  const noImg = await ejs.renderFile(file, { rentalBox, siteMedia: { slots: {} } });
+  assert.match(noImg, /rental-house/);
+  assert.equal((await ejs.renderFile(file, {})).trim(), '', 'ohne Kasten nichts');
+});

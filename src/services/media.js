@@ -14,6 +14,7 @@ const SLOTS = {
   cta_band: 'Startseite – Abschluss-Band („hinzufügen“)',
   method: 'Methodik-Seite – Kopfbereich',
   submit: 'Formular „hinzufügen“ – Seitenbild',
+  rental_box: 'Rangliste – Hinweis Ferienwohnung (Bild in Größe des Vorschaubilds)',
 };
 
 function fileFor(id, width) {

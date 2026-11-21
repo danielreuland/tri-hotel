@@ -150,9 +150,9 @@
                   place: (e.city || '') + (e.country ? ', ' + e.country : '') + ' · ' + e.label + (e.bestMonths && e.bestMonths.length ? ' · beste Reisezeit ' + monthRanges(e.bestMonths, MONTHS) : '') }) %>
           </li>
         <% }) %>
+        <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= ranked.length)) { %><li class="rental-box-li"><%- include('../partials/rental-box') %></li><% } %>
       </ol>
       <%- include('../partials/pbt-note') %>
-      <% if (locals.rentalBox && (!rentalBox.after || rentalBox.after >= ranked.length)) { %><%- include('../partials/rental-box') %><% } %>
     <% } %>
 
     <% if (incomplete.length) { %>

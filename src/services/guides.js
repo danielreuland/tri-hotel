@@ -193,9 +193,12 @@ async function box(site, { regionSlug = null } = {}) {
   const slotKey = (regionSlug && cfg.regions && cfg.regions[regionSlug]) || cfg.default_slot;
   const link = (await links(site.id, 'box'))[slotKey] || null;
   if (!link) return null;
+  // Kurze Texte für die Zeile in der Rangliste (gleiche Höhe wie ein Hotel); ohne Eintrag gelten die längeren Texte bzw. Standards
   return {
     heading: cfg.heading, text: cfg.text, after: Number.isInteger(Number(cfg.after)) && Number(cfg.after) > 0 ? Number(cfg.after) : null,
     link, guidePath: `/ratgeber/${guide.slug}`, guideLabel: cfg.guide_label || 'Ratgeber lesen',
+    headingShort: cfg.heading_short || cfg.heading, shortText: cfg.short_text || cfg.text,
+    buttonLabel: cfg.button_label || `${link.program} suchen`, buttonLabelShort: cfg.button_label_short || 'Suchen',
   };
 }
 

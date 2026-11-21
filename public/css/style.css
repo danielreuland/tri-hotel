@@ -1013,9 +1013,6 @@ a.kpi:hover { border-color: var(--accent); }
 .faq-item p { margin: 8px 0 0; }
 .rental-cards { list-style: none; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
 .rental-card h3 { margin-top: 0; }
-.rental-box { margin: 10px 0; border-style: dashed; }
-.rental-box p { margin: 0 0 6px; }
-.rental-box .ad-label-plain { font-size: 1em; font-weight: 700; color: var(--muted); }
 .rank-list > li.rental-box-li { display: block; }
 .ratgeber-ad-line { margin: 4px 0 16px; font-size: .95rem; color: var(--muted); }
 .home-guide-link { font-weight: 600; }
@@ -1059,4 +1056,19 @@ a.kpi:hover { border-color: var(--accent); }
   .partner-btn .pb-long { display: none; }
   .partner-btn .pb-short { display: inline; }
   .rank-row .chev { display: block; flex: none; font-size: 1.4rem; line-height: 1; color: var(--muted); }
+}
+
+/* Hinweis Ferienwohnung als Zeile der Rangliste (partials/rental-box.ejs): gleiche Vorlage und Höhe wie ein Hotel */
+.rental-row { border-style: dashed; }
+.rental-row .m-only { display: none; }
+.rental-row .ad-badge { flex: none; background: transparent; border: 1px solid var(--muted); color: var(--muted); font-weight: 700; }
+.rental-row .rental-guide { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.rental-row .rental-house { font-family: inherit; font-size: 2.4rem; }
+.rental-row .rental-score { visibility: hidden; }
+.rental-row .partner-slot { flex: 0 0 auto; min-width: 132px; }
+@media (max-width: 560px) {
+  .rental-row .d-only { display: none; }
+  .rental-row .m-only { display: inline; }
+  .rental-row .partner-slot { min-width: 74px; }
+  .rental-row .rental-score { visibility: visible; background: var(--surface-2); border-color: var(--border); color: var(--muted); font-family: inherit; }
 }

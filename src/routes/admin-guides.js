@@ -85,11 +85,14 @@ router.post('/:id/kasten', wrap(async (req, res, next) => {
   const box = {
     active: b.active === 'on', after: Math.max(0, Math.min(50, Number(b.after) || 0)) || null,
     heading: str(b.heading, 120), text: str(b.text, 400), guide_label: str(b.guide_label, 120) || null,
+    // Kurzfassung für die Zeile in der Rangliste (mobil eine Zeile je Angabe)
+    heading_short: str(b.heading_short, 40) || null, short_text: str(b.short_text, 120) || null,
+    button_label: str(b.button_label, 40) || null, button_label_short: str(b.button_label_short, 14) || null,
     default_slot: /^[a-z0-9-]+$/.test(str(b.default_slot)) ? str(b.default_slot) : null, regions: regionsMap,
   };
   const errors = [];
   if (box.active && (!box.heading || !box.text || !box.default_slot)) errors.push('Aktiver Kasten braucht Überschrift, Text und einen Standard-Link.');
-  if (guides.unverified(box.heading) || guides.unverified(box.text)) errors.push('Platzhalter oder [PRÜFEN] entfernen.');
+  if ([box.heading, box.text, box.heading_short, box.short_text, box.button_label, box.button_label_short].some((t) => guides.unverified(t))) errors.push('Platzhalter oder [PRÜFEN] entfernen.');
   if (errors.length) return back(res, 'fehler', errors.join(' '), `#kasten-${old.id}`);
   await db.query(`UPDATE guides SET settings = settings || jsonb_build_object('box', $2::jsonb), updated_at = now() WHERE id = $1`, [old.id, JSON.stringify(box)]);
   await logAction(req.session.admin.id, 'guide', old.id, 'guide.box', box);

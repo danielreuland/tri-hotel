@@ -1,10 +1,31 @@
-<%# Hinweiskasten „Oder doch lieber in eine Ferienwohnung?“ (services/guides.box): fester Platz, als Anzeige gekennzeichnet,
-    verdrängt kein Objekt. Locals: rentalBox %>
-<% if (locals.rentalBox) { %>
-<aside class="card rental-box" aria-label="Anzeige">
-  <p class="ad-label-plain">Anzeige</p>
-  <p><strong><%= rentalBox.heading %></strong></p>
-  <p><%= rentalBox.text %> <a href="<%= rentalBox.guidePath %>"><%= rentalBox.guideLabel %></a></p>
-  <p><%- include('partner-link', { link: rentalBox.link }) %></p>
+<%# Hinweis „Oder doch lieber in eine Ferienwohnung?“ (services/guides.box) als Zeile in der Rangliste, gleich hoch wie ein Hotel:
+    gleiche Zeilenvorlage (rank-row), Bild in Größe des Vorschaubilds (Seitenbild-Platz rental_box, sonst Haus-Symbol), kein Rangplatz,
+    gestrichelter Rahmen, als „Anzeige“ gekennzeichnet. Ganze Zeile = Link zum Ratgeber; der Partnerlink liegt darüber
+    (href direkt vom Netzwerk, kein /go/, Zählung per Beacon). Das Bild ist Dekoration, kein Link. Locals: rentalBox, siteMedia %>
+<% if (locals.rentalBox) { var rb = rentalBox; var img = locals.siteMedia && siteMedia.slots ? siteMedia.slots.rental_box : null; %>
+<aside class="rank-item rank-row rental-row" aria-label="Anzeige">
+  <span class="pos" aria-hidden="true"></span>
+  <span class="thumb rental-thumb">
+    <% if (img && (img.variants || []).length) { var w = img.variants.indexOf(640) >= 0 ? 640 : img.variants[0]; %>
+      <img src="/bild/<%= img.id %>-<%= w %>.webp" srcset="<%= img.variants.filter(function (v) { return v <= 1280; }).map(function (v) { return '/bild/' + img.id + '-' + v + '.webp ' + v + 'w'; }).join(', ') %>" sizes="112px"
+        width="<%= img.width %>" height="<%= img.height %>" alt="" loading="lazy" style="object-position:<%= String(img.focal || '50% 50%').replace(/[^0-9% .a-z-]/gi, '') %>">
+      <% if (img.credit) { %><small class="thumb-credit" title="<%= img.credit %>"><%= img.credit %></small><% } %>
+    <% } else { %>
+      <span class="thumb-empty rental-house" aria-hidden="true">⌂</span>
+    <% } %>
+  </span>
+  <span class="info">
+    <a class="rank-link" href="<%= rb.guidePath %>"><span class="name"><span class="d-only"><%= rb.heading %></span><span class="m-only"><%= rb.headingShort %></span></span></a>
+    <span class="sub"><span class="badge ad-badge">Anzeige</span><small class="place"><span class="d-only"><%= rb.shortText %></span><span class="m-only"><%= rb.guideLabel %></span></small></span>
+    <span class="feature-line rental-guide"><%= rb.guideLabel %></span>
+  </span>
+  <span class="partner-slot">
+    <a class="partner-btn" href="<%= rb.link.href %>" target="_blank" rel="sponsored nofollow noopener" data-count="<%= rb.link.count %>"
+      data-goal="Partnerlink" data-goal-prop-anbieter="<%= rb.link.program %>" data-goal-prop-quelle="ratgeber"
+      aria-label="<%= rb.buttonLabel %> (Werbung, öffnet neues Fenster)"><span class="pb-long"><%= rb.buttonLabel %></span><span class="pb-short"><%= rb.buttonLabelShort %></span> <span aria-hidden="true">↗</span></a>
+    <small class="ad-mark" aria-hidden="true">(Werbung)</small>
+  </span>
+  <span class="score rental-score" aria-hidden="true">⌂</span>
+  <span class="chev" aria-hidden="true">›</span>
 </aside>
 <% } %>

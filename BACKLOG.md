@@ -5,6 +5,22 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### B-90 Hinweis „Ferienwohnung?“ in der Rangliste als Zeile in Hotelhöhe (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+Wunsch Daniel: Kasten grafischer, mit Bild, gleiche Höhe wie ein Hotel. Umsetzung (Mockup freigegeben 21.11.):
+- `partials/rental-box.ejs` nutzt die Zeilenvorlage der Hotels (`rank-row`): Desktop Bild in Größe des Vorschaubilds (112 × 80) mit
+  Urhebervermerk, Überschrift, „Anzeige“ + Kurztext, Ratgeber-Link, rechts Button zum Partner „(Werbung)“, leerer Score-Platz;
+  mobil ohne Bild, Haus-Symbol statt Score, Kurz-Überschrift und „Suchen“. Kein Rangplatz, gestrichelter Rahmen.
+  Ganze Zeile = Link zum Ratgeber, Button darüber (direkt zum Netzwerk, kein `/go/`, Zählung per Beacon wie bisher). Bild ist kein Link.
+  Geprüft lokal: alle Zeilen gleich hoch (Desktop 106 px, mobil 69 px), keine Überbreite bei 380 px, Tipp auf Button trifft nur Button.
+- Kasten steht jetzt auch am Listenende als Zeile innerhalb der Liste.
+- Bild: neuer Seitenbild-Platz `rental_box` („Rangliste – Hinweis Ferienwohnung“); ohne Bild Haus-Symbol in gleicher Größe.
+- Admin Ratgeber → Hinweiskasten: neue Felder Überschrift mobil, Kurztext Desktop, Button Desktop (leer = „<Programm> suchen“),
+  Button mobil (leer = „Suchen“). Der lange Text erscheint nicht mehr im Kasten.
+- Test: `test/guides.test.js` (Anzeige, Direktlink ohne /go/, Bild ohne Link, Urhebervermerk, Rückfall ohne Bild).
+- **Offen (Daniel):**
+  - [ ] Nach Deploy Kurztexte im Admin eintragen (Vorschlag: „Lieber eine Ferienwohnung?“ ist am Handy schon zu lang, etwa 18 Zeichen passen).
+  - [ ] Stimmungsbild mit Rechtenachweis unter Seitenbilder → Platz „Rangliste – Hinweis Ferienwohnung“ hochladen (keine Fotos vom Partner).
+
 ### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, live; Test läuft seit 21.11.2026, erster Tag Variante B)
 Button „Preise prüfen“ (mobil „Preise“) je Hotel in der Rangliste (gesamt, Regionen, Länder), Erklärung „*Werbelink“ einmal unter
 der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Button darüber, kein Link im Link.
