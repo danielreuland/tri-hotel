@@ -193,6 +193,24 @@ router.post('/funnel-ziele', wrap(async (req, res) => {
   res.redirect(`/admin?zeitraum=${encodeURIComponent(period)}&seite=${encodeURIComponent(saved.scope)}&ok=${encodeURIComponent('Ziele gespeichert')}#funnel`);
 }));
 
+// Funnel: Plausible-Einstellungen einer Domain (Site-ID, Filter je Seiten-Stufe, Zielnamen, Zählung auf anderer Domain)
+router.post('/funnel-plausible', wrap(async (req, res) => {
+  const funnel = require('../services/funnel');
+  const domain = String(req.body.seite || '');
+  const period = funnel.PERIODS[req.body.zeitraum] ? req.body.zeitraum : '30';
+  const back = (msg) => `/admin?zeitraum=${encodeURIComponent(period)}&seite=${encodeURIComponent(domain)}&ok=${encodeURIComponent(msg)}#funnel`;
+  let saved;
+  try {
+    saved = await funnel.savePlausible(domain, req.body.plausible || {});
+  } catch (err) {
+    if (err.status === 400) return res.redirect(back(`Nicht gespeichert: ${err.message}`));
+    throw err;
+  }
+  const site = req.site || (await db.one('SELECT * FROM sites ORDER BY is_default DESC LIMIT 1'));
+  await logAction(req.session.admin.id, 'site', site.id, 'set_funnel_plausible', { domain, ...saved });
+  res.redirect(back('Plausible-Einstellungen gespeichert'));
+}));
+
 // Objekt-Liste: Status-Pillen, Ranking, Suche (Name, Ort, Website), Land, Region – alles kombinierbar.
 // Zahlen an Pillen und Auswahllisten berücksichtigen die jeweils anderen Filter.
 router.get('/objekte', wrap(async (req, res) => {

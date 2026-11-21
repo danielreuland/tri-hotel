@@ -53,6 +53,23 @@
       <button class="btn small" type="submit">Ziele speichern</button>
     </form>
   </details>
+  <% if (F.plausible) { var FP = F.plausible; var stageLabel = function (k) { return (F.rows.find(function (r) { return r.key === k; }) || {}).label || k; }; %>
+  <details style="margin-top:6px"><summary>Plausible-Einstellungen <small class="muted">(<%= FP.domain %>)</small></summary>
+    <form method="post" action="/admin/funnel-plausible" class="filters" style="align-items:flex-end;margin-top:8px">
+      <input type="hidden" name="zeitraum" value="<%= F.range.key %>"><input type="hidden" name="seite" value="<%= FP.domain %>">
+      <p class="muted" style="flex-basis:100%;margin:0"><small>Seiten-Stufen als Plausible-Filter (z. B. <code>event:page==/hotel/**|/rankings/*/*</code>), Ereignis-Stufen als Zielname genau wie in Plausible (Website → Settings → Goals). Leer = Stufe ohne Wert.</small></p>
+      <div style="min-width:180px"><label for="p-site" style="margin-top:0">Plausible-Site</label>
+        <input id="p-site" name="plausible[site]" value="<%= FP.site || '' %>" placeholder="<%= FP.domain %>" style="width:200px"></div>
+      <div style="min-width:180px"><label for="p-on" style="margin-top:0">Seiten und Ziele zählen auf</label>
+        <select id="p-on" name="plausible[pages_on]"><option value="">dieser Domain</option><% F.domains.filter(function (x) { return x !== FP.domain; }).forEach(function (x) { %><option value="<%= x %>" <%= FP.pages_on === x ? 'selected' : '' %>><%= x %> (Besuche von <%= FP.domain %>)</option><% }) %></select></div>
+      <% F.pageStages.forEach(function (k) { %><div style="min-width:260px"><label for="p-<%= k %>" style="margin-top:0"><%= stageLabel(k) %> (Filter)</label>
+        <input id="p-<%= k %>" name="plausible[pages][<%= k %>]" value="<%= (FP.pages || {})[k] || '' %>" style="width:300px"></div><% }) %>
+      <% F.goalStages.forEach(function (k) { %><div style="min-width:200px"><label for="p-<%= k %>" style="margin-top:0"><%= stageLabel(k) %> (Ziel)</label>
+        <input id="p-<%= k %>" name="plausible[goals][<%= k %>]" value="<%= (FP.goals || {})[k] || '' %>" style="width:200px"></div><% }) %>
+      <button class="btn small" type="submit">Einstellungen speichern</button>
+    </form>
+  </details>
+  <% } %>
 </section>
 <% } %>
 

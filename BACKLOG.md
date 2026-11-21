@@ -5,6 +5,25 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
+### B-16 Plausible-Ziele und konfigurierbarer Funnel (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+- **Bestandsaufnahme:** tri-hotel.de sendet alle Ereignisse über `data-goal` (+ `data-goal-prop-*`) in den Vorlagen, ausgelöst in
+  `public/js/site.js` (Links/Buttons beim Klick, sonst beim Aufruf). fitnessracing-hotel.de (statisch, `static-sites/`) sendet nur
+  Seitenaufrufe; seine CHECK24-Links zählen über `/go/…?von=` in `outbound_clicks`.
+  Ziele: Partnerlink (anbieter, art Preise/Bewertungen, quelle hotelseite/vergleich/ratgeber), Partnerklick (Ranglisten-Button: anbieter,
+  quelle, position, variante), Hotel-Website, Hotel-Anfrage-Start (quelle hotelseite/leiste), Hotelvergleich (anzahl),
+  Ranglisten-Detailklick (position, variante), Rangliste-Aufruf (variante, liste), Camp-Anbieter (anbieter, quelle liste/anbieterseite),
+  Camp-Sammelanfrage-Start, Camp-Sammelanfrage, Camp-Anfrage, Vereinscamp-Anfrage, Hotel vorgeschlagen, Bewertung abgeschickt,
+  Teilen (weg, art). „Hotel-Anfrage-Start“ und „Hotelvergleich“ wurden schon gesendet; neu sind nur Eigenschaften (quelle, anzahl).
+- **Funnel:** Plausible-Filter und Zielnamen je Domain in `funnel_domains.plausible` (Migration 126) statt fester Pfade im Code,
+  im Admin unter Dashboard → Funnel → „Plausible-Einstellungen“. Neue Stufen „Anfragen gestartet“ (Ziel, von Objektseiten) und
+  „Vergleiche aufgerufen“ (Ziel). Statische Seiten zählen per `pages_on` auf tri-hotel.de mit `visit:source==<domain>`, in
+  „alle zusammen“ ohne Doppelzählung; der Morgenbericht nutzt dieselbe Konfiguration. Tests in `test/funnel.test.js`.
+- **In Plausible anlegen (Daniel):** tri-hotel.de → Goals (Custom Event, Name exakt): Partnerlink, Partnerklick, Hotel-Website,
+  Hotel-Anfrage-Start, Hotelvergleich, Ranglisten-Detailklick, Rangliste-Aufruf, Camp-Anbieter, Camp-Sammelanfrage-Start,
+  Camp-Sammelanfrage, Camp-Anfrage, Vereinscamp-Anfrage, Hotel vorgeschlagen, Bewertung abgeschickt, Teilen. Custom Properties:
+  anbieter, art, quelle, position, variante, liste, anzahl, weg. fitnessracing-hotel.de: keine Ziele nötig (sendet keine Ereignisse).
+- Offen/Idee: fitnessracing-hotel.de-Links als Plausible-Ereignis (tagged events), sobald die Seite eine Site der App wird.
+
 ### B-90 Hinweis „Ferienwohnung?“ in der Rangliste als Zeile in Hotelhöhe (21.11.2026, live seit 21.11.2026)
 Deploy 21.11.: Tests auf dem Server 451/451, `pm2 reload`, `/healthz` 200. Live: `/hotels`, `/region/mallorca`, `/land/spanien` zeigen den
 Kasten als Zeile (alter Kasten weg), Ratgeber-Link und Partner-Button direkt zum Netzwerk. Admin mit Test-Sitzung: `/admin/ratgeber`
@@ -541,9 +560,9 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
   trivago mit oder ohne „100-“, hotel.de aus detail?hn= oder der Ergebnisliste).
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
   indexierte Seiten zeigt.
-- Plausible: Ziel „Hotel-Anfrage-Start“ anlegen (Klick auf „Trainingslager anfragen“).
+- Plausible: Ziele und Custom Properties anlegen – Liste unter B-16.
 - Hunter.io-Konto („account restricted“) prüfen.
-- Plausible-Ziel „Hotelvergleich“ + Eigenschaften `anbieter`/`art`, Gewerbeanmeldung vor Provisionen.
+- Gewerbeanmeldung vor Provisionen.
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
 
 ## Zur Info: Server-Konfiguration (nur `.env`, nicht im Repo)

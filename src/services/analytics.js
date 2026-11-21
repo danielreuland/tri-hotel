@@ -41,19 +41,19 @@ async function overview(domain) {
   }
 }
 
-// Seitenaufrufe im Zeitraum (YYYY-MM-DD bis YYYY-MM-DD, je einschließlich), gesamt und je Seitengruppe.
-// groups: { name: 'event:page==/hotel/**' } (Plausible-Filter). Ergebnis: { total, groups: { name: n } }, null oder { error: true }
-async function pageviews(domain, from, to, groups = {}) {
+// Summe einer Kennzahl im Zeitraum (YYYY-MM-DD bis YYYY-MM-DD, je einschließlich), gesamt und je Gruppe (Plausible-Filter).
+// Ergebnis: { total, groups: { name: n } }, null (nicht eingerichtet) oder { error: true }
+async function aggregateGroups(metric, domain, from, to, groups = {}, { total = true } = {}) {
   if (!config.plausibleApiKey || !apiBase() || !domain) return null;
-  const key = `pv:${domain}:${from}:${to}:${JSON.stringify(groups)}`;
+  const key = `${metric}:${domain}:${from}:${to}:${total}:${JSON.stringify(groups)}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
   try {
-    const base = { site_id: domain, period: 'custom', date: `${from},${to}`, metrics: 'pageviews' };
+    const base = { site_id: domain, period: 'custom', date: `${from},${to}`, metrics: metric };
     const entries = Object.entries(groups);
-    const [total, ...parts] = await Promise.all([get('aggregate', base), ...entries.map(([, filters]) => get('aggregate', { ...base, filters }))]);
-    const val = (r) => Number(r.pageviews && typeof r.pageviews === 'object' ? r.pageviews.value : r.pageviews) || 0;
-    const data = { total: val(total), groups: Object.fromEntries(entries.map(([k], i) => [k, val(parts[i])])) };
+    const [all, ...parts] = await Promise.all([total ? get('aggregate', base) : null, ...entries.map(([, filters]) => get('aggregate', { ...base, filters }))]);
+    const val = (r) => Number(r[metric] && typeof r[metric] === 'object' ? r[metric].value : r[metric]) || 0;
+    const data = { total: all ? val(all) : null, groups: Object.fromEntries(entries.map(([k], i) => [k, val(parts[i])])) };
     cache.set(key, { at: Date.now(), data });
     return data;
   } catch (err) {
@@ -61,6 +61,12 @@ async function pageviews(domain, from, to, groups = {}) {
     return { error: true };
   }
 }
+
+// Seitenaufrufe gesamt und je Seitengruppe. groups: { name: 'event:page==/hotel/**' }; opts.total = false: ohne Gesamtzahl
+const pageviews = (domain, from, to, groups = {}, opts = {}) => aggregateGroups('pageviews', domain, from, to, groups, opts);
+
+// Anzahl ausgelöster Ziele (Custom Events) je Gruppe, ohne Gesamtzahl. groups: { name: 'event:goal==Hotelvergleich' }
+const events = (domain, from, to, groups = {}) => aggregateGroups('events', domain, from, to, groups, { total: false });
 
 // Besucher und Seitenaufrufe einer einzelnen Seite (Pfad) im Zeitraum, für die interne API (Lead-Argumente im CRM).
 // Eigener, längerer Cache (Standard 6 h), damit der Hub Plausible nicht bei jedem Aufruf belastet.
@@ -97,4 +103,4 @@ async function dayStats(domain, day) {
   }
 }
 
-module.exports = { overview, pageviews, pageStats, dayStats };
+module.exports = { overview, pageviews, events, pageStats, dayStats };

@@ -56,14 +56,11 @@ async function collect(day) {
   const domains = await funnel.domains();
   const site = await sites.getDefault();
   const ranking = await db.one('SELECT * FROM rankings WHERE site_id = $1 AND is_default LIMIT 1', [site.id]);
-  const entity = funnel.entityFilter(ranking);
-  const home = domains[0];
+  // Objektseiten-Filter je Domain aus funnel_domains.plausible; statische Seiten zählen auf ihrer Zieldomain (pages_on)
+  const qs = domains.map((d) => funnel.queries(d, domains, new Set([d.domain]), ranking));
   const [views, hotelViews, clickRows, answerRows, optOuts] = await Promise.all([
-    Promise.all(domains.map((d) => analytics.dayStats(d.domain, day))),
-    // Domains ohne eigene Objektseiten (statische Seiten) verlinken auf die erste Domain: dort zählen die Aufrufe, die von ihnen kommen
-    Promise.all(domains.map((d) => (d.site_id || d === home
-      ? analytics.pageviews(d.domain, day, day, { entity })
-      : analytics.pageviews(home.domain, day, day, { entity: `${entity};visit:source==${d.domain}` })))),
+    Promise.all(qs.map((q) => analytics.dayStats(q.site, day))),
+    Promise.all(qs.map((q) => (q.pages.entity_views ? analytics.pageviews(q.groupSite, day, day, { entity: q.pages.entity_views }, { total: false }) : null))),
     db.many(`SELECT kind, source, sum(clicks)::int AS n FROM outbound_clicks WHERE day = $1::date GROUP BY kind, source`, [day]),
     db.many(
       `WITH span AS (SELECT $1::date::timestamp AT TIME ZONE '${TZ}' AS a, ($1::date + 1)::timestamp AT TIME ZONE '${TZ}' AS b)
