@@ -5,7 +5,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### B-16 Plausible-Ziele und konfigurierbarer Funnel (21.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+### B-16 Plausible-Ziele und konfigurierbarer Funnel (21.11.2026, live seit 21.11.2026 – Migration 126)
 - **Bestandsaufnahme:** tri-hotel.de sendet alle Ereignisse über `data-goal` (+ `data-goal-prop-*`) in den Vorlagen, ausgelöst in
   `public/js/site.js` (Links/Buttons beim Klick, sonst beim Aufruf). fitnessracing-hotel.de (statisch, `static-sites/`) sendet nur
   Seitenaufrufe; seine CHECK24-Links zählen über `/go/…?von=` in `outbound_clicks`.
