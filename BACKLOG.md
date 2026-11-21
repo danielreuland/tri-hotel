@@ -5,12 +5,15 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 ## In Arbeit / als Nächstes (Entwicklung)
 
-### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, umgesetzt, auf GitHub `main` seit 9bfc65b, noch nicht deployt – Deploy nach „veröffentlichen“, Schalter danach auf „Test“)
-Stand 21.11.: lokal geprüft (380 px, Desktop, Tastatur-Reihenfolge, Tippfläche 44 px, Beacon-Zählung, Bot-Filter, `/go/` per HEAD = 302,
-Schalter mit Audit-Log, Migration 124 hoch/runter/hoch). Auf dem Server noch nicht geprüft: Migration, Admin-Seite mit Test-Sitzung,
-eventuelles Caching außerhalb der nginx-Vorlage.
+### B-89 Partner-Button in der Rangliste, Test A/B (21.11.2026, live seit 21.11.2026, Schalter steht noch auf „aus“)
 Button „Preise prüfen“ (mobil „Preise“) je Hotel in der Rangliste (gesamt, Regionen, Länder), Erklärung „*Werbelink“ einmal unter
 der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Button darüber, kein Link im Link.
+- **Deploy 21.11.:** Migration 124 eingespielt, Tests auf dem Server 450/450 (2 ohne DB übersprungen), `pm2 reload`, `/healthz` 200.
+  Admin mit Test-Sitzung geprüft: `/admin/partner/button-test`, `/admin/partner`, `/admin`, `/admin/aufgaben`, Prüfansicht – alle 200.
+  Öffentlich: `/hotels` (104 Zeilen), `/region/mallorca`, `/land/spanien` mit neuer Zeile, ohne Button (Schalter aus),
+  `Cache-Control: no-cache`. Kein Seiten-Cache auf dem Server (nginx ohne proxy_cache), kein CDN.
+- **Live-Reihenfolge der Ziele:** Expedia (3) · CHECK24 (4) · Hotels.com (6) · trivago (7) · hotel.de (30) · FeWo-direkt (50, nur Ferienwohnungen).
+  Preis-Links live: trivago 95, Expedia 84, CHECK24 75, hotel.de 55.
 - **Schalter:** Admin → Partnerprogramme → „Partner-Button-Test“ (`/admin/partner/button-test`): aus (Standard) · Test · immer an.
   Test: gerade Kalendertage A (ohne Button), ungerade B (mit Button), Europe/Berlin, serverseitig, ohne Cookie (`src/lib/partner-button.js`).
 - **Ziel je Hotel:** aktives Programm mit Partnerkennung, das in der vorhandenen **Reihenfolge** (`sort_order`) am weitesten vorn steht
@@ -28,13 +31,14 @@ der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Bu
 - **Caching:** kein Seiten-Cache/CDN (nginx nur Proxy); Ranglisten senden `Cache-Control: no-cache`.
 - **Mobil für alle Varianten:** Score links, kein Vorschaubild, keine Leistungszeile, Name/Ort einzeilig mit „…“, Pfeil rechts.
 - Tests: `test/partner-button.test.js` (bester Link, Variante/Zeitzone, Parameter, Neutralität der Sortierung).
-- **Offen vor dem Start (Daniel):**
-  - [ ] Reihenfolge unter Partnerprogramme prüfen: Ziel soll Expedia → CHECK24 → Hotels.com sein. In der Migrationsfassung steht
+- **Vor dem Start (Daniel, laut Daniel 21.11. erledigt):**
+  - [x] Reihenfolge unter Partnerprogramme prüfen: Ziel soll Expedia → CHECK24 → Hotels.com sein. In der Migrationsfassung steht
         Hotels.com (6) vor CHECK24/trivago (7) vor Expedia (20); trivago und hotel.de wären als aktive Programme mit Kennung ebenfalls Ziele.
-  - [ ] Expedia/Hotels.com/CHECK24 aktiv? (Migrationen legen sie inaktiv an.)
-  - [ ] Links der Top-20-Hotels eintragen (sonst kein Button).
-  - [ ] In Plausible die Ziele „Partnerklick“, „Ranglisten-Detailklick“, „Rangliste-Aufruf“ mit den Eigenschaften anlegen.
-  - [ ] Nach Deploy: `npm run migrate`, Admin-Seite mit Test-Sitzung prüfen, dann Schalter auf „Test“.
+  - [x] Expedia/Hotels.com/CHECK24 aktiv? (Migrationen legen sie inaktiv an.)
+  - [x] Links der Top-20-Hotels eintragen (sonst kein Button).
+  - [x] In Plausible die Ziele „Partnerklick“, „Ranglisten-Detailklick“, „Rangliste-Aufruf“ mit den Eigenschaften anlegen.
+  - [x] Nach Deploy: `npm run migrate`, Admin-Seite mit Test-Sitzung prüfen (21.11.)
+  - [ ] Schalter auf „Test“ (Admin → Partnerprogramme → Partner-Button-Test)
   - [ ] Auswertung nach einigen tausend Aufrufen je Variante; danach entscheiden (immer an / aus) und Code für „Test“ ggf. entfernen.
 
 ### B-46 Indexierung bereinigen (18.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
