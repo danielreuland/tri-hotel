@@ -21,7 +21,7 @@ Zwei Richtungen:
   Antwortende bei Hotel-Anfragen). Erlaubt sind geschäftliche Kontaktdaten von Unternehmen, die tri-hotel selbst mit Quelle
   gespeichert hat (Hotel-E-Mail, Telefon/E-Mail der Camp-Anbieter) – immer mit `source`/`evidence`.
   Ansprechpartner erreichen den Hub **nur** über Richtung B (`contact.profile`, `contact.consent`), wenn das Antwortformular
-  und die Datenschutzerklärung das ankündigen.
+  bzw. – bei Antworten per E-Mail – die Datenschutzerklärung das ankündigen.
 - **Nur intern erreichbar:** Beide Apps laufen auf demselben Server. Der Hub ruft `http://127.0.0.1:3010` direkt auf
   (Header `Host: tri-hotel.de` optional). Nginx liefert `/internal/` öffentlich nicht aus
   (`location /internal/ { return 404; }` in allen Server-Blöcken), zusätzlich antwortet die App mit **404**, wenn die Anfrage
@@ -196,6 +196,9 @@ Hinweise:
   `textVersion` + Zeitpunkte + Ereignis-ID als Nachweis („kein Double-Opt-in“ steht darin) und hebt den Lead auf „Interesse bekundet“. **Widerrufe** über den Abmeldelink kommen als `mail.opt_out`, sonst sind sie in v1 kein Ereignis
   (Daniel trägt sie im Hub ein); ein eigener Typ folgt bei Bedarf.
 - `contact.profile` ist **keine** Werbe-Einwilligung (Rechtsgrundlage berechtigtes Interesse, Profilpflege).
+  Quellen: Antwortformular (Name und Antwort-Adresse) und seit 21.11.2026 Mail-Antworten im tri-hotel-Postfach, die einem Objekt
+  oder Camp-Anbieter zugeordnet sind (`services/mail-contacts.js`, einmal je Absenderadresse, ohne Abwesenheit/Unzustellbar/eigene Adressen).
+  Ohne erkennbaren Personennamen ist `lastName` der Name des Betriebs bzw. der Anzeigename des Absenders, `firstName` leer.
 - Heute ausgelöst: `inquiry.sent`, `inquiry.answered`, `contact.profile`, `contact.consent`. `photos.permission` ist in tri-hotel gebaut und getestet
   (`src/services/hub-events.js`), wird aber noch nicht ausgelöst.
 - Der Hub lehnt unbekannte Typen mit 400 ab: neue Typen erst im Vertrag und im Hub ergänzen, dann in tri-hotel senden.

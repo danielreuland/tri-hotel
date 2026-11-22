@@ -119,6 +119,9 @@ async function start() {
     await boss.work('mail-poll', async () => {
       const r = await require('../services/mailbox').poll();
       if (r.stored || r.errors) console.log(`[jobs] Postfach: ${r.stored} neu, ${r.errors} Fehler`);
+      // Absender zugeordneter Mails als Ansprechpartner an den Hub (auch nachträglich zugeordnete und ältere Mails)
+      const c = await require('../services/mail-contacts').report();
+      if (c.sent) console.log(`[jobs] Postfach: ${c.sent} Ansprechpartner an den Hub gemeldet`);
     });
     await boss.schedule('mail-poll', '*/5 * * * *', null, { retryLimit: 0 });
   } else {

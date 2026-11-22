@@ -85,7 +85,7 @@ app.locals.monthRanges = require('./lib/seo').monthRanges;
 app.locals.imgAttrs = require('./services/media').imgAttrs;
 // Rechtstexte: Löschfristen direkt aus der Konfiguration, Stand der Texte
 app.locals.retention = require('./services/retention').RETENTION;
-app.locals.legalDate = '4. November 2026';
+app.locals.legalDate = '21. November 2026';
 app.locals.googleMapsEnabled = Boolean(config.googleMapsEmbedKey);
 // Abschnitt in der Datenschutzerklärung nur, wenn Tripadvisor-Fotos eingeschaltet sind
 app.locals.taPhotosEnabled = config.tripadvisor.enabled;
