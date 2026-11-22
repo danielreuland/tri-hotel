@@ -26,6 +26,12 @@ async function start() {
   await boss.createQueue('hub-event');
   await boss.createQueue('internal-cleanup');
   await boss.createQueue('daily-report');
+  await boss.createQueue('text-batch');
+
+  // Sammellauf Beschreibungstexte (B-31): je Auftrag ein Entwurf, nacheinander
+  await boss.work('text-batch', async (jobs) => {
+    for (const job of jobs) await require('../services/text-batch').runItem(job.data.itemId);
+  });
 
   await boss.work('auto-check', async (jobs) => {
     for (const job of jobs) await autoCheck.run(job.data.submissionId);
@@ -133,6 +139,7 @@ async function start() {
   inquiries.setEnqueue(enqueue);
   require('../services/hub-events').setEnqueue(enqueue);
   require('../services/camp-check').setEnqueue(enqueue);
+  require('../services/text-batch').setEnqueue(enqueue);
   console.log('[jobs] gestartet');
 }
 

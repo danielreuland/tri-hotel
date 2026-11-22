@@ -59,6 +59,85 @@
   <p class="muted" style="margin:0">Anfragen an Betreiber und weitere Mails von Mia, Lara und Ben entstehen aus festen Regeln, der Persona (Rolle &amp; Stil), dem Mustertext des Anlasses mit Pflichtpunkten und einem Stilbeispiel. Bearbeiten und den zusammengesetzten Prompt ansehen: <a href="/admin/emails#ki-mails">Einstellungen → E-Mail-Vorlagen → KI-Mails</a>.</p>
 </section>
 
+<section class="card" style="margin-top:16px" id="sammellauf">
+  <h2 style="margin-top:0">Objekte ohne Text</h2>
+  <%
+    var perText = batch && batch.cost && batch.cost.per_text ? Number(batch.cost.per_text) : null;
+    var fmt = function (x) { return x === null ? '–' : x.toFixed(2).replace('.', ',') + ' $'; };
+    var left = batch && batch.spend && batch.spend.budget ? Math.max(0, batch.spend.budget - batch.spend.usd) : null;
+    var open = batch ? batch.candidates.filter(function (c) { return !c.queued; }) : [];
+  %>
+  <p class="muted" style="margin-top:0"><small>Live-<%= ranking.entity_label_pl %> dieses Rankings ohne Beschreibungstext. Der Sammellauf erzeugt im Hintergrund je Objekt einen <strong>Entwurf</strong> – gleicher Ablauf wie „Text erzeugen“ in der Prüfansicht. Vorhandene Texte und Entwürfe werden nie überschrieben; öffentlich wird nichts ohne Freigabe. Erreicht der Verbrauch das Monatsbudget, bleiben die übrigen Aufträge mit Hinweis stehen.</small></p>
+  <p><strong><%= batch.candidates.length %></strong> ohne Text<%= batch.candidates.length - open.length ? ' (' + (batch.candidates.length - open.length) + ' in Arbeit)' : '' %> · ca. <%= fmt(perText) %> je Text · KI-Budget diesen Monat: <%= fmt(batch.spend.usd) %> von <%= batch.spend.budget ? fmt(batch.spend.budget) : 'unbegrenzt' %><%= left !== null ? ', frei ' + fmt(left) : '' %></p>
+  <% if (!batch.enabled) { %><p class="errors">Kein KI-Anbieter eingerichtet (LLM_PROVIDER) – der Sammellauf ist aus.</p><% } %>
+  <% if (open.length) { %>
+    <form method="post" action="/admin/ki-texte/sammellauf" id="batch-form">
+      <input type="hidden" name="ranking" value="<%= ranking.id %>">
+      <p style="margin:0 0 8px"><label style="display:inline"><input type="checkbox" id="batch-all" checked> alle auswählen</label>
+        <% var regionNames = []; open.forEach(function (c) { var n = c.region ? c.region.name : 'ohne Region'; if (regionNames.indexOf(n) < 0) regionNames.push(n); }); %>
+        <% if (regionNames.length > 1) { %> · nur Region: <% regionNames.forEach(function (n) { %><button type="button" class="btn small secondary" data-region="<%= n %>"><%= n %></button> <% }) %><% } %>
+      </p>
+      <div class="table-scroll"><table>
+        <tr><th></th><th><%= ranking.entity_label_sg %></th><th>Region</th><th><%= ranking.score_name || 'Score' %></th></tr>
+        <% open.forEach(function (c) { %>
+          <tr>
+            <td><input type="checkbox" name="entity" value="<%= c.id %>" data-region="<%= c.region ? c.region.name : 'ohne Region' %>" checked></td>
+            <td><% if (c.sub_id) { %><a href="/admin/meldungen/<%= c.sub_id %>#text"><%= c.name %></a><% } else { %><%= c.name %><% } %> <small class="muted"><%= c.city || '' %></small></td>
+            <td><small><%= c.region ? c.region.name : '–' %></small></td>
+            <td><small><%= c.score === null ? '–' : c.score %></small></td>
+          </tr>
+        <% }) %>
+      </table></div>
+      <p style="margin-bottom:0"><button class="btn" type="submit" id="batch-submit" <%= batch.enabled ? '' : 'disabled' %>>Entwürfe erzeugen (<span id="batch-count"><%= open.length %></span>)</button>
+        <small class="muted"> geschätzt <span id="batch-cost"><%= perText === null ? '–' : fmt(perText * open.length) %></span></small></p>
+    </form>
+    <script>
+      (function () {
+        var form = document.getElementById('batch-form'); if (!form) return;
+        var boxes = [].slice.call(form.querySelectorAll('input[name="entity"]'));
+        var per = <%- JSON.stringify(perText) %>;
+        function update() {
+          var n = boxes.filter(function (b) { return b.checked; }).length;
+          document.getElementById('batch-count').textContent = n;
+          document.getElementById('batch-cost').textContent = per === null ? '–' : (per * n).toFixed(2).replace('.', ',') + ' $';
+          document.getElementById('batch-submit').disabled = !n || <%- batch.enabled ? 'false' : 'true' %>;
+        }
+        document.getElementById('batch-all').addEventListener('change', function (e) { boxes.forEach(function (b) { b.checked = e.target.checked; }); update(); });
+        [].slice.call(form.querySelectorAll('button[data-region]')).forEach(function (btn) {
+          btn.addEventListener('click', function () { boxes.forEach(function (b) { b.checked = b.getAttribute('data-region') === btn.getAttribute('data-region'); }); update(); });
+        });
+        boxes.forEach(function (b) { b.addEventListener('change', update); });
+      })();
+    </script>
+  <% } else if (!batch.candidates.length) { %><p class="muted">Alle Live-<%= ranking.entity_label_pl %> haben einen Text.</p><% } %>
+
+  <% if (batch.items.length) { %>
+    <h3>Stand des Sammellaufs</h3>
+    <% var clean = batch.items.filter(function (i) { return i.text_status === 'draft' && i.status === 'done' && !i.warnings; }); %>
+    <form method="post" action="/admin/ki-texte/sammelfreigabe">
+      <input type="hidden" name="ranking" value="<%= ranking.id %>">
+      <div class="table-scroll"><table>
+        <tr><th></th><th><%= ranking.entity_label_sg %></th><th>Auftrag</th><th>Text</th><th>Hinweis</th></tr>
+        <% var label = { queued: 'wartet', running: 'läuft', done: 'erzeugt', skipped: 'übersprungen', failed: 'Fehler' }; %>
+        <% var tone = { queued: '', running: '', done: 'good', skipped: '', failed: 'warn' }; %>
+        <% batch.items.forEach(function (i) { var ok = i.text_status === 'draft' && i.status === 'done' && !i.warnings; %>
+          <tr>
+            <td><% if (ok) { %><input type="checkbox" name="entity" value="<%= i.entity_id %>" checked><% } %></td>
+            <td><% if (i.sub_id) { %><a href="/admin/meldungen/<%= i.sub_id %>#text"><%= i.name %></a><% } else { %><%= i.name %><% } %></td>
+            <td><span class="badge <%= tone[i.status] %>"><%= label[i.status] || i.status %></span></td>
+            <td><small><%= i.text_status === 'published' ? 'freigegeben' : i.text_status === 'draft' ? (i.warnings ? 'Entwurf, ' + i.warnings + ' Prüfhinweis' + (i.warnings === 1 ? '' : 'e') + ' – einzeln prüfen' : 'Entwurf ohne Prüfhinweis') : '–' %></small></td>
+            <td><small><%= i.message || '' %></small></td>
+          </tr>
+        <% }) %>
+      </table></div>
+      <% if (clean.length) { %>
+        <p style="margin-bottom:0"><button class="btn" type="submit">Ausgewählte freigeben (<%= clean.length %> ohne Prüfhinweis)</button>
+          <small class="muted"> Vorher bitte lesen – vor der Freigabe wird jeder Text noch einmal maschinell geprüft; Entwürfe mit Prüfhinweis gibst du einzeln in der Prüfansicht frei.</small></p>
+      <% } %>
+    </form>
+  <% } %>
+</section>
+
 <section class="card" style="margin-top:16px" id="texte">
   <h2 style="margin-top:0">Texte dieses Rankings</h2>
   <% if (!texts.length) { %><p class="muted">Noch keine Texte.</p><% } else { %>

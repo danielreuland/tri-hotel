@@ -61,7 +61,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, und hier (L
 | B-18 | Keywords validieren (Keyword Planner, Trends) | P1 | Daniel | M | Z1 | – | ✅ erledigt | `claude/keyword-analyse-2026-11.md` |
 | B-19 | Better Stack: Konto, Monitore, Heartbeat `WATCHDOG_HEARTBEAT_URL` | P1 | Daniel | S | Z1 | – | 🔧 offen | siehe [Ausfallüberwachung](#ausfallüberwachung) |
 | B-30 | Seitenprüfung Paket B: Quellen-Satz, Stand auf /triscore, Über-Seite | P1 | Dev | M | Z3 | B-10, B-12 | ✅ erledigt | [Paket B](#paket-b-vertrauen) |
-| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; **offen** Punkt 4 Hotel-Texte (48 von 104 ohne Text) und Punkt 5 Camp-Kurzprofile (22 noindex), siehe [B-31](#paket-c-seo-inhalte) |
+| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; Punkt 4: **Sammellauf gebaut 22.11.** (noch nicht deployt) – 46 Live-Hotels ohne Text, ca. 0,03 $ je Text; Punkt 5 Camp-Kurzprofile → eigene Planung Camp-Bereich; siehe [B-31](#paket-c-seo-inhalte) |
 | B-32 | Seite „25-m-Becken Mallorca“, FAQ „Wo ist es im Januar–März warm?“, Ratgeber-Übersicht /ratgeber | P1 | Dev | M | Z1 | B-18 | 🔧 teilweise | `/region/mallorca/hotels-mit-25-m-becken` live seit 13.11.; **offen:** FAQ „warm im Jan–März“ (nicht auf /trainingsregionen), `/ratgeber` (404, erst ab 2 Ratgebern), Block „Beliebte Themen“. „70.3 Mallorca“ entfällt (21.11.). Prompt `docs/prompts/b-32-becken-seite-ratgeber.md` |
 | B-45 | Titel und H1 für die A-Keywords (+ Nachzügler aus B-17) | P1 | Dev | S | Z1 | B-18 | ✅ erledigt | [B-45/B-32](#b-45-und-b-32-seo-titel-und-saisonseiten) |
 | B-46 | Indexierung bereinigen | P1 | Dev + Daniel | S | Z1 | B-17 | ✅ erledigt 22.11. | Rest (Texte) in B-31; [B-46](#b-46-indexierung-bereinigen) |
@@ -628,7 +628,14 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
   2. Länderseiten DE/AT: Redaktionstext + 3 eigene Fragen (`country_texts`, Migration 112), dazu berechnete Fragen (Hotelzahl, Leistungen) als FAQPage. Länder mit 1 Hotel sind über die Mindestzahl schon noindex (B-37).
   3. Camp-FAQ `/trainingscamp`: + Pauschalreise/Einzelbuchung, Preisbestandteile, Absage/Versicherung (11 Fragen).
   4. Hotel-Texte: 39 Live-Hotels ohne Text (Stand 08.11.: 70 live, 24 freigegeben, 7 Entwürfe), ca. 0,04 $ je Text. Import-Prüfung der 99 geparkten Hotels: tatsächlich ca. 0,32 $ KI je Hotel (max. 0,85 $) + Places, zusammen ca. 35–40 $.
-  5. **Aus B-46 (22.11.):** Alle 22 Camp-Anbieter-Profile sind noindex (Regel: ab 50 Wörtern Kurzprofil), u. a. Jorge Sports, Tricamp –
+  - **Sammellauf gebaut (22.11., Migration 128, `services/text-batch.js`):** Admin → KI-Texte → „Objekte ohne Text“: Live-Objekte ohne Text
+     (nach Region aus dem Admin, darin nach Score), Auswahl je Region, geschätzte Kosten und freies Monatsbudget, Knopf „Entwürfe erzeugen“.
+     Job `text-batch` (pg-boss, kein Neuversuch) erzeugt je Objekt einen **Entwurf** – derselbe Ablauf wie „Text erzeugen“ in der Prüfansicht
+     (`textBatch.createDraft`). Vorhandene Texte/Entwürfe werden nie überschrieben; bei erreichtem Budget bleibt der Auftrag mit Hinweis stehen.
+     Stand je Objekt in `text_batch_items`. **Sammelfreigabe** nur für Entwürfe ohne Prüfhinweis (vor der Freigabe erneut geprüft); Entwürfe
+     mit Hinweis einzeln in der Prüfansicht. Audit: `text_batch.start`, `generate_text` (batch), `text_publish` (bulk). Tests `test/text-batch.test.js`.
+     Stand 22.11.: 46 Live-Hotels ohne Text, 2 Entwürfe; KI-Budget November 26,56 von 30 $ verbraucht.
+  5. **Aus B-46 (22.11.):** (Camp-Teil geht in die eigene Planung „Camp-Bereich“, Daniel 22.11.) Alle 22 Camp-Anbieter-Profile sind noindex (Regel: ab 50 Wörtern Kurzprofil), u. a. Jorge Sports, Tricamp –
      Kurzprofile schreiben. 48 von 104 Hotelseiten der Sitemap ohne Text (u. a. Garda Sporting Club, Sant Jordi Boutique, Zafiro Palace) – kommt mit Punkt 4.
 - **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_compare_texts`, beliebig viele je Region, Migration 110) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 14 Paare (6 neue in Migration 111). `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
 - Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.

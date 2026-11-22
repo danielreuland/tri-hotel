@@ -22,6 +22,7 @@ const evidence = require('../lib/evidence');
 const imageOrder = require('../lib/image-order');
 const factDraft = require('../lib/fact-draft');
 const describer = require('../services/describer');
+const textBatch = require('../services/text-batch');
 const media = require('../services/media');
 const reviewlist = require('../services/reviewlist');
 const tasks = require('../services/tasks');
@@ -1482,33 +1483,15 @@ router.post('/meldungen/:id/text/erzeugen', wrap(async (req, res, next) => {
   if (!sub) return next();
   const back = `/admin/meldungen/${sub.id}`;
   if (config.llm.provider !== 'anthropic') return res.redirect(`${back}?fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#text`);
-  const input = await describer.gather(sub.entity_id, sub.ranking_id);
-  const style = describer.styleOf(await rankings.getRanking(sub.ranking_id));
-  const examples = await describer.styleExamples(sub.ranking_id, sub.entity_id);
   let out;
   try {
-    out = await describer.generate(input, { examples, style });
+    out = await textBatch.createDraft(sub.entity_id, sub.ranking_id, { adminId: req.session.admin.id, submissionId: sub.id });
   } catch (err) {
     console.error('[describer]', err.message);
     return res.redirect(`${back}?fehler=${encodeURIComponent(`Text konnte nicht erzeugt werden: ${err.message.slice(0, 200)}`)}#text`);
   }
-  for (const u of out.usages || []) {
-    await require('../lib/llm').record({ purpose: u.purpose, model: u.model, usage: u.raw, entityId: sub.entity_id, submissionId: sub.id });
-  }
-  if (!out.text) return res.redirect(`${back}?fehler=${encodeURIComponent('Das Modell hat keinen Text geliefert.')}#text`);
-  await db.query(
-    `INSERT INTO entity_texts (entity_id, ranking_id, summary, body, generated_summary, generated_body, input_hash, fact_refs, checks, model, generated_at, status, updated_by, updated_at)
-     VALUES ($1, $2, $3, $4, $3, $4, $5, $6, $7, $8, now(), 'draft', $9, now())
-     ON CONFLICT (entity_id, ranking_id) DO UPDATE SET summary = EXCLUDED.summary, body = EXCLUDED.body,
-       generated_summary = EXCLUDED.summary, generated_body = EXCLUDED.body, input_hash = EXCLUDED.input_hash,
-       fact_refs = EXCLUDED.fact_refs, checks = EXCLUDED.checks,
-       model = EXCLUDED.model, generated_at = now(), status = 'draft', updated_by = EXCLUDED.updated_by, updated_at = now()`,
-    [sub.entity_id, sub.ranking_id, out.text.summary, out.text.body, describer.inputHash(input), JSON.stringify(out.refs), JSON.stringify(out.checks), out.model, req.session.admin.id]
-  );
-  await logAction(req.session.admin.id, 'entity', sub.entity_id, 'generate_text', {
-    model: out.model, style_examples: examples.map((e) => e.name), custom_guide: style.custom, checks: out.checks.length,
-  });
-  const n = out.checks.filter((c) => c.type !== 'info').length;
+  if (out.error) return res.redirect(`${back}?fehler=${encodeURIComponent(out.error)}#text`);
+  const n = textBatch.warnings(out.checks).length;
   res.redirect(`${back}?ok=${encodeURIComponent(n ? `Entwurf erzeugt – ${n} Prüfhinweis${n === 1 ? '' : 'e'}, bitte ansehen` : 'Entwurf erzeugt – bitte prüfen und freigeben')}#text`);
 }));
 
@@ -1584,12 +1567,46 @@ router.get('/ki-texte', wrap(async (req, res) => {
       WHERE t.ranking_id = $1 AND t.status = 'published' AND t.generated_body IS NOT NULL
         AND (t.generated_body <> t.body OR t.generated_summary IS DISTINCT FROM t.summary)
       ORDER BY t.published_at DESC NULLS LAST LIMIT 5`, [ranking.id]) : [];
+  // Sammellauf (B-31): Live-Objekte ohne Text, Stand der Aufträge, Kosten je Text aus dem bisherigen Verbrauch
+  const batch = ranking ? {
+    candidates: await textBatch.candidates(ranking),
+    items: await textBatch.status(ranking.id),
+    cost: await db.one(
+      `SELECT COALESCE(sum(cost_usd), 0)::float / NULLIF(count(*) FILTER (WHERE purpose = 'description'), 0) AS per_text
+         FROM llm_usage WHERE purpose IN ('description', 'description_check')`),
+    spend: await require('../lib/llm').monthSpend(),
+    enabled: config.llm.provider === 'anthropic',
+  } : null;
   res.render('admin/ai-texts', {
-    title: 'KI-Texte', rankings: list, ranking, texts, examples, edits,
+    title: 'KI-Texte', rankings: list, ranking, texts, examples, edits, batch,
     style: describer.styleOf(ranking), defaultGuide: describer.DEFAULT_GUIDE, defaultBanned: describer.BANNED,
     template: ranking ? describer.promptTemplate(ranking, examples) : '', model: config.llm.models.describe, checkModel: config.llm.models.describe_check,
     flash: req.query.ok || null, error: req.query.fehler || null,
   });
+}));
+
+// Sammellauf: Entwürfe für ausgewählte Live-Objekte ohne Text (Hintergrund-Job, nur Entwürfe)
+router.post('/ki-texte/sammellauf', wrap(async (req, res, next) => {
+  const ranking = await db.one('SELECT * FROM rankings WHERE id = $1', [req.body.ranking]);
+  if (!ranking) return next();
+  const back = `/admin/ki-texte?ranking=${ranking.id}`;
+  if (config.llm.provider !== 'anthropic') return res.redirect(`${back}&fehler=${encodeURIComponent('Kein KI-Anbieter eingerichtet (LLM_PROVIDER).')}#sammellauf`);
+  const ids = [].concat(req.body.entity || []);
+  if (!ids.length) return res.redirect(`${back}&fehler=${encodeURIComponent('Keine Objekte ausgewählt.')}#sammellauf`);
+  const n = await textBatch.start(ranking, ids, req.session.admin.id);
+  res.redirect(`${back}&ok=${encodeURIComponent(n ? `${n} Entwürfe in Arbeit – der Stand steht unten, Seite neu laden` : 'Nichts gestartet: die Auswahl hat schon Text oder ist bereits in Arbeit.')}#sammellauf`);
+}));
+
+// Sammelfreigabe: nur Entwürfe ohne Prüfhinweis (vor der Freigabe wird neu geprüft)
+router.post('/ki-texte/sammelfreigabe', wrap(async (req, res, next) => {
+  const ranking = await db.one('SELECT id FROM rankings WHERE id = $1', [req.body.ranking]);
+  if (!ranking) return next();
+  const back = `/admin/ki-texte?ranking=${ranking.id}`;
+  const ids = [].concat(req.body.entity || []);
+  if (!ids.length) return res.redirect(`${back}&fehler=${encodeURIComponent('Keine Entwürfe ausgewählt.')}#sammellauf`);
+  const r = await textBatch.publishClean(ranking.id, ids, req.session.admin.id);
+  const msg = `${r.published} Text${r.published === 1 ? '' : 'e'} freigegeben${r.skipped ? `, ${r.skipped} übersprungen (Prüfhinweis oder kein Entwurf)` : ''}`;
+  res.redirect(`${back}&ok=${encodeURIComponent(msg)}#sammellauf`);
 }));
 
 // Styleguide und zusätzliche verbotene Wörter je Ranking
