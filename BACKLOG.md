@@ -51,7 +51,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, und hier (L
 | Nr | Aufgabe | Prio | Wer | Größe | Ziel | hängt an | Status | Befund 22.11. |
 |---|---|---|---|---|---|---|---|---|
 | B-10 | Entscheidung Quellen-Versprechen (E-01) | P1 | Daniel | S | Z3 | – | ✅ erledigt | Option C, live 08.11. (siehe B-44) |
-| B-11 | Entscheidung Vergleichsseiten und KI-Budget (E-02, E-03) | P1 | Daniel | S | Z1 | – | ✅ erledigt |  |
+| B-11 | Entscheidung Vergleichsseiten und KI-Budget (E-02, E-03) | P1 | Daniel | S | Z1 | – | ✅ erledigt | KI-Budget auf 30 $/Monat erhöht (`LLM_MONTHLY_BUDGET_USD`, Stand 22.11.) |
 | B-12 | Seite „Über tri-hotel“: Foto, Kontakt, Angaben | P1 | Daniel | S | Z1 | – | ✅ erledigt | Fotos eingebaut 09.11. (B-30) |
 | B-13 | KI-Texte: Styleguide, 2–3 Mustertexte, 15 veraltete, 8 Entwürfe | P1 | Daniel | M | Z1 | – | ✅ erledigt |  |
 | B-14 | 27 Meldungen „Grunddaten fehlen“ + Import 01.11. prüfen | P1 | Daniel | M | Z3 | – | ✅ erledigt | aus „Zu erledigen“ entfernt |
@@ -677,8 +677,6 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 
 ## Zu entscheiden (Daniel)
 [↑ Übersicht](#übersicht)
-- **KI-Budget:** Oktober war am 29.10. aufgebraucht (20,08 von 20 $); seit 01.11. neues Monatsbudget (`LLM_MONTHLY_BUDGET_USD`, 20 $).
-  Oktober-Verbrauch: Extraktion 14,09 $, Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $. Budget bei Bedarf erhöhen.
 - **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung** → jetzt B-20, in Arbeit: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
@@ -750,6 +748,7 @@ Search Console bestätigt, Sitemap eingereicht. PM2 im Cluster-Modus (Reload ohn
 
 ## Erledigt (Oktober 2026, Kurzfassung)
 [↑ Übersicht](#übersicht)
+- 22.11. **KI-Budget erhöht** (Daniel): `LLM_MONTHLY_BUDGET_USD` von 20 auf 30 $ je Monat. Anlass: Oktober war am 29.10. aufgebraucht (20,08 $; Extraktion 14,09, Camp-Prüfung 3,56, Vergleich 1,00, Anfragen 0,81, Texte 0,63 $).
 - 01.11. **Startseite**: kompakter Hotel-Finder (Reisemonat, Wunschwetter warm/mild/kühl nach Ø-Tageshöchstwert, wenig Regen,
   Ausstattung, Live-Trefferzahl über `/finder/treffer`; `src/lib/finder.js`), Lockerungsvorschläge in der Liste bei < 3 Treffern,
   Slider der Top-Hotels ab TriScore 75, Bestenliste ab Platz 1, Camp-Anfrage im Camp-Band; Platz in der Liste = Gesamtranking.
