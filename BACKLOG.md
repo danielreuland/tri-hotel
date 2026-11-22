@@ -8,7 +8,7 @@ Entscheidungen mit Datum festhalten. Reihenfolge = Priorität.
 
 **Springen zu:** [In Arbeit](#in-arbeit) · [Kleinere offene Punkte](#kleinere) · [Zu entscheiden](#zu-entscheiden) · [Zu erledigen (Daniel)](#zu-erledigen) · [Server-Konfiguration](#server) · [Erledigt](#erledigt)
 
-**Häufig gesucht:** [B-31 Texte (Paket C)](#b-31) · [B-30 Stand der Methode](#b-30-methode) · [B-88 Faktenmaske](#b-88) · [Paket D Conversion](#paket-d)
+**Häufig gesucht:** [Nummernliste B-NN](#nummern) · [B-31 Texte (Paket C)](#b-31) · [B-30 Stand der Methode](#b-30-methode) · [B-88 Faktenmaske](#b-88) · [Paket D Conversion](#paket-d)
 
 Status: ✅ live/erledigt · 🧪 Test läuft · 🔧 offen bzw. teilweise · ⏸ gebaut, aus · 💡 Idee/Konzept · ⛔ verworfen
 
@@ -41,9 +41,53 @@ Status: ✅ live/erledigt · 🧪 Test läuft · 🔧 offen bzw. teilweise · �
 | [Hotel-Ansprache neu](#ansprache) | 💡 Konzept | 02.11. |
 | [Anfrage-Workflows mit Voice-Agents](#voice-agents) | 💡 Konzept | 21.10. |
 | [Seitenprüfung 06.11.: Pakete B–D](#seitenpruefung) | 🔧 offen | 06.11. |
-| [B-45/B-32 SEO-Titel und Saisonseiten](#b-45) | ✅ live, M1 bis 15.12. | 13.11. |
+| [B-45/B-32 SEO-Titel und Saisonseiten](#b-45) | ✅ B-45 live · 🔧 B-32 teilweise | 13.11. |
 
 Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, davor `<a id="b-nn"></a>`, und hier eine Zeile ergänzen.
+
+<a id="nummern"></a>
+### Nummernliste B-NN
+
+*Stand: 22.11.2026 – Liste von Daniel, gegen Backlog, Code und Live-Seite geprüft. Abweichungen zur Liste fett.*
+
+| Nr | Aufgabe | Prio | Wer | Größe | Ziel | hängt an | Status | Befund 22.11. |
+|---|---|---|---|---|---|---|---|---|
+| B-10 | Entscheidung Quellen-Versprechen (E-01) | P1 | Daniel | S | Z3 | – | ✅ erledigt | Option C, live 08.11. (siehe B-44) |
+| B-11 | Entscheidung Vergleichsseiten und KI-Budget (E-02, E-03) | P1 | Daniel | S | Z1 | – | ✅ erledigt |  |
+| B-12 | Seite „Über tri-hotel“: Foto, Kontakt, Angaben | P1 | Daniel | S | Z1 | – | ✅ erledigt | Fotos eingebaut 09.11. (B-30) |
+| B-13 | KI-Texte: Styleguide, 2–3 Mustertexte, 15 veraltete, 8 Entwürfe | P1 | Daniel | M | Z1 | – | ✅ erledigt |  |
+| B-14 | 27 Meldungen „Grunddaten fehlen“ + Import 01.11. prüfen | P1 | Daniel | M | Z3 | – | ✅ erledigt | aus „Zu erledigen“ entfernt |
+| B-15 | Partnerlinks je Hotel (Expedia, CHECK24, trivago, hotel.de) | P1 | Daniel | M | Z2 | – | ✅ erledigt | 60 Hotels bis 17.11.; neue fortlaufend |
+| B-16 | Plausible-Ziele und Funnel für alle Sites | P1 | Daniel | S | Z1 | – | ✅ tri-hotel.de | **offen:** Custom Events und Funnel fitnessracing-hotel.de / „alle zusammen“ (Zu erledigen) |
+| B-17 | Search Console auswerten, auch fitnessracing-hotel.de | P1 | Daniel | S | Z1 | – | ✅ tri-hotel.de | `claude/search-console-2026-11.md`; fitnessracing-hotel.de mit der Monatsauswertung Mitte Dezember |
+| B-18 | Keywords validieren (Keyword Planner, Trends) | P1 | Daniel | M | Z1 | – | ✅ erledigt | `claude/keyword-analyse-2026-11.md` |
+| B-19 | Better Stack: Konto, Monitore, Heartbeat `WATCHDOG_HEARTBEAT_URL` | P1 | Daniel | S | Z1 | – | 🔧 offen | siehe [Ausfallüberwachung](#ausfall) |
+| B-30 | Seitenprüfung Paket B: Quellen-Satz, Stand auf /triscore, Über-Seite | P1 | Dev | M | Z3 | B-10, B-12 | ✅ erledigt | [Paket B](#b-30-methode) |
+| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; **offen** Punkt 4 Hotel-Texte (48 von 104 ohne Text) und Punkt 5 Camp-Kurzprofile (22 noindex), siehe [B-31](#b-31) |
+| B-32 | Seite „25-m-Becken Mallorca“, FAQ „Wo ist es im Januar–März warm?“, Ratgeber-Übersicht /ratgeber | P1 | Dev | M | Z1 | B-18 | 🔧 teilweise | `/region/mallorca/hotels-mit-25-m-becken` live seit 13.11.; **offen:** FAQ „warm im Jan–März“ (nicht auf /trainingsregionen), `/ratgeber` (404, erst ab 2 Ratgebern), Block „Beliebte Themen“. „70.3 Mallorca“ entfällt (21.11.). Prompt `docs/prompts/b-32-becken-seite-ratgeber.md` |
+| B-45 | Titel und H1 für die A-Keywords (+ Nachzügler aus B-17) | P1 | Dev | S | Z1 | B-18 | ✅ erledigt | [B-45/B-32](#b-45) |
+| B-46 | Indexierung bereinigen | P1 | Dev + Daniel | S | Z1 | B-17 | ✅ erledigt 22.11. | Rest (Texte) in B-31; [B-46](#b-46) |
+| B-33 | Zieldestinationen auf 10–20 Hotels | P1 | Dev + Daniel | L | Z1 | B-20 | 🔧 offen | Hotels auf der Regionsseite 22.11.: Mallorca 20 ✅, Lanzarote 8, Fuerteventura 3, Teneriffa 2, Gardasee 3, Zypern 1 |
+| B-44 | Option C (Belegpflicht, „Herkunft“); Altwerte nachtragen | P1 | Dev + Daniel | L | Z3 | B-10 | ✅ live 08.11. | **offen:** Altwerte mit „Beleg fehlt“ nach und nach |
+| B-20 | 99 geparkte Import-Hotels in Etappen prüfen | P2 | Daniel | S | Z3 | E-04 | ⏳ in Arbeit | ca. 0,16 $ je Hotel; zuerst dünne Zielregionen (B-33) |
+| B-21 | Farbvorschlag und Fotoauswahl (Unsplash-Regionsfotos) | P2 | Daniel | S | Z1 | – | 🔧 offen |  |
+| B-22 | FeWo-direkt: CJ-Linkformat, Advertiser-ID, Suchadresse je Region, Position | P2 | Daniel | S | Z2 | – | 🔧 offen | Ratgeber nutzt CJ-Deeplinks schon (19.11.) – prüfen, was davon noch fehlt; [FeWo-direkt](#partner-fewo) |
+| B-34 | Stationswahl im Admin überschreibbar | P2 | Dev | S | Z3 | – | 🔧 offen | Admin zeigt die Station nur an (`admin/regions.ejs`) |
+| B-35 | Dashboard: Besucher und Besuche aus Plausible | P2 | Dev | S | Z1 | – | 🔧 teilweise | Besucher 7 Tage im Dashboard, Besuche im Morgenbericht; **offen:** je Zeitraum und im Funnel |
+| B-36 | Karte als kleines Vorschaubild statt „Karte laden“ | P2 | Dev | S | Z1 | – | 🔧 offen | `entity.ejs` hat noch „Karte laden“ |
+| B-37 | SEO: lastmod nur bei echten Änderungen; Länder mit 1 Hotel | P2 | Dev | S | Z1 | – | 🔧 teilweise | Länder mit 1 Hotel ✅ (noindex, B-46). **lastmod offen:** `recomputeEntity` setzt `entity_rankings.updated_at = now()` bei jeder Neuberechnung → 106 von 142 Sitemap-Einträgen haben heute als Datum |
+| B-38 | DMARC-Berichtsadresse einrichten | P2 | Dev | S | Z6 | – | 🔧 offen | live 22.11.: `v=DMARC1; p=none;` ohne `rua` |
+| B-39 | CRM-Vermerke für Mail-Antworten, Erinnerungen, Unzustellbares | P2 | Dev | M | Z6 | – | 🔧 offen | „Bekannte Lücken“ unter [Prozesstest](#prozesstest) |
+| B-40 | Hotelseite Variante B nach Disziplinen | P2 | Dev | M | Z1 | Freigabe Daniel | 💡 offen | [Hotelseite überarbeiten](#hotelseite) |
+| B-23 | hotel.de: Suchadresse mit {q} herausfinden | P3 | Daniel | S | Z2 | – | 🔧 offen | Übergang: Google-Suche `site:hotel.de` (Migration 085) |
+| B-24 | Kleinkram: Hunter.io, Hub-Punkt Google-Secret, Erinnerung Off-Site-Backup, Weiterleitung daniel@ | P3 | Daniel | S | – | – | 🔧 offen | Zu erledigen |
+| B-25 | Regionstexte gegenprüfen (Transfer, Anstiege, Flugzeiten) | P3 | Daniel | M | Z3 | – | 🔧 offen | [Trainingsregionen](#trainingsregionen) |
+| B-41 | FeWo-direkt-Hinweis in Liste und Regionsseiten | P3 | Dev | S | Z2 | B-22 | ✅ erledigt | als Zeile seit 21.11. (B-90) |
+| B-42 | hotel.de-Suchlink für Hotels ohne eigenen Link | P3 | Dev | S | Z2 | B-23 | 🔧 offen |  |
+| B-43 | Kleinkram Dev: Koordinaten-Verschiebung, `{{#bestaetigen}}`, Camp-Feinschliff, Overpass-Regionsdaten | P3 | Dev | M | Z3 | – | 🔧 offen | [Kleinere offene Punkte](#kleinere) |
+| B-50–56 | Rechtliches, Gewerbe, Steuern | P0–P2 | Daniel/Dev |  |  |  | 🔧 offen | [eigener Abschnitt](#b-50) |
+
+Weitere Nummern im Text: B-88 [Faktenmaske](#b-88), B-89 [Partner-Button](#b-89), B-90 [Hinweis Ferienwohnung](#b-90).
 
 <a id="in-arbeit"></a>
 ## In Arbeit / als Nächstes (Entwicklung)
@@ -225,7 +269,7 @@ Prüfhinweise im Reiter „Inhalte“, Veraltet-Hinweis nur bei Änderung verwen
 „KI-gestützt erstellt, redaktionell geprüft“. `temperature` gibt es seit 21.10.2026 in der API nicht mehr.
 Probelauf Monte Feliz (nicht gespeichert): ca. 7 Cent je Entwurf (Sonnet 5 + Haiku 2). Bestehende 20 Texte: Fingerabdruck
 unverändert; nach den Stationsregentagen gelten 15 von 20 als veraltet (Regentage geändert) – neu erzeugen oder prüfen.
-- **Daniel nach dem Deploy:** unter Admin → KI-Texte Styleguide prüfen/anpassen und 2–3 Mustertexte wählen.
+- **(B-13, erledigt)** **Daniel nach dem Deploy:** unter Admin → KI-Texte Styleguide prüfen/anpassen und 2–3 Mustertexte wählen.
 
 <a id="buchen-anfragen"></a>
 ### Offen aus „Buchen & Anfragen“
@@ -300,7 +344,7 @@ unverändert; nach den Stationsregentagen gelten 15 von 20 als veraltet (Regenta
   beeinflusst. Text, Programm und Position je Ranking bzw. Site im Admin pflegen, nicht hart codieren. Klicks über
   `outbound_clicks` mit eigener Art/Quelle, damit das Dashboard sie dem Programm zuordnet. Keine Banner, keine Fremdskripte,
   kein Hotlinking; ein Logo nur aus den CJ-Werbemitteln hochladen (mit Herkunft).
-- **Offen (Daniel):** CJ-Linkformat und Advertiser-ID aus dem CJ-Account; Suchadresse je Region bei FeWo-direkt (Links testet
+- **Offen (Daniel, B-22):** CJ-Linkformat und Advertiser-ID aus dem CJ-Account; Suchadresse je Region bei FeWo-direkt (Links testet
   Daniel selbst); Position in der Liste (z. B. nach Platz 5 oder am Listenende); als Partnerprogramm im Admin anlegen.
 
 <a id="startseite"></a>
@@ -380,7 +424,7 @@ Athleten-Bewertungen. Offen, nach Wirkung sortiert:
 - **C Entscheidungshilfe – wenn genügend Hotelfotos mit Nutzungsrecht vorliegen** (dauert voraussichtlich). Hero-Foto mit Score,
   „Passt zu dir, wenn … / Eher nicht, wenn …“, Reisemonat wählen (Klima und Score je Monat), Mini-Vergleich mit zwei
   Alternativen, Sprungleiste. Mini-Vergleich und „Passt zu dir“ ggf. vorab einzeln.
-- Offen aus „Gilt für jede Variante“: Karte als kleines Vorschaubild statt „Karte laden“-Fläche.
+- Offen aus „Gilt für jede Variante“ (B-36): Karte als kleines Vorschaubild statt „Karte laden“-Fläche.
 
 <a id="hub"></a>
 ### Dach danielreuland.com
@@ -454,7 +498,7 @@ Zwei Ebenen: **intern** Server-Wächter, **extern** ein Überwachungsdienst (fä
   danielreuland.com, fitnessracing-hotel.de), Zertifikate < 14 Tage, Backup fehlgeschlagen/älter 30 h, fehlgeschlagene
   Systemdienste, PM2-Logs > 1 GB. Mail bei neuem Problem, Erinnerung alle 24 h, Mail „behoben“. Probelauf auf dem Server ok.
 - Umzug nach `ops/` im Hub-Repo, sobald es steht (Aufteilung: `docs/admin-aufteilung.md`).
-- Offen (Daniel): externes Konto anlegen – Vorschlag Better Stack (Free: 10 Monitore, 3-min-Takt, Heartbeat) → Monitore für
+- Offen (Daniel, B-19): externes Konto anlegen – Vorschlag Better Stack (Free: 10 Monitore, 3-min-Takt, Heartbeat) → Monitore für
   tri-hotel.de/healthz (Schlüsselwort „ok“), triprep.de, api.triprep.de/health, danielreuland.com, fitnessracing-hotel.de +
   Heartbeat-URL → `WATCHDOG_HEARTBEAT_URL`. UptimeRobot nur, wenn die AGB gewerbliche Nutzung im Free-Plan erlauben.
 - `pm2-logrotate` 3.0.0 eingerichtet 29.10. (gilt für alle PM2-Apps): je Log max. 50 MB, täglich um Mitternacht, 10 Dateien
@@ -550,7 +594,7 @@ Ereignis 400, falsches Geheimnis 401, von außen 404).
 Einwilligungen, `inquiry.answered`, `contact.profile`, `contact.consent` und Unternehmen im Hub. Antwort an `daniel@` laut Daniel angekommen.
 Am 05.11. per Skript auf dem Server am Testhotel geprüft: Becken mit mehreren Angaben korrigiert und übernommen, entfernter Haken als Korrektur übernommen (Leistung aus dem Profil entfernt).
 **Zweiter Test (06.11.), von Daniel als erfolgreich bestätigt, Testdaten gelöscht:** erste Mail und Erinnerung kamen an, `inquiry.sent` über den Job der App, Unternehmen im Hub entsteht (auch 19 echte Anfragen). Erinnerung danach mit Daniels neuem Text (DE, EN von ihm freigegeben; Rolle von Mia in eigener Zeile) eingespielt und an ihn verschickt. Erste echte Erinnerungen ab 12.11., 08:00 Uhr (19 Hotels).
-Bekannte Lücken: Mail-Antwort, Erinnerung und Unzustellbares erzeugen keinen CRM-Vermerk; `PRIVACY_CRM_SECTION` im Hub noch `off`.
+Bekannte Lücken: Mail-Antwort, Erinnerung und Unzustellbares erzeugen keinen CRM-Vermerk (B-39); `PRIVACY_CRM_SECTION` im Hub noch `off`.
 **Keine Sammelanlage (Entscheidung Daniel 04.11.):** Unternehmen entstehen im Hub immer durch den Versand der Anfrage-Mail (`inquiry.sent`). Sie haben dann nur den Namen und die Verknüpfung
 zum tri-hotel-Objekt, keine Website und kein Land. Die 9 bereits versendeten Anfragen haben noch kein Unternehmen, bis ein weiteres Ereignis kommt.
 
@@ -611,7 +655,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 
 <a id="b-31"></a>
 **Paket C: SEO-Inhalte**
-- **B-31 (Plan 08.11., Daniel):** 1–3 live seit 08.11. (Abnahme an Stichproben geprüft). Punkt 4 **zurückgestellt (09.11., Daniel):** Hotel-Texte erst einzeln im Admin erzeugen, um Styleguide und Mustertexte zu schärfen; danach Sammellauf für die übrigen.
+- **B-31 (Plan 08.11., Daniel) – teilweise:** 1–3 live seit 08.11. (Abnahme an Stichproben geprüft). Punkt 4 **zurückgestellt (09.11., Daniel):** Hotel-Texte erst einzeln im Admin erzeugen, um Styleguide und Mustertexte zu schärfen; danach Sammellauf für die übrigen.
   1. Vergleichsseiten: Admin → Regionen → „Vergleichsseiten“: alle Paare mit/ohne Text, Schalter „indexieren“ je Paar mit Text (`region_pair_settings`, Migration 113); ohne Text immer noindex.
   2. Länderseiten DE/AT: Redaktionstext + 3 eigene Fragen (`country_texts`, Migration 112), dazu berechnete Fragen (Hotelzahl, Leistungen) als FAQPage. Länder mit 1 Hotel sind über die Mindestzahl schon noindex (B-37).
   3. Camp-FAQ `/trainingscamp`: + Pauschalreise/Einzelbuchung, Preisbestandteile, Absage/Versicherung (11 Fragen).
@@ -657,7 +701,7 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 - **Seite „Über tri-hotel“ (B-30, Text aus B-12, M1 Saisonstart): live seit 09.11.** (Commit bbdebc9; live geprüft: Seite, Fußzeile, Hinweis auf `/triscore`, Sitemap, Bilder, AboutPage). `/ueber-tri-hotel` = `/ueber-<site-code>`; Inhalt je Site unter `views/sites/<code>/ueber.ejs` + `ueber.json` (Titel, Beschreibung, E-Mail, Gründer), Logik in `services/about.js`, Tests `test/about.test.js`. Link in Fußzeile, Hinweis am Ende von `/triscore`, Sitemap, AboutPage-Daten.
   - **Text zum TriScore an die Methodik angepasst (09.11., von Daniel freigegeben):** Satz „Ohne Becken … gibt es keinen TriScore“ entfällt (kein K.O. seit Migration 054). Klima steht nicht mehr bei den Fakten, sondern als eigener Absatz „beste Reisezeit“ (fließt seit Migration 029 nicht ein). Bewertungen in drei Zuständen zur Laufzeit: `formula.athlete_enabled` an → „Fakten und Bewertungen“; Bewertungen möglich, zählen aber nicht (jetziger Stand laut Migration 034) → „Zusätzlich zum TriScore helfen dir die Bewertungen …“; `review_config.enabled` aus → kein Absatz. Punkt „Du warst im Trainingslager?“ mit Link auf `/hotels` (Formular gibt es nur je Hotel), sobald Bewertungen möglich sind.
   - **Fotos (09.11.):** Zwei Bildstellen im Abschnitt „Wer hinter tri-hotel.de steht“: Porträt klein neben dem Text (`public/sites/tri-hotel/ueber-portrait.jpg`, 724 × 724, Studioporträt im dunklen Pullover) und Aktionsbild darunter (`ueber-action.jpg`, 1086 × 724, Rad im Wettkampf). Größere Originale gibt es nicht, deshalb kein Bild über die volle Breite. Beide Dateien liegen im Repo und werden **ohne Urhebervermerk** angezeigt (Entscheidung Daniel 09.11., `ueber.json` → `no_credit: true` je Bild; Abweichung von der Regel „Urhebervermerk immer anzeigen“, gilt nur für diese beiden eigenen Bilder). Ein Vermerk lässt sich jederzeit über `photo.credit` bzw. `action.credit` nachtragen. Gewerbliche Nutzung beider Bilder von Daniel am 09.11. im Chat bestätigt (kein Schriftstück abgelegt). Die Sportograf-Bilder (Logo) sind nicht verwendet: laut AGB § 10 nur private Nutzung, gewerblich nur mit gesonderter Vereinbarung.
-- **Dashboard: Besucher und Besuche** (Wunsch Daniel 02.11.): neben Seitenaufrufen auch Unique Visitors und Total Visits anzeigen – in den Kennzahlen und im Funnel (Plausible-Metriken `visitors`, `visits`), je Zeitraum und Seite.
+- **Dashboard: Besucher und Besuche** (B-35, teilweise; Wunsch Daniel 02.11.): neben Seitenaufrufen auch Unique Visitors und Total Visits anzeigen – in den Kennzahlen und im Funnel (Plausible-Metriken `visitors`, `visits`), je Zeitraum und Seite.
 - Jährliche Nachprüfung aktiver Camp-Anbieter als Board-Aufgabe.
 - Camp-Prüfung: Impressum-/Kontaktseite gezielt mitladen (wird oft nicht gefunden); Trivolution-Website liefert 404.
 - Abgleichsfelder der Camp-Anbieter (Monate, Niveaus, Gruppengröße, Preis) per Camp-Prüfung vorschlagen.
@@ -671,7 +715,7 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 [↑ Übersicht](#uebersicht)
 - **KI-Budget:** Oktober war am 29.10. aufgebraucht (20,08 von 20 $); seit 01.11. neues Monatsbudget (`LLM_MONTHLY_BUDGET_USD`, 20 $).
   Oktober-Verbrauch: Extraktion 14,09 $, Camp-Prüfung 3,56 $, Vergleich 1,00 $, Anfragen 0,81 $, Texte 0,63 $. Budget bei Bedarf erhöhen.
-- **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung**: 124 von 125 Prüf-Jobs wurden beim Import sofort
+- **99 importierte Hotels (Import 22.10., 19:11) ohne Auto-Prüfung** → jetzt B-20, in Arbeit: 124 von 125 Prüf-Jobs wurden beim Import sofort
   abgebrochen (pg-boss „cancelled“); die Meldungen stehen auf „bestätigt“ und erscheinen als „Auto-Prüfung hängt“.
   Am 26.10. entschieden: liegen lassen. Bei Bedarf in Etappen (z. B. 20) starten – Kosten ca. 0,13 $ KI + 0,03 $ Places je Hotel.
 - Preis je geteilter Camp-Anfrage (A3, zurückgestellt; Vorschlag: halber Preis einer Einzelanfrage).
@@ -685,8 +729,6 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
   danach die schon vorhandenen Geo-Werte (Strand, Becken, Bahn, Flughafen) prüfen – vorhandene Werte überschreibt der Nachlauf nicht.
 - **B-46 nach Deploy:** `node scripts/find-duplicates.js` auf dem Server laufen lassen, Liste prüfen (Sitemap am 21.11. eingereicht).
 - **KI-Schlüssel läuft am ca. 08.12.2026 ab** (am 08.11. mit 30 Tagen Laufzeit neu angelegt, der alte lief am 07.11. ab und legte Auto-Prüfung, Texte und KI-Mails still). Vorher neuen Schlüssel ohne Ablauf anlegen und setzen.
-- **Import vom 01.11. prüfen:** lief um 08:00 – 20 neue Meldungen aus dem Abgleich sports-hotels.com und 7 erneut gestartete
-  Auto-Prüfungen geparkter Importe; Ergebnisse in der Warteschlange prüfen.
 - **Hybrid-Camp-Anbieter freigeben** (Reiseathleten, Titan Fitness Camp Algarve, BlackBOX Tenerife, UF Bootcamp – am 01.11. neu
   geprüft; UF Bootcamp rot: allgemeine Fitness-Retreats, eher ablehnen). Für diese vier legt die Prüfung keine Hotel-Meldungen an.
 - **8 Reiseathleten-Hotels** im Fitness-Racing-Ranking (Aurora Sol, Vilamar, H10 Casa del Mar, Reverence Life, Iberostar Jardín del
@@ -731,7 +773,7 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 - Partnerprogramme: Awin-Publisher-/Programm-ID für HolidayCheck nach Freigabe; Booking-Bewerbung, sobald Search Console
   indexierte Seiten zeigt.
 - Plausible: Ziele und Custom Properties anlegen – Liste unter B-16.
-- Hunter.io-Konto („account restricted“) prüfen.
+- Hunter.io-Konto („account restricted“) prüfen (B-24, dazu: Hub-Punkt Google-Secret abhaken, Weiterleitung daniel@ abschalten).
 - Gewerbeanmeldung vor Provisionen → [B-51](#b-50) (Partnerlinks sind schon live).
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
 
