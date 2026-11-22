@@ -111,7 +111,14 @@ async function recomputeEntity(entityId, rankingId, client = db, { shared = true
      ON CONFLICT (entity_id, ranking_id) DO UPDATE SET
        fact_score = EXCLUDED.fact_score, score = EXCLUDED.score, completeness = EXCLUDED.completeness,
        is_provisional = EXCLUDED.is_provisional, ko_reason = EXCLUDED.ko_reason, athlete_score = EXCLUDED.athlete_score,
-       review_count = EXCLUDED.review_count, review_avg = EXCLUDED.review_avg, updated_at = now()`,
+       review_count = EXCLUDED.review_count, review_avg = EXCLUDED.review_avg,
+       -- Änderungsdatum (Sitemap-lastmod) nur, wenn sich am Ergebnis etwas ändert – der nächtliche Lauf soll es nicht verschieben
+       updated_at = CASE WHEN (entity_rankings.fact_score, entity_rankings.score, entity_rankings.completeness,
+           entity_rankings.is_provisional, entity_rankings.ko_reason, entity_rankings.athlete_score,
+           entity_rankings.review_count, entity_rankings.review_avg)
+         IS DISTINCT FROM (EXCLUDED.fact_score, EXCLUDED.score, EXCLUDED.completeness, EXCLUDED.is_provisional,
+           EXCLUDED.ko_reason, EXCLUDED.athlete_score, EXCLUDED.review_count, EXCLUDED.review_avg)
+         THEN now() ELSE entity_rankings.updated_at END`,
     [entityId, rankingId, result.factScore, result.score, result.completeness, result.provisional, result.koReason,
       athlete.score, reviews.rows.length, athlete.avgStars]
   );

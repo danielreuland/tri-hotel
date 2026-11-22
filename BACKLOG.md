@@ -75,7 +75,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, davor `<a i
 | B-34 | Stationswahl im Admin überschreibbar | P2 | Dev | S | Z3 | – | 🔧 offen | Admin zeigt die Station nur an (`admin/regions.ejs`) |
 | B-35 | Dashboard: Besucher und Besuche aus Plausible | P2 | Dev | S | Z1 | – | 🔧 teilweise | Besucher 7 Tage im Dashboard, Besuche im Morgenbericht; **offen:** je Zeitraum und im Funnel |
 | B-36 | Karte als kleines Vorschaubild statt „Karte laden“ | P2 | Dev | S | Z1 | – | 🔧 offen | `entity.ejs` hat noch „Karte laden“ |
-| B-37 | SEO: lastmod nur bei echten Änderungen; Länder mit 1 Hotel | P2 | Dev | S | Z1 | – | 🔧 teilweise | Länder mit 1 Hotel ✅ (noindex, B-46). **lastmod offen:** `recomputeEntity` setzt `entity_rankings.updated_at = now()` bei jeder Neuberechnung → 106 von 142 Sitemap-Einträgen haben heute als Datum |
+| B-37 | SEO: lastmod nur bei echten Änderungen; Länder mit 1 Hotel | P2 | Dev | S | Z1 | – | ✅ gebaut 22.11., Deploy offen | Länder mit 1 Hotel ✅ (noindex, B-46). lastmod: `recomputeEntity` setzt `entity_rankings.updated_at` nur noch, wenn sich Score, Vollständigkeit, K.O. oder Bewertungen ändern; Sitemap zählt zusätzlich das Prüfdatum der Faktenwerte (`max(entity_facts.checked_at)`). Test `test/lastmod.test.js` (DB). Vorher: 106 von 142 Einträgen mit Datum des nächtlichen Laufs |
 | B-38 | DMARC-Berichtsadresse einrichten | P2 | Dev | S | Z6 | – | 🔧 offen | live 22.11.: `v=DMARC1; p=none;` ohne `rua` |
 | B-39 | CRM-Vermerke für Mail-Antworten, Erinnerungen, Unzustellbares | P2 | Dev | M | Z6 | – | 🔧 offen | „Bekannte Lücken“ unter [Prozesstest](#prozesstest) |
 | B-40 | Hotelseite Variante B nach Disziplinen | P2 | Dev | M | Z1 | Freigabe Daniel | 💡 offen | [Hotelseite überarbeiten](#hotelseite) |

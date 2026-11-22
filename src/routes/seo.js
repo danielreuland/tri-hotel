@@ -68,7 +68,9 @@ router.get('/sitemap.xml', wrap(async (req, res) => {
   for (const ranking of all) {
     const bp = basePath(ranking);
     const live = await db.many(
-      `SELECT e.slug, GREATEST(e.updated_at, er.updated_at) AS lastmod FROM entity_rankings er JOIN entities e ON e.id = er.entity_id
+      // Faktenwerte zählen über ihr Prüfdatum (checked_at wird bei jeder Wert-Änderung gesetzt und steht auf der Seite)
+      `SELECT e.slug, GREATEST(e.updated_at, er.updated_at, (SELECT max(f.checked_at) FROM entity_facts f WHERE f.entity_id = e.id)) AS lastmod
+         FROM entity_rankings er JOIN entities e ON e.id = er.entity_id
         WHERE er.ranking_id = $1 AND er.status = 'live' ORDER BY e.slug`,
       [ranking.id]
     );
