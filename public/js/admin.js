@@ -213,6 +213,30 @@ document.querySelectorAll('select[data-autosubmit], input[type=checkbox][data-au
   });
 })();
 
+// Scroll-Position über Speichern hinweg halten: Formulare mit Rücksprung (Feld „back“) auf dieselbe Seite merken sich die
+// Position, nach dem Neuladen geht es dorthin statt an den Anfang des Abschnitts (z. B. „Übernehmen“ bei Betreiberantworten).
+var keptScroll = (function () {
+  var KEY = 'admin-keep-scroll';
+  document.addEventListener('submit', function (e) {
+    var back = e.target.querySelector && e.target.querySelector('input[name="back"]');
+    if (!back || (e.target.method || '').toLowerCase() !== 'post') return;
+    if (back.value.split('#')[0].split('?')[0] !== location.pathname) return;
+    try { sessionStorage.setItem(KEY, JSON.stringify({ path: location.pathname, y: window.scrollY, at: Date.now() })); } catch (err) { /* ohne Speicher: normaler Rücksprung */ }
+  });
+  var saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    sessionStorage.removeItem(KEY);
+  } catch (err) { saved = null; }
+  return saved && saved.path === location.pathname && Date.now() - saved.at < 60000 ? saved.y : null;
+})();
+function restoreScroll() {
+  if (keptScroll === null) return false;
+  window.scrollTo(0, keptScroll);
+  keptScroll = null;
+  return true;
+}
+
 // Detailseite: Abschnitte als Reiter. Ohne JavaScript bleiben alle Abschnitte untereinander sichtbar.
 (function () {
   var bar = document.querySelector('[data-tabs]');
@@ -236,7 +260,7 @@ document.querySelectorAll('select[data-autosubmit], input[type=checkbox][data-au
     var panel = el && el.closest('[data-tab]');
     var key = panel ? panel.getAttribute('data-tab') : keys[0];
     show(key);
-    if (scroll && el) el.scrollIntoView({ block: 'start' });
+    if (scroll && el && !restoreScroll()) el.scrollIntoView({ block: 'start' });
   }
   links.forEach(function (a) {
     a.addEventListener('click', function (e) {
@@ -249,6 +273,8 @@ document.querySelectorAll('select[data-autosubmit], input[type=checkbox][data-au
   window.addEventListener('hashchange', function () { fromHash(true); });
   fromHash(true);
 })();
+// Seiten ohne Reiter: Position ebenfalls halten (nach dem Sprung des Browsers zum Anker)
+window.addEventListener('load', function () { restoreScroll(); });
 
 // „alle“ markieren: Kontrollkästchen mit data-check-all schaltet alle Kästchen derselben Tabelle
 document.addEventListener('change', function (e) {
