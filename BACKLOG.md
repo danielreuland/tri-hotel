@@ -14,6 +14,7 @@ Status: ✅ live/erledigt · 🧪 Test läuft · 🔧 offen bzw. teilweise · �
 
 | Thema | Status | Stand |
 |---|---|---|
+| [B-50–B-56 Rechtliches, Gewerbe, Steuern](#b-50) | 🔧 offen (B-50 P0) | 22.11. |
 | [B-16 Plausible-Ziele und Funnel](#b-16) | ✅ live | 21.11. |
 | [B-90 Hinweis „Ferienwohnung?“ in der Rangliste](#b-90) | ✅ live | 21.11. |
 | [B-89 Partner-Button A/B-Test](#b-89) | 🧪 Test läuft | 21.11. |
@@ -47,6 +48,44 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, davor `<a i
 <a id="in-arbeit"></a>
 ## In Arbeit / als Nächstes (Entwicklung)
 [↑ Übersicht](#uebersicht)
+
+<a id="b-50"></a>
+### B-50 bis B-56 Rechtliches, Gewerbe und Steuern
+
+*Stand: aufgenommen 22.11.2026 (Liste von Daniel), gegen Code und Backlog geprüft*
+
+| Nr | Aufgabe | Prio | Wer | Aufwand | Ziel | hängt an | Status |
+|---|---|---|---|---|---|---|---|
+| B-50 | Kanzlei prüft die Hotel-Ansprache: (a) Sind Anfrage-Mail und Erinnerungen Werbung nach § 7 UWG bzw. Art. 21 LSSI (DE und ES)? (b) Reicht die Kooperations-Einwilligung per persönlichem Link ohne Double-Opt-in? | P0 | Daniel | M | Z6 | – | offen |
+| B-56 | Double-Opt-in für die Kooperations-Einwilligung vor der ersten Werbemail (oder B-50 (b) abwarten); keine Werbemail ohne bestätigte Einwilligung. Anfrage-Mail ist schon redaktionell (D1) | P1 | Dev | S | Z6 | B-50 (b) | offen |
+| B-51 | Gewerbe anmelden (Kleinunternehmerregelung prüfen) | P1 | Daniel | S | Z2 | – | offen |
+| B-52 | Open-Meteo: Abo oder eigener Server (E-13) | P1 | Daniel + Dev | M | Z3 | – | offen |
+| B-53 | Datenschutz im Hub prüfen, dann `PRIVACY_CRM_SECTION=on` | P1 | Daniel | S | Z6 | – | offen |
+| B-54 | Steuerliche Behandlung klären (Umsatzsteuer ab Überschreiten von 25.000 €) | P2 | Daniel | S | Z2 | B-51 | offen |
+| B-55 | AGB für Partnerleistungen; Datenschutzerklärung um Partneranfragen und Tracking erweitern | P2 | Daniel + Dev | M | Z2 | B-51 | offen |
+
+Befund 22.11. (Code und Live-Stand):
+- **B-50:** Fragenkatalog steht unter [Hotel-Ansprache neu](#ansprache) („Rechtlich prüfen lassen“, Fragen 1–4 und „Dazu klären“).
+  Dort fehlt bisher Spanien: **Art. 21 LSSI** für Anfragen an spanische Hotels in den Katalog aufnehmen. Anfragen und
+  Erinnerungen laufen weiter (Versand hängt laut D1 nicht an der Prüfung; bis 05.11. waren 22 Anfragen versendet).
+- **B-56:** Steht gegen die Entscheidung vom 04.11. („kein Double-Opt-in“, siehe D1) – daher zuerst B-50 (b). Technik ist zur
+  Hälfte da: `services/hub-events.js` (`contactConsent`) und der Hub verarbeiten `doubleOptIn` schon; in tri-hotel fehlen nur
+  Bestätigungsmail und Bestätigungslink (Aufwand S passt). Bis dahin gilt: Kontakte mit `verification: personal_link` nicht werblich anschreiben.
+- **B-51:** **Dringender als P1:** Partnerlinks mit Provision sind seit Oktober live (Expedia, Hotels.com, CHECK24, trivago,
+  hotel.de, FeWo-direkt) und der Partner-Button-Test (B-89) läuft – Einnahmen können also schon entstehen. Ersetzt den alten
+  Punkt „Gewerbeanmeldung vor Provisionen“ (Zu erledigen) und ist Voraussetzung für [Paket D](#paket-d).
+- **B-52:** Genutzt werden die freien Endpunkte ohne Schlüssel: `archive-api` und `marine-api` (`services/climate.js`),
+  `api.open-meteo.com/v1/elevation` (`services/geo.js`). Für ein Abo kommen `customer-…`-Adressen und `apikey` dazu (Dev, klein);
+  eigener Server = Docker-Instanz mit eigenem Datenbestand (Dev, groß). Ersetzt den Punkt „Lizenz Open-Meteo“ unter Partner.
+  E-13 ist im Repo nicht zu finden – Verweis bitte ergänzen.
+- **B-53:** Wichtiger geworden: Seit 22.11. (Migration 127) meldet tri-hotel Absender aus Mail-Antworten als `contact.profile`
+  an den Hub; Ansprechpartner landen also schon im CRM, während `PRIVACY_CRM_SECTION` dort noch `off` ist. tri-hotel-Seite
+  ist ergänzt (Abschnitt „Ansprechpartner“), der Hub-Teil fehlt.
+- **B-54:** Seit 2025 gilt für die Kleinunternehmerregelung: Vorjahr ≤ 25.000 €, laufendes Jahr ≤ 100.000 € (mit Steuerberater prüfen).
+- **B-55:** Datenschutz ist zum Teil schon erledigt: Partnerlinks und Klickzählung stehen in `views/public/datenschutz.ejs`
+  („Partnerlinks zu Buchungs- und Bewertungsportalen“, „Partnerlinks im Ratgeber“, Reichweitenmessung). Offen sind nur
+  **Partneranfragen** – die kommen mit dem [Partnerbereich](#partnerbereich) bzw. `/partner-werden` im Hub (CLAUDE.md), also dort
+  regeln. **AGB** gibt es noch keine; nötig erst, wenn Partnerleistungen verkauft werden.
 
 <a id="b-16"></a>
 ### B-16 Plausible-Ziele und konfigurierbarer Funnel
@@ -171,7 +210,7 @@ Starkwindtage (es war schon immer das Stundenmittel ≥ 40 km/h, keine Böen).
   Maspalomas eher zu hoch; Kandidat für die Stationswahl im Admin.
 - Ohne Station (Stand Trockenlauf): Regen Algarve, Costa Blanca; Wind Algarve. Costa Blanca-Wind käme aus Alzira
   (56 km, im Inland) – ggf. später Stationswahl im Admin überschreibbar machen.
-- **Lizenz Open-Meteo** (Daniel klärt): kostenlose API nur nicht-kommerziell, Seiten mit Werbung gelten als kommerziell.
+- **Lizenz Open-Meteo** → jetzt [B-52](#b-50): kostenlose API nur nicht-kommerziell, Seiten mit Werbung gelten als kommerziell.
 
 <a id="beschreibungstexte"></a>
 ### Beschreibungstexte: neuer Prompt und Ablauf
@@ -523,7 +562,7 @@ Anfrage-Mail mit Daniels Vorstellung, Kurzprofil (Score, Platz, Kernfakten), Lin
 Rechte-Erklärung), Ansprechpartner fürs Profil; Nachfassen durch Mia (KI gekennzeichnet); Übergabe ins CRM (Ereignisse an den Hub);
 später Partnerbereich mit Login und Werbeprodukten (nur gekennzeichnet, ohne Einfluss auf Score/Platz).
 - **D1 freigegeben (02.11.), geändert 04.11.:** Vertriebsfrage nicht in der Mail, nur freiwillig im Antwortformular mit Einwilligung. Daniel hat am 04.11. entschieden: **kein Double-Opt-in**, die Einwilligung geht direkt an den Hub (`verification: personal_link`, Name Pflicht, Adresse = angeschriebene Adresse). Der Nachweis nennt das offen; schwächer als Double-Opt-in.
-- **Rechtlich prüfen lassen: Kooperations-Einwilligung ohne Double-Opt-in** (vor der ersten Werbemail an solche Kontakte; der Versand der Anfragen hängt nicht daran).
+- **Rechtlich prüfen lassen: Kooperations-Einwilligung ohne Double-Opt-in** ([B-50](#b-50), Double-Opt-in als Plan B: B-56) (vor der ersten Werbemail an solche Kontakte; der Versand der Anfragen hängt nicht daran).
   - *Ablauf heute:* Das Hotel bekommt eine persönliche Anfrage-Mail an die öffentliche Kontaktadresse. Im Formular hinter dem persönlichen Link setzt es freiwillig das nicht vorausgewählte Häkchen
     „Ich möchte von tri-hotel.de per E-Mail über Kooperationsmöglichkeiten informiert werden …“ (Wortlaut in `src/lib/consents.js`, Version `2026-10b`) und nennt einen Namen. Beim Absenden geht sofort `contact.consent` an den Hub, ohne Bestätigungsmail.
   - *Was gespeichert wird:* Der Kontakt im Hub bekommt `email_consent = granted`, Rechtsgrundlage Art. 6 Abs. 1 lit. a DSGVO, der Lead steigt auf „Interesse bekundet“, und er gilt als werblich anschreibbar. Der Nachweis enthält „kein Double-Opt-in“, Wortlaut, Version, Zeitpunkte und Ereignis-ID.
@@ -585,7 +624,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
 - Camp-Seite: FAQ um Stornierung und Versicherung ergänzen, Abschluss am Seitenende zur Anfrage statt nur zum Hotel-Ranking.
 
 <a id="paket-d"></a>
-**Paket D: Conversion (nach Klärung der Gewerbeanmeldung, siehe „Gewerbeanmeldung vor Provisionen“)**
+**Paket D: Conversion (nach Klärung der Gewerbeanmeldung, siehe [B-51](#b-50))**
 - Dezenter Link „Preise prüfen“ auf Hotelkarten in Liste und Regionsseiten, als Anzeige gekennzeichnet, ohne Einfluss auf die Reihenfolge. 50 von 68 Hotels haben Partnerlinks; die übrigen 18 ohne Link, das darf optisch nicht wie eine Bewertung wirken.
 - Knopf „Anfragen“ auf den Camp-Karten. Formulierung „Anbieter zahlen nicht für ihre Aufnahme; Partnerschaften sind als Anzeige gekennzeichnet“ klarer fassen. Einheitliche Preisangabe „pro Woche“ prüfen.
 
@@ -693,7 +732,7 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
   indexierte Seiten zeigt.
 - Plausible: Ziele und Custom Properties anlegen – Liste unter B-16.
 - Hunter.io-Konto („account restricted“) prüfen.
-- Gewerbeanmeldung vor Provisionen.
+- Gewerbeanmeldung vor Provisionen → [B-51](#b-50) (Partnerlinks sind schon live).
 - Alte Erinnerung „Off-Site-Backup“ auf dem Firmen-Mac löschen (neue liegt auf dem privaten Mac, 04.01.2027).
 
 <a id="server"></a>
