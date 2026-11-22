@@ -82,7 +82,7 @@ der Liste mit Link zur Methodik. Ganze Zeile = Link zur Hotelseite (Overlay), Bu
         Werbelink-Hinweis und Messpunkt je Liste vorhanden, `rel="sponsored nofollow noopener"`, `target="_blank"`.
   - [ ] Auswertung nach einigen tausend Aufrufen je Variante; danach entscheiden (immer an / aus) und Code für „Test“ ggf. entfernen.
 
-### B-46 Indexierung bereinigen (18.11.2026, umgesetzt, Deploy nach „veröffentlichen“)
+### B-46 Indexierung bereinigen (18.11.2026, erledigt 22.11. – Rest Texte in B-31)
 Grundlage: Search-Console-Drilldown 18.11. Viele der gemeldeten Regionen/Länder waren beim Abruf schon indexierbar (ältere Crawls).
 - **Regeln** (`services/areas.js` → `indexRules`/`areaIndexable`/`indexGaps`, Schwellen aus `rankings.formula`): Region ab
   `region_min_entities` (2) Objekten **mit Score** und mit Einleitungstext (Redaktionstext oder `regions.intro`); Land ab
@@ -94,8 +94,10 @@ Grundlage: Search-Console-Drilldown 18.11. Viele der gemeldeten Regionen/Länder
 - **Dubletten:** Zafiro Palace war schon mit Migration 080 zusammengeführt (301 + canonical ok). Migration 121: „Globals Janeiro“ →
   „Globales Janeiro“, Slug `globales-janeiro-can-picafort`, alter Slug 301. Suche: `node scripts/find-duplicates.js` (nur Liste).
 - Tests: `test/indexing.test.js` (Regeln je Seitentyp, 301, Sitemap ohne noindex/Weiterleitung – DB-Teil mit `TEST_DATABASE_URL`).
-- Offen: noindex bleiben derzeit Region Zypern und Länder Zypern, Türkei, Thailand, Ägypten, Slowakei (je 1 Hotel) sowie alle
-  9 Camp-Anbieter (Kurzprofil 0–36 Wörter, Texte aus B-31). Dünne Hotelseiten: Texte für Garda Sporting Club und Sant Jordi fehlen (B-31).
+- **Abnahme 22.11. (live):** Gardasee, Teneriffa, Gran Canaria, Algarve, Girona, Kreta sowie Italien, Portugal, Griechenland u. a.
+  indexierbar und in der Sitemap (145 URLs); Zypern (Region und Land, je 1 Hotel) bewusst noindex. Zafiro: alter Slug
+  `zafirco-palace-alcudia-alcudia` → 301, canonical ok. robots.txt ok (nur /admin, /anfrage/, /bestaetigen/, /go/). Sitemap am
+  21.11. eingereicht (Daniel). Übrige Texte (22 Camp-Profile noindex, 48 Hotelseiten ohne Text) laufen unter B-31.
 
 ### Klima: Wind und Regentage von Messstationen (03.11.2026, live – Migration 099)
 Vergleich Open-Meteo gegen 11 NOAA-Stationen 2023–2024 (Gando, Fuerteventura, Lanzarote, Teneriffa Süd, Palma, Alicante,
@@ -458,6 +460,8 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
   2. Länderseiten DE/AT: Redaktionstext + 3 eigene Fragen (`country_texts`, Migration 112), dazu berechnete Fragen (Hotelzahl, Leistungen) als FAQPage. Länder mit 1 Hotel sind über die Mindestzahl schon noindex (B-37).
   3. Camp-FAQ `/trainingscamp`: + Pauschalreise/Einzelbuchung, Preisbestandteile, Absage/Versicherung (11 Fragen).
   4. Hotel-Texte: 39 Live-Hotels ohne Text (Stand 08.11.: 70 live, 24 freigegeben, 7 Entwürfe), ca. 0,04 $ je Text. Import-Prüfung der 99 geparkten Hotels: tatsächlich ca. 0,32 $ KI je Hotel (max. 0,85 $) + Places, zusammen ca. 35–40 $.
+  5. **Aus B-46 (22.11.):** Alle 22 Camp-Anbieter-Profile sind noindex (Regel: ab 50 Wörtern Kurzprofil), u. a. Jorge Sports, Tricamp –
+     Kurzprofile schreiben. 48 von 104 Hotelseiten der Sitemap ohne Text (u. a. Garda Sporting Club, Sant Jordi Boutique, Zafiro Palace) – kommt mit Punkt 4.
 - **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_compare_texts`, beliebig viele je Region, Migration 110) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 14 Paare (6 neue in Migration 111). `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
 - Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.
 - Hotel-Texte: 24 veröffentlicht, 8 Entwürfe prüfen und freigeben, für die übrigen 36 Hotels erzeugen (KI-Budget). Passt zum Titel „… im Check“.
@@ -512,8 +516,7 @@ Live seit 13.11. (Migration 115, Commit e074e83), im Quelltext abgenommen: Title
 - **Koordinaten Zafiro Alzinar Mar korrigieren** (B-46, 18.11.): stehen 130 m neben Zafiro Tropic in Port d'Alcúdia, laut OSM liegt das
   Hotel in Can Picafort (Carrer de la Saladina, 39.76078, 3.15123). Im Admin unter Stammdaten ändern (zieht Klima und Umgebung nach);
   danach die schon vorhandenen Geo-Werte (Strand, Becken, Bahn, Flughafen) prüfen – vorhandene Werte überschreibt der Nachlauf nicht.
-- **B-46 nach Deploy:** `node scripts/find-duplicates.js` auf dem Server laufen lassen, Liste prüfen; Sitemap in der Search Console neu
-  einreichen und die Indexierung der freigeschalteten URLs beantragen.
+- **B-46 nach Deploy:** `node scripts/find-duplicates.js` auf dem Server laufen lassen, Liste prüfen (Sitemap am 21.11. eingereicht).
 - **KI-Schlüssel läuft am ca. 08.12.2026 ab** (am 08.11. mit 30 Tagen Laufzeit neu angelegt, der alte lief am 07.11. ab und legte Auto-Prüfung, Texte und KI-Mails still). Vorher neuen Schlüssel ohne Ablauf anlegen und setzen.
 - **Import vom 01.11. prüfen:** lief um 08:00 – 20 neue Meldungen aus dem Abgleich sports-hotels.com und 7 erneut gestartete
   Auto-Prüfungen geparkter Importe; Ergebnisse in der Warteschlange prüfen.
