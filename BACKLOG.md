@@ -253,8 +253,11 @@ Bis dahin keine Camp-Texte per Sammellauf erzeugen.
   Gruppengröße, Preis), Einwilligung namentlich, Bestätigung, Admin-Freigabe, Nachfrage nach 7 Tagen. Preis je geteilter
   Anfrage weiter offen (A3, „Zu entscheiden“). Die Abgleichsfelder sind von Hand gepflegt; die Camp-Prüfung schlägt sie nicht vor.
 - **Hotel ↔ Anbieter** (`camp_provider_hotels`, verknüpft oder freie Zeile): Hotelseite zeigt Anbieter und „Camp hier anfragen“.
-  **Fehler live:** Jorge Sports zeigt „Allsun Hotel Bella Paguera“ doppelt (freie Zeile und verknüpfte Zeile); freie Zeilen
-  ohne Score stehen vor den verknüpften.
+  **Dublette behoben (23.11., Migration 129, noch nicht veröffentlicht):** Jorge Sports zeigte „Allsun Hotel Bella Paguera“ doppelt
+  (freie Zeile im Textfeld + dasselbe Objekt in der Auswahl). `camps.saveProviderHotels` macht jetzt aus einer freien Zeile mit
+  dem Namen eines gewählten Objekts die Verknüpfung (Fundstelle bleibt) und legt keine neue freie Zeile dafür an (`camps.sameHotel`);
+  Migration 129 entfernt vorhandene Dubletten aller Anbieter. Tests `test/camp-links.test.js`. Offen: freie Zeilen ohne Score
+  stehen vor den verknüpften (Reihenfolge, siehe Kleinere offene Punkte).
 - **Camp-Prüfung** (`services/camp-check.js`): Website + KI mit Fundstelle, Ampel (Website, Thema, Impressum, Kontakt, Termine,
   Ziele, Preise), schlägt Kurzprofil, Merkmale, Preise, Hotels vor und legt Hotel-Meldungen an (je Anbieter abschaltbar).
   Impressum wird oft nicht gefunden; Trivolution-Website 404 (siehe Kleinere offene Punkte).

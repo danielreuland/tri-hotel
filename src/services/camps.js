@@ -125,8 +125,16 @@ function suggestEntity(row, entities) {
   return best && !best.ambiguous ? { entity: best.entity, exact: best.exact } : null;
 }
 
+// Freie Zeile meint dasselbe Hotel wie ein Objekt (gleicher Name ohne Allerweltswörter, Akzente egal)
+function sameHotel(row, entity) {
+  const { nameMatch } = require('./places');
+  return Boolean(row && entity && nameMatch(row.hotel_name, entity.name) === 2);
+}
+
 // Hotels eines Anbieters speichern: verknüpfte Objekte (Reihenfolge der Auswahl) + freie Zeilen „Name | Ort | Region“.
 // Bestehende Zeilen behalten ihre ID (gleiches Objekt bzw. gleicher freier Name); Ort/Region verknüpfter Zeilen aus dem Objekt.
+// Freie Zeilen mit dem Namen eines verknüpften Objekts sind Dubletten: Die alte freie Zeile wird zur Verknüpfung
+// (Fundstelle und Hotel-Meldung bleiben), eine neue freie Zeile mit diesem Namen wird nicht angelegt.
 async function saveProviderHotels(client, providerId, { entityIds = [], free = [] }) {
   const old = (await client.query('SELECT * FROM camp_provider_hotels WHERE provider_id = $1', [providerId])).rows;
   const ents = entityIds.length ? (await client.query('SELECT id, name, city FROM entities WHERE id = ANY($1::uuid[])', [entityIds])).rows : [];
@@ -135,9 +143,10 @@ async function saveProviderHotels(client, providerId, { entityIds = [], free = [
   for (const id of entityIds) {
     const e = ents.find((x) => x.id === id);
     if (!e) continue;
-    const prev = old.find((r) => r.entity_id === id && !keep.has(r.id));
+    const prev = old.find((r) => r.entity_id === id && !keep.has(r.id))
+      || old.find((r) => !r.entity_id && !keep.has(r.id) && sameHotel(r, e));
     if (prev) {
-      await client.query('UPDATE camp_provider_hotels SET hotel_name = $2, place = $3, sort_order = $4 WHERE id = $1', [prev.id, e.name, e.city || prev.place, i++]);
+      await client.query('UPDATE camp_provider_hotels SET entity_id = $5, hotel_name = $2, place = $3, sort_order = $4 WHERE id = $1', [prev.id, e.name, e.city || prev.place, i++, id]);
       keep.add(prev.id);
     } else {
       const r = await client.query('INSERT INTO camp_provider_hotels (provider_id, entity_id, hotel_name, place, sort_order) VALUES ($1,$2,$3,$4,$5) RETURNING id',
@@ -145,8 +154,8 @@ async function saveProviderHotels(client, providerId, { entityIds = [], free = [
       keep.add(r.rows[0].id);
     }
   }
-  for (const h of free) {
-    if (!h.hotel_name) continue;
+  const freeRows = free.filter((h) => h.hotel_name && !ents.some((e) => sameHotel(h, e)));
+  for (const h of freeRows) {
     const prev = old.find((r) => !r.entity_id && r.hotel_name === h.hotel_name && !keep.has(r.id));
     if (prev) {
       await client.query('UPDATE camp_provider_hotels SET place = $2, region = $3, sort_order = $4 WHERE id = $1', [prev.id, h.place || null, h.region || null, i++]);
@@ -159,7 +168,7 @@ async function saveProviderHotels(client, providerId, { entityIds = [], free = [
   }
   const removed = old.filter((r) => !keep.has(r.id));
   if (removed.length) await client.query('DELETE FROM camp_provider_hotels WHERE id = ANY($1::uuid[])', [removed.map((r) => r.id)]);
-  return { linked: entityIds.length, free: free.filter((h) => h.hotel_name).length, removed: removed.map((r) => r.hotel_name) };
+  return { linked: entityIds.length, free: freeRows.length, removed: removed.map((r) => r.hotel_name) };
 }
 
 // Von der Objektseite aus: Anbieter dieses Objekts setzen (fügt Zeilen hinzu bzw. entfernt nur die Verknüpfungen dieses Objekts)
@@ -244,4 +253,4 @@ async function clickStats(siteId) {
 }
 
 module.exports = {
-  matchEntity, autoLink, entityOptions, providerOptions, suggestEntity, saveProviderHotels, setEntityProviders, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, MIN_PROFILE_WORDS, profileWords, indexable, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };
+  matchEntity, autoLink, entityOptions, providerOptions, suggestEntity, sameHotel, saveProviderHotels, setEntityProviders, MODELS, FLAGS, HOTEL_VALUES, FLIGHT_VALUES, flag, MIN_PROFILE_WORDS, profileWords, indexable, parseFilters, list, regions, bySlug, hotelsOf, forEntity, outboundUrl, countClick, clickStats };
