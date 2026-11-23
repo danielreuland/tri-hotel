@@ -62,7 +62,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, und hier (L
 | B-18 | Keywords validieren (Keyword Planner, Trends) | P1 | Daniel | M | Z1 | – | ✅ erledigt | `claude/keyword-analyse-2026-11.md` |
 | B-19 | Better Stack: Konto, Monitore, Heartbeat `WATCHDOG_HEARTBEAT_URL` | P1 | Daniel | S | Z1 | – | 🔧 offen | siehe [Ausfallüberwachung](#ausfallüberwachung) |
 | B-30 | Seitenprüfung Paket B: Quellen-Satz, Stand auf /triscore, Über-Seite | P1 | Dev | M | Z3 | B-10, B-12 | ✅ erledigt | [Paket B](#paket-b-vertrauen) |
-| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; Punkt 4: **Sammellauf gebaut 22.11.** (noch nicht deployt) – 46 Live-Hotels ohne Text, ca. 0,03 $ je Text; Punkt 5 Camp-Kurzprofile → [B-91](#b-91-camp-bereich-neu-planen); siehe [B-31](#paket-c-seo-inhalte) |
+| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; Punkt 4: **Sammellauf live seit 23.11.** (mit dem Deploy von Migration 129, Migration 128 eingespielt; Lauf selbst noch nicht gestartet) – 46 Live-Hotels ohne Text, ca. 0,03 $ je Text; Punkt 5 Camp-Kurzprofile → [B-91](#b-91-camp-bereich-neu-planen); siehe [B-31](#paket-c-seo-inhalte) |
 | B-32 | Seite „25-m-Becken Mallorca“, FAQ „Wo ist es im Januar–März warm?“, Ratgeber-Übersicht /ratgeber | P1 | Dev | M | Z1 | B-18 | 🔧 teilweise | `/region/mallorca/hotels-mit-25-m-becken` live seit 13.11.; **offen:** FAQ „warm im Jan–März“ (nicht auf /trainingsregionen), `/ratgeber` (404, erst ab 2 Ratgebern), Block „Beliebte Themen“. „70.3 Mallorca“ entfällt (21.11.). Prompt `docs/prompts/b-32-becken-seite-ratgeber.md` |
 | B-45 | Titel und H1 für die A-Keywords (+ Nachzügler aus B-17) | P1 | Dev | S | Z1 | B-18 | ✅ erledigt | [B-45/B-32](#b-45-und-b-32-seo-titel-und-saisonseiten) |
 | B-46 | Indexierung bereinigen | P1 | Dev + Daniel | S | Z1 | B-17 | ✅ erledigt 22.11. | Rest (Texte) in B-31; [B-46](#b-46-indexierung-bereinigen) |
@@ -253,7 +253,7 @@ Bis dahin keine Camp-Texte per Sammellauf erzeugen.
   Gruppengröße, Preis), Einwilligung namentlich, Bestätigung, Admin-Freigabe, Nachfrage nach 7 Tagen. Preis je geteilter
   Anfrage weiter offen (A3, „Zu entscheiden“). Die Abgleichsfelder sind von Hand gepflegt; die Camp-Prüfung schlägt sie nicht vor.
 - **Hotel ↔ Anbieter** (`camp_provider_hotels`, verknüpft oder freie Zeile): Hotelseite zeigt Anbieter und „Camp hier anfragen“.
-  **Dublette behoben (23.11., Migration 129, noch nicht veröffentlicht):** Jorge Sports zeigte „Allsun Hotel Bella Paguera“ doppelt
+  **Dublette behoben, live seit 23.11. (Migration 129, Commit a481405; Live-Profile ohne Dubletten, Admin mit Test-Sitzung geprüft):** Jorge Sports zeigte „Allsun Hotel Bella Paguera“ doppelt
   (freie Zeile im Textfeld + dasselbe Objekt in der Auswahl). `camps.saveProviderHotels` macht jetzt aus einer freien Zeile mit
   dem Namen eines gewählten Objekts die Verknüpfung (Fundstelle bleibt) und legt keine neue freie Zeile dafür an (`camps.sameHotel`);
   Migration 129 entfernt vorhandene Dubletten aller Anbieter. Tests `test/camp-links.test.js`. Offen: freie Zeilen ohne Score
