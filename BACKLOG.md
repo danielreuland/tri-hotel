@@ -14,6 +14,7 @@ Status: ✅ live/erledigt · 🧪 Test läuft · 🔧 offen bzw. teilweise · �
 | Thema | Status | Stand |
 |---|---|---|
 | [B-50–B-56 Rechtliches, Gewerbe, Steuern](#b-50-bis-b-56-rechtliches-gewerbe-und-steuern) | 🔧 offen (B-50 P0) | 22.11. |
+| [B-91 Camp-Bereich neu planen](#b-91-camp-bereich-neu-planen) | ⏸ zurückgestellt, Bestandsaufnahme da | 23.11. |
 | [B-16 Plausible-Ziele und Funnel](#b-16-plausible-ziele-und-konfigurierbarer-funnel) | ✅ live | 21.11. |
 | [B-90 Hinweis „Ferienwohnung?“ in der Rangliste](#b-90-hinweis-ferienwohnung-in-der-rangliste-als-zeile-in-hotelhöhe) | ✅ live | 21.11. |
 | [B-89 Partner-Button A/B-Test](#b-89-partner-button-in-der-rangliste-test-ab) | 🧪 Test läuft | 21.11. |
@@ -61,7 +62,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, und hier (L
 | B-18 | Keywords validieren (Keyword Planner, Trends) | P1 | Daniel | M | Z1 | – | ✅ erledigt | `claude/keyword-analyse-2026-11.md` |
 | B-19 | Better Stack: Konto, Monitore, Heartbeat `WATCHDOG_HEARTBEAT_URL` | P1 | Daniel | S | Z1 | – | 🔧 offen | siehe [Ausfallüberwachung](#ausfallüberwachung) |
 | B-30 | Seitenprüfung Paket B: Quellen-Satz, Stand auf /triscore, Über-Seite | P1 | Dev | M | Z3 | B-10, B-12 | ✅ erledigt | [Paket B](#paket-b-vertrauen) |
-| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; Punkt 4: **Sammellauf gebaut 22.11.** (noch nicht deployt) – 46 Live-Hotels ohne Text, ca. 0,03 $ je Text; Punkt 5 Camp-Kurzprofile → eigene Planung Camp-Bereich; siehe [B-31](#paket-c-seo-inhalte) |
+| B-31 | Seitenprüfung Paket C: Vergleichs-, Länderseiten, Camp-FAQ, Hotel-Texte | P1 | Dev | L | Z1 | B-11 | 🔧 **teilweise** | 1–3 erledigt 08.11.; Punkt 4: **Sammellauf gebaut 22.11.** (noch nicht deployt) – 46 Live-Hotels ohne Text, ca. 0,03 $ je Text; Punkt 5 Camp-Kurzprofile → [B-91](#b-91-camp-bereich-neu-planen); siehe [B-31](#paket-c-seo-inhalte) |
 | B-32 | Seite „25-m-Becken Mallorca“, FAQ „Wo ist es im Januar–März warm?“, Ratgeber-Übersicht /ratgeber | P1 | Dev | M | Z1 | B-18 | 🔧 teilweise | `/region/mallorca/hotels-mit-25-m-becken` live seit 13.11.; **offen:** FAQ „warm im Jan–März“ (nicht auf /trainingsregionen), `/ratgeber` (404, erst ab 2 Ratgebern), Block „Beliebte Themen“. „70.3 Mallorca“ entfällt (21.11.). Prompt `docs/prompts/b-32-becken-seite-ratgeber.md` |
 | B-45 | Titel und H1 für die A-Keywords (+ Nachzügler aus B-17) | P1 | Dev | S | Z1 | B-18 | ✅ erledigt | [B-45/B-32](#b-45-und-b-32-seo-titel-und-saisonseiten) |
 | B-46 | Indexierung bereinigen | P1 | Dev + Daniel | S | Z1 | B-17 | ✅ erledigt 22.11. | Rest (Texte) in B-31; [B-46](#b-46-indexierung-bereinigen) |
@@ -84,6 +85,7 @@ Neue Themen: Überschrift `### B-NN Titel`, darunter `*Stand: …*`, und hier (L
 | B-42 | hotel.de-Suchlink für Hotels ohne eigenen Link | P3 | Dev | S | Z2 | B-23 | 🔧 offen |  |
 | B-43 | Kleinkram Dev: Koordinaten-Verschiebung, `{{#bestaetigen}}`, Camp-Feinschliff, Overpass-Regionsdaten | P3 | Dev | M | Z3 | – | 🔧 offen | [Kleinere offene Punkte](#kleinere-offene-punkte) |
 | B-50–56 | Rechtliches, Gewerbe, Steuern | P0–P2 | Daniel/Dev |  |  |  | 🔧 offen | [eigener Abschnitt](#b-50-bis-b-56-rechtliches-gewerbe-und-steuern) |
+| B-91 | Camp-Bereich neu planen (tri-hotel.de und Hybrid-Site): Anbieter-Camps und Camp-Anfragen von Vereinen/Gruppen | P2 | Daniel + Dev | L | Z1 | Zeit Daniel | ⏸ zurückgestellt | Bestandsaufnahme 22.11., Planung gemeinsam in eigener Sitzung; [B-91](#b-91-camp-bereich-neu-planen) |
 
 Weitere Nummern im Text: B-88 [Faktenmaske](#kleinere-offene-punkte), B-89 [Partner-Button](#b-89-partner-button-in-der-rangliste-test-ab), B-90 [Hinweis Ferienwohnung](#b-90-hinweis-ferienwohnung-in-der-rangliste-als-zeile-in-hotelhöhe).
 
@@ -228,6 +230,47 @@ Grundlage: Search-Console-Drilldown 18.11. Viele der gemeldeten Regionen/Länder
   indexierbar und in der Sitemap (145 URLs); Zypern (Region und Land, je 1 Hotel) bewusst noindex. Zafiro: alter Slug
   `zafirco-palace-alcudia-alcudia` → 301, canonical ok. robots.txt ok (nur /admin, /anfrage/, /bestaetigen/, /go/). Sitemap am
   21.11. eingereicht (Daniel). Übrige Texte (22 Camp-Profile noindex, 48 Hotelseiten ohne Text) laufen unter B-31.
+
+### B-91 Camp-Bereich neu planen
+*Stand: 23.11.2026 – zurückgestellt (Daniel): „Das Thema ist durchaus etwas größer“, Planung gemeinsam in einer eigenen Sitzung, wenn Zeit ist. Noch keine Umsetzung.*
+
+**Rahmen von Daniel (23.11.):** Den Camp-Bereich gibt es auf tri-hotel.de **und** auf der Hybrid-Site (heute fitnessracing-hotel.de).
+Zwei Richtungen: (1) **Anbieter von Camps** (Verzeichnis, Profile, Anfragen an Anbieter) und (2) **Camp-Anfragen von Vereinen und
+Gruppen**. Offen und erst in der gemeinsamen Planung zu klären: Hauptziel (SEO, Anfragen, Einnahmen), Rolle der Anbieter
+(Verzeichnis/Partner, Selbstpflege, nur Redaktion), Entstehung der Kurzprofile (KI-Entwurf, selbst schreiben, Anbieter liefern).
+Bis dahin keine Camp-Texte per Sammellauf erzeugen.
+
+**Bestandsaufnahme 22.11. (Code + Live-Seiten):**
+- `/trainingscamp` (Vorlage `views/sites/tri-hotel/trainingscamp.ejs` + `.json`): rund 2.550 Wörter Ratgeber (Warum, beste Zeit,
+  Checkliste, 5 Camp-Typen, Vereine, Kosten), Anbieter-Matrix mit Filtern (Typ, Region, 6 Merkmale), 11 FAQ mit FAQPage-Daten;
+  gefilterte Ansichten noindex. Stärkste Seite des Bereichs.
+- **22 aktive Anbieter**, alphabetisch. Profile `/trainingscamp/anbieter/:slug` alle `noindex, follow`: Kurzprofil (`summary`)
+  live 0–51 Wörter, im Mittel rund 33 (Regel ab 50, `MIN_PROFILE_WORDS`); MH Sportsacademy, Runningman und Pro Athletes ohne
+  Überblick. In der Matrix viele „?“ (nicht erkennbar) – wirkt unfertig.
+- **Anfrage je Anbieter** (`services/leads.js`, nur bei `lead_active`): live nur **Pro Athletes** – ausgerechnet ein Profil ohne
+  Überblick, ohne Hotels, fast alle Merkmale „nicht erkennbar“. Abrechnungsmodelle je Anfrage / Provision / ohne Vergütung.
+- **Sammelanfrage** `/trainingscamp/angebote` (`services/camp-requests.js`): 3 + 2 Anbieter nach Passung (Monate, Niveaus,
+  Gruppengröße, Preis), Einwilligung namentlich, Bestätigung, Admin-Freigabe, Nachfrage nach 7 Tagen. Preis je geteilter
+  Anfrage weiter offen (A3, „Zu entscheiden“). Die Abgleichsfelder sind von Hand gepflegt; die Camp-Prüfung schlägt sie nicht vor.
+- **Hotel ↔ Anbieter** (`camp_provider_hotels`, verknüpft oder freie Zeile): Hotelseite zeigt Anbieter und „Camp hier anfragen“.
+  **Fehler live:** Jorge Sports zeigt „Allsun Hotel Bella Paguera“ doppelt (freie Zeile und verknüpfte Zeile); freie Zeilen
+  ohne Score stehen vor den verknüpften.
+- **Camp-Prüfung** (`services/camp-check.js`): Website + KI mit Fundstelle, Ampel (Website, Thema, Impressum, Kontakt, Termine,
+  Ziele, Preise), schlägt Kurzprofil, Merkmale, Preise, Hotels vor und legt Hotel-Meldungen an (je Anbieter abschaltbar).
+  Impressum wird oft nicht gefunden; Trivolution-Website 404 (siehe Kleinere offene Punkte).
+- **`/trainingscamp/fuer-anbieter`**: Formular (Korrektur, Aufnahme, Partnerschaft). Die Auswahl „Bereits gelistet als“ zeigt
+  alle Anbieter außer archivierten – also auch Entwürfe und abgelehnte (u. a. UF Bootcamp, Reiseathleten, Girona Cycling).
+- **Hybrid:** Thema der Site tri-hotel.de umfasst Hybrid-Camps (Migration 092), die 4 Hybrid-Anbieter (Reiseathleten, Titan,
+  BlackBOX, UF Bootcamp) sind nicht freigegeben. **fitnessracing-hotel.de hat keinen Camp-Bereich** (`/trainingscamp` 404,
+  keine Site-Vorlage unter `views/sites/`).
+- Vereine: Abschnitt „Trainingslager für Vereine und Gruppen“ auf `/trainingscamp`, Sammelanfrage mit Art „Gruppe“; eigene
+  Landingpage „für Vereine“ fehlt (Kleinere offene Punkte).
+- Hub: interne API liefert Camp-Anbieter und Kennzahlen (Profilaufrufe, Klicks, Anfragen als Zahlen).
+
+**Bereits notierte Camp-Punkte**, in die Planung mitnehmen: B-31 Punkt 5 (Kurzprofile), Paket D (Knopf „Anfragen“ auf Camp-Karten,
+Satz zu Partnerschaften, Preisangabe „pro Woche“), Paket C (Abschluss der Camp-Seite zur Anfrage), Kleinere offene Punkte
+(jährliche Nachprüfung, Impressum mitladen, Abgleichsfelder vorschlagen, Reihenfolge verknüpfter Hotels, Landingpage Vereine),
+Zu entscheiden A3, Zu erledigen „Hybrid-Camp-Anbieter freigeben“.
 
 ### Klima: Wind und Regentage von Messstationen
 *Stand: 03.11.2026, live – Migration 099*
@@ -635,7 +678,7 @@ Externe Prüfung gegen Live-Seite, Code und Datenbank validiert. Paket A (Fehler
      Stand je Objekt in `text_batch_items`. **Sammelfreigabe** nur für Entwürfe ohne Prüfhinweis (vor der Freigabe erneut geprüft); Entwürfe
      mit Hinweis einzeln in der Prüfansicht. Audit: `text_batch.start`, `generate_text` (batch), `text_publish` (bulk). Tests `test/text-batch.test.js`.
      Stand 22.11.: 46 Live-Hotels ohne Text, 2 Entwürfe; KI-Budget November 26,56 von 30 $ verbraucht.
-  5. **Aus B-46 (22.11.):** (Camp-Teil geht in die eigene Planung „Camp-Bereich“, Daniel 22.11.) Alle 22 Camp-Anbieter-Profile sind noindex (Regel: ab 50 Wörtern Kurzprofil), u. a. Jorge Sports, Tricamp –
+  5. **Aus B-46 (22.11.):** (Camp-Teil geht in die eigene Planung [B-91](#b-91-camp-bereich-neu-planen), Daniel 22.11.) Alle 22 Camp-Anbieter-Profile sind noindex (Regel: ab 50 Wörtern Kurzprofil), u. a. Jorge Sports, Tricamp –
      Kurzprofile schreiben. 48 von 104 Hotelseiten der Sitemap ohne Text (u. a. Garda Sporting Club, Sant Jordi Boutique, Zafiro Palace) – kommt mit Punkt 4.
 - **Vergleichsseiten, entschieden 08.11. (Daniel):** Regionsvergleiche mit Redaktionstext (`region_compare_texts`, beliebig viele je Region, Migration 110) werden indexiert und stehen in der Sitemap, alle anderen `noindex, follow`. Kommt ein Text dazu, wird die Seite automatisch indexierbar. Stand: 14 Paare (6 neue in Migration 111). `a-vs-b` und `b-vs-a` leiten auf die alphabetische Reihenfolge um, Top-Hotels sind verlinkt. Offen: Fazit „Für wen passt was?“, Links zu weiteren Paaren.
 - Länderseiten mit Text und FAQ ausbauen, zuerst Deutschland (rund 635 Wörter ohne FAQ, Mallorca rund 2.300) und Österreich.
