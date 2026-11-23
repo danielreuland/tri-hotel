@@ -144,4 +144,5 @@ Abgleich nur über Git (GitHub `danielreuland/tri-hotel`). Chatverlauf und lokal
 - **Deploy** (Server holt `main`): nur deployen, wenn `main` lokal aktuell ist (`git pull` vorher), damit nichts vom anderen Rechner verloren geht.
 - **Migrationen:** Nummern vor dem Anlegen mit `git pull` abgleichen – zwei parallele `0NN_…sql` mit derselben Nummer kollidieren.
 - `package-lock.json` ist eingecheckt; Abhängigkeiten nur mit `npm install <paket>` ändern und Lock-Datei mitcommitten.
+- Auf dem Server nach dem Pull nur `npm ci` ausführen, nie `npm install`: Der Server hat npm 10, der Mac npm 11. `npm install` schreibt die Lock-Datei dort im alten Format um (z. B. ohne `libc`-Angaben), dann scheitert der nächste `git pull`.
 - `.env` gibt es nur auf dem Server (Schlüssel wie Hunter, Mail, KI). Lokal laufen die Tests ohne `.env`; lokale Werte nie ins Repo oder in `.env.example`.
